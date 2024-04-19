@@ -40,6 +40,11 @@ if __name__ == "__main__":
             continue
 
         mpath = modelpaths[mkey]
+        mname = mpath.split("/")[-1]
+        params = "-".join([args.prompt]) # add temp, generation method etc here
+        dirname = args.resultdir + "/" + mname + "/" + params
+        assert mname and params
+
         tokenizer = AutoTokenizer.from_pretrained(mpath)
         model = AutoModelForCausalLM.from_pretrained(
             mpath,
@@ -47,11 +52,6 @@ if __name__ == "__main__":
             device_map="auto",
         )
         model.eval()
-
-        mname = mpath.split("/")[-1]
-        params = "-".join([args.prompt]) # add temp, generation method etc here
-        dirname = args.resultdir + "/" + mname + "/" + params
-        assert mname and params
 
         for f in os.listdir(args.codedir):
             if(len(args.codelist) != 0 and f.split('.')[-1] not in args.codelist):
@@ -64,25 +64,28 @@ if __name__ == "__main__":
             prompt = transform(args.prompt, tokenizer, code)
             inputs = prompt.to(model.device)
 
+            allrspnse, allasrts  = "", ""
+            for _ in range(args.nsamples):
+                response = run(model, tokenizer, inputs)
+                asrt = extract(args.prompt, response)
+                allrspnse += response + "-"*20
+                allasrts += asrt + "-"*20
+
             if(args.write):
                 os.makedirs(dirname, exist_ok=True)
                 fd = open(os.path.join(dirname, f), "w")
-            else:
-                print("#"*10, dirname + "/" + f, "#"*10)
-
-            for _ in range(args.nsamples):
-                response = run(model, tokenizer, inputs)
-                response = response + "-"*20
-
-                if(args.write):
-                    fd.write(response)
-                else:
-                    print(response)
-                
-            if(args.write):
+                fd.write(allrspnse)
+                fd.close()
+                fd = open(os.path.join(dirname, f + ".extract"), "w")
+                fd.write(allasrts)
                 fd.close()
             else:
+                print("#"*10, dirname + "/" + f, "#"*10)
+                print(allrspnse)
                 print("#"*20)
-            
+                print("#"*10, dirname + "/" + f + ".extract", "#"*10)
+                print(allasrts)
+                print("#"*20)
+                
         del model
         del tokenizer
