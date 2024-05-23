@@ -59,13 +59,15 @@ if __name__ == "__main__":
             code = fd.read()
             fd.close()
 
-            prompt = transform(args.prompt, tokenizer, code)
+            langid = f.split('.')[-2]
+
+            prompt = transform(args.prompt, tokenizer, code, langid)
             inputs = prompt.to(model.device)
 
             allrspnse, allasrts  = "", ""
             for _ in range(args.nsamples):
                 response = run(model, tokenizer, inputs)
-                asrt = extract(args.prompt, response)
+                asrt = extract(args.prompt, response, langid)
                 allrspnse += response + "-"*20
                 allasrts += asrt + "-"*20
 

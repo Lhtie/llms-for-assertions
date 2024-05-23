@@ -4,27 +4,46 @@ import os
 from transformers import AutoTokenizer
 import argparse
 
-tvl = """Read the following code and output assert statements corresponding to the comments that start with "@@@". Your output should just be python code.
-```py
-"""
+eg_py_inp, eg_py_out = """def sum(x, y):
+    sum = x + y
+    # @@@ sum is greater than or equal to x and y 
+    return sum""", """assert sum >= x and sum >= y"""
+eg_cs_inp, eg_cs_out = """public static int Sum(int x, int y)
+{
+    sum = x + y;
+    // @@@ sum is greater than or equal to x and y 
+    return sum;
+}""", """Debug.Assert(sum >= x && sum >= y);"""
 
-enf_fmt = """Read the following code and output assert statements corresponding to the comments that start with "@@@". Output the code that is related to the assert statement in a <code></code> block.
-```py
-"""
+langmap = {
+        "py": ("python",    "#",    eg_py_inp,  eg_py_out, r"assert .*?"),
+        "cs": ("csharp",    "//",   eg_cs_inp,  eg_cs_out, r"Debug.Assert\(.*?\);"),
+}
 
-one_sht = """Your task is to read code and output assert statements corresponding to the comments that start with "@@@". Output the code that is related to the assert statement in a <code></code> block. For example if the code is: 
-```py
-def sum(x, y):
-    # @@@ x and y are positive 
-    return x+y
+# C# one doesnt find Contract.Assert, Assert.Equals etc. but we already bias it towards Debug.Assert in most prompts
+
+tvl = """Read the following {0} code and output assert statements corresponding to the comments that start with "@@@". Your output should just be {0} code that uses "{3}".
+```{1}
+{2}
+```"""
+
+enf_fmt = """Read the following {0} code and output assert statements corresponding to the comments that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block.
+```{1}
+{2}
+```"""
+
+one_sht = """Your task is to read {0} code and output assert statements corresponding to the comments that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. For example if the code is: 
+```{1}
+{2}
 ```
 The output should be:
 <code>
-assert x > 0 and y > 0
+{3}
 </code>
-Now, read the following code and output assert statements corresponding to the comments that start with "@@@".
-```py
-"""
+Now, read the following {0} code and output assert statements corresponding to the comments that start with "@@@".
+```{1}
+{4}
+```"""
 
 def apply_chat_template(tokenizer, inst):
     return tokenizer.apply_chat_template(
@@ -33,40 +52,43 @@ def apply_chat_template(tokenizer, inst):
             add_generation_prompt=True)
 
 
-def transform(tid, tokenizer, code):
-    lines = code.split("\n")
+def transform(tid, tokenizer, code, langid):
+    lang, cmnt_tkn, eg_inp, eg_out, srch_term = langmap[langid]
 
-    cmnt_idx = [i if "@@@" in l and l.strip()[0] == "#" else -1 for (i,l) in enumerate(lines)]
-    assert sum([i != -1 for i in cmnt_idx]) == 1, "too few or many assertions to work on"
+    lines = code.split("\n")
+    cmnt_idx = [i if "@@@" in l and l.strip().startswith(cmnt_tkn) else -1 for (i,l) in enumerate(lines)]
     cmntlno = max(cmnt_idx)
     asrtlno = cmntlno + 1
 
     code = "\n".join(lines[:asrtlno] + lines[asrtlno+1:])
 
+    assert sum([i != -1 for i in cmnt_idx]) == 1, "too few or many assertions to work on"
+
     if(tid == "trivial"):
-        inst = tvl + code + "```"
+        inst = tvl.format(lang, langid, code, srch_term)
         prompt = apply_chat_template(tokenizer, inst)
         return prompt
     
     elif(tid == "enforce-fmt"):
-        inst = enf_fmt + code + "```"
+        inst = enf_fmt.format(lang, langid, code)
         prompt = apply_chat_template(tokenizer, inst)
         return prompt
     
     elif(tid == "one-shot"):
-        inst = one_sht + code + "```"
+        inst = one_sht.format(lang, langid, eg_inp, eg_out, code)
         prompt = apply_chat_template(tokenizer, inst)
         return prompt
 
     elif(tid == "one-shot-enf"):
-        inst = one_sht + code + "```"
+        inst = one_sht.format(lang, langid, eg_inp, eg_out, code)
         prompt = apply_chat_template(tokenizer, inst)
         suprt = tokenizer.encode("<code>",
                 add_special_tokens=False, return_tensors="pt")
         return torch.cat((prompt, suprt), 1)
 
     elif(tid == "continue"):
-        rplce = lines[cmntlno].split("#")[0] + "# an assertion that " + lines[cmntlno].split("#")[1] 
+        splitted = lines[cmntlno].split(cmnt_tkn)
+        rplce =  f"{splitted[0]}{cmnt_tkn} an assertion using \"{srch_term}\" that {splitted[1]}"  # @@@ still in the comment
         pfx = "\n".join(lines[:cmntlno] + [rplce, ""])
         prompt = tokenizer.encode(pfx, return_tensors="pt")
         return prompt
@@ -76,10 +98,12 @@ def transform(tid, tokenizer, code):
 
 
 
-def extract(tid, rspnse):
+def extract(tid, rspnse, langid):
+    _, _, _, _, srch_term = langmap[langid]
+
     if(tid == "trivial"):
-        for l in rspnse.split("\n"): 
-            if re.match(r"^\s*assert\s+.*", l):
+        for l in rspnse.split("\n"):
+            if re.match(r"^\s*" + srch_term + r".*$", l):
                 return l
         return ""
     
@@ -96,7 +120,7 @@ def extract(tid, rspnse):
         return match.group(1) if match else ""
 
     elif(tid == "continue"):
-        match = re.search(r".*?assert\s+.*?\n", rspnse, re.DOTALL)
+        match = re.search(r".*?" + srch_term + r".*?\n", rspnse, re.DOTALL)
         return match.group(0) if match else ""
     
     else:   
@@ -115,7 +139,7 @@ if __name__ == "__main__":
             "ds7":      "deepseek-ai/deepseek-coder-6.7b-instruct",
             "mc7":      "/home/aman14/models/Magicoder-S-DS-6.7B",
             "oc7":      "/home/aman14/models/OpenCodeInterpreter-DS-6.7B",
-            "oc33":     "/home/aman14/models/OpenCodeInterpreter-DS-33B",
+#            "oc33":     "/home/aman14/models/OpenCodeInterpreter-DS-33B",
     }
     
     for mkey in modelpaths:
@@ -135,7 +159,9 @@ if __name__ == "__main__":
             code = fd.read()
             fd.close()
 
-            prompt = transform(args.prompt, tokenizer, code)
+            langid = f.split('.')[-2]
+
+            prompt = transform(args.prompt, tokenizer, code, langid)
         
             print("#"*10, dirname + "/" + f, "#"*10)
             print(tokenizer.decode(prompt[0]))
