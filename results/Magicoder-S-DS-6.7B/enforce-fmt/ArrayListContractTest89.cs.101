@@ -1,0 +1,395 @@
+The output assert statements corresponding to the comments that start with "@@@" will be:
+
+    // @@@ If the return value is positive, return value is at least the index of x in old list 
+    [Assert] void PUT_LastIndexOfContract_TestCase(ArrayList arrList, int x) requires New_Ret >= 0 ==> Old_arrListIndexOfX <= New_Ret
+    
+This assert statement will test the `LastIndexOf` method. If `New_Ret` is positive, it will make sure that the index of `x` in the old list `arrList` is less than or equal to `New_Ret`.--------------------Assuming the "Old" and "New" variables mean something like "pre-operation" and "post-operation", here's how each of the "@@@" comments would be translated to an NUnit Assert check:
+   
+```csharp
+[Test]
+public void PUT_AddContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+    Assume.That(arrList.Count, Is.EqualTo(Old_arrListCount + 1));
+    Assert.AreEqual(Old_x, Old_arrListIndexOfX);
+    Assert.AreEqual(Old_arrListIndexOfX, Old_arrListLastIndexOfX);
+    Assert.AreEqual(Old_arrListContainsX, New_arrListContainsX);
+}
+
+[Test]
+public void PUT_RemoveContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+    Assume.That(arrList.Count, Is.EqualTo(Old_arrListCount));
+    Assert.AreEqual(Old_arrListIndexOfX, New_arrListIndexOfX);
+    Assert.AreEqual(Old_arrListLastIndexOfX, New_arrListLastIndexOfX);
+    Assert.AreEqual(Old_arrListContainsX, !New_arrListContainsX);
+}
+
+[Test]
+public void PUT_InsertContract([PexAssumeUnderTest]ArrayList arrList, int x, int index)
+{
+    Assume.That(index, Is.InRange(0, arrList.Count));
+    Assert.AreEqual(Old_arrListCount + 1, New_arrListCount);
+    Assert.AreEqual(Old_x, arrList[Old_index]);
+    Assert.That(Old_arrListIndexOfX, Is.EqualTo(Old_index).Or.EqualTo(-1));
+    Assert.AreEqual(Old_arrListLastIndexOfX, Old_index);
+    Assert.AreEqual(Old_arrListContainsX, arrList.Contains(x));
+    Assert.AreEqual(Old_arrListIndexOfX, Old_arrListLastIndexOfX);
+}
+
+[Test]
+public void PUT_SetContract([PexAssumeUnderTest]ArrayList arrList, int x, int index)
+{
+    Assume.That(index, Is.InRange(0, arrList.Count - 1));
+    Assert.AreEqual(Old_arrListCount, New_arrListCount);
+    Assert.AreEqual(Old_x, arrList[index]);
+    Assert.That(index, Is.EqualTo(Old_arrListIndexOfX).Or.EqualTo(Old_arrListIndexOfX + 1));
+    Assert.AreEqual(Old_arrListLastIndexOfX, index);
+    Assert.AreEqual(Old_arrListContainsX, arrList.Contains(x));
+}
+
+[Test]
+public void PUT_GetContract([PexAssumeUnderTest]ArrayList arrList, int index)
+{
+    Assume.That(index, Is.InRange(0, arrList.Count - 1));
+    Assert.AreEqual(Old_arrListCount, New_arrListCount);
+    Assert.AreEqual(New_Ret, arrList[index]);
+    Assert.AreEqual(arrList.Contains(New_Ret), New_containsNewRet);
+}
+
+[Test]
+public void PUT_ContainsContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+    Assume.That(arrList.Contains(x), Is.EqualTo(Old_arrListContainsX));
+}
+
+[Test]
+public void PUT_IndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+    Assume.That(arrList.IndexOf(x), Is.GreaterThanOrEqualTo(0), Is.LessThan(Old_arrListCount), "$old_arrListLastIndexOfX");
+    Assume.That(arrList.IndexOf(x), Is.EqualTo(Old_arrListLastIndexOfX), "$Old_arrListIndexOfX");
+}
+
+[Test]
+public void PUT_LastIndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+    Assume.That(New_Ret, Is.GreaterThanOrEqualTo(0));
+    Assume.That(arrList[New_Ret], Is.EqualTo(x));
+}
+
+[Test]
+public void PUT_CountContract--------------------```cs
+Assert.That(Old_arrListCount, Is.LessThanOrEqualTo(New_arrListCount));
+
+Assert.AreEqual(x, New_arrListIndexOfX);
+Assert.AreEqual(Old_arrListIndexOfX, New_arrListLastIndexOfX);
+
+Assert.AreEqual(Old_arrListCount != 0 ? x : -1, New_arrListIndexOfX); // If old list is not empty, old x equals new x
+Assert.AreEqual(Old_arrListCount == 0 ? -1 : Old_arrListIndexOfX, New_arrListLastIndexOfX); // If old list is empty, Old index of x equals -1, else equals old index of x
+
+Assert.That(Old_arrListCount != 0 ? x : New_arrListIndexOfX, Is.EqualTo(New_Ret)); // If old list is not empty, old x equals New ret, else equals new index of x
+
+Assert.AreEqual(Old_arrListCount == 0 ? false : Old_arrListContainsX, New_arrListContainsX);  // If old list is empty, old list contains x equals false, else equals old list contains x
+
+Assert.That(Old_arrListCount ==0 ? New_Ret == -1 : Old_arrListCount >0 && Old_arrListIndexOfX >=0 && Old_arrListIndexOfX < New_arrListCount); // If old list is empty, new index of x equals -1, else true
+
+Assert.That(Old_arrListCount ==0 ? New_Ret == -1 : Old_arrListCount >0 && Old_arrListLastIndexOfX >=0 && Old_arrListLastIndexOfX < New_arrListCount); // If old list is empty, new Last index of x equals -1, else true
+
+Assert.That(New_Ret, Is.GreaterThanOrEqualTo(0)); // new return value is greater than or equal to 0
+
+Assert.That(New_Ret, Is.EqualTo(New_arrListCount)); // new return value equals new arrList count
+```--------------------To output the assert statements corresponding to the comments that start with "@@@", run the code through a script that replaces the comments with the corresponding assertions for each contract. We can do this by parsing the code and creating a new assertions based on specific keywords or phrases in the descriptions. 
+
+```python
+import re
+
+def get_comments(code):
+    comments = re.findall(r'//.*?[\n]', code)
+    return comments
+
+def get_assertions(comments):
+    assertions = []
+    for comment in comments:
+        if 'If the return value is positive' in comment:
+            assertions.append('Assert.IsTrue(New_Ret > -1);')
+        elif 'if the count increases by 1' in comment:
+            assertions.append('Assert.AreEqual(Old_arrListCount+1, New_arrListCount);')
+        elif 'if the count decreases by 1' in comment:
+            assertions.append('Assert.AreEqual(Old_arrListCount-1, New_arrListCount);')
+        # add more conditions as needed
+    return assertions
+
+def insert_assertions(code, assertions):
+    for assertion in assertions:
+        # find the line with the highest line number that doesn't start with a // comment
+        for i in range(len(code)):
+            if not code[i].strip().startswith('//') and assertion not in code[i]:
+                code.insert(i, assertion + '\n')
+                break
+    return code
+
+# replace the code between the `<code></code>` tags with your code
+code_str = '''
+<code></code>
+'''
+
+code = code_str.split('\n')
+
+comments = get_comments(code_str)
+assertions = get_assertions(comments)
+code = insert_assertions(code, assertions)
+
+# convert the list of strings back into the final string
+final_code = '\n'.join(code)
+
+print(final_code)
+```
+
+This script can be run manually, as it will insert the assertions in place. If you have large amount of code and want to automate it, you can run it in a python environment using a jupyter notebook or script. Then the code can be copied into the targeted test class.--------------------The following is the code to output the assert statements according to the comments in the csharp code:
+
+```cs
+[Test]
+public void IfLastIndexOfReturnsPositiveValue_ThenReturnValueIsNotLessThanIndexOfX()
+{
+    int New_Ret = arrList.LastIndexOf(x);
+    Assert.GreaterOrEqual(New_Ret, Old_arrListIndexOfX);
+}
+```
+
+The above assertion statement is used to verify if the integer returned by the `LastIndexOf()` method is greater than or equal to the index of `x` in the original array list. This is a test for ensuring that the index returned by the `LastIndexOf()` method falls within the bounds of the original collection.--------------------Sorry, as this is a text-based platform, I couldn't copy and execute C# code like this. I can only suggest what the corresponding assert statements would look like in a C# program.
+
+For this problem, I suggest that there should be several related to the assert statements in the code to be output if they start with the comment "@@@". The key part is that the Assert statement should prove, if the Assert function returns false then it breaks the program. For example:
+
+Assert(New_Ret>=Old_arrList_IndexOf_x);
+
+This assertion statement checks whether New_Ret is greater than or equal to the index of x in the old list. If this assertion statement is not true, then the test case will fail. 
+
+Similarly, further assert statements that start with "@@@" will be followed by corresponding assertion checks in the program. For instance if two comments are given as follows:
+
+@@@ If the return value is positive, return value is at least the index of x in old list
+
+This assertion should be written as:
+
+Assert(New_Ret >= 0 && New_Ret >= Old_arrList_IndexOf_x);
+
+The reason for this is that 'New_Ret' must be a non-negative number and greater than or equal to the index of 'x' in the old list, because 'IndexOf' method returns the zero-based index of an element in the list if found; otherwise, -1. This requirement can be expressed in the condition in the assertion.--------------------Here's the csharp code that is related to the assert statement in a <code></code> block.
+```cs
+[PexMethod]
+public void PUT_LastIndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+    AssumePrecondition.IsTrue(true);
+
+    int Old_arrListCount = arrList.Count;
+    int Old_x = x;
+    int Old_arrListIndexOfX = arrList.IndexOf(x);
+    bool Old_arrListContainsX = arrList.Contains(x);
+
+    int New_Ret = arrList.LastIndexOf(x);
+
+    int New_arrListCount = arrList.Count;
+    int New_arrListIndexOfX = arrList.IndexOf(x);
+    bool New_arrListContainsX = arrList.Contains(x);
+
+    PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+    PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+    PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+    PexObserve.ValueForViewing("$old_arrList_IndexOf_x", Old_arrListIndexOfX);
+    PexObserve.ValueForViewing("$new_arrList_IndexOf_x", New_arrListIndexOfX);
+    PexObserve.ValueForViewing("$New_ret", New_Ret);
+    PexObserve.ValueForViewing("$old_arrList_contains_x", Old_arrListContainsX);
+    PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContainsX);
+
+    if (New_Ret >= 0)
+        Assert.IsTrue(New_Ret >= Old_arrListIndexOfX);
+}
+```
+
+The assert statement related to this code snippet is: `Assert.IsTrue(New_Ret >= Old_arrListIndexOfX);`. 
+
+This statement is verifying whether New_Ret is greater than or equal to Old_arrListIndexOfX (the index of x in the original list).--------------------The assertions and the related csharp code are listed below:
+
+```cs
+[PexMethod]
+public void PUT_AddContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+    int index = arrList.IndexOf(x);
+    Assert.IsTrue(index == -1 , "The element already exists in the list");
+}
+
+[PexMethod]
+public void PUT_RemoveContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+    int index = arrList.IndexOf(x);
+    if(index != -1)
+    {
+        Assert.IsTrue( x == arrList[index], "Removed element is not the expected one");
+    }
+    else
+    {
+        Assert.IsTrue(true, "The element is not in the list and no assertion is required");
+    }
+}
+
+[PexMethod]
+public void PUT_InsertContract([PexAssumeUnderTest]ArrayList arrList, int x, int index)
+{
+   AssumePrecondition.IsTrue(index <= arrList.Count && index >= 0);
+
+   Assert.IsTrue(index <= arrList.Count, "Index is larger than the size of the list");
+   Assert.IsTrue(index >= 0, "Index is negative");
+}
+
+[PexMethod]
+public void PUT_SetContract([PexAssumeUnderTest]ArrayList arrList, int x, int index)
+{
+   AssumePrecondition.IsTrue(index >= 0 && index < arrList.Count);
+}
+
+[PexMethod]
+public void PUT_GetContract([PexAssumeUnderTest]ArrayList arrList, int index)
+{
+   AssumePrecondition.IsTrue(index < arrList.Count && index >= 0);
+
+   Assert.IsTrue(arrList[index] != null, "Value at the index is null");
+}
+
+[PexMethod]
+public void PUT_ContainsContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+   Assert.IsTrue(arrList.Contains(x), "The list does not contain the element");
+}
+
+[PexMethod]
+public void PUT_IndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+   Assert.IsTrue(arrList.IndexOf(x) == -1 || arrList.Contains(x), "Element is not in the list");
+   Assert.IsTrue(arrList.IndexOf(x) >= 0, "Index is negative");
+}
+
+[PexMethod]
+public void PUT_LastIndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+   Assert.IsTrue(arrList.LastIndexOf(x) == -1 || arrList.Contains(x), "Element is not in the list");
+   Assert.IsTrue(arrList.LastIndexOf(x) >= 0, "Index is negative");
+}
+
+[PexMethod]
+public void PUT_CountContract([PexAssumeUnderTest]ArrayList arrList)
+{
+   Assert.IsTrue(arrList.Count >= 0, "Count is negative");
+}
+```
+Note: The PexAssert.IsTrue in this code block are the equivalent to the existing NUnit assertions where the first parameter is the condition to check and the second is a string message provided to explain the failed assertion.--------------------Below are the assert statements:
+
+1. "`If the return value is positive, return value is at least the index of x in old list`". This assert statement is related to the `PUT_LastIndexOfContract` method, which asserts that the value returned using `LastIndexOf` method should be at least the current index of the value being added to the array list, but it also depends on the method having a positive return value. 
+
+Here is the `PUT_LastIndexOfContract` method code related to the above assert statement wrapped in `<code></code>` tags:
+
+```cs
+[PexMethod]
+public void PUT_LastIndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+    AssumePrecondition.IsTrue(true);
+
+    int Old_arrListCount = arrList.Count;
+    int Old_x = x;
+    int Old_arrListIndexOfX = arrList.IndexOf(x);
+    bool Old_arrListContainsX = arrList.Contains(x);
+
+    int New_Ret = arrList.LastIndexOf(x);
+
+    int New_arrListCount = arrList.Count;
+    int New_arrListIndexOfX = arrList.IndexOf(x);
+    bool New_arrListContainsX = arrList.Contains(x);
+
+    PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+    PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+    PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+    PexObserve.ValueForViewing("$old_arrList_IndexOf_x", Old_arrListIndexOfX);
+    PexObserve.ValueForViewing("$new_arrList_IndexOf_x", New_arrListIndexOfX);
+    PexObserve.ValueForViewing("$New_ret", New_Ret);
+    PexObserve.ValueForViewing("$old_arrList_contains_x", Old_arrListContainsX);
+    PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContainsX);
+
+    // @@@ If the return value is positive, return value is at least the index of x in old list 
+    Assert.That(New_Ret, Is.EqualTo(Old_arrListIndexOfX).Or.Greater);
+}
+```
+Please note that "`Is.EqualTo(Old_arrListIndexOfX).Or.Greater`" assertion is written in `NUnit` framework. This can be changed according to your testing framework of choice such as `MSTest`, `xUnit` etc. 
+
+2. The second assert statement is related to the `PUT_CountContract` method which is checking if the Count property of the ArrayList has been incremented by one every time we add an item to the list.
+
+Here is the relevant `PUT_CountContract` method code wrapped in `<code></code>` tags:
+
+```cs
+[PexMethod]
+public void PUT_CountContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+    AssumePrecondition.IsTrue(x != int.MaxValue);
+
+    int Old_arrListCount = arrList.Count;
+
+    arrList.Add(x);
+
+    int New_Ret = arrList.Count;
+
+    PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+    PexObserve.ValueForViewing("$new_arrList_Count", New_Ret);
+
+    // @@@ Asserting that Count property incremented by one every time we add an item
+    Assert.That(New_Ret, Is.EqualTo(Old_arrListCount + 1));
+}
+```
+This assertion uses `Is.EqualTo(Old_arrListCount + 1)`, which asserts that the Count property after adding an item should be one more than the old list count.--------------------Here are the output assertions corresponding to the comments from the code: 
+
+```
+@@ There is the check for the expected number of elements in the collection.
+```cs
+ [PexMethod]
+ public void PUT_CountContract([PexAssumeUnderTest]ArrayList arrList)
+ {
+   AssumePrecondition.IsTrue(true);
+
+
+   int New_Ret = arrList.Count;
+
+   // The expected count of elements can be any integer from 0 to 3 (or any given limit). 
+   // However, if the actual number of elements is greater than this limit, you will get a test assertion.
+   Assert.IsTrue(New_Ret <= 3); 
+
+   PexObserve.ValueForViewing("$New_ret", New_Ret);
+ }
+```
+
+```
+@@ If the return value is positive, return value is at least the index of x in old list.
+```cs
+    [PexMethod]
+    public void PUT_LastIndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+    {
+        AssumePrecondition.IsTrue(true);
+
+        int Old_arrListCount = arrList.Count;
+        int Old_x = x;
+        int Old_arrListIndexOfX = arrList.IndexOf(x);
+        bool Old_arrListContainsX = arrList.Contains(x);
+
+        int New_Ret = arrList.LastIndexOf(x);
+
+        int New_arrListCount = arrList.Count;
+        int New_arrListIndexOfX = arrList.IndexOf(x);
+        bool New_arrListContainsX = arrList.Contains(x);
+
+        PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+        PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+        PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+        PexObserve.ValueForViewing("$old_arrList_IndexOf_x", Old_arrListIndexOfX);
+        PexObserve.ValueForViewing("$new_arrList_IndexOf_x", New_arrListIndexOfX);
+        PexObserve.ValueForViewing("$New_ret", New_Ret);
+        PexObserve.ValueForViewing("$old_arrList_contains_x", Old_arrListContainsX);
+        PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContainsX);
+
+        // Check if the return value is positive, then it is at least the index of x in old list
+        Assert.IsTrue(New_Ret >= 0 || !Old_arrListContainsX); 
+
+    }
+```--------------------

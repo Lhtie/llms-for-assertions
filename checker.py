@@ -41,12 +41,12 @@ def compile_check(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
         fd.write(code)
         fd.close()
 
-        if langid == "py":
-            proc = subprocess.run(["python3", "-m", "py_compile", fname],)
-                     #stderr=subprocess.DEVNULL)
+        if(langid == "py"):
+            proc = subprocess.run(["python3", "-m", "py_compile", fname],
+                        stderr=subprocess.DEVNULL)
             result = proc.returncode == 0
 
-        elif langid == "cs":
+        elif(langid == "cs"):
             result = True
 
         else: 
