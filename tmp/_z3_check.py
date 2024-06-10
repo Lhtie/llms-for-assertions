@@ -1,0 +1,10 @@
+from z3 import *
+Old_arrListCount = Int('Old_arrListCount')
+New_arrListIndexOfX = Int('New_arrListIndexOfX')
+New_Ret = Int('New_Ret')
+Old_arrListIndexOfX = Int('Old_arrListIndexOfX')
+f = ((New_Ret  ||  Old_arrListIndexOfX <= New_arrListIndexOfX ) == (Old_arrListCount >= 0))
+s = Solver()
+s.add(Not(f))
+if s.check() == unsat: exit(42)
+else: exit(142)

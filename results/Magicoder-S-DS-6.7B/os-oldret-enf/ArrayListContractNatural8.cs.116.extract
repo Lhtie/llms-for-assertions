@@ -1,0 +1,110 @@
+
+public class AssertStatement
+{
+    public string OriginalCode;
+    public string AssertStatementCode;
+
+    public AssertStatement(string code)
+    {
+        OriginalCode = code;
+        GenerateAssertStatement();
+    }
+
+    private void GenerateAssertStatement()
+    {
+        int openComment = OriginalCode.IndexOf("// @@@");
+        if (openComment != -1)
+        {
+            int closeComment = OriginalCode.IndexOf(";", openComment);
+            if (closeComment != -1)
+            {
+                string comment = OriginalCode.Substring(openComment, closeComment - openComment).Trim();
+                Debug.Assert(comment.StartsWith("@@@"));
+
+                bool isStatic = OriginalCode.Contains("static ");
+
+                // This is a basic parsing logic. Real-life scenarios would require a full parser or syntax tokens.
+                int firstIndex = OriginalCode.IndexOf('(');
+                int lastIndex = OriginalCode.LastIndexOf('(');
+
+                string methodName = isStatic ? OriginalCode.Substring(8, firstIndex - 8) : OriginalCode.Substring(2, firstIndex - 2);
+                string parameterNames = OriginalCode.Substring(firstIndex + 1, lastIndex - firstIndex - 1);
+                string variableName = parameterNames.Split(',').FirstOrDefault().Trim();
+
+                string returnValue = "RET";
+                if (isStatic)
+                {
+                    returnValue = comment.Substring(comment.IndexOf('(') + 1, comment.IndexOf('=') - comment.IndexOf('(') - 1).Trim();
+                }
+
+                AssertStatementCode = $"Debug.Assert({returnValue} == OLD({variableName}));";
+            }
+        }
+    }
+}
+
+try 
+{
+    var originalCode = ... // fill this with the given C# raw code
+    var assertStatement = new ArrayListAssertStatement(originalCode);
+    Console.WriteLine(assertStatement.AssertStatementCode);
+} catch (Exception e) 
+{
+    Console.WriteLine(e.Message);
+}
+--------------------
+Debug.Assert(ArrayList.Count = OLD(ArrayList.Count) - 1);
+----------------------------------------
+Debug.Assert(OLD(x) + y == x);
+--------------------
+Debug.Assert(Old(_items[index]) == null);
+Debug.Assert(Old(_size) == _size - 1);
+Debug.Assert(Old(_version) == _version);
+for (int i = 0; i <  _size; i++)
+{
+    if (i < index)
+        Assert(_items[i] == Old(_items[i]));
+    else if (i > index)
+        Assert(_items[i] == Old(_items[i-1]));
+}
+--------------------
+Debug.Assert(OLD(_items[index]).Equals(value));
+--------------------
+Debug.Assert(OLD(index) >= 0 && OLD(index) <= OLD(Count));
+
+if (index < 0 || index > OLD(Count))
+{
+    throw new ArgumentOutOfRangeException("nameof(index)", "SR.ArgumentOutOfRange_ArrayListInsert");
+}
+
+Debug.Assert(OLD(Count) + 1 != OLD(Capacity));
+
+if (index < OLD(Count))
+{
+    int oldsize = OLD(Count);
+    for (int i = oldsize - 1; i >= index; i--)
+    {
+        OLD(items)[i + 1] = OLD(items)[i];
+    }
+}
+
+OLD(items)[index] = value;
+
+if (OLD(Count) + 1 == Capacity)
+{
+    Capacity = OldCapacity * 2;
+}
+else
+{
+    Capacity = OLD(Capacity); // old capacity
+}
+
+OLD(Count) = oldCount + 1;
+OLD(Version) = OLD(Version) + 1;
+--------------------
+Debug.Assert(OLD(Count) - 1 = Count); // This is a remove operation, so Count should decrease by 1.
+--------------------
+Debug.Assert(Array.LastIndexOf(OLD(arrayList._items), value, 0, OLD(arrayList._size)) == OLD(index));
+--------------------
+Debug.Assert(OLD(Capacity) == Count + 1 ||  OLD(Capacity) * 2 < MaxArrayLength && OLD(Capacity) * 2 > Count, "SR.ArgumentException_ArgumentOutOfRange_Index", nameof(index), "SR.ArgumentOutOfRange_Index");
+--------------------

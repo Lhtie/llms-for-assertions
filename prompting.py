@@ -45,6 +45,28 @@ Now, read the following {0} code and output assert statements corresponding to t
 {4}
 ```"""
 
+oldret_kwds = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable. For example, if the code is: 
+```{1}
+{2}public static int Sum(int x, int y)
+{{
+    for (int i = 0; i < y; i++){{
+        x.Inc(1);
+    }}
+    // @@@ Value of x increases by y in the function
+    return x;
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert(OLD(x) + y = x);
+</code>
+
+Now, read the following {0} code and output an assert statement corresponding to the comment that start with "@@@".
+```{1}
+{4}
+```"""
+
+
 def apply_chat_template(tokenizer, inst):
     return tokenizer.apply_chat_template(
             [{ 'role': 'user', 'content': inst }],
@@ -92,6 +114,20 @@ def transform(tid, tokenizer, code, langid):
         pfx = "\n".join(lines[:cmntlno] + [rplce, ""])
         prompt = tokenizer.encode(pfx, return_tensors="pt")
         return prompt
+
+    elif(tid == "os-oldret"):
+        assert langid == "cs"
+        inst = oldret_kwds.format(lang, langid, "", "", code)
+        prompt = apply_chat_template(tokenizer, inst)
+        return prompt
+
+    elif(tid == "os-oldret-enf"):
+        assert langid == "cs"
+        inst = oldret_kwds.format(lang, langid, "", "", code)
+        prompt = apply_chat_template(tokenizer, inst)
+        suprt = tokenizer.encode("<code>",
+                add_special_tokens=False, return_tensors="pt")
+        return torch.cat((prompt, suprt), 1)
     
     else:   
         assert False, "Incorrect transform id: " + tid
@@ -111,11 +147,11 @@ def extract(tid, rspnse, langid):
         match = re.search(r"<code>(.*?)</code>", rspnse, re.DOTALL)
         return match.group(1) if match else ""
     
-    elif(tid == "one-shot"):
+    elif(tid == "one-shot" or tid == "os-oldret"):
         match = re.search(r"<code>(.*?)</code>", rspnse, re.DOTALL)
         return match.group(1) if match else ""
 
-    elif(tid == "one-shot-enf"):
+    elif(tid == "one-shot-enf" or tid == "os-oldret-enf"):
         match = re.search(r"(.*?)</code>", rspnse, re.DOTALL)
         return match.group(1) if match else ""
 

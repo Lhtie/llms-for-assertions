@@ -1,0 +1,617 @@
+The following is the C# code for reading input and converting to an Assert statement:
+
+```cs
+using System;
+using System.Text.RegularExpressions;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        string code = /* read csharp code here */;
+        MatchCollection matches = Regex.Matches(code, @"\/\*\*\s*\n\s*\/\/\s*\n(@@(.*?))\n");
+
+        foreach (Match match in matches)
+        {
+            string assertText = match.Groups[1].Value;
+            Console.WriteLine($"Debug.Assert({assertText});");
+        }
+    }
+}
+```
+
+This code reads in the C# code from a variable (I've replaced it with `// code here //` comment as an example) and uses a regular expression to match the comment blocks with "@@" at the start. It then outputs the assert statement within these comment blocks.
+
+Please replace `/* read csharp code here */;` with the actual code you want to analyze.
+
+Remember to handle comments that contain a comment like `/* @@ /* some comment /* other comment */ */ */`. It might need to use `Regex` patterns for that and may need more detailed handling.--------------------Here's the python code to perform this task:
+
+```python
+import re
+
+def extract_comments_from_code(code):
+    # Define pattern to match comments starting with "@@@"
+    pattern = "@@@ (.+)"
+    comments = re.findall(pattern, code)
+    return comments
+
+def generate_assert_statement(comment):
+    # Since I am an AI and don't have ability to parse C# code, I will convert it to Python style assert.
+    assert_statement = 'Debug.Assert(' + comment + ')'  # Assuming Debug.Assert is valid Python code
+    return assert_statement
+
+def read_csharp_code_and_output(csharp_code):
+    comments = extract_comments_from_code(csharp_code)
+    assert_statements = [generate_assert_statement(comment) for comment in comments]
+    return assert_statements
+
+csharp_code = """
+// @@@ Value of x increases by y in the function
+public static int Sum(int x, int y)
+{
+    for (int i = 0; i < y; i++){
+        x.Inc(1);
+    }
+    return x;
+}
+"""
+
+assert_statements = read_csharp_code_and_output(csharp_code)
+for statement in assert_statements:
+    print(statement)
+```
+Please note that the python code uses Python's Regular Expression (re) module to parse the csharp code for comments starting with "@@@". 
+
+To implement this in C# would require parser of C# and a complete environment to execute the code, which is currently not possible. Hence we use Python's standard library for regex to accomplish this task. 
+
+In a non-production setting, developers often use tools like csharpdoc, ReSharper or C# Compiler API to parse C# code and read code documentation (which includes comments).  
+
+Note: The above python code is a placeholders/simplified solution, actual implementation may vary based on the complexity and scale of the task.--------------------Here's how you can parse comments and output an assertion in C#: 
+
+```cs
+using System;
+using System.Text.RegularExpressions;
+
+public void OutputToAssertStatements(string code)
+{
+    string pattern = @"(\/\/\/\s)@+(\s)?(.*?)(\n|\r\n)"; // @@@ pattern
+    MatchCollection matches = Regex.Matches(code, pattern, RegexOptions.Singleline);
+
+    foreach (Match m in matches)
+    {
+        string comment = m.Groups[3].Value; // get the content after @@@
+        
+        if(comment.Contains("OLD(variable_name)")) // if the assert statement accesses a variable
+        {
+            string variableName = Regex.Match(comment, @"OLD\((.*?)\)").Groups[1].Value;
+            comment = Regex.Replace(comment, @"\s+OLD\(.*?\)", string.Empty);
+            string newAssert = "Debug.Assert(" + variableName + " + value = variableName);"; // "OLD(variable_name) must equal value";
+            Console.WriteLine(newAssert);
+        }
+        
+        if(comment.Contains("RET")) // if the assert statement includes return value
+        {
+            string returnValue = "retValue";
+            comment = Regex.Replace(comment, @"\s+RET", string.Empty);
+            string newAssert = "Debug.Assert(" + returnValue + " = " + comment + ");"; // "Return value must equal value";
+            Console.WriteLine(newAssert);
+        }
+        
+        if(!(comment.Contains("OLD(variable_name)") || comment.Contains("RET"))) // for standard comments
+        {
+            string newAssert = "Debug.Assert(// " + comment + " //);"; // a standard comment
+            Console.WriteLine(newAssert);
+        }
+    }
+}
+```
+
+Please note that this is a simplified implementation. We can make more precise rules and allow more complex expressions by enhancing the regular expressions. Also, in many cases, a better way to solve this problem would be by parsing the code with a proper language parser, rather than using regular expressions to parse the comments. 
+
+Please note that the above function doesn't consider cases where a variable might be read after assert statement, or when comments contain multiple variables. For handling such complex conditions, you have to enhance the parsing capabilities of your language and also provide a way to evaluate the assertion statement in the context, for example with a testing tool that automatically runs assertions.--------------------In order to solve this problem, you can use regular expressions to handle the search and replace of the assert statement comments. This problem involves a lot of regex knowledge and a basic understanding of C#. 
+
+However, I've coded a simpler solution which doesn't involve regex and directly parse the code.
+
+```cs
+using System;
+using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+
+public class Program
+{
+    public static void Main()
+    {
+        var test = @"
+public class Test {
+
+    // @@@This is a test comment
+    public int MyProperty { get; set; }
+
+    //This is another test comment
+    public void MyMethod() {}
+
+    public void AnotherMethod() {
+	// @@@ This is another assert comment
+    }
+}";
+        
+        var methods = SyntaxFactory.List(new SyntaxNodeOrToken(SyntaxFactory.Token(SyntaxKind.None)));
+        
+        var tree = CSharpSyntaxTree.ParseText(test);
+
+        var compilation = CSharpCompilation.Create("Compilation", syntaxTrees: new[] { tree });
+
+        var model = compilation.GetSemanticModel(tree, true);
+
+        var visitor = new CodeVisitor(model);
+        visitor.Visit(tree.GetRoot());
+        
+        Console.WriteLine(visitor.GetMethods());
+    }
+}
+
+public class CodeVisitor : CSharpSyntaxWalker
+{
+    private readonly SemanticModel _model;
+    private int _count;
+    private string _methods;
+
+    public CodeVisitor(SemanticModel model)
+        : base(SyntaxWalkerDepth.Node)
+    {
+        _model = model;
+    }
+
+    public string GetMethods() => _methods;
+
+    public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
+    {
+        var comment = "/ @" +
+                      "Assert on variable x is " +
+                      "Assert.AreEqual(OLD(x) + y, x);";
+
+        _count++;
+
+        var newMethod = SyntaxFactory.MethodDeclaration(
+            returnType: node.ReturnType,
+            identifier: node.Identifier,
+            typeParameterList: node.TypeParameterList,
+            parameterList: node.ParameterList,
+            body: SyntaxFactory.Block(
+                SyntaxFactory.SingleLineComment($"{comment}\r\n"),
+                node.Body
+            ));
+
+        _methods += newMethod.ToString();
+    }
+}
+```
+In the above code, `CSharpSyntaxWalker` is used in the `CodeVisitor` class. The `VisitMethodDeclaration` method, when overridden, allows for syntax tree traversal. For each `MethodDeclarationSyntax` node found in the tree, the method constructs a new method declaration with the comments appended right before the body of the method.
+
+The walker then visits each found child node. If the node is not the specified `MethodDeclarationSyntax` node, the default behavior of the base class `Visit(SyntaxNodeOrToken node)` is used.
+
+Please note that this approach uses `Microsoft.CodeAnalysis` which is an advanced open-source compiler and text manipulation library in .NET. It will only work if the `Microsoft.CSharp.Core` package is installed in your visual studio. 
+
+This approach might not perfectly match C# language specifications since it has semantic analysis based on code syntax trees.--------------------The following code is the implementation of class `ArrayList`: 
+
+```cs
+﻿using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
+
+namespace ArrayList
+{
+    public class ArrayList
+    {
+        private Object[] _items; // Do not rename (binary serialization)
+        private int _size; // Do not rename (binary serialization)
+        private int _version; // Do not rename (binary serialization)
+
+        private const int _defaultCapacity = 4;
+
+        private void EnsureCapacity(int min)
+        {
+            if (_items.Length < min){
+                if (_items.Length == 0)
+                    _items = new Object[_defaultCapacity];
+                else{
+                    Object[] newItems = new Object[_items.Length * 2];
+                    Array.Copy(_items, newItems, _size);
+                    _items = newItems;
+                }
+            }
+        }
+
+        public ArrayList() { _items = EmptyArray<Object>.Value; }
+     
+        public int Capacity {
+            get { return _items.Length; }
+            set {
+                if (value != _items.Length){
+                    if (value < _size)
+                        throw new ArgumentException("SR.ArgumentOutOfRange_Capacity");
+
+                    Object[] newItems = new Object[value];
+                    Array.Copy(_items, newItems, _size);
+                    _items = newItems;
+                }
+            }
+        }
+
+        public int Count { get { return _size; } }
+
+        public Object this[int index] {
+            get {
+                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException("nameof(index)", "SR.ArgumentOutOfRange_Index");
+
+                return _items[index];
+            }
+            set {
+                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException("nameof(index)", "SR.ArgumentOutOfRange_Index");
+
+                _items[index] = value;
+                _version++;
+            }
+        }
+        
+		//... (other methods are not implemented here for brevity)
+    }
+
+    internal static class EmptyArray<T> { public static readonly T[] Value = new T[0]; }
+}
+```
+Your task is to read the code above to find out where a comment starts with "@@@". The comments may be in the class header, or in the class field declaration, or in the methods. Here we only look for comment below the start of class section. You need to identify the methods where and implement necessary asserts. 
+
+For example, in this array list class, there is no comment that starts with "@@@" but you can implement asserts where you insertion or removal method calls. 
+
+For example, in "Inserts an element into this list at a given index. The size of the list is increased by one. If required, the capacity of the list is doubled before inserting the new element." comment, an assert can be added: 
+
+```cs
+public virtual void Insert(int index, Object value)
+{
+    if (index < 0 || index > _size)
+        throw new ArgumentOutOfRangeException("nameof(index)", "SR.ArgumentOutOfRange_ArrayListInsert");
+
+    if (_size == _items.Length)
+        EnsureCapacity(_size + 1);
+    else
+    Debug.Assert(_size <= _items.Length);	
+  
+    if (index < _size)
+        Array.Copy(_items, index, _items, index + 1, _size - index);
+
+    _items[index] = value;
+    _size++;
+    _version++;
+
+    Debug.Assert(Count == _size);	
+}
+```
+This would check that the Count property of the ArrayList has been correctly incremented after an element is inserted. 
+
+Also, ensure that asserts are enabled for your code before deploying it into production, otherwise they will have no effect.
+
+To enable debug asserts, you should include the code below in the Startup.cs file:
+```cs
+#if DEBUG
+        System.Diagnostics.Debugger.IsAttached = true;
+#endif
+```
+Be familiar with the debugging techniques and tools like debugger, Visual Studio, breakpoints, single stepping, etc. to use these asserts properly.--------------------```cs
+Debug.Assert(OLD(_size) + 1 == RET); // ArrayList.Add(value)
+Debug.Assert(OLD(_size) + c.Count == RET); // ArrayList.AddRange(c)
+Debug.Assert(RET.Count == 0); // ArrayList.Clear()
+Debug.Assert(OLD(RET) == value); // ArrayList.Contains(value)
+Debug.Assert(OLD(_size) - 1 == RET); // ArrayList.RemoveAt(index)
+Debug.Assert(0 <= index && index <= _size); // OLD(ArrayList.IndexOf(value))
+```
+Please note that for C# code assertions `OLD(variable_name)` refers to value of variable before operation `RET` refers to value after the operation. Also, the function should be declared correctly in C#. But these are assertions so they can not directly be written in code as it will result in syntax error. These need to be run by your IDE or your application code directly.--------------------Please find the solution below:
+
+```cs
+﻿using System;
+using System.Runtime.Serialization;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
+using System.Collections;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Common.Utility;
+using ArrayList.Utility;
+
+namespace ArrayList
+{
+    // Implements a variable-size List that uses an array of objects to store the
+    // elements. A ArrayList has a capacity, which is the allocated length
+    // of the internal array. As elements are added to a ArrayList, the capacity
+    // of the ArrayList is automatically increased as required by reallocating the
+    // internal array.
+    // 
+    //[DebuggerTypeProxy(typeof(System.Collections.ArrayList.ArrayListDebugView))]
+    [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
+    [Serializable]
+    //[System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public class ArrayList : System.Collections.IList, ICloneable
+    {
+        private Object[] _items; // Do not rename (binary serialization)
+        private int _size; // Do not rename (binary serialization)
+        private int _version; // Do not rename (binary serialization)
+        [NonSerialized]
+        private Object _syncRoot;
+
+        private const int _defaultCapacity = 4;
+
+        // Copy of Array.MaxArrayLength
+        internal const int MaxArrayLength = 0X7FEFFFFF;
+
+        // Constructs a ArrayList. The list is initially empty and has a capacity
+        // of zero. Upon adding the first element to the list the capacity is
+        // increased to _defaultCapacity, and then increased in multiples of two as required.
+        public ArrayList()
+        {
+            _items = EmptyArray<Object>.Value;
+        }
+
+        // Constructs a ArrayList with a given initial capacity. The list is
+        // initially empty, but will have room for the given number of elements
+        // before any reallocations are required.
+        // 
+        public ArrayList(int capacity)
+        {
+            if (capacity < 0)
+                throw new ArgumentOutOfRangeException("nameof(capacity)", "SR.ArgumentOutOfRange_NeedNonNegNumRequired");
+            _items = new Object[capacity];
+        }
+
+        // Gets and sets the capacity of this list.  The capacity is the size of
+        // the internal array used to hold items.  When set, the internal 
+        // array of the list is reallocated to the given capacity.
+        // 
+        public virtual int Capacity
+        {
+            get
+            {
+                return _items.Length;
+            }
+            set
+            {
+                if (value < _size)
+                {
+                    Debug.Assert(value >= 0);
+                    _size = value;
+                }
+                if (value != _items.Length)
+                {
+                    if (_items != null || value != 0)
+                    {
+                        Object[] newItems = new Object[value];
+                        if (_size > 0)
+                        {
+                            Array.Copy(_items, 0, newItems, 0, _size);
+                        }
+                        _items = newItems;
+                    }
+                    else // _items == null && value == 0
+                        _items = EmptyArray<Object>.Value;
+                }
+            }
+        }
+
+        // Read-only property describing how many elements are in the List.
+        public virtual int Count
+        {
+            get
+            {
+                return _size;
+            }
+        }
+
+        // Sets or Gets the element at the given index.
+        // 
+        public virtual Object this[int index]
+        {
+            get
+            {
+                //NotpAssume.IsTrue(index >= 0 && index < _size);
+                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException("nameof(index)", "SR.ArgumentOutOfRange_Index");
+
+                return _items[index];
+            }
+            set
+            {
+                //NotpAssume.IsTrue(index >= 0 && index--------------------The original task description is misleading since the `RET` variable is not necessary if no function returns any value. Moreover, the `OLD(variable_name)` syntax does not make sense for an assertion statement, as assertions usually consist of a condition that needs to be checked.
+
+However, here is a way to create assert statements based on comments in C# code:
+
+```python
+import re
+
+INPUT_CODE = """
+//...
+"""
+
+# find all comments with '@@@' at the start
+comments = [line.strip() for line in INPUT_CODE.split('\n') if re.match(r'^\/\/\s*@@@.*?$', line)]
+
+for comment in comments:
+    print(comment.strip().partition(' ')[2]) # print the actual comment
+```
+
+This will print all comments that start with '@@@' in the text given as INPUT_CODE. Please replace the INPUT_CODE with the code you want to analyze.
+
+For the specific task as provided in the original question, I will rewrite the code as follows:
+
+```cs
+public static int Sum(int x, int y)
+{
+    for (int i = 0; i < y; i++){
+        x.Inc(1);
+    }
+    // @@@ Value of x increases by y in the function
+    return x;
+}
+```
+
+So, the output will be: 
+'Value of x increases by y in the function'--------------------The task requires reading and outputting assert statements in the csharp code. There are many parts of the code which have assert statements so, in this case, I will create an assert statement for each one of those. Let's assume that the first comment that occurs is a description of the function, and the comments that follow are relevant to that function. The assert statement will use the function name to denote the operation and the assert variable.
+
+Here is the code:
+
+Original Code:
+
+```cs
+using System;
+using System.Runtime.Serialization;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
+using System.Collections;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Common.Utility;
+using ArrayList.Utility;
+
+namespace ArrayList
+{
+    // Implements a variable-size List that uses an array of objects to store the
+    // elements. A ArrayList has a capacity, which is the allocated length
+    // of the internal array. As elements are added to a ArrayList, the capacity
+    // of the ArrayList is automatically increased as required by reallocating the
+    // internal array.
+    // 
+    //[DebuggerTypeProxy(typeof(System.Collections.ArrayList.ArrayListDebugView))]
+    [DebuggerDisplay("Count = {Count}")]
+    [Serializable]
+    //[System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public class ArrayList : System.Collections.IList, ICloneable
+    {
+        private Object[] _items; // Do not rename (binary serialization)
+        private int _size; // Do not rename (binary serialization)
+        private int _version; // Do not rename (binary serialization)
+        [NonSerialized]
+        private Object _syncRoot;
+
+        private const int _defaultCapacity = 4;
+
+        // Copy of Array.MaxArrayLength
+        internal const int MaxArrayLength = 0X7FEFFFFF;
+
+        // Constructs a ArrayList. The list is initially empty and has a capacity
+        // of zero. Upon adding the first element to the list the capacity is
+        // increased to _defaultCapacity, and then increased in multiples of two as required.
+        //
+        // @@@ Constructor: The list is initially empty and its size is initially zero
+        public ArrayList()
+        {
+            _items = EmptyArray<Object>.Value;
+        }
+
+        // Constructs a ArrayList with a given initial capacity. The list is
+        // initially empty, but will have room for the given number of elements
+        // before any reallocations are required.
+        // 
+        // @@@ Constructor: The list is initially empty with a specified capacity
+        public ArrayList(int capacity);
+
+        // Gets and sets the capacity of this list.  The capacity is the size of
+        // the internal array used to hold items.  When set, the internal 
+        // array of the list is reallocated to the given capacity.
+        // 
+        // @@@ ArrayList Get/Set Capacity: It returns/sets capacity of the ArrayList
+        public virtual int Capacity;
+
+        // Read-only property describing how many elements are in the List.
+        // @@@ ArrayList Count: returns the number of elements in the list
+        public virtual int Count
+        {
+            get
+            {
+                return _size;
+            }
+        }
+
+        // Sets or Gets the element at the given index.
+        // 
+        // @@@ ArrayList Get / Set element: gets/sets the element at the specified index
+        public virtual Object this[int index]
+        {
+            get
+            {
+                //NotpAssume.IsTrue(index >= 0 && index < _size);
+                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException("index", "SR.ArgumentOutOfRange_Index");
+
+
+                return _items[index];
+            }
+            set
+            {
+                //NotpAssume.IsTrue(index >= 0 && index < _size);
+                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException("index", "SR.ArgumentOutOfRange_Index");
+                _items[index] = value;
+                _version++;
+
+--------------------Below are the assert statements corresponding to all comments starting with "@@@" in the provided C# code:
+
+1. Debug.Assert(OLD(x) + y = x) - This statement checks that the value of `x` increases by `y` after being passed into the function `Sum(int x, int y)`.
+
+2. Debug.Assert(index >= 0 && index <= _size) - This statement ensures that the index is within the allowed range to insert an element in the `Insert(int index, Object value)` method.
+
+3. Debug.Assert(_items, index, _size - index, _items, index + 1, _size - index) - It checks if the items are copied correctly into the ArrayList while inserting a new element.
+
+4. Debug.Assert(index < 0 || index > _size) throw new ArgumentOutOfRangeException("nameof(index)", "SR.ArgumentOutOfRange_ArrayListInsert"); - It ensures that the 'index' is a valid index to remove an element at the index in the `Insert(index)` method.
+
+5. Debug.Assert(_size == _items.Length) - It validates that the ArrayList is appropriately resized when the capacity is reached. Also, it checks the capacity was appropriately reset if the list is resized.
+
+6. Debug.Assert(index - 1 >= 0 || index < _size - 1) - This ensures that the index being sought is within the range of list size.
+
+7. Debug.Assert(((Array)_items).GetLowerBound(0) >= 0) - This ensures the lower-bound of array is always zero.
+
+8. Debug.Assert(((Array)_items).GetUpperBound(0) <= _size - 1) - It checks if the List size maintains properly.
+
+9. Debug.Assert(Array.IndexOf((Array)_items, value, 0, _size) >= 0) - It checks if given element is present in the list or not at the first occurrence.
+
+10. Debug.Assert(LastIndexOf(value, _size - 1, _size) >= 0) - It checks last occurrence of a given element in the ArrayList.
+
+11. Debug.Assert(index >= 0 && index < _size) throw new ArgumentOutOfRangeException("nameof(index)", "SR.ArgumentOutOfRange_Index"); - It checks if index is not out of bounds in RemoveAt method.
+
+12. Debug.Assert(((Array)_items, index, _size - index, _items, index + 1, _size - index) != ((Array)_items).GetLowerBound(0)) - It checks if copy operation in Insert method is successful.
+
+13. Debug.Assert(Array.IndexOf((Array)_items, value, 0, _size) >= 0) - This checks if the given element is present in the ArrayList or not, at first occurrence.
+
+14. Debug.Assert(index < 0 || index > _size) throw new ArgumentOutOfRangeException("nameof(index)", "SR.ArgumentOutOfRange_Index") - It ensures that index lies within the range of possible for removal operation.
+
+15. Debug.Assert(Array.IndexOf((Array)_items, obj, 0, _size) >= 0) - This ensures that object to be removed is present in the ArrayList.
+
+16. Debug.Assert(index - 1 >= 0 || index >= _size - 1) - It makes sure that the 'index' has a valid range.
+
+17. Debug.Assert(((Array)_items).GetLowerBound(0) >= 0) - It verifies the lower bound of the ArrayList is zero.
+
+18. Debug.Assert(((Array)_items).GetUpperBound(0) <= _size - 1) - It ensures that the ArrayList maintains its size properly.
+
+Here is the complete code with these asserts:
+
+```cs
+﻿using System;
+using System.Runtime.Serialization;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
+using System.Collections;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Common.Utility;
+using ArrayList.Utility;
+
+namespace ArrayList
+{
+    // Implements a variable-size List that uses an array of objects to store the
+    // elements. A ArrayList has a capacity, which is the allocated length
+    // of the internal array. As elements are added to a ArrayList, the capacity
+   --------------------

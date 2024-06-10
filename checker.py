@@ -36,7 +36,7 @@ def compile_check(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
 
         # code = "\n".join([pfx, asrt, sfx]) # simple
         
-        fname = "/home/aman14/tmp/_compile_check." + langid
+        fname = "/home/aman14/code/tmp/_compile_check." + langid
         fd = open(fname, "w")
         fd.write(code)
         fd.close()
@@ -65,12 +65,59 @@ def fuzz_check(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
         fuzz.append(True)
     return fuzz
 
+def z3_check(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
+    z3 = []
+    for i, asrt in enumerate(gen_asrts):
+        if not mask[i]:
+            z3.append(False)
+            continue
+
+        if(langid == "py"):
+            result = True
+
+        elif(langid == "cs"):
+            f_true, f_test = [
+                    re.match(r".*Assert[(](.*)[)]\s*;.*", x.strip()) for x in [grnd_truth, asrt]]
+            assert f_true, "Ground truth assertion not in the required format"
+            if f_test == None:
+                z3.append(False)
+                continue
+            f_true, f_test = f_true.group(1), f_test.group(1)
+            print(pfx)
+                    
+            fvars = (f_true + " " + f_test).translate({ord(c): " " for c in "()!|&=;><-+0123456789"})
+            decls = "\n".join(
+                    [f"{var} = Int('{var}')" for var in set(filter(lambda x : x, [y.strip() for y in fvars.split(" ")]))])
+            f_true, f_test = [x for x in [f_true, f_test]]
+            
+            code = "from z3 import *\n" + decls + f"\nf = (({f_true}) == ({f_test}))\n" + \
+                    "s = Solver()\ns.add(Not(f))\nif s.check() == unsat: exit(42)\nelse: exit(142)"
+            fname = "/home/aman14/code/tmp/_z3_check.py"
+            fd = open(fname, "w")
+            fd.write(code)
+            fd.close()
+
+            #print(f"(({f_true}) == ({f_test}))")
+
+            proc = subprocess.run(["python3", fname])
+            #assert proc.returncode == 42 or proc.returncode == 142, f"returned {proc.returncode}"
+            result = proc.returncode == 42
+        else: 
+            assert False, "Incorrect language id: " + langid
+
+        z3.append(result)
+    return z3
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--codedir", type=str, default="./codes")
     parser.add_argument("--codelist", nargs='+', default=[])
     parser.add_argument("--resultlist", nargs='+', default=["./results/*/*/"])
     args = parser.parse_args()
+
+    succs, tries = 0, 0
+    solvedps, totalps = 0, 0
+
 
     for glob_fmt in args.resultlist:
         for rdir in glob.glob(glob_fmt):
@@ -101,9 +148,17 @@ if __name__ == "__main__":
                 pfx, sfx = "\n".join(lines[:asrtlno]), "\n".join(lines[asrtlno+1:])
 
                 nullity = null_check(langid, pfx, sfx, grnd_truth, gen_asrts, [True]*len(gen_asrts))
-                cmple = compile_check(langid, pfx, sfx, grnd_truth, gen_asrts, nullity)
-                fuzz = fuzz_check(langid, pfx, sfx, grnd_truth, gen_asrts, cmple)
+                z3 = z3_check(langid, pfx, sfx, grnd_truth, gen_asrts, nullity)
+                #cmple = compile_check(langid, pfx, sfx, grnd_truth, gen_asrts, nullity)
+                #fuzz = fuzz_check(langid, pfx, sfx, grnd_truth, gen_asrts, cmple)
+                final = z3
 
-                print("#"*10, rdir + f + ".fuzzcheck", "#"*10)
-                print(fuzz, f"{sum(fuzz)}/{len(fuzz)}")
+                print("#"*10, rdir + f + ".check", "#"*10)
+                print(final, f"{sum(final)}/{len(final)}")
                 print("#"*20)
+
+                succs, tries = succs + sum(final), tries + len(final)
+                solvedps, totalps = solvedps + (sum(final) > 0), totalps + 1 
+    
+    print(f"Successful tries / Total tries = {succs}/{tries}")
+    print(f"Solved problems / Total problems = {solvedps}/{totalps}")
