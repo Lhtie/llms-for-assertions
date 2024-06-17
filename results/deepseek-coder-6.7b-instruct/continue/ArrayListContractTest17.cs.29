@@ -1,0 +1,945 @@
+	    // Pex: Pex should consider this a precondition and should fail with an appropriate message.
+            System.Diagnostics.Debug.Assert(Old_arrListLastIndexOfX <= arrList.IndexOf(x));
+
+
+        }
+
+        [PexMethod]
+        public void PUT_InsertContract([PexAssumeUnderTest]ArrayList arrList, int index, int x)
+        {
+            AssumePrecondition.IsTrue(index <= arrList.Count);
+
+            arrList.Insert(index, x); 
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndexOfX = arrList.IndexOf(x);
+            int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", arrList.Count);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$index", index);
+            PexObserve.ValueForViewing("$old_arrList_x", x);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_x", New_arrListIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_LastIndexOf_x", New_arrListLastIndexOfX);
+
+
+        }
+    }
+}
+
+//2-C-and-OOP-exercises/3-testing/ArrayList.Test/ArrayListTest.cs
+namespace ArrayList.Test
+{
+    using NUnit.Framework;
+    using System;
+    using ArrayList;
+
+    [TestFixture]
+    public class ArrayListTest
+    {
+        private ArrayList list;
+
+        [SetUp]
+        public void Initialize()
+        {
+            this.list = new ArrayList();
+        }
+
+        [Test]
+        public void Add_AddsElement_CountIsUpdated()
+        {
+            this.list.Add(0);
+            Assert.AreEqual(1, this.list.Count);
+        }
+
+        [Test]
+        public void Add_AddsElement_ElementIsAddedInTheEnd()
+        {
+            this.list.Add(0);
+            Assert.AreEqual(0, this.list[0]);
+        }
+
+        [Test]
+        public void Remove_RemovesElement_CountIsUpdated()
+        {
+            this.list.Add(0);
+            this.list.Remove(0);
+            Assert.AreEqual(0, this.list.Count);
+        }
+
+        [Test]
+        public void Remove_RemovesElement_ElementIsRemoved()
+        {
+            this.list.Add(0);
+            this.list.Remove(0);
+            Assert.AreEqual(0, this.list.Count);
+        }
+
+        [Test]
+        public void Insert_InsertsElement_CountIsUpdated()
+        {
+            this.list.Insert(0, 0);
+            Assert.AreEqual(1, this.list.Count);
+        }
+
+        [Test]
+        public void Insert_InsertsElement_ElementIsAddedInCorrectPosition()
+        {
+            this.list.Insert(0, 0);
+            Assert.AreEqual(0, this.list[0]);
+        }
+
+        [Test]
+        public void IndexOf_SearchesElement_ReturnsCorrectIndex()
+        {
+            this.list.Add(0);
+            this.list.Add(1);
+            Assert.AreEqual(0, this.list.IndexOf(0));
+            Assert.AreEqual(1, this.list.IndexOf(1));
+        }
+
+        [Test]
+        public void Contains_SearchesElement_ReturnsTrue()
+        {
+            this.list.Add(0);
+            Assert.IsTrue(this.list.Contains(0));
+        }
+
+        [Test]
+        public void Contains_SearchesMissingElement_ReturnsFalse()
+        {
+            Assert.IsFalse(this.list.Contains(0));
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
+        public void IndexOf_SearchesMissingElement_ThrowsException()
+        {
+            this.list.IndexOf(0);
+        }
+
+--------------------        }
+    }
+}
+
+
+A: The contracts are meant to check that the correctness of the function you are testing. So the contract for ArrayList.Add(T item) includes that the function should return a new Count of the list after the add, so that it can be used for adding an element to the list and checking if its count has been increased.
+Similarly, for ArrayList.Remove(T item), the contract expects that it removes the specified item from the list and also checks the list's count after the removal.
+For your test case, you should create a new ArrayList, add an item and check the returned count, then remove the item and check the count again.
+So your test cases should look like this:
+[PexMethod]
+public void PUT_AddContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{        
+    // Assume the input
+
+    // Get the old list count
+    int oldCount = arrList.Count;
+
+    // Call the function under test
+    arrList.Add(x);
+
+    // Get the new list count
+    int newCount = arrList.Count;
+
+    // Assert that the count has increased by 1
+    Assert.AreEqual(oldCount + 1, newCount);
+}
+
+[PexMethod]
+public void PUT_RemoveContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{        
+    // Assume the input
+
+    // Call the function under test
+    arrList.Remove(x);
+
+    // Assert that the item was removed
+    Assert.IsFalse(arrList.Contains(x));
+}
+
+You can use a data miner to find items that are added or removed from the list. It can be set up to filter by method names and parameter types. In this case, the method names are Add and Remove, and the parameter types are the same as the generic type parameter T for lists.
+
+A: Nunit already offers assertions to check list counts. Using PexObserve to keep track of the values and Assert.AreEqual to compare them, as suggested in other answers, should be a valid approach. Alternatively, you can directly assert the count property of the ArrayList in your tests after the invocation of the methods you are testing. Check the example below:
+[PexMethod]
+public void PUT_AddContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{   
+    AssumePrecondition.IsTrue(true);
+
+    int oldCount = arrList.Count;
+    arrList.Add(x);
+    Assert.AreEqual(oldCount + 1, arrList.Count);
+}
+
+[PexMethod]
+public void PUT_RemoveContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{   
+    AssumePrecondition.IsTrue(true);
+    
+    arrList.Remove(x);
+    Assert.AreEqual(arrList.Count - 1, arrList.Count);
+}
+
+Finally, as a side note, in .NET it is recommended to use List<T> over ArrayList whenever possible because ArrayList is obsolete and does not offer some of the features and performance benefits found in List<T>. Therefore, in .NET core/.NET Standard, if you start coding, prefer List<T>.
+Q: How to disable the specific error in log file by code in Perl? I know how to use a warning filter in Perl, but it seems to be not applicable in my case.
+Let's say below code is in my module and it generates warnings "indirect stringyfing attempt" in one of the subroutine. 
+sub mySub {
+    my $fileHandlerForLog = shift;
+    if ($fileHandlerForLog) {
+        warn "This might generate warning 'indirect stringyfing attempt':\n$fileHandlerForLog";
+    }
+}
+
+What are my options to suppress this warning?
+
+
+*
+
+*Suppress globally: I know how to globally suppress warnings, but I don't want to disable them altogether. 
+
+*Suppress in a specific place: I know I can use the local keyword to suppress warnings in a specific scope. But please note I cannot change the original logic. 
+
+*Suppress with code: Is there a way to disable this warning in this line only by code itself? As far as I know, Perl does not provide a built-in mechanism to ignore specific warning messages. 
+
+
+A: Warnings can be suppressed with local $SIG{__WARN__} = sub { '' }; or local $SIG{--------------------	    PexAssume.IsTrue(Old_arrListLastIndexOfX >= New_arrListLastIndexOfX);
+
+	    // an assertion that @@@ the count of old array is one more than new array count.
+	    PexAssume.IsTrue(Old_arrListCount == New_arrListCount + 1);
+        }
+    }
+}
+
+
+# annotations on tests
+
+- The Add method should be able to add any integer value to an ArrayList and should return the index of newly added item. Therefore, I observed the new count, index of new item, the last index of new item and whether new item is present.
+  
+- The Remove method should be able to remove any integer value from Arraylist and should not return any integer as it is done in .NET Framework implementation. Therefore, I observed the new count, index of old item, the last index of old item and whether old item is present. Also, in the assumption, the assumption is that the count of old array should be one more than the new array count, because one object is removed from the old array.
+  Also, the assumption is that the last position of x in the old array should not be less than the new array's last position of x. This means the last position of x in old array is either same or greater than existing last position of x in new array, it indicates that the object has been removed from array.
+```
+
+# Codelyzer: a Roslyn-based code syntax analyzer for TypeScript
+
+Codelyzer is a static code analysis tool for TypeScript, written in C# using Microsoft's [Roslyn](https://github.com/dotnet/roslyn). The tool analyses TypeScript code, providing insightful code-flow warnings and potential issues.
+
+## Usage
+
+To use Codelyzer, first install the latest version via npm:
+
+```bash
+npm install -g typescript-tslint-codelyzer
+```
+
+Then run codelyzer on your TypeScript files:
+
+```bash
+tsc --project your-project --noImplicityAny
+nodenpm run codelyzer your-file.ts
+```
+
+This will execute codelyzer against `your-file.ts`, and report any issues or warnings found.
+
+## Rules
+
+Codelyzer implements a set of rules, which are grouped around various areas of interest for TypeScript development, like best practices, type safety, and code complexity:
+
+* [`ban-comma-operator`](docs/rules/ban-comma-operator.md): Disallows use of the comma operator.
+* [`ban-non-literal-enum-member-reference`](docs/rules/ban-non-literal-enum-member-reference.md): Disallow non-literal enum member reference.
+* [`ban-types`](docs/rules/ban-types.md): Disallows use of specific types.
+* [`explicit-member-access`](docs/rules/explicit-member-access.md): Enforces explicit member access for class methods and properties.
+* [`no-any`](docs/rules/no-any.md): Disallows use of `any` type.
+* [`no-empty`](docs/rules/no-empty.md): Disallows empty blocks and statements.
+* [`no-empty-interface`](docs/rules/no-empty-interface.md): Disallows empty interfaces.
+* [`no-floating-promises`](docs/rules/no-floating-promises.md): Disallows promises that are not awaited.
+* [`no-inferrable-types`](docs/rules/no-inferrable-types.md): Disallows inferrable types.
+* [`no-invalid-this`](docs/rules/no-invalid-this.md): Disallows usage of `this` in locations where TypeScript is expecting a type.
+* [`no-misused-new`](docs/rules/no-misused-new.md): Disallows situations where `new` is misused.
+* [`no-non-null-assertion`](docs/rules/no-non-null-assertion.md): Disallows usage of the non-null assertion operator.
+* [`no-unused-variable`](docs/rules/no-unused-variable.md): Disallows unused variables.
+* [`prefer-const`](docs/rules/prefer-const.md): Enforces the use of `const`--------------------	    //
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ the last position of x in new array is greater than or equal to all the positions of x in old array
+
+	    // an assertion using an "Error\(.*?\);" statement of the form "Error\(.*?\); " 
+
+        }
+    }
+}using System;
+using System.Reflection;
+using System.Threading.Tasks;
+using Discord;
+using Discord.Commands;
+using Discord.WebSocket;
+
+namespace DiscordBot
+{
+    public class Program
+    {
+        private DiscordSocketClient _client;
+        private CommandService _commands;
+        private IServiceProvider _services;
+
+        static void Main(string[] args)
+            => new Program().MainAsync().GetAwaiter().GetResult();
+
+        public async Task MainAsync()
+        {
+            _client = new DiscordSocketClient(new DiscordSocketConfig
+            {
+                LogLevel = LogSeverity.Verbose
+            });
+
+            _commands = new CommandService(new CommandServiceConfig
+            {
+                LogLevel = LogSeverity.Verbose
+            });
+
+            _services = new ServiceCollection()
+                .AddSingleton(_client)
+                .AddSingleton(_commands)
+                .BuildServiceProvider();
+
+            _client.Log += Log;
+
+            await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
+
+            _client.MessageReceived += HandleCommandAsync;
+
+            await _client.LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable("TOKEN"));
+            await _client.StartAsync();
+
+            await Task.Delay(-1);
+        }
+
+        public async Task HandleCommandAsync(SocketMessage messageParam)
+        {
+            var message = messageParam as SocketUserMessage;
+            if (message == null || message.Author.Id == _client.CurrentUser.Id) return;
+
+            int argPos = 0;
+            if (!(message.HasCharPrefix('~', ref argPos) ||
+                message.HasMentionPrefix(_client.CurrentUser, ref argPos))) return;
+
+            var context = new SocketCommandContext(_client, message);
+            var result = await _commands.ExecuteAsync(context, argPos, _services);
+
+            if (!result.IsSuccess)
+                await context.Channel.SendMessageAsync(result.ErrorReason);
+        }
+
+        public Task Log(LogMessage msg)
+        {
+            Console.WriteLine(msg.ToString());
+            return Task.CompletedTask;
+        }
+    }
+}using System.Threading.Tasks;
+using Discord.Commands;
+
+namespace DiscordBot.Modules
+{
+    public class PublicModule : ModuleBase<SocketCommandContext>
+    {
+        [Command("echo")]
+        [Summary("Echoes a message.")]
+        public async Task EchoAsync([Remainder] [Summary("The text to echo.")] string echo)
+        {
+            await ReplyAsync(echo);
+        }
+    }
+}using System.Threading.Tasks;
+using Discord;
+using Discord.Commands;
+using Discord.WebSocket;
+
+namespace DiscordBot.Modules
+{
+    public class AdminModule : ModuleBase<SocketCommandContext>
+    {
+        [Command("kick")]
+        [Summary("Kicks a user.")]
+        [RequireUserPermission(GuildPermission.KickMembers)]
+        public async Task KickAsync([Summary("The user to kick.")] SocketGuildUser user)
+        {
+            await ReplyAsync($"Kicking {user.Username}.");
+            await user.KickAsync();
+        }
+
+        [Command("ban")]
+        [Summary("Bans a user.")]
+        [RequireUserPermission(GuildPermission.BanMembers)]
+        public async Task BanAsync([Summary("The user to ban.")] SocketGuildUser user)
+        {
+            await ReplyAsync($"Banning {user.Username}.");
+            await user.Guild.AddBanAsync(user);
+        }
+    }
+}//API/Dtos/UserDto.cs
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+--------------------		// is added by a consumer
+        }
+
+    }
+}
+
+
+
+
+/*
+private int[] items;                 // 요소를 저장하는 배열.
+    private int count;                 // 요소의 수 (배열의 '쓰기 포인터').
+
+    public ArrayList()
+    {
+        items = new int[4];            // 크기가 4인 새로운 배열을 생성.
+    }
+
+    public void Add(int item)
+    {
+        if (count == items.Length)
+        {
+            // 배열이 꽉 찼으므로 새로운 배열을 만들고 데이터를 옮기기.
+            int[] newItems = new int[count * 2];
+            for (int i = 0; i < count; i++)
+            {
+                newItems[i] = items[i];
+            }
+            items = newItems;
+        }
+
+        items[count] = item;
+        count++;
+    }
+
+    public void Remove(int item)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            if (items[i] == item)
+            {
+                // '지워야 할 항목'을 제외하고, 배열의 뒷부분을 앞으로 이동.
+                for (int j = i; j < count - 1; j++)
+                {
+                    items[j] = items[j + 1];
+                }
+
+                count--;
+                return;
+            }
+        }
+    }
+*/
+
+//Microservice/CQRSSample/CQRSSample/CommandStack/Commands/CreateNoteCommand.cs
+﻿using CQRSSample.CommandStack.Handlers;
+using CQRSSample.CommandStack.Model;
+using NServiceBus;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+
+namespace CQRSSample.CommandStack.Commands
+{
+    public class CreateNoteCommand : ICommand
+    {
+        public string Title { get; set; }
+
+        public string Content { get; set; }
+
+        public DateTime Date { get; set; }
+
+        public Note ToNote()
+        {
+            return new Note(Guid.NewGuid(), Title, Content, Date);
+        }
+    }
+}
+
+//Microservice/CQRSSample/CQRSSample/CommandStack/Commands/UpdateNoteCommand.cs
+﻿using CQRSSample.CommandStack.Handlers;
+using NServiceBus;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+
+namespace CQRSSample.CommandStack.Commands
+{
+    public class UpdateNoteCommand : ICommand
+    {
+        public Guid Id { get; set; }
+
+        public string Title { get; set; }
+
+        public string Content { get; set; }
+
+        public DateTime Date { get; set; }
+    }
+}
+
+//Microservice/CQRSSample/CQRSSample/CommandStack/EventHandlers/NoteCreatedEventHandler.cs
+﻿using CQRSSample.CommandStack.Events;
+using CQRSSample.CommandStack.Model;
+using NServiceBus;
+using NServiceBus.Logging;
+using System;
+using System.Collections.Generic;
+--------------------	    Assert.IsTrue(Old_arrListIndexOfX <= Old_arrListLastIndexOfX);
+
+        }
+    }
+}// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace PexData
+{
+    using Microsoft.Pex.Framework;
+    using Microsoft.Pex.Framework.CodePropagation;
+    using Microsoft.Pex.Framework.Collections.Generic;
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using Microsoft.Pex.Framework.Intrinsics;
+
+    [PexCustomCollection]
+    [PexGenericType(typeof(TestClass<,>))]
+    public abstract class TestClass<S, T> : ICollection, IEnumerable<T>, IList<T>, IReadOnlyList<T> // other interfaces...
+    {
+        // Collection implementation...
+    }
+
+    public class PexDataTest
+    {
+        [PexMethod]
+        public void PexTestMethod1(
+            [PexCustomCollection] TestClass<String, int> tc0, 
+            [PexCustomCollection] TestClass<String, int> tc1)
+        {
+            Assume(tc0.Count == tc1.Count);
+            Assume(tc0 != tc1);
+
+            tc0.Add("TestElement", 1);
+            tc1.Add("TestElement", 2);
+ 
+            bool result = tc0 == tc1; // This line causes trouble. 
+
+            Assert.IsFalse(result);
+        }
+    }
+}﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace GenericsTest
+{
+    using System;
+    using Pex.Framework;
+    using Microsoft.Pex.Framework.Collections;
+
+    public class PexGenericTests
+    {
+        [PexMethod]
+        public void DictionaryTest1<TKey, TValue>(
+            [PexGenericType("typeof(System.Collections.Generic.Dictionary<,>)")] Type genericType,
+            TKey key, 
+            TValue value)
+        {
+            Type dictionaryType = genericType.MakeGenericType(typeof(TKey), typeof(TValue));
+            var dictionary = (IDictionary<TKey, TValue>)Activator.CreateInstance(dictionaryType);
+            dictionary.Add(key, value);
+            TValue outValue = dictionary[key];
+            // Here `value' must be the same as `outValue'
+            object[] args = new object[] { key, value };
+            Assume.True(outValue.Equals(value));
+        }
+    }
+}// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace System.Collections.Generic
+{
+    using Microsoft.Pex.Framework.Validation;
+
+    public class PexEqualityComparer<T> : IEqualityComparer<T>
+    {
+        public bool Equals(T x, T y)
+        {
+            // Implement your logic here.
+            throw new NotImplementedException();
+        }
+
+        public int GetHashCode(T obj)
+        {
+            // Implement your logic here.
+            throw new NotImplementedException();
+        }
+    }
+}// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+// Note: The code in this file is very simple. It is included here to satisfy the NuGet requirements.
+namespace System.Runtime.CompilerServices
+{
+    [AttributeUsage(AttributeTargets.Assembly|AttributeTargets.Class|AttributeTargets.Method)]
+    public sealed class ExtensionAttribute : Attribute
+    {
+    }
+}//Data/Dtos/UpdateCartDto.cs
+using System.ComponentModel.DataAnnotations;
+
+namespace ECommerce.Data.Dtos
+{
+    public class UpdateCartDto
+    {
+        [Required]
+        public int ProductId { get; set; }
+
+        [Required]
+        [Range(--------------------            Fail("Implement your assertion logic here");
+        }
+
+        [PexMethod]
+        public void PUT_RemoveAtContract([PexAssumeUnderTest]ArrayList arrList, int index)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_index = index;
+            int Old_IndexofIndex = arrList.IndexOf(index);
+            bool Old_arrListContainsX = arrList.Contains(arrList[index]);
+            int Old_arrListLastIndexOfX = arrList.LastIndexOf(arrList[index]);
+
+            arrList.RemoveAt(index);
+
+            int New_arrListCount = arrList.Count;
+            int New_IndexofIndex = arrList.IndexOf(index);
+            bool New_arrListContainsX = arrList.Contains(arrList[index]);
+            int New_arrListLastIndexOfX = arrList.LastIndexOf(arrList[index]);
+            int Old_arrListx = arrList[index];
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_index", Old_index);
+            PexObserve.ValueForViewing("$old_arrList_IndexOf_index", Old_IndexofIndex);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_index", New_IndexofIndex);
+            PexObserve.ValueForViewing("$old_arrList_contains_x", Old_arrListContainsX);
+            PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContainsX);
+            PexObserve.ValueForViewing("$old_arrList_LastIndexOf_x", Old_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_LastIndexOf_x", New_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$old_arrListx", Old_arrListx);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ the last position of x in old array is greater than or equal to some position of x in the same array
+            Fail("Implement your assertion logic here");
+        }
+
+        [PexMethod]
+        public void PUT_InertContract([PexAssumeUnderTest]ArrayList arrList, int index, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_index = index;
+            int Old_x = x;
+            int Old_IndexofIndex = arrList.IndexOf(index);
+            int Old_IndexofX = arrList.IndexOf(x);
+            bool Old_arrListContainsX = arrList.Contains(x);
+
+            arrList.Insert(index, x);
+
+            int New_arrListCount = arrList.Count;
+            int New_IndexofIndex = arrList.IndexOf(index);
+            int New_IndexofX = arrList.IndexOf(x);
+            bool New_arrListContainsX = arrList.Contains(x);
+            int New_arrListx = arrList[index];
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_index", Old_index);
+            PexObserve.ValueForViewing("$old_x", Old_x);
+            PexObserve.ValueForViewing("$old_arrList_IndexOf_index", Old_IndexofIndex);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_index", New_IndexofIndex);
+            PexObserve.ValueForViewing("$old_arrList_IndexOf_x", Old_IndexofX);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_x", New_IndexofX);
+            P--------------------            Assert.IsTrue(Old_arrListLastIndexOfX >= Old_arrListCount- New_arrListCount);
+        }
+
+        [PexMethod]
+        public void PUT_InsertContract([PexAssumeUnderTest]ArrayList arrList, int index, int x)
+        {
+            AssumePrecondition.IsTrue(index <= arrList.Count && index >= 0);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_arrListIndexOfX = arrList.IndexOf(x);
+            int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+            bool Old_arrListContainsX = arrList.Contains(x);
+
+            arrList.Insert(index, x);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndexOfX = arrList.IndexOf(x);
+            int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+            bool New_arrListContainsX = arrList.Contains(x);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_IndexOf_x", Old_arrListIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_x", New_arrListIndexOfX);
+            PexObserve.ValueForViewing("$old_arrList_LastIndexOf_x", Old_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_LastIndexOf_x", New_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$old_arrList_contains_x", Old_arrListContainsX);
+            PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContainsX);
+
+            // an assertion using "Debug.Assert\(.*?\);" that the position of x in the new array is the same after insert as in the old array
+            Assert.IsTrue(New_arrListIndexOfX == Old_arrListIndexOfX);
+        }
+
+        [PexMethod]
+        public void PUT_RemoveAtContract([PexAssumeUnderTest]ArrayList arrList, int index)
+        {
+            AssumePrecondition.IsTrue(index <= arrList.Count-1 && index >= 0);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_arrListIndexOfIndex = arrList.IndexOf(index);
+            int Old_arrListLastIndexOfIndex = arrList.LastIndexOf(index);
+            int Old_arrListCapacity = arrList.Capacity;
+     
+            arrList.RemoveAt(index);
+            
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndexOfIndex = arrList.IndexOf(index);
+            int New_arrListLastIndexOfIndex = arrList.LastIndexOf(index);
+            int New_arrListCapacity = arrList.Capacity;
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_IndexOf_index", Old_arrListIndexOfIndex);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_index", New_arrListIndexOfIndex);
+            PexObserve.ValueForViewing("$old_arrList_LastIndexOf_index", Old_arrListLastIndexOfIndex);
+            PexObserve.ValueForViewing("$new_arrList_LastIndexOf_index", New_arrListLastIndexOfIndex);
+            PexObserve.ValueForViewing("$old_arrList_Capacity", Old_arrListCapacity);
+            PexObserve.ValueForViewing("$new_arrList_Capacity", New_arrListCapacity);
+
+            // an assertion using "Debug.Assert\(.*?\);" that  @@@ the last position of index in old array--------------------        }
+    }
+
+}
+
+//Source/PexAPIWrapper/Test/ArrayList/Test.cs
+﻿using System;
+using ArrayList;
+using NUnit.Framework;
+using PexAPIWrapper;
+
+namespace ArrayList.Tests
+{
+    [TestFixture]
+    public class ArrayListTest
+    {
+        ArrayList al;
+      
+        [SetUp]
+        public void Initialize()
+        {
+            al = new ArrayList();
+        }
+
+        #region Add method Unit Tests
+
+        [Test]
+        public void Add_EmptyList_Test()
+        {
+            AssertEmptyList(al);
+            Assert.AreEqual(0, al.Count);
+
+            al.Add(1);
+
+            Assert.AreEqual(1, al.Count);
+            Assert.AreEqual(1, al[0]);
+        }
+
+        [Test]
+        public void Add_ExistingList_Test()
+        {
+            al.Add(1);
+            Assert.AreEqual(1, al.Count);
+
+            al.Add(2);
+            Assert.AreEqual(2, al.Count);
+            Assert.AreEqual(2, al[1]);
+        }
+
+        [Test]
+        public void Add_OverCapacity_Test()
+        {
+            for (int i = 0; i < ArrayList.INITIAL_CAPACITY + 10; i++)
+                al.Add(i);
+
+            Assert.AreEqual(ArrayList.INITIAL_CAPACITY + 10, al.Count);
+        }
+
+        #endregion
+
+        #region Remove method Unit Tests
+
+        [Test]
+        public void Remove_ItemInList_Test()
+        {
+            int removedValue = 1;
+
+            al.Add(removedValue);
+            al.Add(2);
+            Assert.AreEqual(2, al.Count);
+
+            al.Remove(removedValue);
+            Assert.AreEqual(1, al.Count);
+            Assert.AreEqual(2, al[0]);
+        }
+
+        [Test]
+        public void Remove_ItemNotInList_Test()
+        {
+            int valueToRemove = 1;
+
+            al.Add(0);
+            al.Add(2);
+            Assert.AreEqual(2, al.Count);
+
+            // The remove operation should return false.
+            Assert.IsFalse(al.Remove(valueToRemove));
+            Assert.AreEqual(2, al.Count);
+
+            Assert.AreEqual(0, al[0]);
+            Assert.AreEqual(2, al[1]);
+        }
+
+        [Test]
+        public void Remove_AllItemsInList_Test()
+        {
+            al.Add(0);
+            al.Add(1);
+            Assert.AreEqual(2, al.Count);
+
+            al.Remove(0);
+            Assert.AreEqual(1, al.Count);
+
+            al.Remove(1);
+            AssertEmptyList(al);
+        }
+
+        #endregion
+
+        private void AssertEmptyList(ArrayList al)
+        {
+            Assert.AreEqual(0, al.Count);
+            Assert.AreEqual(0, al.Capacity);
+        }
+    }
+}
+
+//Source/PexAPIWrapper/Test/MyArrayList.test.cs
+﻿using System;
+using System.Text;
+using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Settings;
+using Microsoft.Pex.Framework.Exceptions;
+
+using NUnit.Framework;
+using ArrayList;
+using PexAPIWrapper;
+
+namespace ArrayList.Test
+{
+    [TestFixture, PexClass]
+    public partial class MyArrayListTest
+    {
+        [PexMethod]
+        public void Test_Add([PexAssumeUnderTest]ArrayList arrList, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+            int Old_arrListCount = arrList.Count;
+			arrList.Add(x);		
+            int New_arrListCount = arrList.Count;
+			Assert.AreEqual(New_arrListCount, Old_arrListCount + 1);
+        }  
+    }
+}﻿using System.Linq;
+using System.Text;
+using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Settings;
+using Microsoft.Pex.Framework.Exceptions;--------------------	    AssumePrecondition.IsTrue( arrList.IndexOf(x) < arrList.Count);
+	    AssumePrecondition.IsTrue(arrList.IndexOf(x) != -1);
+            AssumePrecondition.IsTrue(arrList.LastIndexOf(x) < arrList.Count);
+	    AssumePrecondition.IsTrue(arrList.LastIndexOf(x) != -1);
+            AssumePrecondition.IsTrue(New_arrListIndexOfX < New_arrListCount);
+            AssumePrecondition.IsTrue(New_arrListLastIndexOfX < New_arrListCount);
+
+	}
+}
+
+        [PexMethod]
+        public void PUT_InsertContract([PexAssumeUnderTest]ArrayList arrList, int index, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_x = x;
+            int Old_arrListIndexOfX = arrList.IndexOf(x);
+            bool Old_arrListContainsX = arrList.Contains(x);
+
+            arrList.Insert(index, x);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndexOfX = arrList.IndexOf(x);
+            bool New_arrListContainsX = arrList.Contains(x);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+            PexObserve.ValueForViewing("$old_arrList_IndexOf_x", Old_arrListIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_x", New_arrListIndexOfX);
+            PexObserve.ValueForViewing("$old_arrList_contains_x", Old_arrListContainsX);
+            PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContainsX);
+
+
+
+            //an assertion using "Debug.Assert\(.*?\);" that arrList contains x at an index greater or equal to a specific value
+	    AssumePrecondition.IsTrue(New_arrListIndexOfX < New_arrListCount);
+	    AssumePrecondition.IsTrue(New_arrListIndexOfX != -1);
+
+	    AssumePrecondition.IsTrue(Old_arrListIndexOfX != New_arrListIndexOfX);
+	    AssumePrecondition.IsTrue(New_arrListIndexOfX == index);
+        }
+
+        [PexMethod]
+        public void PUT_RemoveAtContract([PexAssumeUnderTest]ArrayList arrList, int index)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            //int Old_arrListIndexOfX = arrList.IndexOf(x);
+            int Old_arrListIndex = arrList.IndexOf(index);
+            bool Old_arrListContainsIndex = arrList[index] != null;
+
+            int x = arrList[Old_arrListIndex];
+
+            arrList.RemoveAt(index);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndex = arrList.IndexOf(x);
+            bool New_arrListContainsX = arrList.Contains(x);
+
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_Index", Old_arrListIndex);
+            PexObserve.ValueForViewing("$new_arrList_Index", New_arrListIndex);
+            PexObserve.ValueForViewing("$old_arrList_contains_index", Old_arrListContainsIndex);
+            PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContainsX);
+
+	    AssumePrecondition.IsTrue(New_arrListIndex != Old_arrListIndex);
+        }
+
+   --------------------

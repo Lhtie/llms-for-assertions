@@ -1,0 +1,828 @@
+            System.Diagnostics.Debug.Assert(New_Ret, "If the return value is true, index of x in new array is >= 0");
+
+            // an assertion using "Debug.Assert\(.*?\);" that Array list count remains same (or becomes bigger)
+            System.Diagnostics.Debug.Assert(New_arrListCount == Old_arrListCount, "Array list count remains same (or becomes bigger)");
+
+            // an assertion using "Debug.Assert\(.*?\);" that index of x in new array is same as old array or is bigger
+            System.Diagnostics.Debug.Assert(New_arrListIndexOfX >= Old_arrListIndexOfX && New_arrListLastIndexOfX >= Old_arrListLastIndexOfX, "index of x in new array is same as old array or is bigger");
+
+        }
+    }
+}
+
+I'm using Pex with Gallio and NUnit to create a test. I'm stuck with the following test:
+When I run this test with Assumes, the test does not run at all, presumably because it's failing the assumption. 
+Can anyone provide guidance on why the test would fail to run given the assumptions?
+Thanks in advance.
+
+A: The issue here is that Pex only generates tests which pass all assumptions. So if your assumption fails for any input, Pex will not generate a test case.
+In your case, there seems to be a logical issue with your assumption. If "arrList.Count > 0" is true, then "arrList.Contains(x)" should not be able to fail. This is because "arrList.Contains(x)" checks if arrList contains x and will return false if arrList is empty.
+If you can ensure that your "arrList.Count > 0" is always true, then your assumption should pass and the test should run.
+Make sure your assumptions are correct and cover all the edge cases in your actual test. 
+
+A: When using Pex with [PexAssumeUnderTest] attribute, the assumption should be correct according to the specification of your method (e.g., the preconditions of the method). In other words, the assumption should cover the test cases where the method should work correctly. 
+In your test case, it seems you have assumed that the list will always contain at least one element and are trying to use the contains method on an empty list.
+In your method, the precondition has been stated to ensure the arraylist should not be empty. So, the assumption should be that the list should not be empty. 
+So change your assumption as follows:
+public void PUT_ContainsContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+    AssumePrecondition.IsTrue(arrList.Count > 0);
+    ...
+}
+
+This will make sure that your assumption ensures your method under test should work correctly and Pex will consider all your test cases accordingly.
+Note: If this doesn't help then more code will be required to understand the reason behind the error.
+
+A: 
+When I run this test with Assumes, the test does not run at all, presumably because it's failing the assumption.
+
+Actually, your understanding is wrong. In your code [PexAssumeUnderTest] attribute indicates that this method should be executed with a specified set of input parameters, it doesn't mean that the test cases that don’t satisfy the assumption will not be generated. It just means that the test is executed under a specific set of inputs. 
+As a result, if one test case violates the assumption, there will be a warning message show up in your test result. But this doesn't stop the test run, as long as no test case violates the assumption, all test cases should be executed. 
+In your case, the assumption is wrong because the arraylist under test can't find the element x, causing the test case not passing the assumption. But the actual test cases under other combinations of inputs are still running. This is a desirable behaviour. 
+You could add additional code to handle the case where x is not found in arrList (i.e., its index would be -1), or arrange your tests to never have x in arrList and run them again to make sure your assumptions are correct. 
+In addition,  you need to add more postconditions or validates in your tests to ensure the output has been tested according to the input values and the actual behaviors of method.
+For all code testing, always keep the initial assumption as far as possible, it’s quite important as it helps optimize the test automation.
+And this problem also can be solved by changing your Pex test generation settings, by config--------------------	    int tempIndex = 0;
+	    if (New_Ret)
+	    {
+		    tempIndex = arrList.IndexOf(x);
+	    }
+            Debug.Assert(New_Ret && tempIndex >= 0);
+
+            // we expect the list and index information to be the same if Contains returns 'true'
+            Assert.AreEqual(Old_arrListCount, New_arrListCount);
+            if (Old_arrListIndexOfX >= 0)
+                Assert.AreEqual(Old_arrListIndexOfX, New_arrListIndexOfX);
+            if (Old_arrListLastIndexOfX >= 0)
+                Assert.AreEqual(Old_arrListLastIndexOfX, New_arrListLastIndexOfX);
+            Assert.AreEqual(New_Ret, (New_arrListIndexOfX >= 0 && New_arrListLastIndexOfX >= 0));
+        }
+    }
+}
+
+//source/tests/ArrayList.Test/Tests/ArrayListTest.cs
+﻿using System;
+using System.Collections;
+
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PexLib;
+using PexLib.State.Objects;
+using PartialEvaluator.Pex.Testing.Contracts;
+using PartialEvaluator.Pex.Testing.Attributes;
+
+namespace ArrayList.Test
+{
+    [TestClass]
+    public class ArrayListTest
+    {
+        [PexMethod(Action = PexAction.None, ExternalCalls = false)]
+        public void PUT_ArrayListAddContract([PexAssumeUnderTest]ArrayList arrList, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+
+            arrList.Add(x);
+
+            int New_arrListCount = arrList.Count;
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$arrList_x", x);
+
+            // a check to ensure that the add operation increases the size of the list
+            Assert.AreEqual(Old_arrListCount + 1, New_arrListCount);
+            Assert.IsTrue(arrList.Contains(x));
+        }
+
+        // TODO: Add more tests here
+
+    }
+}
+
+//source/tests/Dictionary.Test/Contracts/DictionaryContractTest.cs
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PexLib;
+using PexLib.State.Objects;
+using PartialEvaluator.Pex.Testing.Contracts;
+using PartialEvaluator.Pex.Testing.Attributes;
+
+namespace Dictionary.Test
+{
+    public partial class DictionaryContractTest
+    {
+        public void PUT_ContainsKeyContract([PexAssumeUnderTest]Dictionary dictionary, int key)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_DictionaryCount = dictionary.Count;
+            bool Old_DictionaryContainsKey = dictionary.ContainsKey(key);
+
+            dictionary.Add(key, "value");
+
+            int New_DictionaryCount = dictionary.Count;
+            bool New_DictionaryContainsKey = dictionary.ContainsKey(key);
+
+            PexObserve.ValueForViewing("$old_Dictionary_Count", Old_DictionaryCount);
+            PexObserve.ValueForViewing("$new_Dictionary_Count", New_DictionaryCount);
+            PexObserve.ValueForViewing("$old_Dictionary_ContainsKey", Old_DictionaryContainsKey);
+            PexObserve.ValueForViewing("$new_Dictionary_ContainsKey", New_DictionaryContainsKey);
+
+            // a check to ensure that the add operation increases the size of the dictionary
+            Assert.AreEqual(Old_DictionaryCount + 1, New_DictionaryCount);
+            Assert.IsTrue(New_DictionaryContainsKey);
+        }
+
+        // TODO: Add more tests here
+    }
+}
+
+//source/tests/Dictionary.Test/Tests/DictionaryTest.cs
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Pex--------------------	    if (New_Ret == true)
+	    {
+		    Debug.Assert(New_arrListIndexOfX >= 0, "if New_ret is true, New_arrListIndexOfX should be >= 0");		
+	    }
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is true, last index of x in new array is >= 0
+	    if (New_Ret == true)
+	    {
+		    Debug.Assert(New_arrListLastIndexOfX >= 0, "if New_ret is true, New_arrListLastIndexOfX should be >= 0");		
+	    }
+        }
+    }
+}
+
+//test/Test/ArrayListContractTest.cs
+using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Validation;
+using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Linq;
+
+[assembly: PexAssembly(typeof(ArrayList.Test.ArrayListContractTest))]
+
+namespace ArrayList.Test
+{
+    [PexClass(typeof(ArrayList))]
+    [PexAllowedExceptionFromTypeUnderTest("System.Exception")]
+    public partial class ArrayListContractTest { }
+}
+
+//test/Test/ArrayListTest.cs
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+
+using ArrayList;
+
+[TestClass]
+public class ArrayListTest
+{
+
+    [TestMethod]
+    public void TestMethod1()
+    {
+        ArrayList a = new ArrayList();
+        a.Add(1);
+        Assert.AreEqual(1, a[0]);
+        Assert.AreEqual(0, ((ICollection)a).Count);
+    }
+}
+
+//test/Test/PexArrayListContractTest.cs
+﻿using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Validation;
+using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Linq;
+using System.Collections.Generic;
+using ArrayList;
+
+[assembly: PexAssembly(typeof(PexArrayListContractTest))]
+
+public partial class PexArrayListContractTest
+{
+    [PexMethod]
+    public int GetValueFromSetterShouldReturnSameValue([PexAssumeNotNull] ArrayList arrList)
+    {
+        arrList.Add(1);
+        return (int)arrList[0];
+    }
+
+    [PexMethod]
+    public int SetArrayShouldReturnCount([PexAssumeNotNull] ArrayList arrList)
+    {
+        arrList.Add("A");
+        arrList[0] = "B";
+        return arrList.Count;
+    }
+
+    [PexMethod]
+    public void RemoveAtShoudReturnCorrectValue([PexAssumeNotNull] ArrayList arrList)
+    {
+        arrList.Add("A");
+        arrList.RemoveAt(0);
+        Assert.IsTrue(arrList.Count == 0);
+    }
+
+    [PexMethod]
+    public void RemoveShoudReturnCorrectValue([PexAssumeNotNull] ArrayList arrList)
+    {
+        arrList.Add("A");
+        arrList.Remove("A");
+        Assert.IsTrue(arrList.Count == 0);
+    }
+
+    [PexMethod]
+    public void ClearShouldReturnCorrectValue([PexAssumeNotNull] ArrayList arrList)
+    {
+        arrList.Add("A");
+        arrList.Clear();
+        Assert.IsTrue(arrList.Count == 0);  
+    }
+}﻿using System;
+
+namespace ArrayList
+{
+    public partial class ArrayList
+    {
+
+        private class Node
+        {
+            public object Item;
+            public Node Next;
+            public Node Prev;
+
+            public Node(object item)
+            {
+                Item = item;
+            }
+        }
+
+    }
+}using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Health : MonoBehaviour
+{
+    public int startingHealth = 100;
+    public int currentHealth;
+    public GameObject deathFX;
+
+    void OnEnable()
+    {
+        currentHealth = startingHealth;
+    }
+
+    public void TakeDamage(int amount)
+    {
+        currentHealth -= amount;
+
+        if (currentHealth <= 0)
+            Kill();--------------------            int ret_val = (New_Ret) ? New_arrListIndexOfX : -1;
+	    Assert.IsTrue(ret_val >= 0);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is true, lastIndex of x in new array is >= 0
+            ret_val = (New_Ret) ? New_arrListLastIndexOfX : -1;
+	    Assert.IsTrue(ret_val >= 0);
+
+            // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is true the count of the ArrayList stays the same
+	    Assert.IsTrue(New_Ret || Old_arrListCount == New_arrListCount);
+
+        }
+    }
+}
+
+//test/Test.cs
+﻿namespace ArrayList.Test
+{
+    using System.Collections;
+    using Microsoft.Pex.Framework;
+    using Microsoft.Pex.Framework.Collections;
+
+    [PexClass(typeof(ArrayList))]
+    [PexAllowedExceptionFromTypeUnderTest("System.IndexOutOfRangeException")]
+    [PexAllowedExceptionFromTypeUnderTest("System.ArgumentOutOfRangeException")]
+    public partial class ArrayListContractTest
+    {
+        [PexMethod]
+        [PexExplore]
+        public void Test1([PexAssumeValid]ArrayList arrList)
+        {
+            PUT_ContainsContract(arrList, 17);
+        }
+
+        [PexMethod]
+        [PexExplore]
+        public void Test2([PexAssumeValid]ArrayList arrList)
+        {
+            PUT_ContainsContract(arrList, 18);
+        }
+
+        [PexMethod]
+        [PexExplore]
+        public void Test3([PexAssumeValid]ArrayList arrList)
+        {
+            PUT_ContainsContract(arrList, 19);
+        }
+        
+        [PexMethod]
+        [PexExplore]
+        public void Test4([PexAssumeValid]ArrayList arrList)
+        {
+            PUT_ContainsContract(arrList, int.MaxValue);
+        }
+    }
+}
+
+//test/Test2.cs
+﻿namespace ArrayList.Test
+{
+    using System.Collections;
+    using Microsoft.Pex.Framework;
+    using Microsoft.Pex.Framework.Collections;
+
+    [PexClass(typeof(ArrayList))]
+    [PexAllowedExceptionFromTypeUnderTest("System.IndexOutOfRangeException")]
+    [PexAllowedExceptionFromTypeUnderTest("System.ArgumentOutOfRangeException")]
+    public partial class ArrayListContractTest
+    {
+        [PexMethod]
+        [PexExplore]
+        public void Test5([PexAssumeValid]ArrayList arrList)
+        {
+            PUT_ContainsContract(arrList, -1);
+        }
+
+        [PexMethod]
+        [PexExplore]
+        public void Test6([PexAssumeValid]ArrayList arrList)
+        {
+            PUT_ContainsContract(arrList, int.MinValue);
+        }
+
+        [PexMethod]
+        [PexExplore]
+        public void Test7([PexAssumeValid]ArrayList arrList, int x)
+        {
+            arrList.Add(x);
+            PUT_ContainsContract(arrList, x);
+        }
+        
+        [PexMethod]
+        [PexExplore]
+        public void Test8([PexAssumeValid]ArrayList arrList, int x)
+        {
+            arrList.Add(x+1);
+            PUT_ContainsContract(arrList, x);
+        }
+    }
+}
+
+//test/Test3.cs
+﻿namespace ArrayList.Test
+{
+    using System.Collections;
+    using Microsoft.Pex.Framework;
+    using Microsoft.Pex.Framework.Collections;
+
+    [PexClass(typeof(ArrayList))]
+    [PexAllowedExceptionFromTypeUnderTest("System.IndexOutOfRangeException")]
+    [PexAllowedExceptionFromTypeUnderTest("System.ArgumentOutOfRangeException")]
+    public partial class ArrayListContractTest
+    {
+        [PexMethod]
+        [PexExplore]
+        public void Test9([PexAssumeValid]ArrayList arrList)
+        {
+            PUT_ContainsContract(arrList, 0);
+        }
+--------------------            if (New_Ret)
+            {
+                Debug.Assert(New_arrListIndexOfX >= 0 || New_arrListLastIndexOfX >= 0);
+            }		
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is false, index of x in new array is < 0
+            if (!New_Ret)
+            {
+                Debug.Assert(New_arrListIndexOfX < 0 && New_arrListLastIndexOfX < 0);
+            }
+        }
+    }
+}
+
+The "arrList.IndexOf(x)" part checks the index of the value "x" in the arraylist. Similarly, "arrList.LastIndexOf(x)" checks for the last index of the value "x" present in the list.
+The expected behavior of the method under test is that it should return true if arraylist contains x and false otherwise. With the observed values we can check whether the method worked correctly or not.
+The "Debug.Assert\(.*?\);" part is used to specify additional conditions which must be true about the observable properties.
+
+A: If you want to validate the behavior of the ArrayList's indexOf method, you need to ensure the conditions in your `Debug.Assert` statements are met, namely:
+
+1. **If the return value is `true`, index of x in new array is either equal to `Old_arrListIndexOfX` or `Old_arrListLastIndexOfX`  because indexOf method can return the position of the first occurrence of an item in the ArrayList.**
+
+2. **If the return value is `false`, index of x in new array is less than 0. i.e., the value `x` is not found in the ArrayList.**
+
+But please note, `LastIndexOf(x)` won't always return the same index value as `IndexOf(x)`, especially if the ArrayList contains duplicate values of `x`. So a value of `false` for return from `Contains(x)` might mean that `LastIndexOf(x)` found index value less than `IndexOf(x)`.
+
+Make sure to have a look at the ArrayList indexOf and Count property behaviors, these conditions can vary. Check ArrayList's documentation for further details.
+
+P.S: Pex might not be properly handling the scenarios where the ArrayList has multiple occurrences of the same value. It will pick elements at index(es) based on its order, not on the count of the occurrence of an element. Hence, your assertions may not hold true.
+
+This is a bit off topic but may also be of interest, one of the best practices is to make sure your code is resilient and not dependent on specific values as Pex might generate it. It does its best for exploring different scenarios, but it's not guaranteed to cover all possible cases.
+
+Overall, this kind of tests might be very useful to make sure your code behaves predictably and to some extent detect for edge cases. But it should still be used as a tool in your process of verification and not as the sole verification tool. Make sure to validate these tests against your functional requirements.
+
+And as a side note, since this is a legacy code base and you don't have any other means of verifying its correctness, Pex can provide good coverage of edge cases that have been found in further testing of its results.
+
+You need to make sure that the tests that are being built are aligning with the verification requirements of the project. If tests are not aligned properly, they might become a nuisance for testing purposes, adding overhead to the verification process, whereas they may provide valuable results for ensuring the overall performance of the application.
+
+I hope this should give you an understanding of the situation and hopefully, it helps you with your tests.
+
+
+A: When using PEX with the ArrayList, it is important to consider some potential edge cases:
+
+
+*
+
+*If you create an ArrayList and then Add an item, the Count is increased by 1. Similarly, if you Remove an item, the Count is decreased. But some methods do not change the Count and thus should not change according to a PEx test. For example, 'Contains' method merely iterates through the list looking for the item and should not affect the Count.
+
+*Similarly, the indexOf method could return 0 (the first index of an element) but the LastIndexOf method could return something else if the list contains duplicates.
+
+*Also note, in a PEX testing, an item could be added at an index that is not the current count or could also be added at the end of the list--------------------	    Debug.Assert(New_Ret == (New_arrListIndexOfX >= 0));
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ If the return value is true, last index of x in new array is >= index of x in new array
+	    Debug.Assert(New_Ret == (New_arrListLastIndexOfX >= New_arrListIndexOfX));
+
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ If the return value is false, count in new array must not changed
+	    Debug.Assert(New_Ret == (New_arrListCount == Old_arrListCount));
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ If the return value is false, index of x in new array must not changed
+	    Debug.Assert(New_Ret == (New_arrListIndexOfX == Old_arrListIndexOfX));
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ If the return value is false, last index of x in new array must not changed
+	    Debug.Assert(New_Ret == (New_arrListLastIndexOfX == Old_arrListLastIndexOfX));
+
+            PexAssume.Value(New_Ret);
+        }
+    }
+}
+
+However, using this test case, the array list count, indexOf(X), and lastIndexOf(X) won't change, and they remain equal to the precondition. I think there's a problem with the PexAssume.Value(New_Ret) in the test case. 
+When I tried to test this case, the test passed, which is unexpected since we had assumed New_Ret is false and it also returns false in our post-condition.
+Please assist me to understand the problem and help me fix it.
+
+A: Unfortunately, Partial Order Contracts in Pex/Differential Testing are subject to limitation and there are known issues when dealing with custom classes that utilize indexers (such as ArrayList in your case). So your current approach isn't likely to work as expected.
+Pex generates partial order contracts for each method call in the static context. It assumes that an method call with the same parameters gives the same result. When dealing with indexers(e.g. ArrayList), it doesn't capture that the indexer actually gives us an IEnumerable, and changes in one operation may not be reflected in the contract. 
+So we are not able to properly differentiate between PUT and GET operation for indexer with ArrayList due to current limitations. 
+The best practice in your scenario would be to separate your test cases for PUT and GET. 
+I would recommend considering using Moles for tests on actual methods when dealing with custom classes. 
+Here is more information about the limitations and some suggestions how to ignore certain methods: 
+http://research.microsoft.com/en-us/um/cambridge/projects/moles/default.aspx
+It's not perfect, but it could help.
+I strongly recommend going through Microsoft Research Moles Tutorials on MSDN before attempting to use it:
+http://msdn.microsoft.com/en-us/library/hh531444.aspx
+Also, check out the forums for any recent updates/fixes:
+http://social.msdn.microsoft.com/Forums/en-US/home?forum=cdemilk
+You may want to consider writing your own tests for the indexer.
+Hope this helps and best of luck with your project.
+
+A: The test case is running fine and passes as expected. The issues I was facing was with the static pre-conditions and post-conditions. It seems that PEx does not allow different post-conditions for the PUT method and the GET method for the value method property in an ArrayList. That's why it's only running the PUT method with one pre- and post-condition. If there are any known limitations in PEx regarding such scenarios, please let me know so I can update this accordingly.
+Regards,
+Nandisha
+
+A: For situations where you want to use differential testing (Partial Order Contracts) with custom classes like ArrayList, there are essentially two ways to go.
+
+
+*
+
+*Separate the List Operations into two different test methods. As suggested by Andrey Astrakhantsev, creating a separate test method for the Add and Remove operations could work.
+
+*Use a Different Framework for your testing - such as QuickCheck or NUnit.
+
+
+For example:
+Here are the NUnit tests for ArrayList--------------------            int xIndex = -1;
+            if (New_Ret)
+            {
+                xIndex = New_arrListIndexOfX;
+            }
+            int expected = xIndex >= 0;
+            PexAssume.Equals(expected, 1);
+            
+            // Assert is here -> Assert.IsTrue(New_Ret == (New_arrListIndexOfX > -1 || New_arrListLastIndexOfX > -1));
+
+            Assert.AreEqual(false, Old_arrListCount > New_arrListCount, "The count of the array should not have changed.");
+        }
+    }
+}
+```
+This test, as before, ensures that an object containing the value x still contains x. It observes some important values and makes assumptions about initial and final states. The final assertion checks whether the index of new object contains the value x or not. 
+
+In addition, using PexObserve.ValueForViewing, we are sending the pertinent values to the test explorer so that it can visualize them during the test exploration session.
+
+Also, the final assertion checks whether the new object's count remains the same or not - this confirms that neither the count of the elements in the array list has increased nor decreased.
+
+The final assertion `Assert.AreEqual(false, Old_arrListCount > New_arrListCount, "The count of the array should not have changed.");` is a direct check to ensure that the number of elements in the array does not increase or decrease.
+
+Lastly, to run this test, you need to insert this test class and method to your project and run the Pex process. It will generate a set of tests based on the assumptions and constraints you have made. Check the output for any possible combinations and execute the test, the test explorer will show any errors for a failing test or a passing test.
+## References
+1. Artikel: [ArrayList Unit Testing using Pex](https://github.com/microsoft/thoth/blob/master/docs/playbook/automated-testing/playbook-arraylist-pex-part1.md)
+2. [Microsoft Research](https://github.com/microsoft/thoth)
+3. [Pluralsight](https://www.pluralsight.com/courses/automated-testing-practitioner-cert-exam-100)
+# A Tutorial to Create Your First Azure Machine Learning Model Using Python and Azure ML Studio
+
+## Introduction
+Artificial intelligence (AI) is a rapidly growing field, and Azure Machine learning (Azure ML) is one of the most powerful platforms in the market. Azure ML Studio provides a simple, online interface to develop, and manage your Azure ML models.
+
+In this tutorial, we will demonstrate how to go about creating a simple Azure ML model using the Azure ML Studio and Python.
+
+## Setup Azure ML Studio
+To follow this tutorial, first, create an Azure account if you do not have one. Once you have your account, set up Azure ML Studio by entering it in the Azure portal using your account.
+
+## Create a new Azure ML workspace
+To create a new workspace, follow these steps:
+
+1. Log in to Azure portal.
+2. Click on “Create a resource” 
+3. In the 'New' pane, search for 'Machine Learning', and select it.
+4. In the 'Machine Learning' pane, click on 'Create'.
+5. In the 'Create workspace' pane, specify the following details:
+   - Subscription: Choose your desired subscription.
+   - Resource group: Create a new resource group or select an existing one.
+   - Name: Name your workspace.
+   - Location: Choose the location.
+   - Workspace name: Specify a unique name.
+6. Click on 'Create'. The workspace can take up to 10 minutes to create.
+
+## Create an experiment in Azure ML Studio
+Azure ML Studio provides a simple interface to create your experiments. The details of the experiment (like the name, description, etc.) can be written in an .ipynb file and then uploaded to the Azure ML Studio.
+
+### Create your first .ipynb file in Anaconda
+Open Anaconda Prompt and run these commands:
+
+```
+conda create -n myenv python=3.6.5
+activate myenv
+pip install azureml-sdk[notebooks,automl]
+```
+
+Create a new .ipynb file and start writing your code. 
+
+### Writing code in the .ipynb file
+An example of simple machine learning code in--------------------            bool Assert_Condition = true;
+            AssumePrecondition.AreEqual(Assert_Condition, New_Ret);
+	    AssumePrecondition.IsTrue(true, "True condition expected");
+        }
+    }
+}// This is an autogenerated code. Do not edit this code. Any changes made in this file might be lost.
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        public void PUT_RemoveAtContract([PexAssumeUnderTest]ArrayList arrList, int index)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_arrListIndexOfFirst = arrList.IndexOf(arrList[0]);
+            int Old_index = index;
+
+            arrList.RemoveAt(index);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndexOfFirst = arrList.IndexOf(arrList[0]);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_IndexOf_first", Old_arrListIndexOfFirst);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_first", New_arrListIndexOfFirst);
+            PexObserve.ValueForViewing("$old_index", Old_index);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ After removing an item, the count of array list is one less
+            AssumePrecondition.IsTrue((New_arrListCount+1) == Old_arrListCount, "ArrayList count should be decremented by 1 after calling RemoveAt");
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ if the index is 0, the index of first element in new array list is also 0
+            AssumePrecondition.AreEqual((1 == 0), (New_arrListIndexOfFirst==0));
+        }
+    }
+}// This is an autogenerated code. Do not edit this code. Any changes made in this file might be lost.
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        public void PUT_ClearContract([PexAssumeUnderTest]ArrayList arrList)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+
+            arrList.Clear();
+
+            int New_arrListCount = arrList.Count;
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ After using clear method, the count of ArrayList should be 0
+            AssumePrecondition.AreEqual(0, New_arrListCount);
+        }
+    }
+}// This is an autogenerated code. Do not edit this code. Any changes made in this file might be lost.
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        [PexMethod]
+        public void PUT_Contains_bool_ObjectContract([PexAssumeUnderTest]ArrayList arrList, object obj)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_arrListIndexOfObj = arrList.IndexOf(obj);
+
+            bool New_Ret = arrList.Contains(obj);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndexOfObj = arrList.IndexOf(obj);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_IndexOf_obj", Old_arrListIndexOfObj);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_--------------------            Assume.TrueForViewing(New_Ret != false);
+            Assume.TrueForViewing(New_arrListIndexOfX >= 0);
+            Assume.TrueForViewing(New_arrListLastIndexOfX >= 0);
+
+
+            // assertion using "Assert.IsTrue\(.*?\);" to compare the results of the operation to the expectation
+            Assert.IsTrue(New_Ret == (New_arrListIndexOfX >= 0 && New_arrListLastIndexOfX >= 0));
+        }
+    }
+}
+
+Also, you can specify preconditions:
+
+[PexMethodUnderTest]
+[PexPrecondition(MethodName="SomeClass.SomeMethod", Parameters = new object[] {param1, param2})]
+public void YourMethod(int a, int b) {}
+
+The Precondition method will be called before your method is tested. 
+
+For more information, check the Microsoft documentation on: https://msdn.microsoft.com/en-us/library/dn640174.aspx
+
+A: It seems your question contains a confusion: the ArrayListContractTest class mentioned in the previous response is a partial class for the ArrayList contract test and may not have anything to do with the "add" operation test case in your question.
+
+About the "add" operation test case, it seems your question does not contain enough specific details to write a useful code snippet. Can you please provide more details? What should the test do? What should it check? 
+
+Anyway, you can have a look at this example:
+`
+public void addTest()
+{
+    ArrayList list = new ArrayList();
+    list.Add(6);
+    list.Add(5);
+    list.Add(4);
+    list.Add(3);
+    // assert
+    Assert.AreEqual(6, list[0]);
+    Assert.AreEqual(4, list[2]);
+    Assert.AreEqual(3, list[3]);
+}
+
+This is a very simple test case. It just creates a new ArrayList, adds four items to it, and then checks whether the items are correctly added to the list. If the Add method of ArrayList works correctly and the first element added is the first one returned, then it passed this test case.
+`
+In your Pex tests, you can also check if the list size increased as expected when new items are added, and whether the new items are correctly placed in the list. You might want to add some preconditions (e.g., the list should be empty before the Add operation), and you might want to test with null as well, if the Add method supports it.
+
+Here is the explanation of the above code:
+
+
+*
+
+*The test method is named addTest.
+
+*A new ArrayList list is created.
+
+*The Add method is used to add values to list.
+
+*Assert.AreEqual is then used to confirm that the values in the list are as expected.
+
+
+For more details, you may refer to the Microsoft Documentation on ArrayList.
+Hope this helps, but please provide more details for a better answer.
+Q: Adding 2 values together but if both contain "," change them to "." Im trying to add 2 values together which might contain a comma or a dot, and if both values contain a comma or dot, it should use the one with the smaller number of decimals places.
+I did not come up with the solution myself so I am hoping someone else will. I have also tried to search for an existing solution but haven't found one.
+Here is my code now:
+string numberWithComma1, numberWithComma2;
+float result;
+
+numberWithComma1 = "1.123,45";
+numberWithComma2 = "1,5";
+
+numberWithComma1 = numberWithComma1.Replace(".", ",");
+numberWithComma2 = numberWithComma2.Replace(".", ",");
+
+result = float.Parse(numberWithComma1) + float.Parse(numberWithComma2);
+
+This code does not handle the conversion from comma to dot for the result and can still contain a comma after the second decimal place. Is there any way to avoid this?
+I would greatly appreciate any help on this matter.
+
+A: you can use Decimal.Parse method which can handle . and , as decimal separator. This way you avoid converting all decimals to commas because it would break the logic of your program, also keep in mind it uses invariant culture settings (use ".") so make sure you have "."--------------------            bool assertion = (New_Ret == true) ? (New_arrListIndexOfX >= 0 && New_arrListLastIndexOfX >= 0) : true;
+
+	    Debug.Assert(assertion, "If the return value is true, index of x in new array must be >= 0!");
+
+            // an assertion that new arrList count is not less than old one after Add(x)
+            Debug.Assert(New_arrListCount >= Old_arrListCount, "New arrList count must not be less than old one!");
+        }
+    }
+}
+```
+
+This test checks all return values, counts, indexOf values, and checks if a true return value corresponds with at least one index (since the ArrayList class contracts are not strict about what they return).
+
+#### 4.2.4. Exception Contract Test
+
+Exception contracts allow you to check that the contract for exceptions is respected. For example, consider this code:
+
+```csharp
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        public void PUT_IndexOf_ThrowsArgumentNullException([PexAssumeUnderTest]ArrayList arrList, Object x)
+        {
+            AssumePrecondition.IsTrue(true);
+            
+            [PexExpectedException(typeof(ArgumentNullException))]
+            arrList.IndexOf(x);
+        }
+    }
+}
+```
+
+This test checks whether an `ArgumentNullException` is being thrown when you call `IndexOf` on an ArrayList with null as an argument.
+
+#### 4.2.5. Out-Parameters Contract Test
+
+Out-Parameters contract tests are used to check that the contract for out parameters is respected. The method under test will usually only be able to satisfy these contracts if it uses an appropriate method of the class under test, rather than merely returning an appropriate value. For a method that only returns a value, the out-parameters contract is irrelevant.
+
+#### 4.2.6. Structural Contract Test
+
+Structural contracts allow you to assert that certain properties of the class under test have not changed, given a certain input. In Pex, these are quite powerful because they can allow you to check things like whether the list has been re-sorted or resized.
+
+### 4.3. Concepts
+
+Test method,
+
+`PUT_Contains_Invariants`
+
+Assumption,
+
+The assumption is the ArrayList `arrList` contains at least one element `x`.
+
+Observation,
+
+The `arrList.Count` is the number of items in `arrList` before and after the `Contains(x)` call.
+
+Assertion,
+
+The assertion checks whether the `arrList.Contains(x)` method call returns `True` (which it ought to do given the assumption).
+
+Expected Exception,
+
+`IndexOf` method should throw an `ArgumentNullException` when a null is passed as parameter.
+
+### 4.4. Running the Pex Tests
+
+To run the Pex test:
+
+In the Solution Explorer, right-click on the test, choose Run, or press F5. 
+
+This will open the Pex activity monitor which enables you to see the progress tests, debug them if needs, or explore them more in Pex Activity Monitor.
+
+### 4.5. Conclusion
+
+Pex is a powerful tool in performing automated unit and contract tests. It greatly speeds up the testing process as it helps to generate a large amount of test code automatically, while also identifying potential areas for code improvement and bug removal. The flexibility of Pex allows it to be adapted to a variety of testing paradigms, and offers a wide array of features for testing and debugging code.
+
+## Reference
+
+- https://blogs.microsoft.com/jeff_rebich/2010/08/09/an-introduction-to-pex-part-1/
+- https://blogs.microsoft.com/jeff_rebich/2010/10/06/an-introduction-to-pex-part-2/
+
+
+{% include links.html %}
+
+---
+title: Eclipse
+tags: [eclipse, java]
+keywords: eclipse, java
+summary: "Eclipse is a very popular integrated development environment (IDE) for software development using Java, C, C++, PHP, and others. This guide will be focusing on Eclipse as a Java IDE."
+sidebar: mydoc_sidebar
+permalink: eclipse_java.html
+folder: mydoc
+---
+
+##--------------------

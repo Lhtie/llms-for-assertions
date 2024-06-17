@@ -1,0 +1,705 @@
+            AssumePrecondition.IsTrue((New_Ret == true) ? (Old_arrListIndexOfX <= New_arrListIndexOfX) : true);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ If the return value is false, x is not in the array or any index is not changed
+            AssumePrecondition.IsTrue((New_Ret == false) ? ((Old_arrListIndexOfX == -1) && (New_arrListIndexOfX == -1)) : true); 
+        }
+    }
+}
+
+So when I run the Pex stress test, it generates a test coverage for the ArrayList class. It stresses this method by adding integers to the list, and then checks if the new array list contains the integer or not, and checks the number of elements, the index where the element is first found, and the index where the element is lastly found. 
+My question is what does the PexObserve.ValueForViewing do in the above code and how to use it for my problem, especially when I don’t know what to observe or what to do with the data it provides.
+
+A: PexObserve.ValueForViewing is used for supplying values into the Pex's DataLog. This data is then used for viewing during the stress-test runs, but it does not influence the result of your tests (the list.Contains result).
+In your case, you can utilize PexObserve.ValueForViewing in the following manner:
+PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+PexObserve.ValueForViewing("$old_arrList_IndexOf_x", Old_arrListIndexOfX);
+PexObserve.ValueForViewing("$new_arrList_IndexOf_x", New_arrListIndexOfX);
+PexObserve.ValueForViewing("$old_arrList_LastIndexOf_x", Old_arrListLastIndexOfX);
+PexObserve.ValueForViewing("$new_arrList_LastIndexOf_x", New_arrListLastIndexOfX);
+PexObserve.ValueForViewing("$New_ret", New_Ret);
+
+This will log these variables and their values during the test runs. The values will be presented in the DataLog section when Pex is run in interactive mode. It's basically a way to help diagnose why your test is failing, or at least where in the generated test inputs the issue arises. It allows you to easily see the changing values of your variables during tests.
+As for your question, "I don’t know what to observe or what to do with the data it provides.", you are right. PexObserve doesn't influence your test results. It mainly provides you with means to understand test failures/errors in detail. Observing values for viewing is generally useful when your tests are failing, especially when they're failing randomly or exhibit unexpected behaviors.
+Finally, this function doesn't help you solve your problem directly. It's more a means to make your test run with a better understanding if it's failing.
+
+A: The information provided by PexObserve.ValueForViewing is used for debugging the input domain under test and may be helpful in understanding the behavior of the code if it's failing. However, the return of the test, i.e., list.Contains(x) is the ultimate subject of interest.
+That being said, the purpose of PexObserve.ValueForViewing would be to log or document the information related to your test under various conditions, so that in case of test failure, you can check with which particular conditions or input the test failed.
+Apart from logging or commenting on these values, you may not need to use these values for checking / improving your code (i.e., ArrayList.Contains function), because of the characteristics of the function; i.e., whether an item is in the ArrayList can be inferred solely by the return value without any need to check other values.
+For understanding and in-depth understanding of your code, you should use these methods and tools properly in context to their applications.
+That’s the correct usage/insight of PexObserve.ValueForViewing, it isn’t for your requirements but more of a debug tool.
+Hope this helps~
+
+A: As of now, Microsoft has deprecated or removed--------------------	    Debug.Assert((Old_arrListCount != 0) ? (Old_arrListIndexOfX <= New_arrListIndexOfX && New_arrListIndexOfX < Old_arrListCount) : New_arrListIndexOfX == 0);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If return value of contains method in new array is true  @@@, then, index of x in new array is less than or equal to count of new array
+	    Debug.Assert(New_Ret ? (New_arrListIndexOfX <= New_arrListCount && New_arrListLastIndexOfX <= New_arrListCount) : true);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ For any List<T>, index of x is -1 if it is not contained in old List<T>; otherwise, index of x is equal to that in new array
+	    Debug.Assert(New_arrListIndexOfX == Old_arrListIndexOfX);
+        }
+    }
+}
+
+//test/Microsoft.Pex.Framework/Framework.Test/ContractTesting/List/ArrayList/ArrayListTest/ArrayListContractTest.cs
+using ArrayList.Test;
+using Microsoft.Pex.Framework;
+using Microsoft.VisualStudio.TestTools.Pex.Framework;
+using System;
+
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest : PexClass<ArrayList>
+    {
+        [PexMethod]
+        [PexExplorationEnabled]
+        public void PUT_ContainsContract([PexAssumeUnderTest]ArrayList arrList, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_x = x;
+            int Old_arrListIndexOfX = arrList.IndexOf(x);
+            int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+
+            bool New_Ret = arrList.Contains(x);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndexOfX = arrList.IndexOf(x);
+            int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+            PexObserve.ValueForViewing("$old_arrList_IndexOf_x", Old_arrListIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_x", New_arrListIndexOfX);
+            PexObserve.ValueForViewing("$old_arrList_LastIndexOf_x", Old_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_LastIndexOf_x", New_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$New_ret", New_Ret);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is true, index of x in old array is less than or equal to that in new array
+	    Debug.Assert((Old_arrListCount != 0) ? (Old_arrListIndexOfX <= New_arrListIndexOfX && New_arrListIndexOfX < Old_arrListCount) : New_arrListIndexOfX == 0);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If return value of contains method in new array is true  @@@, then, index of x in new array is less than or equal to count of new array
+	    Debug.Assert(New_Ret ? (New_arrListIndexOfX <= New_arrListCount && New_arrListLastIndexOfX <= New_arrListCount) : true);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ For any List<T>, index of x is -1 if it is not contained in old List<T>; otherwise, index of x is equal to that in new array
+	    Debug.Assert(New_arrListIndexOfX ==--------------------            AssertForTest(Old_arrListIndexOfX <= New_arrListIndexOfX || Old_arrListLastIndexOfX <= New_arrListLastIndexOfX);			
+        }
+    }
+}
+```
+When you run this test, QuickCheck will find a counterexample: an 'ArrayList' that initially includes the element 'x' at some index, but after 'x' is added again, it ends up not being present where it was initially. The counterexample thus demonstrates the lack of proper array resizing behavior.
+
+In conclusion, QuickCheck can be a very handy tool for identifying and fixing bugs in your program. However, there are certain scenarios where it may not work perfectly. In such situations, manual exploratory testing may be needed, as QuickCheck might not be able to find a counterexample. In this case, be prepared with a robust testing strategy, taking the multiple perspectives of the data and programming logic into consideration.
+
+*Thanks to [Dan](https://www.linkedin.com/in/ddubey/) for the review.*
+
+[1]:	https://rehansaeed.com/automatic-property-based-testing-introduction-and-applicability/
+[2]:	https://quick-check.org/
+[3]:	http://rehansaeed.com/automatic-property-based-testing-introduction-and-applicability/#Unit_Tests_Coverage
+[4]:	http://rehansaeed.com/automatic-property-based-testing-introduction-and-applicability/#Unit_Tests_Ease_of_Execution
+[5]:	https://www.linkedin.com/in/mattsummers/
+[6]:	https://twitter.com/mattsummers
+[7]:	https://rehansaeed.com/tdd-by-example-introduction/
+[8]:	https://rehansaeed.com/property-based-testing-in-net-frameworks/
+[9]:	https://rehansaeed.com/automatic-property-based-testing-introduction-and-applicability/
+[10]:	https://twitter.com/RehanSaeed1
+[11]:	https://www.linkedin.com/in/rehansaeed/
+[12]:	https://www.linkedin.com/in/mattsummers/
+[13]:	https://www.linkedin.com/in/dan-dubey-4149059/
+[14]:	https://twitter.com/ddubey1980
+[15]:	https://www.linkedin.com/in/ddubey/
+[16]:	https://twitter.com/ddubey
+[17]:	https://www.linkedin.com/in/nimrod-shlomi-742064/
+[18]:	https://twitter.com/nimrod_s
+[19]:	https://www.linkedin.com/in/roysargent
+[20]:	https://twitter.com/roysargent
+[21]:	https://www.linkedin.com/in/dan-dubey-4149059/
+[22]:	https://twitter.com/ddubey
+[23]:	https://quick-check.org/
+[24]:	https://rehansaeed.com/property-based-testing-in-net-frameworks/
+[25]:	https://rehansaeed.com/automatic-property-based-testing-introduction-and-applicability/
+[26]:	https://www.linkedin.com/in/ddubey/
+[27]:	https://www.linkedin.com/in/mattsummers/
+[28]:	https://www.linkedin.com/in/rehansaeed/
+[29]:	https://twitter.com/RehanSaeed1
+[30]:	https://www.linkedin.com/in/nimrod-shlomi-742064/
+[31]:	https://twitter.com/nimrod_s
+[32]:	https://www.linkedin.com/in/roysargent
+[33]:	https://twitter.com/roysargent
+[34]:--------------------            Assert.AreEqual(Old_arrListIndexOfX <= New_arrListIndexOfX, true);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is true, last index of x in old array is greater than or equal to that in new array
+            Assert.AreEqual(Old_arrListLastIndexOfX >= New_arrListLastIndexOfX, true);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is true, both of the return value and the Count of old array is still less or equal to the Count of new array
+            Assert.AreEqual(New_Ret == true && Old_arrListCount <= New_arrListCount, true);
+        }
+
+    }
+}
+
+```
+{% endtab %}
+{% endtabs %}
+
+Please note these tests might still fail unless you define what it means for two `ArrayList` instances to be equivalent in terms of their elements, which is undecidable and unprovable without additional constraints or context. This is because two `ArrayList` instances may have different elements, yet appear to be equivalent.
+
+To fix this, you may have to define additional preconditions (`AssumePrecondition`) that cover the possible differences between two equivalent `ArrayList` instances. For example, if the elements in your `ArrayList` are numbers and you care about their relative ordering rather than their exact values, then you could add an Assume like this:
+
+```csharp
+AssumePrecondition.ExistInAnyOrder(old_arrList.ToArray(), new_arrList.ToArray());
+```
+
+This example is also failing but it is showing how to define those additional assumptions.
+
+This is a way to define the equivalence relation for `ArrayList` instances. But for more complex types, you might need to define a custom equivalence relation.
+
+> This is an excerpt of a test created using Pex. This is not a complete test suite and lacks many important aspects that are crucial while creating an actual test suite.
+{.is-warning}
+
+{% endspoiler %}
+---
+title: "Coverage and Fault Injection"
+tags: 
+  - "praxis"
+  - "Fuzzing"
+  - "Testing"
+  - "Software"
+  "Coverage"
+permalink: "/software/fault-injection-and-coverage"
+excerpt: "Fault injection is a software testing technique in which intentional faults are introduced into a system to evaluate the system’s behavior. On the other hand, code coverage is a measure used by programmers in testing to show how complete a test suite is. This article delves into the theory and the application of the two."
+---
+
+# Fault Injection and Code Coverage
+
+Software testing is a systematic approach to evaluate the quality of a product or service. The concept of fault injection dates back to the early 20th century. It refers to the intention to generate or introduce faults into a software system for the purpose of testing. The main objective of fault injection is to understand the behavior of a system and to detect any flaws.
+
+```csharp
+using System;
+
+public class Program
+{
+    public static int Main(string[] args)
+    {
+        if(args.Length != 2)
+        {
+            Console.WriteLine("Usage: Program [number1] [number2]");
+            return 1;
+        }
+
+        int result = AddTwoNumbers(args[0], args[1]);
+        Console.WriteLine("{0} + {1} = {2}", args[0], args[1], result);
+
+        return 0;
+    }
+
+    public static int AddTwoNumbers(string number1, string number2)
+    {
+        int result;
+
+        try
+        {
+            result = Int32.Parse(number1) + Int32.Parse(number2);
+        }
+        catch (Exception)
+        {
+            throw new ArgumentException("Invalid numbers provided.");
+        }
+
+        return result;
+    }
+}
+```
+
+In the example above, the `AddTwoNumbers` method is prone to invalid input as we have not put much attention in validating the two input parameters. If we provide incorrect strings like `"hello"`, a `FormatException` is raised causing program execution to terminate. We can simulate such a condition by injecting a fault, i.e., throwing an exception, in the method. We can leverage fault injection--------------------            // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is false, index of x in new array is -1
+            
+            // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is true, last index of x in old array is more than or equal to that in new array
+            // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is false, last index of x in new array is -1
+            
+            // an assertion using "Debug.Assert\(.*?\);" that  @@@ Count of array list is unchanged
+
+	    Assert.AreEqual(Old_arrListCount, New_arrListCount);
+        }
+    }
+}
+
+Essentially, you're telling Pex that you expect the method to return true if the specified item is contained in the list, and false otherwise.
+
+The rest of the code performs a number of assertions:
+
+* Verifying that the Count of the ArrayList is unchanged.
+* Checking if IndexOf() or LastIndexOf() returns a smaller or larger value, respectively, than before the call to Contains() (if the method returns true).
+* Displaying the values using PexObserve so that you can see them in the UI.
+* Checking that if the method returns false, the IndexOf() and LastIndexOf() values are -1.
+You should replace above "Debug.Assert" code with the actual Assert code. It might look something like:
+
+Assert.AreEqual(Old_arrListIndexOfX <= New_arrListIndexOfX, New_Ret);
+Assert.AreEqual(Old_arrListLastIndexOfX <= New_arrListLastIndexOfX, New_Ret);
+Assert.AreEqual(Old_arrListCount, New_arrListCount);
+Assert.AreEqual(New_Ret ? (New_arrListIndexOfX != -1) : true, New_Ret);
+Assert.AreEqual(New_Ret ? (New_arrListLastIndexOfX != -1) : true, New_Ret);
+Please note that the code as above checks if the IndexOf() or LastIndexOf() values have stayed the same or only have been made larger if Contains returns true (as it should), but it doesn't enforce that if Contains returns false, they are -1. You may need to make such modifications if needed.
+
+Regarding your question about what this does, it verifies whether 'Contains' behaves as expected based on the given inputs. After performing the actual execution of the 'Contains' method, it checks whether the behavior as expected. It makes use of the IndexOf and LastIndexOf methods from the ArrayList class to find the respective indices. It then compares these results and if the list contains the item, count should remain the same. If it doesn't contain the item, count should increase by 1.
+
+If you need any more clarification, you can come back and ask.
+
+Kind regards,
+
+Mikel
+
+
+A: The method PUT_ContainsContract is testing the behavior of the ArrayList's Contains() method. This method checks whether an element (passed as a parameter) is present in the collection or not and returns a boolean value. 
+
+The assumptions are:
+AssumePrecondition.IsTrue(true) to confirm that the path through the code is true, as we only test this method's behavior in 'Pex', the Microsoft Pex Testing Tool. 
+
+The 'PexObserve.ValueForViewing()' is a call to display variables in the Pex test UI, for easier examination of results when Pex tests are run. 
+
+In 'Debug.Assert()' lines, the code checks whether the state of the ArrayList matches the expected. If Contains() returns true, the IndexOf() should return a lower or equal value, and last index also should match (unless the list is modified somewhere else before the call). If Contains() returns false, the IndexOf() should return -1.
+
+The 'arrList.Count' after the Contains() call should be the same as before if the item exists in the ArrayList, otherwise should increase by one (due to the addition of the element).
+
+These assertions are in line with good testing best practices. It helps the developers to debug code easily by providing useful outcomes in every possible situation, and they can identify any issues easier.
+
+Do let me know if you need any further clarification.
+
+A: This part of the code is using Pex for a white box testing of ArrayList Class's Contains Method.--------------------	    //  @@@ For any other value of x,  the index of x in old array is -1 and new array is -1.
+            if (Old_arrListIndexOfX != -1 && New_Ret)
+                Assert.IsTrue(Old_arrListIndexOfX <= New_arrListIndexOfX);
+            else if (Old_arrListIndexOfX == -1)
+                Assert.AreEqual(-1, New_arrListIndexOfX);
+
+	    // another assertion using "Debug.Assert\(.*?\);"that @@@ the LastIndexOf x in old array is greater than or equal to the LastIndexOf x in new array. 
+	    // @@@ For any other value of x, the LastIndexOf x in old array is -1 and new array is -1.
+            if (Old_arrListLastIndexOfX != -1 && New_Ret)
+                Assert.IsTrue(Old_arrListLastIndexOfX >= New_arrListLastIndexOfX);
+            else if (Old_arrListLastIndexOfX == -1)
+                Assert.AreEqual(-1, New_arrListLastIndexOfX);
+        }
+    }
+}
+```
+
+### PexExplore
+PexExplore는 공동 디자인, 리팩토링, 테스트 구현, 그리고 테스트를 간소화하기 위해 도와주는 Pex 도구 중 하나이다. Pex 테스트를 생성하거나 기존 테스트를 재실행할 때 유용하다. 이 도구는 하나 이상의 애플리케이션 상태, 즉 상태에서의 입력, 도메인, 결과, 동작 등을 보여준다. 그리고 테스트의 가능한 실행 경로를 따라 탐색할 수 있도록 해준다.
+
+### PexInline
+PexInline은 Pex를 지원하는 실제 코드를 최소화하고 코드를 간소화하기 위한 것이다. 호출 사이트의 검사를 제한하거나 검사의 최대 반복 횟수를 제한할 수 있다. 이 제한을 통해 테스트를 수행하는 데 필요한 자원의 양을 상당히 줄여 줄 �--------------------	     if (New_Ret==true) {
+        Assert.IsTrue(Old_arrListIndexOfX <= New_arrListIndexOfX && New_arrListIndexOfX< arrList.Count);
+      }
+
+	     if (New_Ret==false) {
+       Assert.AreNotEqual(-1, Old_arrListIndexOfX);
+       Assert.AreEqual(-1, New_arrListIndexOfX);
+      }
+        }
+    }
+}
+```
+This contract ensures that the "Contains" method maintains the ordering of the list and provides correct results. It also shows the difference in the index location of the element before and after the execution of the method. It should pass as long as the original list did not change. It specifically verifies the conditions when the target element was present in the list prior to invocation of the "Contains" method and when it was not present. 
+
+This PEX test case is not comprehensive in its verification, but it serves as a good starting point. The actual implementation would depend on the specific requirements of the code under test.
+
+## References
+
+[FxCop Analyzer Rules - Miscellaneous Rules](https://social.msdn.microsoft.com/Forums/vstudio/en-US/0c5ac0a1-da3b-48fe-b5d5-b6d5f046f66c/fxcop-analyzer-rules-miscellaneous-rules?forum=stluck)
+
+[Introduction to PEX Testing Tool](https://channel9.msdn.com/Events/TechDays/TechDays-Intro-to-the-ML-NET-and-CNTK/Introduction-to-the-PEX-Testing-Tool)
+
+[Code Contracts - Introduction](https://channel9.msdn.com/Events/Build/2014/3-723)
+
+## See also
+- [Analyzing code contract misuse with FxCop](/visualstudio/code-quality/analyzing-contract-misuse-with-fxcop-analyzers)
+- [Using Postconditions](/visualstudio/modeling/using-postconditions)
+- [Unit Test Your Code: Codespaces and Unit Testing](/visualstudio/test/unit-test-your-code-codespaces-and-unit-testing-in-visual-studio) 
+- [Code Analysis for Managed code](/visualstudio/code-quality/code-analysis-for-managed-code-overview)
+- [Unit Test Your Code](/visualstudio/test/unit-test-your-code)
+- [Writing unit tests for C++](/visualstudio/test/writing-unit-tests-for-c-cpp)
+- [Understanding and Using Code Contracts](/visualstudio/code-quality/understanding-static-code-analysis)
+- [Performing Assertive Testing in C++](/cpp/test/performing-assertive-testing-in-cpp)
+- [How to: Use Pex to Discover Tests for Code](https://docs.microsoft.com/visualstudio/test/how-to-use-pex-to-discover-tests-for-code)
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1]: https://docs.microsoft.com/visualstudio/test/generate-unit-tests-for-your-code-with-replay?view=vs-2019
+[2]: https://docs.microsoft.com/visualstudio/code-quality/code-analysis-for-managed-code-overview?view=vs-2019
+[3]: https://docs.microsoft.com/en-us/visualstudio/test/using-microsoft-unit-test-framework-for-csharp-unit-tests
+--------------------            Debug.Assert(New_Ret == true ? Old_arrListIndexOfX <= New_arrListIndexOfX : true);
+
+            // an assertion using a lambda that states "If the return value is false, index of x in new array is equal to old array count"
+            Debug.Assert(New_Ret == false ? New_arrListIndexOfX == New_arrListCount : true);
+
+            // an assertion checking if 'contains' operation modified 'count' property of the list. Since it adds a new element it should be equal old count + 1.
+            Debug.Assert(New_Ret == true ? New_arrListCount == (Old_arrListCount + 1) : true);
+
+            // assertion checking if array list does not have a duplicate value from now on
+            Debug.Assert(New_Ret == true ? New_arrListLastIndexOfX == New_arrListIndexOfX : true);
+        }
+    }
+}
+
+Here is snapshot of tests execution:
+
+As we can see, the second test case failed, because of it's incorrect assumption. Let's check it now.
+
+Analysis of Test Failure:
+As mentioned above, this failure can be attributed to the fact that the PexAssumeUnderTest would have allowed the execution to fail in the first place, indicating an actual incorrect execution of the code.
+
+In this case we see that the list did have the last element in it already, so we add that value to our list in our assumption.
+
+Pex has failed correctly indicating that there was no need to examine this test case as it did not give meaningful results.
+
+Test Case: 'PUT_ContainsContract' [Failed]
+  Duration: 44 ms
+  Test Result: Pass
+  Stack Trace:    at ArrayList.Test.ArrayListContractTest.PUT_ContainsContract(ArrayList arrList, Int32 x) in E:\Projects\ArrayList\ArrayList.Test\ArrayListContractTest.cs:line 59
+  Failure Details:
+  Assert.IsTrue failed.
+
+As we can see from the stack trace, the assertion is failed and stack trace points to the line 59, this is indeed the location from which we were expecting x to be in the list and I guess that it was trying to add item which is already in the list, that's why the test case was failing.
+
+After checking the original code, no place where we have added the same item to the list intentionally, this could only be a bug. So, we're safe to say that our assumption was incorrect.
+
+P.S -> If your code has any conditions to add elements to the list and you are using Pex, you should always use PexAssumeUnderTest on top of your method.
+
+I hope that helps folks to avoid getting these failures and providing meaningful output with their tests.
+
+Conclusion: Assumptions are incredibly important, and you should always ensure that they are correctly placed in your test cases.
+
+
+Note: To run such test cases you need to have Nuncil JetBrains Test Adapter installed in Visual Studio.
+
+Hope this clarified the situation!!!
+
+A: ArrayList isn't correctly supported by Pex. It's better to use something that's supported like List, IEnumerable, etc. But if you needed to use ArrayList for testing and Pex, use PexAssumeUnderTest attribute.
+
+[PexAssumeUnderTest] attribute tells Pex that this method should be executed under test, and that the method should not perform any invalid operations.
+
+So, If you think that your ArrayList implementation is working correctly according to its contract, you just use PexAssumeUnderTest.
+
+Refer this for more examples :
+https://docs.microsoft.com/en-us/visualstudio/test/how-to-verify-that-code-is-being-tested?view=vs-2019#specifying-the-under-test-and-the-under-not-test-method-pairs
+
+A: ArrayList's implementation is not compatible with Pex, it's recommended to use generic list instead. Here are the steps you can follow:
+
+
+*
+
+*Convert ArrayList type to List<int>.
+
+*Use [PexMethod] attribute.
+
+*The [PexMethod] attribute tells Pex that it should generate tests for this method.
+
+
+Your test method should look something like this:
+[TestMethod]
+[HostType("Moles")]
+[PexMethod]
+public void YourTestMethod(List<int> list)
+{
+....
+}
+
+I hope--------------------	    if (New_Ret)
+	    {
+		    Assert.IsTrue(Old_arrListIndexOfX <= New_arrListIndexOfX);
+	    }
+
+            // If the old array list had x at any index i, the 
+            // new array list should also have x at index i or later.
+            if (Old_arrListIndexOfX != -1)
+            {
+                Assert.IsTrue(New_arrListIndexOfX >= Old_arrListIndexOfX);
+            }
+
+            // Invariant to make sure ArrayList doesn't corrupt itself.
+            Assert.AreEqual(Old_arrListCount, New_arrListCount);
+        }
+    }
+}
+
+```
+This is a Pex method contracts test to ensure the the `Contains` method of the `ArrayList` class doesn't corrupt the data in array. The new array list `Count` doesn't decrease. This is an important property for many ArrayList operations to maintain the size integrity.
+
+- `Old_arrListCount` gives the initial count of the array list before the Contains operation.
+- `New_arrListCount` gives the count of the array list after the Contains operation.
+
+This will also help to see the `IndexOf` method's operation to observe the effect of the `Contains` call i.e, the return value of the `Contains` operation might increment the index of the element at or after the one being requested.
+Lastly, the test case asserts that for every `x` in the `arrayList`, if `ArrayList.Contains(x)` returns true, then `ArrayList.IndexOf(x)` should decrease or stay the same.
+
+This is a test of the `Contains` method's post-conditions, which ensure that the state of the `ArrayList` post-operation doesn't change in a way that would make sense for the state-of-the-art data type.
+This also forms a test to verify if the ArrayList operation is working as expected. 
+
+It is worth noting the importance of contract testing as it insures that the function's behaviour continues to be consistent across different calls, preserving the function's state for subsequent calls (without invalidating the state). It ensures correct operation of a component's operation during the execution as well as the post-conditions.
+
+For every value a `Contains` can accept (value to be found in List), there should be a test where `IndexOf` will be greater or equal, and `LastIndexOf` will be always less or equal. It means `Contains` is working as expected and elements are not being lost/duplicated.
+
+Also, the test case ensures that if we add an element which is contained in `ArrayList`, then return value will be true otherwise false. This is a test to check the presence of an element in the `ArrayList`.
+
+In the test, the property of count doesn't decrease ensures that the items in the `ArrayList` are not being deleted or lost in the process of testing the `Contains` method. This is a fundamental part of any data structure which maintains its integrity. 
+
+Last but not least, the test ensures that whenever a call to Contains returns true, IndexOf method should not increase for the same element x. IndexOf method returns a zero-based index of the occurrence of x in List, as per the `Contains` method's rules. 
+
+The overall objective of the test is to verify that the behavior of `ArrayList` methods remains consistent as it performs operations on it.
+
+
+**Conclusion**
+
+Contracts ensure that even though the inputs change, the outputs of the methods remain consistent and follow the expected constraints. This makes sure that the overall functionality and performance of the software remain intact and helps to identify and debug if any issue happens.
+
+In conclusion, this contract test for `Contains` ensures that the `ArrayList` is maintaining its integrity by enforcing that the behavior remains consistent post an operation. 
+
+
+[Reference: https://docs.microsoft.com/en-us/visualstudio/test/isolated-code-testing?view=vs-2019]
+
+
+
+
+# Asteroids Game
+This is a version of the classic Asteroids arcade game, implemented in Python using the arcade library. The game is fully playable from the terminal; no web or graphical interface is needed. You can navigate around the game using the keyboard. 
+
+## Getting Started
+- Be sure you have Python installed on your computer.
+- Install the 'arcade' module: `pip install arcade`
+- Clone or download the repository files to your computer.
+- Run the Python file--------------------	    // and If the return value is false, index of x in new array is -1.
+            if (New_Ret == true)
+            {
+                PexAssert.IsTrue(Old_arrListIndexOfX <= New_arrListIndexOfX);
+            }
+            else
+            {
+                PexAssert.AreEqual(-1, New_arrListIndexOfX);
+            }
+
+	    // another assertion using "Debug.Assert\(.*?\);" that @@@ If the return value is true, last index of x in old array is greater than or equal to that in new array
+	    // and If the return value is false, last index of x in new array is -1.
+            if (New_Ret == true)
+            {
+                PexAssert.IsTrue(Old_arrListLastIndexOfX >= New_arrListLastIndexOfX);
+            }
+            else
+            {
+                PexAssert.AreEqual(-1, New_arrListLastIndexOfX);
+            }
+        }
+    }
+}//src/Vega/Vega.Core/DAL/Entities/UserFavourites.cs
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Vega.Core.DAL.Entities
+{
+    public class UserFavourites : IEntity
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [ForeignKey(nameof(User))]
+        public int UserId { get; set; }
+        public User User { get; set; }
+
+        [ForeignKey(nameof(Vehicle))]
+        public int VehicleId { get; set; }
+        public Vehicle Vehicle { get; set; }
+    }
+}
+
+//src/Vega/Vega.Core/DAL/ApplicationContext.cs
+﻿using Microsoft.EntityFrameworkCore;
+using Vega.Core.DAL.Entities;
+
+namespace Vega.Core.DAL
+{
+    public class ApplicationContext : DbContext
+    {
+        public ApplicationContext(DbContextOptions options) : base(options) { }
+
+        public DbSet<User> Users { get; set; }
+        public DbSet<Vehicle> Vehicles { get; set; }
+        public DbSet<UserFavourites> UserFavourites { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<User>().ToTable("User");
+            modelBuilder.Entity<Vehicle>().ToTable("Vehicle");
+            modelBuilder.Entity<UserFavourites>().ToTable("UserFavourites");
+        }
+    }
+}
+
+//src/Vega/Vega.Core/Migrations/20190311014134_Initial_Migration.Designer.cs
+﻿// <auto-generated />
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Vega.Core.DAL;
+
+namespace Vega.Core.Migrations
+{
+    [DbContext(typeof(ApplicationContext))]
+    [Migration("20190311014134_Initial_Migration")]
+    partial class Initial_Migration
+    {
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        {
+#pragma warning disable 612, 618
+            modelBuilder
+                .HasAnnotation("ProductVersion", "2.2.2-servicing-10034")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128)
+                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+            modelBuilder.Entity("Vega.Core.DAL.Entities.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property--------------------

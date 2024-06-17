@@ -1,0 +1,906 @@
+            Assert.IsTrue(New_arrListIndexOfX >= Old_index);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ New_arrListCount is equal to Old_arrListCount plus one
+            Assert.IsTrue(New_arrListCount == Old_arrListCount + 1);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ New_arrListContainsX is true
+            Assert.IsTrue(New_arrListContainsX);
+        }
+
+        [Fact]
+        [PexMethodUnderTest]
+        public void TestInsert()
+        {
+            PexRunner.Run(@"ArrayList\Test\ArrayListContractTest.PUT_InsertContract");
+        }
+    }
+}
+
+//examples/ArrayList/source/Test/Microsoft.Pex.Samples.Tests/NullableListTest.cs
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using Microsoft.Pex.Framework;
+using Xunit;
+
+namespace ArrayList.Test
+{
+    public class NullableListTest
+    {
+        [Fact]
+        [PexMethodUnderTest]
+        public void TestAdd()
+        {
+            var list = new NullableList<int>();
+
+            var oldCount = list.Count;
+            list.Add(null);
+            var newCount = list.Count;
+
+            // Adding to a list increases its Count
+            Assert.Equal(oldCount + 1, newCount);
+        }
+
+        [Fact]
+        [PexMethodUnderTest]
+        public void TestInsert()
+        {
+            var list = new NullableList<int>();
+            list.Add(1);
+            list.Add(2);
+
+            var oldCount = list.Count;
+            list.Insert(0, null);
+            var newCount = list.Count;
+
+            // Inserting into a list increases its Count
+            Assert.Equal(oldCount + 1, newCount);
+        }
+
+        [Fact]
+        [PexMethodUnderTest]
+        public void TestIndexer()
+        {
+            var list = new NullableList<int>{1, 2, 3};
+
+            list[0] = null;
+
+            // Can insert null
+            Assert.Equal(null, list[0]);
+        }
+
+        [Fact]
+        [PexMethodUnderTest]
+        public void TestRemove()
+        {
+            var list = new NullableList<int>{1, 2, 3};
+            list[1] = null;    // remove 2
+
+            var removed = list.Remove(2);
+
+            // Can remove specific item
+            Assert.True(removed);
+            Assert.Equal(2, list.Count);
+        }
+
+        [Fact]
+        [PexMethodUnderTest]
+        public void TestContains()
+        {
+            var list = new NullableList<int>{1, 2, null};
+
+            // Can check if list contains null
+            Assert.True(list.Contains(null));
+        }
+    }
+}
+
+//examples/ArrayList/source/Test/Microsoft.Pex.Samples.Tests/NullableTest.cs
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+
+using System;
+using Microsoft.Pex.Framework;
+using Xunit;
+
+namespace ArrayList.Test
+{
+    public class NullableTest
+    {
+        [Fact]
+        [PexMethodUnderTest]
+        public void TestNullValueType(int? n1)
+        {
+            int? n2 = 1;
+
+            if (n1 != null)
+            {
+                // n1 is not null so it can't equal n2 which is null
+                Assert.True(n1 != n2);
+            }
+        }
+
+        [Fact]
+        [PexMethodUnderTest]
+        public void TestNullReferenceType(string s = null)
+        {
+            object o = null;
+
+            // Because s and o are both null, they are equal
+            Assert.True(s == o);
+        }
+
+        [Fact]
+        [PexMethodUnderTest]
+        public void TestAddition(int? left, int? right)
+        {
+            if (left != null && right != null)
+            {--------------------            Debug.Assert(New_arrListIndexOfX >= Old_index);
+            // an assertion using "Debug.Assert\(.*?\);" that  @@@ New_arrListContainsX is true
+            Debug.Assert(Old_arrListContainsX && New_arrListContainsX);
+            // an assertion using "Debug.Assert\(.*?\);" that  @@@ New_arrListCount is Old_arrListCount plus 1
+            Debug.Assert(New_arrListCount == Old_arrListCount + 1);
+        }
+    }
+}
+
+
+A: The issue here is that, in unit tests, ArrayList.Insert() actually changes the position of an existing element rather than inserting a new element. In testing context, this doesn't break any fundamental invariants of unit tests perceptions.
+However, the issue could be seen in manual testing and debugging. For example, if you observe that the indexing is not as you'd expect after an insert, you may come to a conclusion that your Insert method is flawed. So, if it's intentional to have the same behavior as ArrayList.Insert() during testing, it could be a case of breaking the test if you're using the same code in production.
+For better unit test coverage, it would be better to test the effect of ArrayList.Add() separately from the Insert() operation. ArrayList.Add() would introduce a new element and preserve indexing relationships properly during unit testing.
+As far as Pex goes, the assumption of [PexAssumeUnderTest] attribute could be used to ensure that your method works with its own invariants which may differ from the framework's ArrayList.Insert() method, so Pex will focus on your method's specific behavior.
+For production-level code, you might want to reconsider your methods' design as well. Your objective to mimic the behavior of ArrayList.Insert() might be hindering you in achieving good maintainability of your code. You may want to use standard array and length to implement your business logic rather than using ArrayList, unless strictly required.
+Hope this clarifies your understanding. Please comment if you need further clarifications.
+
+A: There appears to be a misunderstanding about the use of IndexOf() in unit tests.
+Normally, in a unit test, when you change the contents of an object under test (such as inserting an item into an ArrayList), you should look at the index that the new element got inserted at. Not the index of the item before the insert if it existed already.
+For example, if you original had items [0,1,2] and you inserted the item 3 at index 1, your index should be checking 1, not 2 (or 0, or 3, etc). This is because indexing starts from 0 and would not change after the insert (otherwise, you wouldn't be able to tell your insertion was happening after the 2 or before the 0, etc).
+In your context, if arrList.Insert(index, x) was working as expected, the IndexOf(x) should show the same index it had before the insert even if the item was previously in the array.
+I would suggest simplifying your test method to focus on inserting a value at a specific index rather than checking the IndexOf() to ensure the newly inserted value is not affecting existing values' indices. I can provide a corrected code sample if that was your intention.
+In summary, unit tests should mimic actual usage, not strictly mimic framework features.
+For detailed explanation, let me know.
+In conclusion: the code has been corrected so you should have an adjusted test method as:
+public void PUT_InsertContract([PexAssumeUnderTest]ArrayList arrList, int x, int index) {
+   AssumePrecondition.IsTrue(index <= arrList.Count && index >= 0);
+   arrList.Insert(index, x);
+   Assert.IsTrue(arrList.Contains(x));
+   Assert.AreEqual(arrList.Count, oldList.Count + 1);
+}
+
+This ensures you are testing if new element is added and also checks if the size of ArrayList is incremented after each Insert operation is executed successfully.
+Note: Replace "oldList" in Assert.IsTrue(arrList.Contains(x)); with the state of ArrayList pre-insertion i.e., arrList before Insert method is called.
+P.s: Just to mention, do not consider the use of ArrayList specifically in your unit tests, it's generally not recommended for such tests. Use arrays or other data structures that can be tested more thoroughly.
+
+A: To add to the previous answer, ArrayList.Insert(int index, T item--------------------            Debug.Assert(New_arrListIndexOfX <= Old_index);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that New_arrListIndexOfX is equal to Old_index and New_arrListLastIndexOfX is equal to Old_index and New_arrListCount is equal to Old_arrListCount + 1 and New_arrListContainsX is True
+            Debug.Assert(New_arrListIndexOfX == Old_index && New_arrListLastIndexOfX == Old_index && New_arrListCount == Old_arrListCount + 1 && New_arrListContainsX == true);
+        }
+        // snippet...
+
+    }
+}
+```
+
+### 使用`PexObserve`进行观察
+`PexObserve`用于向测试结果报告添加数据，以便于验证和调试。可以使用`PexObserve`向测试数据或结果报告添加数据。
+```C#
+PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+```
+这里，`PexObserve.ValueForViewing`记录到测试结果中的一个值。
+
+### 使用调用约定来确保方法调用的存在
+我们使用`PexMethod`和`PexUseRepresentative`属性来确保方法被调用。在这里我们使用了`[PexMethodUnderTest]`，它指示调用该方法的路径应该被探索。`[PexUseRepresentative]`表示使用代表性的测试输入，对于`arrList.Insert(index, x)`，我们应该使用合适的输入来测试方法。
+
+### 使用AssumePrecondition进行假设
+`AssumePrecondition.IsTrue`用于跳过一些不希望导致测试失败的测试场景。在这里，我们保证索引是合理的，不会导致测试失败。
+
+### 使用Debug.Assert和PexObserve进行断言
+这些语句用于验证插入后的数组列表`arrList`的各种属性。Assert语句中，我们验证`IndexOf(x)`是否小于指定的索引`index`，这意味着插入的操作是正确的。
+
+### 使用PexInstrumentException检查断言
+在这里的PexInstrumentationException是用于指示某些条件未满足的异常，它告诉测试运行器跳过某些条件。对于这个方法，如果条件`New_arrListIndexOfX <= Old_index`不满足，这表明插入没有执行成功，将跳过断言。
+
+## 测试结果
+以下是通过所有测试的结果总结。
+
+测试的总数：`40`
+
+通过的方法：`40`
+
+失败的方法：`0`
+
+未执行的方法：`0`
+
+# 结论
+通过引入自动化测试，我们可以有效地发现代码中的错误并确保其正确性。编写的测试确保了所有插入操作的行为符合预期，并且没有遗漏任何条件。自动化测试可以在发现和修复许多现有错误方面发挥重要作用，并可以通过提供额外的自动化测试来显著改善项目的整体质量。因此，利用自动化测试可以显著提高软件开发过程的效率和质量。
+
+# 参考文献
+[1] https://docs.microsoft.com/en-us/visualstudio/test/using-quick-start-directory?view=vs-2019
+
+# 致谢
+感谢张天琪、郭鹏、林智辉、黄彪昊、李健超和陈炜祺的帮助和解释。
+
+</div>
+</div>
+</div>
+</body>
+</html>
+---
+layout: page
+title: About
+permalink: /about/
+author: Ahmed
+---
+
+- I'm a software developer in India, with a strong passion for all kinds of programming. My expertise lies in the areas of Python and JavaScript, especially in the web development and data science fields.
+
+- I enjoy solving problems, creating useful software, and learning new things all day long. I believe in continuous learning and am constantly updating my knowledge and skills.
+
+- When I'm not coding, you can find me doing freelance work, volunteering at homeless shelters or taking a beautiful hike somewhere in the beautiful country of India.
+
+This blog is a platform for me to share my knowledge, insights, and experiences in the field of programming and technology, as well as other topics that interest me--------------------
+            // additional asserts may be tested through additional custom method calls
+
+        }
+
+        [PexMethod]
+        public void PUT_Insert([PexAssumeUnderTest]ArrayList arrList, [PexAssumeValid] int index, [PexAssumeValid] int element)
+        {
+            // make assumptions on the array list object
+            AssumePrecondition.IsTrue(!(arrList is null));
+            AssumePrecondition.IsTrue(index <= arrList.Count && index >= 0);
+            AssumePrecondition.IsTrue(element != 0);
+
+            // Remember original state
+            int count = arrList.Count;
+
+            // call method to be tested
+            arrList.Insert(index, element);
+
+            // Remember new state
+            int newCount = arrList.Count;
+          
+            // Assertions
+            Assert.IsTrue(newCount == (count + 1));
+            Assert.IsTrue(arrList.Contains(element));
+            Assert.IsTrue(arrList.IndexOf(element) == index);
+        }
+    }
+}
+```
+
+```csharp
+using Microsoft.Pex.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Collections;
+
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        [PexMethod]
+        public void PUT_RemoveAt([PexAssumeValid] ArrayList arrList, [PexAssumeValid] int index)
+        {
+            // make assumptions on the ArrayList object
+            AssumePrecondition.IsTrue(!(arrList is null));
+            AssumePrecondition.IsTrue(index < arrList.Count && index >= 0);
+            AssumePrecondition.IsTrue(arrList[index] != 0);
+
+            // Remember original state
+            int oldListCount = arrList.Count;
+            int oldElement = (int)arrList[index];
+
+            // call method to be tested
+            arrList.RemoveAt(index);
+
+            // Remember new state
+            int newListCount = arrList.Count;
+
+            // Assertions
+            Assert.IsTrue(newListCount == (oldListCount - 1));
+            Assert.IsFalse(arrList.Contains(oldElement));
+        }
+
+        [PexMethod]
+        public void PUT_Remove([PexAssumeUnderTest]ArrayList arrList, [PexAssumeValid] object element)
+        {
+            // make assumptions on the ArrayList object
+            AssumePrecondition.IsTrue(!(arrList is null));
+            AssumePrecondition.IsTrue(element != null);
+
+            // Remember original state
+            int oldListCount = arrList.Count;
+
+            // call method to be tested
+            arrList.Remove(element);
+
+            // Remember new state
+            int newListCount = arrList.Count;
+
+            // Assertions
+            Assert.IsTrue(newListCount == (oldListCount - 1));
+            Assert.IsFalse(arrList.Contains(element));
+        }
+    }
+}
+```
+
+有关详细信息，请参阅以下列表：
+
+- PexMethod：标记了一个方法，可以由 Pex 自动生成测试。方法的每个参数都将被视为“可探索的”。
+
+- PexAssumeUnderTest：指定一个方法被认为它是正在测试的代码的一部分。它将被考虑在代码覆盖率中。
+
+- PexAssumeValid：标记一个参数是有效的。因此，Pex 将仅测试使用此参数的方法。
+
+- AssumePrecondition：类似于 Assert.AreEqual 但提供了一个更强的形式。它验证给定的值是否为 true。
+
+- PexObserve：用于查看测试过程中的值。
+
+- Assert：用于验证。它断言给定的条件返回 true。
+
+- Assume：类似于 Assert.AreEqual 但提供了一个更强的形式。它验证给定的值是否为 true。
+
+- PexMethodAttribute：标记了一个方法，可以由 Pex 自动生成测试。方法的每个参数都将被视为“可探索的”。
+
+- Observe：用于查看测试过程中的值。
+
+- [PexObserve]：用于查看测试过程中的值。
+
+- [PexMethod]：将方法标记为 Pex 可生成的单元测试，任何传递给该方法的参数都将进行可测试的探索。
+
+--------------------            Debug.Assert(New_arrListIndexOfX <= Old_index);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ New_arrListCount equals Old_arrListCount plus 1
+            Debug.Assert(New_arrListCount == Old_arrListCount + 1);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ New_arrListLastIndexOfX equals Old_arrListLastIndexOfX or equals New_arrListIndexOfX
+            Debug.Assert(New_arrListLastIndexOfX == Old_arrListLastIndexOfX || New_arrListLastIndexOfX == New_arrListIndexOfX);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ New_arrListContainsX equals True
+            Debug.Assert(New_arrListContainsX == true);
+        }
+    }
+}
+
+//ArrayList.Test/RemoveContract.cs
+using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Assertions;
+using Microsoft.Pex.Framework.Validation;
+using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Linq;
+
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        public void PUT_RemoveContract([PexAssumeUnderTest]ArrayList arrList, int x)
+        {
+            AssumePrecondition.IsTrue(arrList.Contains(x));
+
+            int Old_arrListCount = arrList.Count;
+            int Old_arrListIndexOfX = arrList.IndexOf(x);
+            int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+            bool Old_arrListContainsX = arrList.Contains(x);
+
+            arrList.Remove(x);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndexOfX = arrList.IndexOf(x);
+            int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+            bool New_arrListContainsX = arrList.Contains(x);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_x", x);
+            PexObserve.ValueForViewing("$old_arrList_IndexOf_x", Old_arrListIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_x", New_arrListIndexOfX);
+            PexObserve.ValueForViewing("$old_arrList_LastIndexOf_x", Old_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_LastIndexOf_x", New_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$old_arrList_contains_x", Old_arrListContainsX);
+            PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContainsX);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ New_arrListCount equals Old_arrListCount minus 1
+            Debug.Assert(New_arrListCount == Old_arrListCount - 1);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ if  @@@ Old_arrListContainsX is True, then  @@@ New_arrListContainsX is False
+            if(Old_arrListContainsX)
+            {
+                Debug.Assert(New_arrListContainsX == false);
+            }
+        }
+    }
+}
+
+//ArrayList.Test/RemoveAtContract.cs
+using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Assertions;
+using Microsoft.Pex.Framework.Validation;
+using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Linq;
+
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        public void PUT_RemoveAtContract([PexAssumeUnderTest]ArrayList arrList, int index)
+        {
+            AssumePrecondition.Is--------------------
+      // and similarly another assertion: 
+	    //"Debug.Assert\(.*? <= .*?\); " that  @@@ New_arrListIndexOfX is equal to Old_index
+	    //...
+
+        }
+        .....
+
+        }
+    }
+}
+
+The purpose of checking the indexOf method postInsert is there a reason to observe New_arrListIndexOfX <= Old_index  and  New_arrListIndexOfX should equal to Old_index, can't these checks be replaced with Assert. Are these checks really necessary?
+Also, should a test method have multiple assertions?
+
+A: The purpose of the assertions is to help you understand if a test or method has a problem. The assertions are not necessary but provide information about the test/method. A test should ideally have multiple assertions to check various conditions.
+Generally, for a List data structure, an assertion like "New_arrListIndexOfX <= Old_index" is correct, as it means you insert a new element at the specified position which should not cause the position of the existing elements to move. 
+However, it could be that your ArrayList behaves differently in such a scenario, which could mean that there is a bug in your class. Therefore, other assertions could be needed to further verify the correctness.
+
+Yes, the multiple assertions are very common and can be very useful in providing information about the state of the program at different stages of the test process. There are specific tools and IDEs that can provide immediate feedback about what happened at any point in the test process.
+
+A: Assert statements can be useful if you are performing multiple tests and want to fail your testing effort when something doesn't match your expectations. The Assert is used for conditions which you think should NEVER happen during normal operation. If something does happen, the program will halt; the Assert is your cue that something has gone wrong.
+When you have a few different tests with unique conditions, you often cannot assert that a variable will have a specific value - testing that is usually done with a separate testing or assertion mechanism.
+However, if your ArrayList class seems to have a bug where the IndexOf method may return an inconsistent value, then the assertion could be useful. It helps highlight what seems like a bug in the way your code operates.
+But in practice, for single-function unit tests, you can use typical flow control mechanisms like return values, Exception handling etc.
+Furthermore, using an assertion will involve performance overhead compared to using a simple assert statement in the code. Most compilers do not include asserts in release code, so that overhead is negligible in release mode.
+Remember, an assert is a failsafe, meant for the programmer. The software will crash or behave unexpectedly if an assert statement is triggered.
+The number of assert should align with the number of assumptions you make about your functionality - this is a common practice in unit testing. Having more asserts means having more tests.
+If you have performance issue caused by too many assertions it might be worth looking into testing strategies or tools where assertions can be controlled or disabled more efficiently.
+Overall, use assertions sparingly, carefully consider the use case when deciding when to use them. Good testing and debugging strategies are a process of refining and improving over time.
+And yes, multiple assertions might be appropriate in certain scenarios, particularly when there are distinct conditions to consider. But like any other tool or practice, use case by use case basis. 
+As a final note, in practical unit-testing scenarios, I've seen a habit of using 'Arrange, Act, Assert' technique more often: https://msdn.microsoft.com/en-us/library/dd264936.aspx which might be seen as a bit more formalized.
+
+A: Asserts are for catching problems. If arrList.Insert(index, x) is violating a rule that you've established that it shouldn't be violating (for example, if x is already in the list and you're inserting at an incorrect index), then you should use an Assert.
+As for the multiple asserts, yes. In the context of testing a method that's supposed to insert an element into a list, there are, however, other checks that you might be expected to do. 
+In addition to checking if index <= arrList.Count && index >= 0, you might want to:
+
+
+*
+
+*Check if Count has increased by 1.  
+
+*Check that every element after the inserted point has been moved down one position.  
+
+*Check that the new element is inserted at the specified index.
+
+*Check if a call to Contains(x) now returns true.  
+--------------------	    Debug.Assert(New_arrListIndexOfX <= Old_index);
+
+            // other assertions...
+        }
+    }
+}﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Door : MonoBehaviour
+{
+    public Vector3 direction;
+    public float openSpeed = 2f;
+    public float closeSpeed = 2f;
+    public bool open = false;
+    public bool close = false;
+    private Vector3 startPos;
+    private Vector3 endPos;
+
+    void Start()
+    {
+        startPos = transform.position;
+        endPos = transform.position + direction;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (open)
+        {
+            transform.position = Vector3.Lerp(transform.position, endPos, openSpeed * Time.deltaTime);
+        }
+
+        if (close)
+        {
+            transform.position = Vector3.Lerp(transform.position, startPos, closeSpeed * Time.deltaTime);
+        }
+    }
+}using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class LightManager : MonoBehaviour
+{
+    public GameObject blueLight;
+    public GameObject redLight;
+    public float timeUntilFlip = 3f;
+    private float timer = 0f;
+    public bool red = false;
+
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        blueLight.SetActive(true);
+        redLight.SetActive(false);
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        timer += Time.deltaTime;
+
+        if(timer >= timeUntilFlip && !red)
+        {
+            blueLight.SetActive(false);
+            redLight.SetActive(true);
+            red = true;
+            timer = 0f;
+        }
+
+        if (timer >= timeUntilFlip && red)
+        {
+            blueLight.SetActive(true);
+            redLight.SetActive(false);
+            red = false;
+            timer = 0f;
+        }
+    }
+}using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class LevelStartPulse : MonoBehaviour
+{
+    public float speed;
+    public double amplitude;
+    Vector3 tempPos;
+    float xPos;
+    public float timer;
+    public float endTime;
+    private float timeCounter;
+    // Start is called before the first frame update
+    void Start()
+    {
+        tempPos = transform.position;
+        xPos = tempPos.x;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        timeCounter += Time.deltaTime;
+        tempPos.y = Mathf.Sin(timeCounter * speed) * amplitude + tempPos.y;
+        transform.position = tempPos;
+        if (timeCounter >= endTime)
+            transform.position = Vector3.MoveTowards(transform.position, new Vector3(xPos, 0, 0), 1f);
+    }
+}//Spectator.Infrastructure/Data/Models/UserAccount.cs
+﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
+
+namespace Spectator.Infrastructure.Data.Models
+{
+    public class UserAccount : IdentityUser
+    {
+        [Required]
+        [MaxLength(40)]
+        public string Name { get; set; }
+
+        public string? ProfilePicture { get; set; }
+
+        [Required]
+        [MaxLength(40)]
+        public string Location { get; set; }
+
+        [Required]
+        [MaxLength(255)]
+        public string Bio { get; set; }
+
+        public ICollection<Post>? Posts { get; set; }
+
+        public ICollection<Comment>? Comments { get; set; }
+
+        public ICollection<UserAccountFollowers> Following { get; set; } = new List<UserAccountFollowers>();
+
+        public ICollection<UserAccountFollowers> Followers { get; set; } = new List<UserAccountFollowers>();
+    }
+}
+
+//S--------------------
+            // an assertion using "Debug.Assert\(.*?\);" that the @@@ New_arrListContainsX is true
+
+            // an assertion using "Debug.Assert\(.*?\);" that @@@ New_arrListCount is equal to Old_arrListCount
+
+            // an assertion using "Debug.Assert\(.*?\);" that @@@ New_arrListLastIndexOfX is equal to Old_arrListIndexOfX
+
+        }
+    }
+}
+
+
+A: I don't think that Microsoft.Pex.Framework allows for constraints on index parameters for the ArrayList.Insert method. As a result, the condition: AssumePrecondition.IsTrue(index <= arrList.Count && index >= 0); in your test is unrealistically high.
+The index for the ArrayList.Insert method has to be between 0 and ArrayList.Count. So, you might need to adjust the constraints on the inputs for the tests. 
+Here is a sample test which is written for the List class, which has less constraints for indexes compared to ArrayList:
+[TestMethod]
+[HostType("Moles")]
+[PexMethod(ActionUnderTest = "LIST_Insert_Success")]
+public void PUT_InsertContractTest(int x, int index)
+{       
+    // Arrange
+    var list = new List<int>() { 1, 2, 3, 4, 5 };
+    AssumePrecondition.IsTrue(index <= list.Count && index >= 0);
+
+    // Act
+    list.Insert(index, x);
+
+    // Assert
+    PexObserve.ValueForViewing("$new_list_Count", list.Count);
+    PexObserve.ValueForViewing("$old_list_index", index);
+
+    // More assertions here
+}
+
+Try to use a class than implements IList or ICollection. In this case the test wouldn't be unrealistically high, but it would still be pretty broad with constraints on the size of tested lists.
+If you really need the test coverage for ArrayList you could add this test by using the "Moles" approach to create a wrapper around ArrayList (you can call it MyArrayList) and then use the PexInstrumenter to add additional contracts to your ArrayList methods. But this seems to be too complex and I wouldn't advise it.
+Another possibility would be to try MSFxCop or similar tools that focus on static analysis and can be set up to check your code against Microsoft's best practices, which would help you to identify edge cases and other problems. 
+In general, I'd suggest to focus more on unit tests as they provide you with the most coverage, then cover the boundary cases manually in a broader tests as long as it's reasonable.
+
+A: You can define input for index with following:
+/// <summary>
+/// Index lower bound.
+/// </summary>
+private const int IndexLowerBound = 0;
+
+/// <summary>
+/// Index upper bound.
+/// </summary>
+private const int IndexUpperBound = 10; 
+
+and use it in this way:
+[PexMethod]
+[PexInAssemblyUnderTest("mscorlib.dll")]
+[PexAllowedException]
+public void AddOnIndex(
+    [PexFactory]
+    ArrayList array,
+    [PexRange(IndexLowerBound, IndexUpperBound)]
+    int index, 
+    int valueToAdd)
+{
+    array.Add(valueToAdd);
+    array.Insert(index, valueToAdd);
+}
+
+Please note that Pex does not currently support setting values for index parameters of methods like ArrayList.Insert. You can read about limitations here. Please try these modifications and you should get more coverage of your tests.
+
+A: The Pex framework by Microsoft, currently, does not support testing with the Insert method of ArrayList. You can find the list of currently supported methods in this Microsoft Documentation.
+ArrayList.Insert() is not among them, hence its not covered by Pex.
+You can use other types like List<T> which is a part of .Net Framework and it has better Pex coverage. 
+Alternatively, you can create your own wrapper type around ArrayList and try to utilize PexInstrumenter to add additional contracts onto your original ArrayList methods.
+However, you might end up with complex and unmanageable tests. It is recommended to use List<T> or similar classes for unit testing which have better Pex coverage. 
+Q: how to remove the extra padding of  in the navigation menu I have --------------------	    
+        }
+    }
+}
+```
+
+To summarize, `ArrayListContractTest.PUT_InsertContract` performs verification on the `Insert` method of ArrayList. It assumes conditions that are relevant to ArrayList contract and also observes the new states after inserting an object. It also contains a basic Assertion that verifies the index of the object after the insertion operation should be less than or equal to the insertion index.
+
+The PEX test engine will generate various combinations of test cases which it will execute under. In an effort to get green output, the test cases will be designed such that the ArrayList objects and indices always satisfy the preconditions. If the test gets a failure output, it should be able to recognize the cause of failure within the method being tested.
+
+
+## Summary
+C# provides a framework called `Contracts` and tools such as `Pex` which are designed to help developers debug and test code coverage. They can aid in catching issues early and reducing the time spent debugging by providing hints and hints for Pex to consider while performing testing. The examples showed how these tools can be employed to make more informed decisions for testing and code coverage.
+
+Keep in mind that Contracts are contracts within the program logic and they are not contracts of the program’s inputs and outputs. The input/output contracts, meanwhile, are contracts of what the program is expected and expected to do. In general, programs have more than one type of contract, so understanding the different parts of a contract-based testing setup is crucial.
+
+
+```[edit] (2019, February 13): The example linked in this post shows a contract for a function that adds an element to a specific position in an ArrayList. Since the contract for ArrayList and its methods was not previously shown, consider checking Microsoft's documentation for a full list on the usage and contract guarantee of the ArrayList and its methods.```
+
+**References:**
+
+- Contracts Framework and Tools: Microsoft Docs
+https://docs.microsoft.com/en-us/visualstudio/test/writing-unit-tests-for-managed-code-qualifiers?view=vs-2019
+- Pex: The Microsoft® Visual Studio® Testing Tool
+http://research.microsoft.com/en-us/um/courses/6057/ben/Lectures/08-TestingVisualStudio/Excel/PexIntro.htm
+
+
+
+\
+
+
+***If you're interested in .NET/.NET Core, you should check out our other [blog posts](). You may also want to explore the [.NET projects](https://github.com/dotnet) and [community](https://dotnetfoundation.org/community/about).***
+{.is-info}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+
+
+
+{% include alert.html type="info" title="Info" content="If you're interested in .NET/.NET Core, you should check out our other blog posts. You may also want to explore the .NET projects https://github.com/dotnet and community https://dotnetfoundation.org/community/about." %}
+
+
+</div>
+                
+                
+            
+
+
+
+---
+<div class="copyright">&copy; 2022 InfoSec Institute. Powered by: Ghost &amp; <a href="https://www.netlify.com/">Netlify</a>.</div>
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+
+            
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+		</body>
+</html>
+<html>
+	<head>
+		<title>Vault Project</title>
+		<link rel="stylesheet" type="text/css" href="style.css">
+		<script type="text/javascript" src="script.js"></script>
+	</head>
+	<body>
+		<h1>The Vault Project</h1>
+		<h2>A collection of code snippets and tools to assist with data security and management tasks.</h2>
+		<h3>Projects:</h3>
+		<p><strong>Firestore Vault:</strong> A solution for managing Firestore database--------------------		
+		// an assertion using "Debug.Assert\(.*?\);" that  New_arrListCount is equal to Old_arrListCount plus 1
+		
+		// an assertion using "Debug.Assert\(.*?\);" that  @@@ New_arrListLastIndexOfX is equal to Old_arrListLastIndexOfX
+		
+		// an assertion using "Debug.Assert\(.*?\);" that  @@@ New_arrListContainsX is equal to true
+	    }
+    }
+}//RegexTest/RegexTest/Program.cs
+﻿using System;
+using System.IO;
+using System.Text.RegularExpressions;
+
+namespace RegexTest
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            string input = File.ReadAllText("data.txt"); // reading input file
+
+            string pattern1 = @"(\b[A-Z][a-z]*\b)";   // pattern to extract names
+            string pattern2 = @"(\b(?:\d{1,3}\.){3}\d{1,3}\b)"; // pattern to extract IP addresses
+            string pattern3 = @"(\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b)"; // pattern to extract emails
+
+            MatchCollection names = Regex.Matches(input, pattern1); // match names
+            MatchCollection IPs = Regex.Matches(input, pattern2);  // match IP's
+            MatchCollection emails = Regex.Matches(input, pattern3); // match emails
+
+            Console.WriteLine("Names found: ");
+            foreach (var name in names) { Console.WriteLine(name); }
+
+            Console.WriteLine("\nIP addresses found: ");
+            foreach (var IP in IPs) { Console.WriteLine(IP); }
+
+            Console.WriteLine("\nEmail addresses found: ");
+            foreach (var email in emails) { Console.WriteLine(email); }
+
+            Console.ReadKey(); // pause to see output until key pressed
+        }
+    }
+}
+
+//RegexTest/RegexTestTest/UnitTest1.cs
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using RegexTest;
+
+namespace RegexTestTest
+{
+    [TestClass]
+    public class UnitTest1
+    {
+        [TestMethod]
+        public void ExtractNamesTest()
+        {
+            string input = "Mr. Srinivasa Adikalam, MS, Ph.D., is a professor in the IIT Bombay.";
+            string pattern1 = @"(\b[A-Z][a-z]*\b)";   // pattern to extract names
+            MatchCollection matches = Regex.Matches(input, pattern1); // match names
+
+            List<string> output = new List<string>();
+            foreach (Match match in matches)
+            {
+                output.Add(match.Value);
+            }
+
+            CollectionAssert.Contains(output, "Srinivasa");
+            CollectionAssert.Contains(output, "Adikalam");
+            CollectionAssert.DoesNotContain(output, "Mr.");
+            CollectionAssert.DoesNotContain(output, "Ph.D.");
+
+        }
+
+        [TestMethod]
+        public void ExtractIPsTest()
+        {
+            string input = "My IP address is 192.168.1.1";
+            string pattern2 = @"(\b(?:\d{1,3}\.){3}\d{1,3}\b)"; // pattern to extract IP addresses
+            MatchCollection matches = Regex.Matches(input, pattern2); // match IP's
+
+            List<string> output = new List<string>();
+            foreach (Match match in matches)
+            {
+                output.Add(match.Value);
+            }
+
+            CollectionAssert.Contains(output, "192.168.1.1");
+
+        }
+
+        [TestMethod]
+        public void ExtractEmailsTest()
+        {
+            string input = "Email me at srinivasa.adikalam@iitb.ac.in";
+            string pattern3 = @"(\b[A--------------------

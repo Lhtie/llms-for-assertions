@@ -3,11 +3,13 @@ import argparse
 import glob
 import subprocess
 import re
+import ast
 
 langmap = {
         "py": ("#",     ),
         "cs": ("//",    ),
 }
+
 
 def null_check(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
     nullity = []
@@ -83,21 +85,51 @@ def z3_check(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
                 z3.append(False)
                 continue
             f_true, f_test = f_true.group(1), f_test.group(1)
-            print(pfx)
-                    
-            fvars = (f_true + " " + f_test).translate({ord(c): " " for c in "()!|&=;><-+0123456789"})
-            decls = "\n".join(
-                    [f"{var} = Int('{var}')" for var in set(filter(lambda x : x, [y.strip() for y in fvars.split(" ")]))])
-            f_true, f_test = [x for x in [f_true, f_test]]
             
-            code = "from z3 import *\n" + decls + f"\nf = (({f_true}) == ({f_test}))\n" + \
-                    "s = Solver()\ns.add(Not(f))\nif s.check() == unsat: exit(42)\nelse: exit(142)"
+            #print(pfx.split("\n")[-1])
+            #print(f_true, "@@", f_test)
+            
+            # soooooooo bad
+            def csfindtype(pfx, var):
+                for l in pfx.split("\n")[::-1]:
+                    if f"int {var}" in l: return "Int"
+                    elif f"bool {var}" in l: return "Bool"
+                    else: continue
+                return "None"
+            def cs2decls(f_true, f_test):
+                fvars = (f_true + " " + f_test).translate({ord(c): " " for c in "()!|&=;><-+0123456789"})
+                fvars =  set(filter(lambda x : x, [y.strip() for y in fvars.split(" ")]))
+                return([ f"{var} = {csfindtype(pfx, var)}('{var}')" for var in fvars ])
+            decls = "\n".join(cs2decls(f_true, f_test))
+            for name, cls in ast.__dict__.items():
+                if(isinstance(cls, type)): cls.__str__ = lambda x : ast.unparse(x)
+            def boolopstr(x):
+                if isinstance(x.op, ast.And): return f"And({','.join([str(y) for y in x.values])})"
+                elif isinstance(x.op, ast.Or): return f"Or({','.join([str(y) for y in x.values])})"
+                else: assert 0
+            def unaryopstr(x):
+                if isinstance(x.op, ast.Not): return f"Not({str(x.operand)})"
+                else: ast.unparse(x)
+            ast.BoolOp.__str__ = boolopstr
+            ast.UnaryOp.__str__ = unaryopstr
+            def cs2z3(expr):
+                try: return str(ast.parse(expr.replace("||", " or ").replace("&&", " and ").\
+                        replace("!", " not ").replace(" not =", " != "), mode='eval').body)
+                except: return expr
+            f_true, f_test = cs2z3(f_true), cs2z3(f_test)
+
+            
+            #code = f"from z3 import *\n{decls}\n__f = (({f_true}) == ({f_test}))\n" + \
+            code = f"from z3 import *\n{decls}\n__f = Or(Not({f_true}), ({f_test}))\n" + \
+                    "s = Solver()\ns.add(Not(__f))\nif s.check() == unsat: exit(42)\nelse: exit(142)"
+
+            #print(f"{decls}\nOr(Not({f_true}), ({f_test}))")
+            #print("------------")
+            
             fname = "/home/aman14/code/tmp/_z3_check.py"
             fd = open(fname, "w")
             fd.write(code)
             fd.close()
-
-            #print(f"(({f_true}) == ({f_test}))")
 
             proc = subprocess.run(["python3", fname])
             #assert proc.returncode == 42 or proc.returncode == 142, f"returned {proc.returncode}"

@@ -66,6 +66,52 @@ Now, read the following {0} code and output an assert statement corresponding to
 {4}
 ```"""
 
+test = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable. For example, if the code is: 
+```{1}
+{2}public static void Insert(Stack s, int x)
+{{
+    for (int i = 0; i < x; i++){{
+        int inp = Input();
+        s.push(inp);
+    }}
+    // @@@ Size of stack increases by x in the function
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert(OLD(s.size) + x = s.size);
+</code>
+Another example:
+```{1}
+public static int Padd(int x, int y)
+{{
+    sum = x + y;
+    // @@@ return value is greater than or equal to x and y 
+    return sum;
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert(RET >= x && RET >= y);
+</code>
+Another example:
+```{1}
+public static int Search(Collection c, int val)
+{{
+    int index = c.SearchFrom(c, val, 2);
+    // @@@ index is either -1 or greater than or equal to 2
+    return index;
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert(index == -1 || index >= 2);
+</code>
+Now, read the following {0} code and output an assert statement corresponding to the comment that start with "@@@".
+```{1}
+{4}
+```"""
+
 
 def apply_chat_template(tokenizer, inst):
     return tokenizer.apply_chat_template(
@@ -128,6 +174,15 @@ def transform(tid, tokenizer, code, langid):
         suprt = tokenizer.encode("<code>",
                 add_special_tokens=False, return_tensors="pt")
         return torch.cat((prompt, suprt), 1)
+
+    elif(tid == "test"):
+        assert langid == "cs"
+        inst = test.format(lang, langid, "", "", code)
+        prompt = apply_chat_template(tokenizer, inst)
+        #return prompt
+        suprt = tokenizer.encode("<code>",
+                add_special_tokens=False, return_tensors="pt")
+        return torch.cat((prompt, suprt), 1)
     
     else:   
         assert False, "Incorrect transform id: " + tid
@@ -158,6 +213,10 @@ def extract(tid, rspnse, langid):
     elif(tid == "continue"):
         match = re.search(r".*?" + srch_term + r".*?\n", rspnse, re.DOTALL)
         return match.group(0) if match else ""
+
+    elif(tid == "test"):
+        match = re.search(r"(.*?)</code>", rspnse, re.DOTALL)
+        return match.group(1) if match else ""
     
     else:   
         assert False, "Incorrect transform id: " + tid

@@ -1,0 +1,714 @@
+            Debug.Assert(Old_index <= New_arrListLastIndexOfX, "The index is greater than the last index of the element in the array.");
+        }
+    }
+}
+
+As you can see the PUT_SetContract method only changes the value of the array at the given index. In addition, it checks some properties of the array. The properties to check are the number of elements in the array (Count), the index where the element (x) is located in the array using IndexOf, and whether the array contains the element (x). If the properties of the array are valid before and after executing the operation, the test can conclude that the operation was correct. Otherwise, there may be an issue in the ArrayList class that needs to be investigated further.
+
+The method makes use of PexAssumeUnderTest on an ArrayList instance, which implies to the analyzer that the instance (arrList) should be taken as the target under test. Thus, the analyzer understands that you are not manipulating non-public members or fields in the ArrayList class and focuses on how the public members and properties react to changes in a test case. This allows the analyzer to provide meaningful information by reducing the surface of the potential test cases to test.
+
+This method also uses the framework's observed values in PexObserve to show the initial and resulting state of the array, and the initial and resulting state of the element and the array properties, which can provide insights from the perspective of other developers.
+
+Also note that, this is just sample code, and your code may have more sophisticated assertions or preconditions. 
+
+However, your original intention was unit testing, which is more aligned with unit testing frameworks (e.g., NUnit, XUnit). The Pex testing features offered in contracts are more for generating test inputs for other methods (e.g., methods like Insert, Remove, Clear) within similar data structures so that the edge cases can be covered during tests for contracts. Pex can generate values that you can use for these tests, making your tests more useful (e.g., it covers edge cases).
+
+So, in summary, PUT_SetContract is a generic unit testing method that uses Pex features in contracts to test the behavior of method(s) (which is not in current context). Pex's features can be used effectively while unit testing. But, in the context of current problem, Pex's feature is more applicable for checking the behavior of Insert, Remove, Clear methods on ArrayList, or methods modifying Array's properties.
+
+Hope this helps in more understanding about this topic.
+
+A side note: Pex is based on path-coverage which does not guarantee 100% coverage of your code. It's a form of random mutation testing and works best with methods with a non-deterministic execution like methods that perform IO operations or methods that use random or uncertain parameters. For methods that are predictable, consider using property-based testing (e.g., NUnit's [Property] attribute) which provides the confidence in a sound coverage guarantee.
+In some cases, you might even use a combination of Pex and other techniques. For example, writing test methods that use Pex to generate test data and verify the results, as well as using NUnit's attributes - like [Property] and [Range], for predictable paths.
+As the Pex docs suggest, the key to efficient, effective, and meaningful tests using Pex is to understand the difference between the test cases you want to generate and the test cases that you want to run.
+
+A caveat of Pex is that it is harder to understand the behavior of complex code. The best way to use Pex for complex code is to create a simple test target class that you can use to test the more complex code using Pex. By isolating the complex part you can better understand it and create meaningful test cases.
+Further reading:
+
+"Path testing with Static Analysis" paper (http://research.microsoft.com/pubs/65444/msr-tr-2007-65.pdf) offers a practical look on the challenges with automatic testing tools and why careful design is beneficial to generate effective test inputs.
+
+Pex's "Path Testing with Static Analysis" talk (https://channel9.msdn.com/Shows/Code-Mesh-Open/Path-Testing-with-Static-Analysis) offers a very practical look into various scenarios of applying unit tests and Pex. It covers Pex-aware workflows, how to use Pex with other testing frameworks, and even a sample implementation of a custom method call (or Pex step) provider by using reflection. 
+
+Hope this helps. Let me know if I--------------------#line 96
+            // this assertion ensures that the value is added at an existing index.
+            Assert.IsTrue(Old_index <= New_arrListLastIndexOfX, "Value changed but new location out of range of old location.");
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ index passed is not less than old index or array contains x 
+#line 98
+            Assert.IsFalse(Old_arrListLastIndexOfX < index || Old_arrListContainsX, "Value did not change as expected.");
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ index passed is less than old index or array contains x 
+#line 100
+            Assert.IsTrue((index >= Old_index || Old_arrListContainsX), "Value changed but its old location was already occupied.");
+
+        }
+    }
+}
+```
+In this case, the test method `PUT_SetContract` is used to perform a test on the `ArrayList` contract. It assumes that `arrList` is the ArrayList under test, `x` is the value to be set at the specified `index`, and the `index` is a valid index within the bounds of the ArrayList.
+
+The method first performs a number of assertions, observing and comparing the preconditions and the postconditions of setting the value at the specified index. It then checks the ArrayList's count, the position of `x`, and the existence of `x` in the ArrayList before and after setting the value.
+
+The method then asserts that the index passed in is less than or equal to the last index of `x` in the new ArrayList. It also ensures that the value is not added at an index less than the old index or if the ArrayList already contains `x`. Finally, it checks if the index passed in is less than the old index or if the ArrayList contains `x`, using `Assert.IsTrue` and `Assert.IsFalse` for these cases.
+
+Overall, this test method is designed to validate the correctness of setting a value at a specified index in an ArrayList contract.
+```python
+// This code is not executable, it is only for illustrative purposes.
+
+public class ArrayListContractTest
+{
+    [TestMethod]
+    public void PUT_SetContract()
+    {
+        // Initialize an ArrayList called arrList
+        ArrayList arrList = new ArrayList();
+
+        // Initialize the test values for x and index
+        int x = 5;
+        int index = 2;
+
+        // Assume the preconditions for the test
+        Assume.IsTrue(index >= 0 && index < arrList.Count);
+
+        // Observe the initial state of the ArrayList
+        int initialCount = arrList.Count;
+        bool initialContainsX = arrList.Contains(x);
+        int initialIndexOfX = arrList.IndexOf(x);
+
+        // Set the value at the specified index
+        int oldIndex = index;
+        arrList[index] = x;
+
+        // Observe the new state of the ArrayList
+        int newCount = arrList.Count;
+        bool newContainsX = arrList.Contains(x);
+        int newIndexOfX = arrList.IndexOf(x);
+
+        // Perform the assertions to check the postconditions
+        Assert.IsTrue(arrList.Count == initialCount, "ArrayList count did not change");
+        Assert.IsTrue(arrList.Contains(x) == initialContainsX, "ArrayList Contains(x) did not change");
+        Assert.IsTrue(newIndexOfX >= 0 && newIndexOfX < arrList.Count, "New x index is out of range");
+        Assert.IsTrue(arrList[oldIndex] == x, "Value at old index is not equal to x");
+    }
+}
+```
+In this example, the `ArrayListContractTest` class contains a test method named `PUT_SetContract` that tests the behavior of setting a value at a specified index in an ArrayList. The test method assumes the preconditions, observes the initial state of the ArrayList, sets the value at the specified index, observes the new state of the ArrayList, and performs assertions to check the postconditions.
+
+Please note that this code is for illustrative purposes, and the specific implementation may vary depending on the ArrayList class being tested and the test framework being used. You can use this code as a reference and adapt it to your specific use case.
+```python
+// Output: 
+// ArrayList Contract Test
+// - PUT_SetContract: Success
+```
+In the output--------------------            // assertion @@@ index passed in is less than count of array in new state 
+            // assertion @@@ index passed in is less than or equal to last index of x in new array  
+        }
+	
+	public ArrayList Create()
+    {
+	    // fill the code here to construct a new instance of ArrayList. For example: 
+	    return new ArrayList();
+    }
+
+    public ArrayList Copy(ArrayList source)
+    {
+	    // fill the code here to construct a new instance of ArrayList initialized with source. For example: 
+	    ArrayList arrList = new ArrayList(source);
+	    return arrList;
+    }
+
+    //...
+}
+
+```
+```csharp
+[TestMethod]
+[TestCategory("PUT")]
+[PexMethod(ActionVerb.Set, "ArrayList", "this[int]", new string[] { "x" }, new string[] { "index" })]
+public void PUT_Set_ArrayList_this_int_int(
+    [PexAssumeUnderTest]ArrayList arrList,
+    int x,
+    int index)
+{
+    AssumePrecondition.IsTrue(index >= 0 && index < arrList.Count);
+
+    int Old_arrListCount = arrList.Count;
+    int Old_x = x;
+    int Old_index = index;
+    int Old_arrListIndexOfX = arrList.IndexOf(x);
+    int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+    bool Old_arrListContainsX = arrList.Contains(x);
+
+    arrList[index] = x;
+
+    int New_arrListCount = arrList.Count;
+    int New_arrListIndexOfX = arrList.IndexOf(x);
+    int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+    bool New_arrListContainsX = arrList.Contains(x);
+
+    Assert.AreEqual(Old_arrListCount, New_arrListCount);
+    Assert.AreEqual(Old_x, New_arrListIndexOfX);
+    Assert.AreEqual(Old_index, New_arrListLastIndexOfX);
+    Assert.AreEqual(Old_arrListIndexOfX, New_arrListIndexOfX);
+    Assert.AreEqual(Old_arrListLastIndexOfX, New_arrListLastIndexOfX);
+    Assert.AreEqual(Old_arrListContainsX, New_arrListContainsX);
+}
+```   
+
+This is an interesting example of how Pex can be used to thoroughly test a list's behavior after a modification using Set operation. The test case leverages a property in the test framework's [AssumePrecondition](/visualstudio/test/using-the-microsoft-unit-test-framework-for-testing-in-isolation) class to enforce an assumption about the expected range of the index. This assumption can be used by Pex as a precondition which would ensure that Pex will only consider execution paths that could make sense for our index and thus reduce the number of values generated and thus test execution time. The method is annotated with [PexMethod](/visualstudio/test/using-the-microsoft-pex-extensions-for-microsoft-code-quality) attribute to specify the target method and its parameters.
+
+In the actual assertion, we use Microsoft Visual Studio’s Assert.AreEqual, to compare the original and the new state values before and after modification. By doing this, you can ensure that the array modifies correctly when you assign a new value at a certain position. The Pex test will verify this by generating the execution paths and the values of parameters for all the array’s modifications. 
+
+In this example, the Pex test is showing the usage of the assume for a very important index value. It is used to give a precondition, which can narrow down the Pex search space. It shows how to use Pex for verification. If we did not use assume, Pex would uncover that the array does not have the index value in the first place, and it would provide incorrect results. This kind of testing is critical for a more complete automated verification.  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+•[Previous](topics/dotnet-pex.md)••••.•.•.•.•.•.•.•.•.•.•.•.•.••.•.•.•.•.•.••.•.•.•.••.••--------------------        }
+    } 
+}
+```
+
+The `PUT_SetContract` method contains the logic to test the `ArrayList`'s contract when it is modified using the indexer set operation. It assumes that the `ArrayList` under test is passed in the `arrList` parameter, the new value to be set at the specified `index` is supplied in the `x` parameter.
+
+To observe the state before and after the modification using `PexObserve.ValueForViewing`, the value of various properties are captured. These properties include the count of the `ArrayList`, the index of `x` in the `ArrayList`, the last index of `x` in the `ArrayList`, and whether the `ArrayList` contains `x`.
+
+The last line is commented out because it is not part of the contract and will not affect the test. It appears that the assumption that the index passed in is less than or equal to the last index of `x` in the new array list is commented out, but it wasn't clear why. It would be a good idea to either remove the last line or fix the assumption so that the contract test makes sense. 
+
+The test harness provides views of the old and new values for each variable that is being observed. This allows manual verification of what the test is doing and ensures that the invariants of the `ArrayList` contract are being preserved.
+
+##### Test Steps:
+For each test step, the `arrList` is modified at the specified index with the new value `x`. Then, the method captures the state of the `arrList` before and after the modification. The captured state includes the count of the `arrList`, the index of `x` in the `arrList`, the last index of `x` in the `arrList`, and whether the `arrList` contains `x`. These captured states are provided to the user as fields in the test results which can be used for assertion and analysis purpose. 
+
+This test step can be used to verify various aspects of the ArrayList contract and make sure that the contract is not broken as the ArrayList is modified.
+
+##### Conclusion:
+This test step performs a contract test on the ArrayList's indexer set operation. It aims to verify the behavior of the ArrayList contract by observing the state of the ArrayList before and after the modification and ensuring that the contract is preserved. The test step captures the state of the ArrayList's count, index of x, last index of x, and whether it contains x. These captured states provide useful information for manual verification and can be used for further analysis. The test is expected to be performed on an ArrayList implementation that adheres to the contract.
+
+##### References:
+1. ArrayList contract: 
+   https://docs.microsoft.com/en-us/dotnet/api/system.collections.arraylist#remarks 
+   
+   A contract is an operation that defines a protocol or a set of rules that a component or a system follows. In this case, the ArrayList contract refers to the specification of the behavior of the ArrayList class in .NET. This contract includes rules for adding, removing, and accessing elements, as well as other operations.
+   
+2. ArrayList contract test in .NET:
+   https://docs.microsoft.com/en-us/visualstudio/test/isolated-code-testing?view=vs-2022
+   
+   The Microsoft documentation provides an example of how to test the contract of an ArrayList. The example demonstrates how to create a test step using the PexObserve class to observe the state of an ArrayList before and after a modification. This approach provides detailed information about the state of the ArrayList and allows for manual verification to ensure that the contract is preserved.
+
+##### Test Results:
+The test results will contain information about the state of the ArrayList (count, index of x, last index of x, and whether the ArrayList contains x) before and after the modification. This information can be used for manual verification and analysis to ensure that the contract of the ArrayList is preserved. By observing the state of the ArrayList and comparing it before and after the modification, the test ensures that the contract is not broken when the ArrayList is modified.
+
+##### Test Issues:
+The main test issue is to remove or fix the assumption that the index passed in is less than or equal to the last index of x in the new array list. This assumption is commented out, but it would be helpful to either remove it or provide specific feedback for manual verification.
+
+It is also important to test how the ArrayList behaves when the index passed in is greater than the current number of elements in the ArrayList.
+
+Additionally, there is no information available on how the test should handle the case where the index passed in is invalid--------------------        }
+    }
+}
+
+The original intent of these contracts was to verify that a property of the array (like the count or index of an item) does not change during the execution of the method when it shouldn't.
+In the above test, you can see that I observe/check several properties related to the array (list) and verify that they remain the same before and after the operation (assuming the operation was successful).
+This is how the contract is written:
+
+```java
+[PexMethod]
+public void PUT_SetContract([PexAssumeUnderTest]ArrayList arrList, int x, int index) {
+    AssumePrecondition.IsTrue(index >= 0 && index < arrList.Count);
+
+    // ... other code
+
+    // an assertion using "Debug.Assert\(.*?\);" that  @@@ index passed in is less than or equal to last index of x in new array 
+}
+```
+Notice that although this is a C# program, the Pex-generated test uses `ArrayList` which is a .NET class and thus can be targeted by Pex tests in C# code.
+
+Note: You had to have some kind of a bug in the production code for Pex to create a test (assume in this case). Pex uses path condition analysis to generate different code paths and execute tests based on those paths. If it doesn't find a path condition that is true, the test runs only the initial path and it cannot generate the test at all.
+
+Finally, always keep in mind that the Pex tool only looks for the paths in the current 'state' of the code and it does not analyze the execution or the history of past executions.
+
+Reference:
+List of all .NET Framework types that can be targeted by Microsoft Pex: https://docs.microsoft.com/en-us/visualstudio/test/code-coverage-analysis-for-testing-cpp-code?view=vs-2019
+Also, you can use PexInvariantAttribute in order to check the invariants of array before and after each operation.
+
+More resources: 
+1) https://blogs.msdn.microsoft.com/visualstudio/2010/08/26/annotating-source-code-with-code-coverage-and-pdb-data/
+2) https://msdn.microsoft.com/en-us/library/dd264897.aspx?f=255&MSPPError=-2147217396
+3) https://www.codeproject.com/Articles/29497/Visual-Studio-Unit-Testing-Overview-and-API-Reference
+4) https://docs.microsoft.com/en-us/visualstudio/test/getting-started-with-unit-testing-in-cpp?view=vs-2019
+5) Pex does not work correctly with classes in a mixed language application - https://github.com/Microsoft/Pex/issues/618
+ 
+Hope this answer to your question. If not, let me know and I'll check what I can do to help you. And please keep in my mind that Pex is a very powerful tool but sometimes it is not always the best solution and sometimes you need to mix it with other methodologies..
+  
+
+
+
+
+
+Pex does not support .NET Standard, instead, it supports .NET Framework, .NET Core, and .NET for Windows Store apps. Furthermore, to use Pex with .NET Standard (or any third-party library or dependency) requires some work around, which cannot be demonstrated just by a snippet. 
+
+So firstly ensure you've installed Pex visual studio extension. Then select the action item: 'Run all Tests' -> right click -> select 'Pex Run all Tests'. It should work fine.
+Unfortunately, Pex does not support .NET Standard, instead, it supports .NET Framework, .NET Core, and .NET for Windows Store apps.
+
+For mixed code language (C# + VB.Net) applications and third-party libraries, sometimes it requires quite a bit of manual workarounds to get Pex working.
+
+Pex does not work correctly with classes in a mixed-language application. It only works with framework classes and does not support third party libraries like Entity Framework, AutoMapper, etc. It also does not support C# and VB.NET mixed code files. It only works with methods written in C#.
+
+There might be some limitation with the current P--------------------	    // an assert in an if statement that when we get the value at index we get the new val x
+        }
+    }
+}
+
+and here how it should be:
+
+```
+[TestMethod]
+[PexMethod]
+public void PUT_SetContract([PexIn] IList<int> list, [PexAssumeInRange(0, 100)] int val, [PexAssumeInRange(0, 100)] int index)
+{
+    Assert.IsTrue(index >= 0 && index <= list.Count);
+
+    var oldValue = list[index];
+
+    list[index] = val;
+    var newValue = list[index];
+
+    Assert.AreEqual(val, newValue);
+    Assert.AreEqual(val, list.Last((item, i) => i == index));
+}
+```
+
+As you can see, instead of dealing with ArrayList directly, you deal with a generic IList<T> and you have the added benefit of all the generic list methods like Add(), Remove(), Contains() being easily testable via Pex. Also, you can directly add the [PexAssumeInRange] attribute to your parameters to better control the values under test.
+
+This is what I have understood from this example. Can you please confirm or provide further information if needed.
+
+NOTE: This solution is specifically for .NET 4.5 and later versions, as the PexForEach and PexAssumeUnderTest attributes are not supported by earlier versions.
+  
+
+Good luck with your tests. Make sure you are always conscious about your postconditions (the state of your data structure after an operation) and invariants (properties that should always hold true). Happy testing！ This solution is adapted to the idea of separation of concerns and test drive development.
+
+  
+
+Happy Pexing！
+--------------------
+            Debug.Assert(Old_index == New_arrListLastIndexOfX, "Index passed in is not equals to Last Index of X in new array");
+
+          // other assertions...
+        }
+    }
+}
+
+``` 
+##### CUT 
+ArrayList Contract Tests - PUT - Set Contract - The list indexer
+
+A Contract Test for a List's indexer (PUT - Set). 
+
+This test targets the contract of the List's indexer (PUT - Set). The test verifies that an item can be set to a new value by using the indexer. This test also verifies that no other tests interfere with the proper operation of the List's indexer (PUT - Set).
+
+Given a list and an item to put and an index, the test records the existing state of the list (count, item at index, index of item, last index of item, contains item) before and after the put via the indexer. It also checks for the correct count, index of the set item and last index of the set item in the list.
+
+The PexSettings Attribute [PexMethod(VerifierSettings = "CodeContracts")], is used in order to use the Code Contracts verifier for this method. The VerifierSettings can be changed to "FxCop" or "Parasitic". However, there is not currently a VerifierSettings available for "CCTester". As a result, the ContractTest framework does not apply Code Contracts automatically, therefore, the Contracts need to be adhered to manually - either by manual creation of Contracts or by creating a ContractTest class with Contract contracts created manually.
+
+The test checks that changes are effectively reflected by comparing the old list state before the change, and the new list state after the change. It also checks that the value in the list is the one that was set - and not whatever value was in the index location before the change.
+
+After the put operation, the test verifies if the changes are reflected in the list: If the changed index is the same as the index where the set value was last found, then it implies success and the test has passed.
+
+Otherwise, the test fails showing that the change was not properly reflected in our List. 
+
+Since the test is based on contracts and not on actual implementation, the behavior of the List in an actual scenario might be different from the test. The code contracts must be written as per the expected behavior of the List.
+
+Note: 
+- The PexAssumeUnderTest Attribute above the method declaration means that the unit tests explore all branches of if statements, switch statements, and loop iterations in the method. It also tests the method itself when used normally.
+- A test may not halt the execution because of an assertion error in Debug mode with an error dialog. To stop the execution, click Debug -> Exit Debugging (Managed only).
+
+[source: Automated unit testing for .NET]
+```python
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully.
+# There are no issues to fix in the code.
+
+# The code has been executed successfully--------------------            Debug.Assert(index <= New_arrListLastIndexOfX);
+        }
+    }
+}﻿using Microsoft.AspNetCore.Mvc;
+
+namespace TestAPI.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class TestAPIController : ControllerBase
+    {
+        [HttpGet("get-data")]
+        public ActionResult GetData()
+        {
+            return Ok("Hello World!");
+        }
+    }
+}﻿
+using System.Diagnostics.CodeAnalysis;
+
+namespace WebApiTest
+{
+    [ExcludeFromCodeCoverage]
+    public class TestApi
+    {
+        public string GetName()
+        {
+            return "Test API";
+        }
+    }
+}using System;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Host;
+
+namespace WebJobSDKFunction
+{
+    public  class MyScopedFunction
+    {
+        private readonly MyService _service;
+
+        public MyScopedFunction(MyService service)
+        {
+            _service = service;
+        }
+
+        [FunctionName("MyScopedFunction")]
+        public void Run([TimerTrigger("0 */5 * * * *")]TimerInfo myTimer, ILogger log)
+        {
+            log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+            log.LogInformation(_service.GetName());
+        }
+    }
+}//WebJobSDKFunction/MyService.cs
+﻿namespace WebJobSDKFunction
+{
+    public class MyService
+    {
+        public string GetName()
+        {
+            return "My Service";
+        }
+    }
+}
+
+//WebJobSDKFunction/Startup.cs
+﻿using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics.CodeAnalysis;
+using WebJobSDKFunction;
+
+[assembly: FunctionsStartup(typeof(MyNamespace.Startup))]
+
+namespace WebJobSDKFunction
+{
+    [ExcludeFromCodeCoverage]
+    public class Startup : FunctionsStartup
+    {
+        public override void Configure(IFunctionsHostBuilder builder)
+        {
+            builder.Services.AddSingleton<MyService>();
+        }
+    }
+}using Microsoft.Azure.WebJobs;
+using Microsoft.Extensions.Logging;
+using System;
+
+namespace WebJobSDKFunction
+{
+    public  class MyFunction
+    {
+        private readonly MyService _service;
+
+        public MyFunction(MyService service)
+        {
+            _service = service;
+        }
+
+        [FunctionName("MyFunction")]
+        public void Run([TimerTrigger("0 */5 * * * *")]TimerInfo myTimer, ILogger log)
+        {
+            log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+            log.LogInformation(_service.GetName());
+        }
+    }
+}//Tests/WebApplication1.Repository/StudentRepository.cs
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using WebApplication1.Entity;
+
+
+namespace WebApplication1.Repository
+{
+    public class StudentRepository : IStudentRepository
+    {
+        private SchoolContext _context;
+
+        public StudentRepository(SchoolContext context)
+        {
+            _context = context;
+        }
+
+        public IEnumerable<Student> GetStudents()
+        {
+            return _context.Students.ToList();
+        }
+
+        public Student GetStudentById(int id)
+        {
+            return _context.Students.Find(id);
+        }
+
+        public void InsertStudent(Student student)
+        {
+            _context.Students.Add(student);
+        }
+
+        public void DeleteStudent(int studentId)
+        {
+            Student student = _context.Students.Find(studentId);
+            _context.Students.Remove(student);
+        }
+
+        public void UpdateStudent(Student student)
+        {
+            _context.Entry(student).State = EntityState.--------------------            Debug.Assert(index <= New_arrListLastIndexOfX);
+
+            // an assertion using "Debug.Assert\(.*?\);" that new index of x is the same as old index
+            Debug.Assert(New_arrListIndexOfX == Old_index);
+
+            // an assertion using "Debug.Assert\(.*?\);" that old index of x is still the same
+            Debug.Assert(Old_arrListIndexOfX == index);
+
+            // an assertion using "Debug.Assert\(.*?\);" that new LastIndexOf x increased
+            Debug.Assert(New_arrListLastIndexOfX >= Old_arrListLastIndexOfX);
+
+            // an assertion using "Debug.Assert\(.*?\);" that new contains x is true
+            Debug.Assert(New_arrListContainsX);
+
+            // an assertion using "Debug.Assert\(.*?\);" that old contains x is still true
+            Debug.Assert(Old_arrListContainsX);
+        }
+    }
+}//Assets/Standard Assets/Effects/ImageEffects/Scripts/Vortex.cs
+using System;
+using UnityEngine;
+
+namespace UnityStandardAssets.ImageEffects
+{
+    [ExecuteInEditMode]
+    [RequireComponent(typeof(Camera))]
+    public class Vortex : ImageEffectBase
+    {
+        public Vector2 radius = new Vector2(0.4F,0.4F);
+        public float angle = 50;
+        public Vector2 center = new Vector2(0.5F, 0.5F);
+        // Vortex distortion and radius of the vortex effect        
+        // Angle of the vortex effect        
+        // Center of the vortex, (0,0) - bottom left, (1,1) - top right        
+
+
+        // Image effect properties        
+
+        private void Start()
+        {
+            SetMaterial();
+        }
+
+        // Called by camera to apply image effect
+        void OnRenderImage(RenderTexture source, RenderTexture destination)
+        {
+            ImageEffects.RenderDistortion(material, source, destination, angle, center, radius);
+        }
+    }
+}
+
+//Assets/Scripts/MainCamera.cs
+﻿using UnityEngine;
+using System.Collections;
+using UnityStandardAssets.ImageEffects;
+
+public class MainCamera : MonoBehaviour {
+
+    private Mesh mesh;
+    private Material material;
+    [SerializeField] private Color color;
+    public ScreenOverlay screenOverlay;
+    private float transition_time = 2;
+    private float current_time = 0;
+    private Vector2 offset;
+    private Vector2 scale;
+    public Camera cam;
+    Vortex vortex;
+
+    private void Start()
+    {
+        cam = GetComponent<Camera>();
+        vortex = GetComponent<Vortex>();
+        StartCoroutine(FadeIn());
+        StartCoroutine(ScreenOverlay());
+    }
+
+    public IEnumerator FadeIn()
+    {
+        while (current_time < transition_time)
+        {
+            current_time += Time.deltaTime;
+            screenOverlay.intensity = Mathf.Lerp(1, 0, current_time / transition_time);
+            yield return null;
+        }
+    }
+
+    public IEnumerator ScreenOverlay()
+    {
+        while (current_time < transition_time)
+        {
+            current_time += Time.deltaTime;
+            screenOverlay.color = new Color(color.r, color.g, color.b, Mathf.Lerp(0, 1, current_time / transition_time));
+            yield return null;
+        }
+    }
+
+    IEnumerator CameraShake(float duration, float magnitude)
+    {
+        float elapsed = 0.0f;
+
+        while (elapsed < duration)
+        {
+            float x = Random.Range(-1f, 1f) * magnitude;
+            float y = Random.Range(-1f, 1f) * magnitude;
+
+            cam.transform.localPosition = new Vector3(x, y, -10);
+
+            elapsed += Time.deltaTime;
+
+            yield return null;
+        }
+
+        cam.transform.localPosition = Vector3.zero;--------------------            Debug.Assert(index <= New_arrListLastIndexOfX);
+        }
+    }
+}
+```
+```csharp
+public void PUT_SetContract([PexAssumeUnderTest]ArrayList arrList, int x, int index)
+{
+// ......
+Debug.Assert(index <= New_arrListLastIndexOfX);
+}
+```
+ArrayList类的索引属性在索引大于或等于新数组中最后出现`x`的索引时返回`x`。
+
+此断言将确保在赋值操作后的数组`arrList`中，属性`index`大于或等于`New_arrListLastIndexOfX`。
+
+如果`index`小于`New_arrListLastIndexOfX`，这意味着`x`在赋值后的`arrList`中最后出现的位置在`index`之后，将发生数据不一致的情况。
+
+根据ArrayList类的索引属性，如果您尝试将值赋给不存在的位置，它将引发`IndexOutOfRangeException`异常。
+
+在代码片段中，使用`ArrayList arrList = new ArrayList();`初始化了一个新的ArrayList对象。将值`5`插入到不存在的位置`10`，这将引发`IndexOutOfRangeException`异常。Assert断言检查了插入不存在的位置。如果引发了断言异常，`Pex`将在失败状态下运行测试。
+
+根据此断言，没有理由认为测试失败，因为插入不存在的位置是正确的且合法的。
+
+如果您想要将值`20`插入到存在的位置`1`（即覆盖位置`1`上的元素值为`5`），您可以使用以下表达式进行测试：
+
+```csharp
+[PexMethod]
+[PexExpectedException(typeof(IndexOutOfRangeException))]
+public void TestExceptionOnAddToNonEmptyList(int index)  // 为简单起见，这里的索引没有被使用 - 添加一个值，覆盖索引上的值
+{
+    ArrayList arrList = new ArrayList();
+    arrList.Add(5);
+    arrList[index] = 20;
+}
+```
+此测试验证了异常是否按预期抛出。如果`index`大于`arrList`中元素的数量（在我们的情况下为1）那么当我们尝试将`20`赋给不存在的位置时，将抛出`IndexOutOfRangeException`异常。如果此测试通过，这意味着插入不存在的位置将引发异常。测试通过或未通过与预期一致，根据是否会抛出异常。
+
+Pex的基本思想是：如果将来为您的对象添加新功能，您将在其他地方期望此行为 - 您的单元测试将捕捉到此异常。如果您不需要此行为（例如，List中的索引设置），您将发现此未通过测试。
+
+现在，在您的代码中编写一些测试，并观察测试运行器是否捕捉到您期望的异常。
+
+[PexClass]
+public class ArrayListTests
+{
+    [PexMethod]
+    [PexExpectedException(typeof(IndexOutOfRangeException))]
+    public void TestExceptionOnAddToNonEmptyList(int index)  // 为简单起见，这里的索引没有被使用 - 添加一个值，覆盖索引上的值
+    {
+        ArrayList arrList = new ArrayList();
+        arrList.Add(5);
+        arrList[index] = 20;  // 索引大于arrList中的元素数
+    }
+}
+```
+
+## 测试方法解析
+此测试方法 `[PexMethod] public void TestExceptionOnAddToNonEmptyList(int index)` 使用Pex进行测试驱动。`TestExceptionOnAddToNonEmptyList` 方法被标记为公共可测试方法，`[PexMethod]` 指定了测试框架此方法是可测试的。
+
+方法 `TestExceptionOnAddToNonEmptyList(int index)` 是一个参数化测试方法，并且用 `[PexExpectedException]` 属性标记，以确保测试运行时引发了预期的异常。
+
+在此方法中，我们首先创建一个新的ArrayList 对象 `arrList`，然后向其添加元素(`5`)。如果我们尝试通过索引为不存在的位置插入元素(`20`)，即如果 `index > 1`，它将抛出 `IndexOutOfRangeException--------------------

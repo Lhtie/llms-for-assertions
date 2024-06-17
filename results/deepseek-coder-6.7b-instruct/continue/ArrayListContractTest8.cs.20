@@ -1,0 +1,1082 @@
+            Assert.IsTrue(New_arrListLastIndexOfX >= New_arrListIndexOfX);
+        }
+    }
+}
+
+And this is the code of ArrayList I am using:
+
+        public class ArrayList
+        {
+            private int[] _data;
+            private int _nextIndex;
+            public ArrayList()
+            {
+                _data = new int[4];
+                _nextIndex = 0;                
+            }
+
+            public int Count
+            {
+                get { return _nextIndex; }
+            }
+
+            public int Add(int value)
+            {
+                if (_nextIndex >= _data.Length)
+                {
+                    int[] newArray = new int[_data.Length * 2];
+                    Array.Copy(_data, newArray, _data.Length);
+                    _data = newArray;
+                }
+
+                int index = _nextIndex;
+                _data[index] = value;
+                _nextIndex++;
+                return index;
+            }
+
+            public bool Contains(int value)
+            {
+                for (int index = 0; index < _nextIndex; index++)
+                {
+                    if (_data[index] == value)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            public int IndexOf(int value)
+            {
+                for (int index = 0; index < _nextIndex; index++)
+                {
+                    if (_data[index] == value)
+                    {
+                        return index;
+                    }
+                }
+                return -1;
+            }
+
+            public int LastIndexOf(int value)
+            {
+                for (int index = _nextIndex - 1; index >= 0; index--)
+                {
+                    if (_data[index] == value)
+                    {
+                        return index;
+                    }
+                }
+                return -1;
+            }                
+
+        }
+
+Problem: 
+The test is unable to find the right value for count, index, or lastIndexOf variables which are calculated before and after the execution, as evident from the test reports. For e.g when Add is called, the Count, IndexOf and LastIndexOf before and after addition are different which is against the contract.
+
+Please help me identify what I am doing wrong.
+
+A: Pex isn't able to verify the precise sequence in which the methods are executed because of the lack of execution control in Pex (you can only call a method once in Pex). This means that, although Pex tries to find test cases that exercise many different possible paths through your code, it may miss some cases where it expects methods or properties to be in a specific order. 
+
+This becomes a real challenge when you have preconditions that depend on the state of the object after a method call (like your case where you depend on the Count after an Add call). 
+
+You can use a mocking framework or simulate your sequence, but those will not replace the fundamental problem. 
+
+A better approach would be to try to isolate your list's behavior into methods (similar to yours). Then the order of method calls and property interactions will be more predictable and Pex could be able to test them more accurately. You can start by creating methods like InsertAt, RemoveAt etc. And then separately test these operations.
+
+Also, you should use a different tool for your contracts. A tool designed for method contracts, like the method contract coverage tool, is more suitable.
+
+Hope this helps to improve your understanding of the fundamental limitations of Pex.
+Regards,
+Vineet Ojha
+
+A: You need to take into consideration that your Pex test runs Add() method more than one time and you cannot predict in what order the methods will be called. Therefore, it's possible that the Count or Index property will return wrong values. 
+For example, after three different Add() calls, if Count property returns value greater than three then your Add returns wrong index. 
+Thus, it is important to always check the value of the Count property before and after an Add and make sure that this value is incremented correctly.
+Moreover, you need to make sure that the Count and the added index are equal or the added index is less than the Count.
+Q: Python - Converting string to bytes using encode function I'm trying to achieve a task where I have this string:
+string = 'Hello'
+
+Now, when I use the encode function to convert this string to bytes using 'utf-8' encoding scheme, I get:
+string.encode('utf-8')
+b'Hello'--------------------    }
+}
+}
+
+
+A: In the ArrayList project, there is an assumption that specifies the object under test should be a non-null ArrayList object. This assumption can be validated using PexAssume.NotNull() before the method PUT_AddContract is called.
+If you need to specify a null object as the object under test, simply remove the PexAssumeUnderTest attribute. The Pex infrastructure will then randomly generate a null input for the object under test. 
+
+[PexMethod]
+public void PUT_AddContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+   PexAssume.NotNull(arrList);
+   // ...
+}
+
+I hope this helps. Enjoy testing :)
+For more information and examples on using assumptions, see the documentation at: http://research.microsoft.com/en-us/um/cambridge/projects/peculiar/peculiar_book.pdf
+
+A: You may use PexInstrument. In this case, you need to use ArrayListEx, which is a class that inherits from ArrayList, and has an additional property to be tested. 
+[TestFixture, PexClass, PexInstrument]
+public partial class TestArrayList
+{
+    [PexMethod]
+    public void PUT_AddContract([PexElements(type: typeof(int))]List<int> lst, int x)
+    {
+        AssumePrecondition.IsTrue(true);
+
+        ArrayListEx arrList = new ArrayListEx(lst);
+
+        int Old_arrListCount = arrList.Count;
+        int Old_arrListFirstIndexOfX = arrList.FirstIndexOf(x);
+        int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+        bool Old_arrListContainsX = arrList.Contains(x);
+
+        int New_Ret = arrList.Add(x);
+
+        int New_arrListCount = arrList.Count;
+        int New_arrListFirstIndexOfX = arrList.FirstIndexOf(x);
+        int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+        bool New_arrListContainsX = arrList.Contains(x);
+
+        // Assert the results...
+    }
+}
+
+ArrayListEx:
+public class ArrayListEx
+{
+    private ArrayList list;
+
+    public ArrayListEx(IEnumerable<int> i)
+    {
+        list = new ArrayList(i);
+    }
+
+    // Implement necessary methods to fit into the contract:
+    // Add, Remove, Count, IndexOf, Contains, etc.
+
+    public int Count { get { return list.Count; } }
+
+    public int Add(int item)
+    {
+        return list.Add(item);
+    }
+
+    // Add more necessary methods...
+}
+
+By PexInstrumentation, Pex will automatically generate a test for each possible contract of objects. In this case, for ArrayList, Pex will create a test for each possible contract of an ArrayList, including Count, Add/Remove etc. And the key point is that you have a clear direction for what you are testing when you use PexInstrument, just like how you use PexClass.
+
+A: You can add assumption about the input parameters to the test method. For example you can add assumptions like:
+[PexMethod]
+public void PUT_AddContract([PexAssumeUnderTest]ArrayList arrList, [PexAssumeValid] int x)
+{
+    ...
+}
+
+So, Pex will test the method with different combinations of values for arrList and x. 
+More information about assumptions is in the documentation.
+
+A: To avoid using PexAssumeUnderTest which adds too many assumptions to the tests, especially for complex and large objects, you can instead encapsulated/containize your test parameters.
+In ArrayList case, you can create your own class implementing IList and using that as your input to your method. This gives you more control over the input scenarios and also allows you to test private methods if required (you would use a wrapper class implementing the same interface that has the logic of your private method):
+public class TestList : IList<int>
+{
+    ArrayList innerList = new ArrayList();
+
+    public int this[int index] 
+    { 
+        get { return (int)innerList[index]; } 
+        set { innerList[index] = value; } 
+    }
+
+    //... implement other IList<T> methods...
+}
+
+Then use it--------------------	    Assert.True(New_arrListContainsX);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that last index of x in new array list is more or equal last index of x in old array list @@@ last index of x in a new Arraylist is geq or more than that in an old Arraylist of x
+	    Assert.True(New_arrListLastIndexOfX >= Old_arrListLastIndexOfX);
+
+	    // an assertion using "Debug.Assert\(.*?\);"
+	    Assert.True(New_Ret == Old_arrListCount);
+        }
+    }
+}
+
+//Lab 4/Test-Coverage/List/Program.cs
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using ArrayList;
+
+namespace List
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            ArrayList list = new ArrayList();
+            list.Add(1);
+            list.Add(2);
+            list.Add(3);
+            foreach (int i in list)
+            {
+                Console.WriteLine(i);
+            }
+        }
+    }
+}
+
+//Lab 4/Test-Coverage/List.Test/ListContractTest.cs
+﻿using System;
+using System.Text;
+using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Settings;
+using Microsoft.Pex.Framework.Exceptions;
+
+using NUnit.Framework;
+using ArrayList;
+using List;
+using PexAPIWrapper;
+
+namespace List.Test
+{
+    [TestFixture, PexClass]
+    public partial class ListContractTest
+    {
+        [PexMethod]
+        public void PUT_AddContract([PexAssumeUnderTest]List list, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_listCount = list.Count;
+            int Old_x = x;
+            int Old_listIndexOfX = list.IndexOf(x);
+            int Old_listLastIndexOfX = list.LastIndexOf(x);
+            bool Old_listContainsX = list.Contains(x);
+
+            int New_Ret = list.Add(x);
+
+            int New_listCount = list.Count;
+            int New_listIndexOfX = list.IndexOf(x);
+            int New_listLastIndexOfX = list.LastIndexOf(x);
+
+            bool New_listContainsX = list.Contains(x);
+
+            PexObserve.ValueForViewing("$old_list_Count", Old_listCount);
+            PexObserve.ValueForViewing("$new_list_Count", New_listCount);
+            PexObserve.ValueForViewing("$old_list_x", Old_x);
+            PexObserve.ValueForViewing("$old_list_IndexOf_x", Old_listIndexOfX);
+            PexObserve.ValueForViewing("$new_list_IndexOf_x", New_listIndexOfX);
+            PexObserve.ValueForViewing("$old_list_LastIndexOf_x", Old_listLastIndexOfX);
+            PexObserve.ValueForViewing("$new_list_LastIndexOf_x", New_listLastIndexOfX);
+            PexObserve.ValueForViewing("$New_ret", New_Ret);
+            PexObserve.ValueForViewing("$old_list_contains_x", Old_listContainsX);
+            PexObserve.ValueForViewing("$new_list_contains_x", New_listContainsX);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ last index of x is geq an index of x in new list 
+	    Assert.True(New_listContainsX);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that last index of x in new list is more or equal last index of x in old list @@@ last index of x in a new list is geq or more than that in an old list of x
+	    Assert.True(New_listLastIndexOfX >= Old_listLastIndexOfX);
+
+	    // an assertion using "Debug.Assert\(.*?\);"
+	    Assert.True(New_Ret == Old_listCount);
+--------------------	    Assert.IsTrue(New_arrListLastIndexOfX >= New_arrListIndexOfX);
+	
+	    // an assertion using "Debug.Assert\(.*?\);" that count in new array list is one more than old count 
+	    Assert.IsTrue(New_arrListCount == Old_arrListCount + 1);
+	
+	    // an assertion using "Debug.Assert\(.*?\);" that index of x in new array list is eq as new ret value 
+	    Assert.IsTrue(New_arrListIndexOfX == New_Ret);
+	
+	    // an assertion using "Debug.Assert\(.*?\);" that new array list contains x 
+	    Assert.IsTrue(New_arrListContainsX == true);
+	
+	    // an assertion using "Debug.Assert\(.*?\);" that the last index of x in new array list is geq as the index of x in new array list 
+	    Assert.IsTrue(New_arrListLastIndexOfX >= New_arrListIndexOfX);
+	
+	    AssumeLastIndexOf(Old_arrListLastIndexOfX + 1, x, New_arrListLastIndexOfX);
+        }
+
+        public void AssumeLastIndexOf(int Old_arrListCount, int x, int New_arrListLastIndexOfX)
+        {
+            // Assume that the value of arrList Count is geq than the arrList last index of x in last test method
+            Assume.True(Old_arrListCount <= New_arrListLastIndexOfX);
+
+            // Assume that arrList last index of x is geq than arrList count 
+            Assume.True(New_arrListLastIndexOfX >= Old_arrListCount);
+
+            // Assume that arrList contains x
+            Assume.True(true);
+        }
+    }
+}
+
+//source/Tests/ArrayList.Test/ArrayListTest.cs
+﻿using NUnit.Framework;
+using ArrayList;
+
+namespace ArrayList.Test
+{
+    [TestFixture]
+    public class ArrayListTest
+    {
+        [Test]
+        public void Test_Create()
+        {
+            ArrayList list = new ArrayList();
+            Assert.IsNotNull(list);
+        }
+
+        [Test]
+        public void Test_Add()
+        {
+            ArrayList list = new ArrayList();
+            list.Add(100);
+            Assert.AreEqual(1, list.Count);
+            list.Add(200);
+            Assert.AreEqual(2, list.Count);
+        }
+
+        [Test]
+        public void Test_Add_Object()
+        {
+            ArrayList list = new ArrayList();
+            list.Add(new object());
+            Assert.AreEqual(1, list.Count);
+        }
+
+        [Test]
+        public void Test_Add_Item_By_Index()
+        {
+            ArrayList list = new ArrayList();
+            list.Add(100);
+            list.Add(200);
+            list.Add(300);
+            list.Add(2, 400);
+            Assert.AreEqual(400, list.Get(2));
+        }
+    }
+}
+
+//source/Tests/ArrayList.Test/Contracts/ArrayListContractTest.cs
+﻿using System;
+using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Settings;
+using Microsoft.Pex.Framework.Exceptions;
+
+using NUnit.Framework;
+using ArrayList;
+
+namespace ArrayList.Contracts
+{
+    [TestFixture]
+    public partial class ArrayListContractTest
+    {
+        [PexMethod]
+        public void PUT_AddContract([PexAssumeUnderTest]ArrayList list, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_Old_listCount = list.Count;
+
+            int New_Ret = list.Add(x);
+
+            int New_listCount = list.Count;
+          
+            Assert.IsTrue(New_listCount == Old_Old_listCount + 1);         
+        }
+    }
+}
+
+//source/Tests/ArrayList.Test/Contracts/ArrayListContractTest2.cs
+﻿using System;
+using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Settings;
+using Microsoft.Pex.Framework.Exceptions;
+
+using NUnit.Framework;
+using ArrayList;
+
+namespace ArrayList.Contracts
+{
+    [Test--------------------	    Assert.IsTrue(New_arrListLastIndexOfX >= New_arrListIndexOfX);
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ count of new array list is geq old count of array list plus 1
+	    Assert.IsTrue(New_arrListCount >= Old_arrListCount + 1);
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ array list contains x
+	     Assert.IsTrue(New_arrListContainsX);  
+	}
+    }
+}//src/HierarchicalList.Tests/Model/Foo.cs
+﻿namespace HierarchicalList.Tests.Model
+{
+    public class Foo
+    {
+        public string Name { get; set; }
+        public Foo Child { get; set; }
+        public Foo Parent { get; set; }
+    }
+}
+
+//src/HierarchicalList.Tests/HierarchyComparerTests.cs
+﻿using HierarchicalList.Tests.Model;
+using NUnit.Framework;
+
+namespace HierarchicalList.Tests
+{
+    [TestFixture]
+    public class HierarchyComparerTests
+    {
+        [Test]
+        public void Test_Compare_Nulls()
+        {
+            var comparer = new HierarchyComparer<Foo>(x => x.Name);
+            var result = comparer.Compare(null, null);
+            Assert.AreEqual(0, result);
+        }
+
+        [Test]
+        public void Test_Compare_First_Null()
+        {
+            var comparer = new HierarchyComparer<Foo>(x => x.Name);
+            var result = comparer.Compare(null, new Foo() { Name = "B" });
+            Assert.AreEqual(-1, result);
+        }
+
+        [Test]
+        public void Test_Compare_Second_Null()
+        {
+            var comparer = new HierarchyComparer<Foo>(x => x.Name);
+            var result = comparer.Compare(new Foo() { Name = "A" }, null);
+            Assert.AreEqual(1, result);
+        }
+
+        [Test]
+        public void Test_Compare_Equal()
+        {
+            var comparer = new HierarchyComparer<Foo>(x => x.Name);
+            var result = comparer.Compare(new Foo() { Name = "A" }, new Foo() { Name = "A" });
+            Assert.AreEqual(0, result);
+        }
+
+        [Test]
+        public void Test_Compare_One_Level_Down()
+        {
+            var comparer = new HierarchyComparer<Foo>(x => x.Name);
+            var result = comparer.Compare(new Foo() { Name = "A" }, new Foo() { Name = "B" });
+            Assert.AreEqual(-1, result);
+        }
+
+        [Test]
+        public void Test_Compare_One_Level_Up()
+        {
+            var comparer = new HierarchyComparer<Foo>(x => x.Name);
+            var result = comparer.Compare(new Foo() { Name = "B" }, new Foo() { Name = "A" });
+            Assert.AreEqual(1, result);
+        }
+
+        [Test]
+        public void Test_Compare_Several_Levels_Down()
+        {
+            var comparer = new HierarchyComparer<Foo>(x => x.Name);
+            var result = comparer.Compare(new Foo() { Name = "A", Child = new Foo() { Name = "B" } }, new Foo() { Name = "C" });
+            Assert.AreEqual(-1, result);
+        }
+
+        [Test]
+        public void Test_Compare_Several_Levels_Up()
+        {
+            var comparer = new HierarchyComparer<Foo>(x => x.Name);
+            var result = comparer.Compare(new Foo() { Name = "C" }, new Foo() { Name = "A", Child = new Foo() { Name = "B" } });
+            Assert.AreEqual(1, result);
+        }
+    }
+}
+
+//src/HierarchicalList/IHierarchicalItem.cs
+﻿namespace Hierarch--------------------	    Assert.IsTrue(New_Ret >= 0 && New_Ret == Old_arrListCount,"ArrayList Add must increment Count and return index of the added item");
+
+	    // assertions using "Assert.AreEqual\(.*?\);" that ensure that x is added correctly in the ArrayList
+	    Assert.IsTrue(New_arrListContainsX, "ArrayList Should contain the added item after Add(x) operation");
+	    Assert.IsTrue(arrList[New_Ret] == Old_x, "ArrayList item at LastIndexOf(x) should be the same as x");
+	    Assert.IsTrue(New_arrListCount == Old_arrListCount + 1, "After Add(x) operation, Count should be incremented by 1");
+	    Assert.IsTrue(New_arrListIndexOfX == New_Ret, "IndexOf(x) should return last index of x in the ArrayList after Add(x)");
+
+	    // assertions using "Assert.Greater\(.*?\);" that ensure that the count of elements in the ArrayList has increased by 1 after the addition
+	    Assert.Greater(New_arrListCount, Old_arrListCount,"ArrayList should have one more element after the addition");
+
+	    // assertions using "Assert.IsFalse\(.*?\);" that ensure that LastIndexOf(x) is always greater than or equal to IndexOf(x)
+	    Assert.IsFalse(New_arrListLastIndexOfX >= 0 && New_arrListIndexOfX >= 0 && arrList[New_arrListLastIndexOfX] == Old_x && arrList[New_arrListIndexOfX] == Old_x && New_arrListLastIndexOfX< New_arrListIndexOfX, 
+     "LastIndexOf(x) should be greater or equal to IndexOf(x)");
+        }
+    }
+}//Hangfire/Models/Payment.cs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Hangfire.Models
+{
+    public class Payment
+    {
+        public int Id { get; set; }
+
+        [MaxLength(12)]
+        [Required]
+        public string CardNumber { get; set; }
+
+        [MaxLength(50)]
+        [Required]
+        public string CardHolder { get; set; }
+
+        [MaxLength(5)]
+        [Required]
+        public string ExpiryMonth { get; set; }
+
+        [MaxLength(5)]
+        [Required]
+        public string ExpiryYear { get; set; }
+
+        [Required]
+        public int Amount { get; set; }
+    }
+}
+
+//Hangfire/Services/IPaymentService.cs
+﻿using Hangfire.Models;
+using System.Threading.Tasks;
+
+namespace Hangfire.Services
+{
+    public interface IPaymentService
+    {
+        Task<bool> ProcessPayment(Payment payment);
+    }
+}
+
+//Hangfire/Services/PaymentProcessingService.cs
+﻿using Hangfire.Models;
+using System;
+using System.Threading.Tasks;
+
+namespace Hangfire.Services
+{
+    public class PaymentProcessingService : IPaymentService
+    {
+        public async Task<bool> ProcessPayment(Payment payment)
+        {
+            // Mocking latency
+            await Task.Delay(1000 * 60 * 2); // Waits for 2 minutes
+
+            return new Random().Next(2) == 0;
+        }
+    }
+}
+
+//Hangfire/Controllers/PaymentController.cs
+﻿using Hangfire.Models;
+using Hangfire.Services;
+using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
+
+namespace Hangfire.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class PaymentController : ControllerBase
+    {
+        private readonly IPaymentService _paymentService;
+
+        public PaymentController(IPaymentService paymentService)
+        {
+            _paymentService = paymentService;
+        }
+
+        // This method runs synchronous and immediately.
+        [HttpPost]
+        public async Task<IActionResult> ProcessPayment([FromBody]Payment payment)
+        {
+            // Here we are assuming the payment information provided is right or not. So no validation is actually being checked.
+            var--------------------            Assert.IsTrue(New_arrListLastIndexOfX >= New_arrListIndexOfX, "@@@ The last index of x is not greater than or equal to the index it was last found at in the array list."); 
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ count of array list in new state is geq old count plus one
+            Assert.IsTrue(New_arrListCount >= Old_arrListCount + 1, "@@@ The count of the array list has not increased by one."); 
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ last index of x and index of x are geq 0
+            Assert.IsTrue(New_arrListLastIndexOfX >= 0 && New_arrListIndexOfX >=0, "@@@ The index of x or last index of x is less than zero."); 
+
+            // Assertion that the method returns the correct value when passed valid parameters (arrList.Capacity > arrList.Count)
+            Assert.AreEqual(arrList.Capacity, Old_arrListCount + 1, "The array list count wasn't increased by 1. The count of the array list may be exceeding the capacity of the array list.");
+
+
+        }
+    }
+}//WebCore/Models/Error.cs
+﻿using System;
+
+namespace WebCore.Models
+{
+    public class Error
+    {
+        public string RequestId { get; set; }
+
+        public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+    }
+}
+
+//WebCore/Controllers/HomeController.cs
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
+using WebCore.Models;
+
+namespace WebCore.Controllers
+{
+    public class HomeController : Controller
+    {
+        private readonly ILogger<HomeController> _logger;
+
+        public HomeController(ILogger<HomeController> logger)
+        {
+            _logger = logger;
+        }
+
+        public IActionResult Index()
+        {
+            return View();
+        }
+
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new Error { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+    }
+}
+
+//XUnitTestProject/UnitTest1.cs
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
+using WebCore.Controllers;
+using WebCore.Models;
+using Xunit;
+
+namespace XUnitTestProject
+{
+    public class UnitTest1
+    {
+        [Fact]
+        public void TestIndexView()
+        {
+            // Arrange
+            var controller = new HomeController(null);
+
+            // Act
+            var result = controller.Index();
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Null(viewResult.ViewName);
+        }
+
+        [Fact]
+        public void TestPrivacyView()
+        {
+            // Arrange
+            var controller = new HomeController(null);
+
+            // Act
+            var result = controller.Privacy();
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Null(viewResult.ViewName);
+        }
+
+        [Fact]
+        public void TestErrorView()
+        {
+            // Arrange
+            var controller = new HomeController(null);
+
+            // Act
+            var result = controller.Error();
+
+            // Assert
+            var viewResult = Assert.IsType<ViewResult>(result);
+            Assert.Null(viewResult.ViewName);
+
+            var model = Assert.IsAssignableFrom<Error>(viewResult.Model);
+            Assert.False(model.ShowRequestId);
+        }
+    }
+}//LMS.Application/DTO--------------------            
+            Assert.IsTrue(New_arrListLastIndexOfX >= New_arrListIndexOfX);// @@@ last index of x is geq an index of x in new array list 
+            Assert.IsTrue(New_arrListCount > 0); // @@@ new arraylist count > 0
+            Assert.IsTrue(New_arrListContainsX);//@@@ new arraylist contains x
+        }
+    }
+}﻿using System.Threading.Tasks;
+
+namespace Umbraco.Community.RateLimiting
+{
+    public interface IRateLimiter
+    {
+        bool CanExecute();
+
+        Task<bool> WaitForExecution();
+    }
+}﻿using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Umbraco.Core;
+using Umbraco.Core.Cache;
+
+namespace Umbraco.Community.RateLimiting
+{
+    public class BasicRateLimiter : IRateLimiter
+    {
+        private readonly ReaderWriterLockSlim _lockSlim = new ReaderWriterLockSlim();
+        private readonly string[] _allowedKeys;
+        private readonly string _current;
+        private readonly IDistributedCache _distributedCache;
+
+        public BasicRateLimiter(string[] allowedKeys, string current, IDistributedCache distributedCache)
+        {
+            _allowedKeys = allowedKeys ?? new string[0];
+            _current = current.ToLowerInvariant();
+            _distributedCache = distributedCache;
+        }
+
+        public bool CanExecute()
+        {
+            _lockSlim.EnterReadLock();
+            try
+            {
+                return CanExecuteInternal();
+            }
+            finally
+            {
+                _lockSlim.ExitReadLock();
+            }
+        }
+
+        private bool CanExecuteInternal()
+        {
+            foreach (var key in _allowedKeys)
+            {
+                var value = _distributedCache.GetCacheItem(key);
+                if (value != null && value.CreateDateUtc.AddMilliseconds(value.ExpirationTime) >= DateTime.UtcNow)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public async Task<bool> WaitForExecution()
+        {
+            while (!CanExecute())
+            {
+                await Task.Delay(100);
+            }
+
+            return true;
+        }
+
+        public void ExecuteAction()
+        {
+            _lockSlim.EnterWriteLock();
+            try
+            {
+                foreach (var key in _allowedKeys)
+                {
+                    var absExpiration = DateTime.UtcNow.AddMilliseconds(1);
+                    var distributedCache = ApplicationContext.Current.ApplicationManager.AppCache.RequestCache;
+                    distributedCache.InsertCacheItem(key, null, absExpiration);
+                }
+            }
+            finally
+            {
+                _lockSlim.ExitWriteLock();
+            }
+        }
+    }
+}﻿using System;
+
+namespace Umbraco.Community.RateLimiting
+{
+    public class DistributedRateLimiterException : Exception
+    {
+        public DistributedRateLimiterException()
+        {
+        }
+
+        public DistributedRateLimiterException(string message)
+            : base(message)
+        { }
+
+        public DistributedRateLimiterException(string message, Exception innerException)
+            : base(message, innerException)
+        { }
+    }
+}//src/Umbraco.Community.RateLimiting/RateLimitingExtensions.cs
+﻿using Umbraco.Core;
+using Umbraco.Web;
+
+namespace Umbraco.Community.RateLimiting
+{
+    public static class RateLimitingExtensions
+    {
+        public static bool RateLimitCanExecute(this DistributedRateLimiterService service, string key)
+        {
+            var umbracoHelper = new UmbracoHelper(UmbracoContext.Current.Application);
+
+            //TODO: Use umbracoHelper to get the current ip or member Id if authenticated
+            var current = umbracoHelper.TypedRequestParser().CurrentClientIpAddress;
+            return service.CanExecute(current, key);
+        }
+    }
+}
+
+//src/U--------------------
+            int ret = arrList[arrList.Count-1];
+            Assert.IsTrue(ret == Old_x);
+
+            Assert.IsTrue(New_arrListCount == Old_arrListCount + 1);
+
+            Assert.IsTrue(New_arrListIndexOfX == Old_arrListIndexOfX);
+
+            if(Old_arrListCount == 0) {
+                Assert.IsTrue(New_arrListLastIndexOfX == 0);
+            } else {
+                Assert.IsTrue(New_arrListLastIndexOfX >= Old_arrListLastIndexOfX);
+            }
+
+            Assert.IsTrue(New_arrListContainsX == true);
+        }
+    }
+}﻿using System;
+using System.Text;
+using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Settings;
+using Microsoft.Pex.Framework.Exceptions;
+
+using NUnit.Framework;
+using ArrayList;
+using PexAPIWrapper;
+
+namespace ArrayList.Test
+{
+    [TestFixture, PexClass]
+    public partial class ArrayListContractTest
+    {
+        [PexMethod]
+        public void PUT_RemoveAtContract([PexAssumeUnderTest]ArrayList arrList, int index)
+        {
+            AssumePrecondition.IsTrue(index >= 0 && index < arrList.Count);
+
+            int Old_arrListCount = arrList.Count;
+
+            int Old_arrListItemRemoved = arrList[index];
+
+            bool Old_arrListContainsItemRemoved = arrList.Contains(Old_arrListItemRemoved);
+
+            arrList.RemoveAt(index);
+
+            int New_arrListCount = arrList.Count;
+
+            bool New_arrListContainsItemRemoved = arrList.Contains(Old_arrListItemRemoved);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_ItemRemoved", Old_arrListItemRemoved);
+            PexObserve.ValueForViewing("$old_arrList_ContainsItemRemoved", Old_arrListContainsItemRemoved);
+            PexObserve.ValueForViewing("$new_arrList_ContainsItemRemoved", New_arrListContainsItemRemoved);
+
+            if(Old_arrListContainsItemRemoved == false) {
+                Assert.IsTrue(Old_arrListCount == New_arrListCount);
+            } else {
+                Assert.IsTrue(Old_arrListCount - 1 == New_arrListCount);
+            }
+            
+	    // an assertion using "Debug.Assert\(.*?\);" that new array list contains item removed
+
+            Assert.IsTrue(New_arrListContainsItemRemoved == false);
+        }
+    }
+}﻿using System;
+using System.Text;
+using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Settings;
+using Microsoft.Pex.Framework.Exceptions;
+
+using NUnit.Framework;
+using ArrayList;
+using PexAPIWrapper;
+
+namespace ArrayList.Test
+{
+    [TestFixture, PexClass]
+    public partial class ArrayListContractTest
+    {
+        [PexMethod]
+        public void PUT_InsertContract([PexAssumeUnderTest]ArrayList arrList, int index, int x)
+        {
+            AssumePrecondition.IsTrue(index >= 0 && index <= arrList.Count);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_x = x;
+            int Old_arrListIndexOfX = arrList.IndexOf(x);
+            int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+            bool Old_arrListContainsX = arrList.Contains(x);
+
+            arrList.Insert(index, x);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndexOfX = arrList.IndexOf(x);
+            int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+            bool New_arrListContainsX = arrList.Contains(x);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_--------------------            Assert.IsTrue(New_arrListLastIndexOfX >= New_arrListIndexOfX);
+
+	    // an assertion that new array list count is geq old array list count plus one
+	    Assert.IsTrue(New_arrListCount >= Old_arrListCount + 1);
+
+	    // an assertion that new array list contains x equals old array list contains x
+	    Assert.AreEqual(Old_arrListContainsX, New_arrListContainsX);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that new index of x is geq new last index of x
+            Assert.IsTrue(New_arrListIndexOfX >= New_arrListLastIndexOfX);
+        }
+    }
+}//TestLibrary/SampleClass.cs
+﻿namespace TestLibrary
+{
+    public class SampleClass
+    {
+        public bool AreEven(int n1, int n2)
+        {
+            return n1 % 2 == 0 && n2 % 2 == 0;
+        }
+    }
+}
+
+//PexApiTest/UnitTest1.cs
+using NUnit.Framework;
+using PexAPIWrapper;
+using TestLibrary;
+
+namespace PexApiTest
+{
+    [TestFixture]
+    public class Tests
+    {
+        [Test]
+        [PexMethod]
+        public void Test1([PexAssumeValid]int n1, [PexAssumeValid]int n2)
+        {
+            var sample = new SampleClass();
+            var result = sample.AreEven(n1, n2);
+
+            PexObserve.ValueForViewing("n1", n1);
+            PexObserve.ValueForViewing("n2", n2);
+            PexObserve.ValueForViewing("Result", result);
+
+            if (n1 % 2 == 0 && n2 % 2 == 0)
+                Assert.IsTrue(result);
+            else
+                Assert.IsFalse(result);
+        }
+    }
+}
+
+//TestLibrary/Tests/SampleTests.cs
+using NUnit.Framework;
+using TestLibrary;
+
+namespace TestLibrary.Tests
+{
+    [TestFixture]
+    public class Tests
+    {
+        [Test]
+        [TestCase(2, 2, true)]
+        [TestCase(2, 3, true)] // this should be false but since it's the only case where all numbers are even it passes
+        public void AreEven_ReturnsTrueForEvenNumbers(int n1, int n2, bool expected)
+        {
+            var sample = new SampleClass();
+            var result = sample.AreEven(n1, n2);
+
+            Assert.AreEqual(expected, result);
+        }
+    }
+}
+
+//TestLibrary/Tests/SampleTestsPex.cs
+using NUnit.Framework;
+using PexAPIWrapper;
+using TestLibrary;
+
+namespace TestLibrary.Tests
+{
+    [TestFixture]
+    public class PexTests
+    {
+        [Test]
+        [PexMethod]
+        public void AreEven_ReturnsTrueForEvenNumbers([PexAssumeValid]int n1, [PexAssumeValid]int n2)
+        {
+            var sample = new SampleClass();
+
+            PexObserve.ValueForViewing("n1", n1);
+            PexObserve.ValueForViewing("n2", n2);
+
+            var result = sample.AreEven(n1, n2);
+
+            PexObserve.ValueForViewing("Result", result);
+
+            // I think this should actually use n1 % 2 == 0 && n2 % 2 == 0 to avoid NPE.
+            Assert.AreEqual((n1 % 2 == 0 && n2 % 2 == 0), result);
+        }
+    }
+}
+
+//TestLibrary/Tests/SampleWrapperTestsPex.cs
+using NUnit.Framework;
+using PexAPIWrapper;
+using TestLibrary;
+
+namespace TestLibrary.Tests
+{
+    [TestFixture]
+    public class PexTests
+    {
+        [Test]
+        [PexMethod]
+        public void PexTest_ReturnsTrueForEvenNumbers([PexAssumeValid]int n1, [PexAssumeValid]int n2)
+        {
+            var sample = new SampleClass();
+
+            PexObserve.ValueForViewing("n1", n1);
+            P--------------------

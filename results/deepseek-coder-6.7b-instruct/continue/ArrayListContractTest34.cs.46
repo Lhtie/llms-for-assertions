@@ -1,0 +1,987 @@
+        }
+    }
+}
+
+I do not know where to add this assertion as I can only place it in the class declaration and will it work the way I expect?
+
+A: You can add the assertion in your test method. Here is an example for the SetContract method:
+[PexMethod]
+public void PUT_SetContract([PexAssumeUnderTest]ArrayList arrList, int x, int index)
+{
+    AssumePrecondition.IsTrue(index >= 0 && index < arrList.Count);
+
+    int Old_arrListCount = arrList.Count;
+    int Old_x = x;
+    int Old_index = index;
+    int Old_arrListIndexOfX = arrList.IndexOf(x);
+    int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+    bool Old_arrListContainsX = arrList.Contains(x);
+
+    arrList[index] = x;
+
+    int New_arrListCount = arrList.Count;
+    int New_arrListIndexOfX = arrList.IndexOf(x);
+    int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+    bool New_arrListContainsX = arrList.Contains(x);
+
+    // Assert that the count of arrList remains the same
+    Assert.AreEqual(Old_arrListCount, New_arrListCount);
+
+    // the rest of the code...
+}
+
+This assertion assumes arrList's Count property does not change when invoking the Set method on the arrList object. The line Assert.AreEqual(Old_arrListCount, New_arrListCount); will therefore cause the test to fail if and only if arrList.Count changes between the initial and final state of arrList.
+If the count of the array list doesn't change after setting the value at the specific index then this assumption holds and the Pex tests should continue. If the count changes then the Pex might not be able to create a test case or it might generate an invalid input to the ArrayList.Add method.
+Also you need to be sure that this part of assert will be called in the last of every test case. If you put it in the beginning, some Pex generated test might be incorrect (if some conditions in your test method will not be satisfied).
+
+A: Pex does not support the use of Debug.Assert or other forms of assertions in your unit tests, as it is a mutation testing tool and as such, it is only capable of testing what it is provided - the methods (or constructors) you specify as the target for testing.
+If the "count of array list does not change" is a property you expect to hold true for all input to your methods, you should consider it a precondition in your tests and add it with AssumePrecondition.IsTrue.
+This should be added in the method that you intend to test.
+
+A: You can use NUnit's Assert for that.
+[PexMethod]
+public void PUT_SetContract([PexAssumeUnderTest]ArrayList arrList, int x, int index)
+{
+    AssumePrecondition.IsTrue(index >= 0 && index < arrList.Count);
+
+    int Old_arrListCount = arrList.Count;
+    int Old_x = x;
+    int Old_index = index;
+    int Old_arrListIndexOfX = arrList.IndexOf(x);
+    int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+    bool Old_arrListContainsX = arrList.Contains(x);
+
+    arrList[index] = x;
+
+    int New_arrListCount = arrList.Count;
+    int New_arrListIndexOfX = arrList.IndexOf(x);
+    int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+    bool New_arrListContainsX = arrList.Contains(x);
+
+    Assert.AreEqual(Old_arrListCount, New_arrListCount);
+    // you can add more Assert statements to check other values
+
+    PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+    // rest of your logic...
+}
+
+This will cause the test case to fail if the ArrayList count does not remain the same after the set operation.
+
+A: In your case, it is a pretty simple check. As your ArrayList.Set() method is not removing any object, but just modifying at certain index, it should maintain its Count.
+Assuming--------------------
+        }
+         [PexMethod]
+        public void PUT_RemoveAtContract([PexAssumeUnderTest]ArrayList arrList, int index)
+        {
+            AssumePrecondition.IsTrue(index >= 0 && index < arrList.Count);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_index = index;
+            int Old_arrListX = (int)arrList[index];
+
+            int Old_arrListIndexOf_X = arrList.IndexOf(Old_arrListX);
+            int Old_arrListLastIndexOf_X = arrList.LastIndexOf(Old_arrListX);
+            bool Old_arrListContains_X = arrList.Contains(Old_arrListX);
+
+            arrList.RemoveAt(index);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndexOf_X = arrList.IndexOf(Old_arrListX);
+            int New_arrListLastIndexOf_X = arrList.LastIndexOf(Old_arrListX);
+            bool New_arrListContains_X = arrList.Contains(Old_arrListX);
+
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_index", Old_index);
+            PexObserve.ValueForViewing("$old_arrList_x", Old_arrListX);
+            PexObserve.ValueForViewing("$old_arrList_IndexOf_x", Old_arrListIndexOf_X);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_x", New_arrListIndexOf_X);
+            PexObserve.ValueForViewing("$old_arrList_LastIndexOf_x", Old_arrListLastIndexOf_X);
+            PexObserve.ValueForViewing("$new_arrList_LastIndexOf_x", New_arrListLastIndexOf_X);
+            PexObserve.ValueForViewing("$old_arrList_contains_x", Old_arrListContains_X);
+            PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContains_X);
+
+        }
+
+
+    }
+}
+
+I tried fixing the problem by updating the PexSettings.xml file as mentioned on these links:
+How to Configure Pex to Test Private Methods
+http://research.microsoft.com/en-us/um/people/simonpe/Pex-Paper.pdf
+The problem continued to occur.
+Any idea why NuGet package Update-Package -Id Microsoft.Pex.VisualStudio does not work?
+I'm using Visual Studio 2015 Enterprise and I have the latest updates installed, including NuGet packages. I also have the latest version of Pex installed.
+
+A: According to the Microsoft documentation, updating NuGet package Microsoft.Pex.VisualStudio only available for Pex versions 2.0 and onwards. 
+The error message suggests that you are using Pex 1.0, where the corresponding NuGet package for updating isn't available.
+Upgrading to the newer Pex version should resolve this issue by updating the NuGet package Microsoft.Pex.VisualStudio.
+For Pex 1.0, you'd use NuGet package Microsoft.Pex.VisualStudio 1.0. However, note that Pex 1.0 is not recommended for use with modern Visual Studio versions and may not work with them at all. Unless you specifically have this version installed, I'd recommend upgrading to a newer version of Pex.
+Q: Adding items to ArrayList in Java Is there any way to add elements to an ArrayList of Custom Objects using reflection? Could you please provide examples of this.
+I read that it's not suggested and if you have control over source code you should add fields explicitly instead of using reflection. 
+Here is what I tried:
+public class Test {
+    List<Student> list =new ArrayList<>();
+
+    public void addStudent() {
+        Student s = new Student();
+        s.setRollNo(1);
+        s.setName("Jane");
+        list.add(s);
+--------------------
+        }
+
+       
+    }
+}﻿using System.Collections.Generic;
+
+namespace SortedSequences
+{
+    public interface ISortedSequence
+    {
+        int Add(int number);
+        int Remove(int number);
+        int Count { get; }
+        int this[int index] { get; }
+    }
+
+    public interface ISequenceFactory
+    {
+        ISortedSequence CreateSortedSequence();
+    }
+}//SortedSequences/SortedListSequence.cs
+﻿using System.Collections.Generic;
+
+namespace SortedSequences
+{
+    public class SortedListSequence : ISortedSequence
+    {
+        private SortedList<int, int> _sequenceList = new SortedList<int, int>();
+
+        public int Add(int number)
+        {
+            if (_sequenceList.ContainsKey(number)) return _sequenceList[number];
+
+            _sequenceList.Add(number, number);
+            return number;
+        }
+
+        public int Remove(int number)
+        {
+            if (!_sequenceList.ContainsKey(number)) return -1;
+
+            _sequenceList.Remove(number);
+            return number;
+        }
+
+        public int Count
+        {
+            get { return _sequenceList.Count; }
+        }
+
+        public int this[int index]
+        {
+            get { return _sequenceList.Keys[index]; }
+        }
+
+        public override string ToString()
+        {
+            return string.Join(", ", _sequenceList.Keys);
+        }
+    }
+
+    public class SortedListFactory : ISequenceFactory
+    {
+        public ISortedSequence CreateSortedSequence()
+        {
+            return new SortedListSequence();
+        }
+    }
+}
+
+//PerformanceTests/Program.cs
+﻿using System;
+using System.Diagnostics;
+using System.Collections.Generic;
+using SortedSequences;
+using System.Linq;
+
+namespace PerformanceTests
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            int itemsCount = 1000;
+
+            TestSequence(new HashSetFactory(), itemsCount);
+            TestSequence(new SortedSetFactory(), itemsCount);
+            TestSequence(new SortedListFactory(), itemsCount);
+            TestSequence(new TreesetFactory(), itemsCount);
+        }
+
+        private static void TestSequence(ISequenceFactory factory, int itemsCount)
+        {
+            var sequence = factory.CreateSortedSequence();
+
+            var rand = new Random();
+            var items = Enumerable.Range(0, itemsCount).Select(i => rand.Next()).ToArray();
+
+            var stopwatch = new Stopwatch();
+
+            stopwatch.Start();
+            for (int i = 0; i < itemsCount; ++i)
+            {
+                sequence.Add(items[i]);
+            }
+            stopwatch.Stop();
+
+            Console.WriteLine($"{factory.GetType().Name}: add {itemsCount} items into sequence - {stopwatch.ElapsedMilliseconds} ms");
+
+            stopwatch.Restart();
+            for (int i = 0; i < itemsCount; ++i)
+            {
+                sequence.Remove(items[i]);
+            }
+            stopwatch.Stop();
+
+            Console.WriteLine($"{factory.GetType().Name}: remove {itemsCount} items from sequence - {stopwatch.ElapsedMilliseconds} ms");
+        }
+    }
+}//Cinema/Data/Models/Cinema.cs
+﻿using System.Collections.Generic;
+
+namespace Cinema.Data.Models
+{
+    public class Cinema
+    {
+        public Cinema()
+        {
+            this.Projections = new HashSet<Projection>();
+            this.Halls = new HashSet<Hall>();
+        }
+
+        public int Id { get; set; }
+
+        public string Name { get; set; }
+
+        public int TotalHalls { get; set; }
+
+        public int TotalSeats { get; set; }
+        
+        public virtual ICollection<Projection> Projections { get; set; }
+
+        public virtual ICollection<Hall> Halls { get; set; }
+    }
+}
+
+//Cinema/Data/CinemaContext.cs
+﻿using Cinema.Data.Models;--------------------	    Debug.Assert(arrList.Count == Old_arrListCount); 
+
+        }
+
+        [PexMethod]
+        public void PUT_ClearContract([PexAssumeUnderTest]ArrayList arrList)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+
+            arrList.Clear();
+
+            int New_arrListCount = arrList.Count;
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+
+        }
+    }
+}
+
+I have a few assumptions made in each test under the [PexAssumeUnderTest] attribute. But is there a way to programmatically make assumptions about my method inputs? I have found the [PexAssumeUnderTest] attribute very helpful in setting up some of my method contracts, but now I wish to have more control over them.
+I would like to know if there's a way to add assumptions at method signature level so that my assumptions are part of the generated test cases directly.
+The API I'm testing is designed in such a way that every method has different behavior based on the method parameters and it would be very helpful to have the behavior of each test case defined clearly at the method call site or test method signature.
+
+A: No, you can not directly add assumptions at the method signature level in Pex. The Pex tool is designed to analyze the public and protected parts of the method, and not private or internal parts.
+
+Assumptions are generally used to provide explicit conditions for the tool’s behavior. They allow you to specify what inputs you expect before you start your tests.
+
+So, if you want to add assumptions, you can use the [PexAssumeParameter] attribute which is useful for controlling the tests based on the input parameters. Also, [PexMethod] attribute allows you to specify the parameters that should be tested. 
+
+Remember, the assumption should be based on the behavior not based on preconditions which you can specify using [PexAssumePrecondition] attribute.
+
+A: PEX does not support assumptions at method-level for complex reasons. The PEX framework has to analyze the method in isolation, which is practically impossible for something like adding assumptions based on input method parameters. It's too complex and expensive for PEX to try and add such fine-grained control. It might be possible, on a case-by-case basis, with [PexAssumeNoNullValue], [PexAssumeNotNull], [PexAssumeNotNull], [PexAssumeNotSideEffect], [PexAssumeNCIEF] attributes but PEX should not have control over other parts of system for its purpose.
+If you want assumptions about method inputs, you are suggested to specify them through [PexAssumeParameter] attribute.
+
+A: As you've correctly pointed out, the limitations of Pex include the inability to specify assumptions on the method's input parameters beyond just the preconditions, null, not-null values. 
+
+While testing, you'll have to take care of those assumptions via the [PexAssumeParameter], [PexAssumeNotNull], [PexAssumeNotSideEffect] and similar attributes, which in turn require you to manually set up the scenario that your test is going to validate.
+
+What you might want to consider is generating your own unit tests which validate a wide range of scenarios and cover the assumptions you want to set. I imagine that for complex object-like structures, this would also be cumbersome, but at least you could do more fine-grained checks. 
+
+Unfortunately, until Microsoft provides a more comprehensive solution to this problem, there isn't a clear way to programmatically specify assumptions in Pex tests. The tool is inherently designed to test method behaviors without prior knowledge about the method's inputs or outputs.
+
+Here's a workaround you can consider
+
+1. Create a separate unit test project.
+2. In your original project, create a public wrapper method that contains the assumptions.
+3. In your new project, create your unit tests for the original methods and pass in your preconditions.
+
+This way, you'll reap the benefits of Pex for your original project while still having full control over your unit tests. Just make sure that you consider all the different paths in your tests, and avoid complex setups when possible.
+
+In short, Microsoft provides a more comprehensive solution for this as part of next version of Pex but for now, there is no direct way to do it.
+
+References:
+
+"Re: [Request] Allow assumptions--------------------	    Debug.Assert(Old_arrListCount == New_arrListCount);
+	    
+        }
+    }
+}//src/Models/User.cs
+namespace SisControle.Models
+{
+    public class User
+    {
+        public int Id { get; set; }
+
+        public string NomeCompleto { get; set; }    
+
+        public string Login { get; set; }
+
+        public string Senha { get; set; }
+
+        public string Email { get; set; }
+    }
+}
+
+//src/Data/DataContext.cs
+using Microsoft.EntityFrameworkCore;
+using SisControle.Models;
+
+namespace SisControle.Data
+{
+    public class DataContext : DbContext
+    {
+        public DataContext(DbContextOptions<DataContext> options)
+            : base(options)
+        {
+        }
+
+        public DbSet<User> Users { get; set; }
+    }
+}
+
+//src/Controllers/UserController.cs
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
+using SisControle.Data;
+using SisControle.Models;
+using System.Linq;
+
+namespace SisControle.Controllers
+{
+    [ApiController]
+    [Route("v1/users")]
+    public class UserController : ControllerBase
+    {
+        private readonly DataContext _context;
+
+        public UserController(DataContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet]
+        [Route("")]
+        public IEnumerable<User> GetUsers()
+        {
+            return _context.Users.ToList();
+        }
+
+        [HttpGet]
+        [Route("{id}")]
+        public User GetUserById(int id)
+        {
+            return _context.Users.Find(id);
+        }
+
+        [HttpPost]
+        [Route("")]
+        public IActionResult CreateUser([FromBody] User user)
+        {
+            _context.Users.Add(user);
+            _context.SaveChanges();
+            return Created("", user);
+        }
+
+        [HttpDelete]
+        [Route("{id}")]
+        public IActionResult DeleteUser(int id)
+        {
+            var user = _context.Users.Find(id);
+
+            if(user == null)
+                return NotFound();
+
+            _context.Users.Remove(user);
+            _context.SaveChanges();
+            return NoContent();
+        }
+
+        [HttpPut]
+        [Route("{id}")]
+        public IActionResult UpdateUser([FromBody] User user, int id)
+        {
+            var _user = _context.Users.Find(id);
+
+            if(_user == null)
+                return NotFound();
+
+            _user.NomeCompleto = user.NomeCompleto;
+            _user.Login = user.Login;
+            _user.Senha = user.Senha;
+            _user.Email = user.Email;
+
+            _context.Users.Update(_user);
+            _context.SaveChanges();
+            return Ok(_user);            
+        }
+    }
+}
+
+//src/Startup.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using SisControle.Data;
+using Microsoft.EntityFrameworkCore;
+
+
+namespace SisControle
+{
+    public class Startup
+    {
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+        public IConfiguration Configuration { get; }
+
+        // This method gets called by the runtime. Use this method to add services to the container.
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.AddDbContext<DataContext>(opt => 
+                opt.UseInMemoryDatabase("Database"));
+
+            services.AddScoped<DataContext,--------------------		Debug.Assert(Old_arrListCount==New_arrListCount); 
+		// an assertion using "Debug.Assert\(.*?\);" that  @@@ index  does not change 
+		Debug.Assert(Old_index==Old_arrListIndexOfX==New_arrListIndexOfX); 
+		// an assertion using "Debug.Assert\(.*?\);" that  @@@ last index of x does not change 
+		Debug.Assert(Old_arrListLastIndexOfX==New_arrListLastIndexOfX);
+        }
+    }
+}
+
+
+A: We can use below assertions in our methods to ensure that certain properties in the ArrayList object do not change upon calling certain methods. For example:
+
+- [Test]
+  public void Test_IndexOf()
+  {
+     ArrayList list = new ArrayList();
+     list.Add(5);
+     list.Add(4);
+     // Check that list.IndexOf(4) does not give the same result after the Add operation
+     Assert.AreEqual(1, list.IndexOf(4)); 
+  }
+
+In above example, we have checked that IndexOf(4) returns 1. After calling list.Add(4), IndexOf(4) should still return 1. 
+
+Note that above assertions are testing code logic and not the contracts of the ArrayList class under PEX. Thus, these assertions ensure that your code logic is correct but does not ensure that the behaviors of ArrayList under PEX (like the properties Count, IndexOf, Contains, etc.) under PEX are also ensured. 
+
+If you want to ensure the contracts of ArrayList, then you would need to do much more comprehensive tests using PexClass and PexMethod attributes and verify the fields/properties that Pex is analyzing in the test cases.
+
+Also, as a guideline, testing a specific class should focus on testing that class only; i.e., you might have different test classes focusing on testing of other classes (not part of a class being tested).
+
+Also, one thing to note is that the Pex generated test may not cover all potential paths in the ArrayList class. That's why additional manual tests for edge cases might be required.
+
+We can only conduct unit testing for a specific function or a specific use case. For example, when we add an element to the List using Add(element) function, we expect the Count of the list to increase by 1. And so, we write a Unit test for this condition.
+
+In summary, it is recommended to follow testing guidelines to ensure that each unit of the codebase works as expected when performing specific tasks.
+
+For your question, if you want your test to ensure that the ArrayList does not change its Count property when calling Remove method, you can use the below test:
+
+   [Test]
+   public void Test_Remove()
+   {
+      ArrayList list = new ArrayList(){5, 4, 3, 2, 1};
+      int oldCount = list.Count;
+      list.Remove(5);
+      Assert.AreEqual(oldCount, list.Count);  
+   }
+
+In above example, we have checked that the Count of the list remains the same after removing an element.
+
+We can continue this approach, to check other properties as well.
+
+Hope this answer is helpful.
+
+A: In unit tests, we always assume that the system under test behaves as expected. For instance, when you call Remove(x), we assume that ArrayList should remove the first occurrence of x from the list if it exists.
+As for contracts verification, Pex is not designed to check those. It focuses primarily on fuzz testing, code coverage, etc., and in practice, it may find bugs that are difficult to reproduce with unit tests. 
+Unit tests, on the other hand, are typically very specific to a function or operation, i.e., they test one small part of your code. They will either fail if the code under test behaves unexpectedly or pass if it behaves as expected.
+Therefore, while it seems that in some cases Pex and unit tests could be used together to cover a wide range of possible behaviors, there typically isn't a requirement to have an equivalent unit test for each Pex generated test case. 
+Instead, Pex is often used for stress testing and finding edge cases that your unit tests might overlook. 
+But please note, you should still have sufficient unit tests to handle all major functionality and edge cases. Tools like Pex help to find edge cases, but not all of them.
+Hope that helps.
+
+A: You have to balance between unit tests and contract testing. Tests--------------------	    PexObserve.VerifyNonAssertion(()=>{ System.Diagnostics.Debug.Assert(Old_arrListCount == New_arrListCount);  }); 
+        }
+
+        [PexMethod]
+        public void PUT_RemoveAtContract([PexAssumeUnderTest]ArrayList arrList, int index)
+        {
+            AssumePrecondition.IsTrue(index < arrList.Count && index >= 0);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_index = index;
+
+            arrList.RemoveAt(index);
+
+            int New_arrListCount = arrList.Count;
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_index", Old_index);
+
+            // an assertion using "Debug.Assert\(.*?\);" that indicates at least one element of the array list is present in the original list
+            PexObserve.VerifyNonAssertion(()=>{ System.Diagnostics.Debug.Assert(Old_arrListCount > New_arrListCount);  }); 
+
+          // an assertion using "Debug.Assert\(.*?\);" that indicates the removed element exists and is not present at the index in the new list.
+            PexObserve.VerifyNonAssertion(()=> {
+              if (New_arrListCount <= Old_index)
+                System.Diagnostics.Debug.Assert(true);
+              else 
+                System.Diagnostics.Debug.Assert((int)arrList[Old_index] != Old_index); 
+            });  
+        }
+
+        [PexMethod]
+        public void PUT_ClearContract([PexAssumeUnderTest]ArrayList arrList)
+        {
+
+            int Old_arrListCount = arrList.Count;
+
+            arrList.Clear();
+
+            int New_arrListCount = arrList.Count;
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+
+            // an assertion using "Debug.Assert\(.*?\);" that indicates the array list is cleared
+            PexObserve.VerifyNonAssertion(()=>{ System.Diagnostics.Debug.Assert(New_arrListCount == 0);  }); 
+                      
+        }
+    }
+}
+
+//ArrayList/test/ArrayListTest.cs
+﻿using NUnit.Framework;
+using ArrayList;
+
+namespace ArrayList.Test
+{
+    [TestFixture]
+    public class ArrayListTest
+    {
+        [Test]
+        public void TestAdd()
+        {
+            ArrayList list = new ArrayList();
+            list.Add(1);
+            list.Add(2);
+            Assert.AreEqual(2, list.Count);
+        }
+
+        [Test]
+        public void TestRemove()
+        {
+            ArrayList list = new ArrayList();
+            list.Add(1);
+            list.Add(2);
+            list.Add(3);
+            list.Remove(2);
+            Assert.AreEqual(2, list.Count);
+            Assert.AreEqual(0, list.IndexOf(2));
+        }
+
+        [Test]
+        public void TestInsert()
+        {
+            ArrayList list = new ArrayList();
+            list.Add(1);
+            list.Add(3);
+            list.Insert(1, 2);
+            Assert.AreEqual(3, list.Count);
+            Assert.AreEqual(2, list[1]);
+        }
+
+        [Test]
+        public void TestSet()
+        {
+            ArrayList list = new ArrayList();
+            list.Add(1);
+            list.Add(2);
+            list[1] = 3;
+            Assert.AreEqual(3, list[1]);
+        }
+
+        [Test]
+        public void TestRemoveAt()
+        {
+            ArrayList list = new ArrayList();
+            list.Add(1);
+            list.Add(2);
+            list.Add(3);
+            list.RemoveAt(1);
+            Assert.AreEqual(2, list.Count);
+            Assert.AreEqual(0, list.IndexOf(2));
+       --------------------	    // Assert.AreEqual(Old_arrListCount, New_arrListCount,"@@@ count of array list does not change @@@");
+
+        }
+    }
+}
+
+//Lab1/C#/ArrayList/ArrayListTests/ArrayListTests/ArrayListTest.cs
+﻿using NUnit.Framework;
+using ArrayList;
+
+namespace ArrayListTests
+{
+    [TestFixture]
+    public class ArrayListTest
+    {
+        [Test]
+        public void AddTest()
+        {
+            ArrayList.ArrayList arrList = new ArrayList.ArrayList();
+            Assert.AreEqual(0, arrList.Count);
+            arrList.Add(10);
+            Assert.AreEqual(1, arrList.Count);
+            Assert.AreEqual(10, arrList.Get(0));
+        }
+
+        [Test]
+        public void RemoveTest()
+        {
+            ArrayList.ArrayList arrList = new ArrayList.ArrayList();
+            arrList.Add(10);
+            arrList.Add(20);
+            Assert.AreEqual(2, arrList.Count);
+            arrList.Remove(10);
+            Assert.AreEqual(1, arrList.Count);
+            Assert.AreEqual(20, arrList.Get(0));
+        }
+
+
+        [Test]
+        public void InsertTest()
+        {
+            ArrayList.ArrayList arrList = new ArrayList.ArrayList();
+            arrList.Add(10);
+            arrList.Add(30);
+            Assert.AreEqual(2, arrList.Count);
+            arrList.Insert(1, 20);
+            Assert.AreEqual(3, arrList.Count);
+            Assert.AreEqual(20, arrList.Get(1));
+        }
+
+        [Test]
+        public void SetTest()
+        {
+            ArrayList.ArrayList arrList = new ArrayList.ArrayList();
+            arrList.Add(10);
+            arrList.Add(30);
+            Assert.AreEqual(2, arrList.Count);
+            arrList[1] = 20;
+            Assert.AreEqual(2, arrList.Count);
+            Assert.AreEqual(20, arrList.Get(1));
+        }
+    }
+}
+
+//Lab1/C#/ArrayList/ArrayListTests/ArrayListTests/ContractTest.cs
+﻿using NUnit.Framework;
+using ArrayList;
+using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Settings;
+using Microsoft.Pex.Framework.Exceptions;
+using System;
+
+namespace ArrayListTests
+{
+    [TestFixture]
+    public partial class ContractTest
+    {
+        [PexMethod]
+        public void PUT_AddContract([PexAssumeUnderTest]ArrayList.ArrayList arrList, int x)
+        {
+            AssumePrecondition.IsTrue(true); 
+
+            int Old_arrListCount = arrList.Count;
+            int Old_x = x;
+            int Old_arrListIndexOfX = arrList.IndexOf(x);
+            int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+            bool Old_arrListContainsX = arrList.Contains(x);
+
+            int New_Ret = arrList.Add(x);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndexOfX = arrList.IndexOf(x);
+            int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+
+            bool New_arrListContainsX = arrList.Contains(x);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+            PexObserve.ValueForViewing("$old_arrList_IndexOf_x", Old_arrListIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_x", New_arrListIndexOfX);
+            PexObserve.ValueForViewing("$old_arrList_LastIndexOf_x", Old_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_LastIndexOf_x", New_arrListLast--------------------
+        }
+
+        [PexMethod]
+        public void PUT_RemoveAtContract([PexAssumeUnderTest]ArrayList arrList, int index)
+        {
+            AssumePrecondition.IsTrue(index < arrList.Count && index >= 0);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_arrListIndexOfX = arrList.IndexOf((int)0);
+            int Old_arrListLastIndexOfX = arrList.LastIndexOf((int)0);
+            bool Old_arrListContainsX = arrList.Contains((int)0);
+
+            arrList.RemoveAt(index);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndexOfX = arrList.IndexOf((int)0);
+            int New_arrListLastIndexOfX = arrList.LastIndexOf((int)0);
+            bool New_arrListContainsX = arrList.Contains((int)0);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_IndexOf_x", Old_arrListIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_x", New_arrListIndexOfX);
+            PexObserve.ValueForViewing("$old_arrList_LastIndexOf_x", Old_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_LastIndexOf_x", New_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$old_arrList_contains_x", Old_arrListContainsX);
+            PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContainsX);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ count of array list is reduced by one 
+
+        }
+    }
+}
+
+//csharp/TestProject/TestContractsWithArrayList.cs
+using NUnit.Framework;
+using PexAPIWrapper;
+
+/// <summary>
+/// Summary description for TestContractsWithArrayList 
+/// </summary>
+[TestFixture]
+public class TestContractsWithArrayList
+{
+    [Test]
+	public void AddContract()
+	{
+        ArrayList arrList = new ArrayList();
+        int x = 5;
+
+        int Old_arrListCount = arrList.Count;
+        int Old_x = x;
+        int Old_arrListIndexOfX = arrList.IndexOf(x);
+        int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+        bool Old_arrListContainsX = arrList.Contains(x);
+
+        int New_Ret = arrList.Add(x);
+
+        int New_arrListCount = arrList.Count;
+        int New_arrListIndexOfX = arrList.IndexOf(x);
+        int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+
+        bool New_arrListContainsX = arrList.Contains(x);
+
+        Assert.AreEqual(Old_arrListCount+1, New_arrListCount);
+        Assert.AreEqual(Old_arrListIndexOfX, New_arrListIndexOfX);
+        Assert.AreEqual(Old_arrListLastIndexOfX, New_arrListLastIndexOfX);
+        Assert.AreEqual(New_Ret, Old_arrListCount);
+        Assert.AreEqual(Old_arrListContainsX, false);
+        Assert.AreEqual(New_arrListContainsX, true);
+	}
+
+    [Test]
+    public void RemoveContract()
+    {
+        ArrayList arrList = new ArrayList();
+        int x = 5;
+
+        arrList.Add(x);
+
+        int Old_arrListCount = arrList.Count;
+        int Old_x = x;
+        int Old_arrListIndexOfX = arrList.IndexOf(x);
+        int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+        bool Old_arrListContainsX = arrList.Contains(x);
+
+        arrList.Remove(x--------------------
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ x is added
+
+	    // an assertion using "Debug.Assert\(.*? === @@@\);" that  @@@ is the updated position of x
+        }
+    
+        [PexMethod]
+        public void PUT_ClearContract([PexAssumeUnderTest]ArrayList arrList)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+
+            arrList.Clear();
+
+            int New_arrListCount = arrList.Count;
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  new array list count is zero, which means array list is empty
+        }
+    }
+}
+
+//Asserts/AssertionLibrary/Test/AssertionLibrary.Test/AssertTests.cs
+﻿using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using AssertionLibrary;
+
+// These tests use Microsoft.VisualStudio.TestTools.UnitTesting namespace
+namespace AssertionLibrary.Test
+{
+    [TestClass]
+    public class AssertTests
+    {
+        [TestMethod]
+        public void TestIntGreaterThanZero()
+        {
+            // Arrange
+            int zero = 0;
+            int seven = 7;
+
+            // Act & Assert
+            // Should throw InvalidOperationException because number is not greater than zero
+            Assert.AreEqual(new InvalidOperationException(), CustomAssert.IsGreaterThan(zero, "number"));
+            // Should not throw exception because number is greater than zero
+            CustomAssert.IsGreaterThan(seven, "number");
+        }
+
+        [TestMethod]
+        public void TestStringNotEmpty()
+        {
+            // Arrange
+            string empty = "";
+            string hello = "Hello";
+
+            // Act & Assert
+            // Should throw InvalidOperationException because string is empty
+            Assert.AreEqual(new InvalidOperationException(), CustomAssert.IsNotNullOrEmpty(empty, "string"));
+            // Should not throw exception because string is not empty
+            CustomAssert.IsNotNullOrEmpty(hello, "string");
+        }
+
+        [TestMethod]
+        public void TestBooleanTrue()
+        {
+            // Arrange
+            bool falseValue = false;
+            bool trueValue = true;
+
+            // Act & Assert
+            // Should throw InvalidOperationException because boolean is false
+            Assert.AreEqual(new InvalidOperationException(), CustomAssert.IsTrue(falseValue, "boolean"));
+            // Should not throw exception because boolean is true
+            CustomAssert.IsTrue(trueValue, "boolean");
+        }
+    }
+}
+
+//NUnitExamples/NUnitExamples/Calc/CalcController.cs
+﻿using System;
+
+namespace NUnitExamples
+{
+	public class CalcController
+	{
+		public CalcModel Model { get; set; }
+
+		public CalcController()
+		{
+			Model = new CalcModel();
+		}
+
+		public double Add(double a, double b)
+		{
+			return Model.Add(a, b);
+		}
+
+		public double Subtract(double a, double b)
+		{
+			return Model.Subtract(a, b);
+		}
+
+		public double Multiply(double a, double b)
+		{
+			return Model.Multiply(a, b);
+		}
+
+		public double Divide(double a, double b)
+		{
+			if (b == 0)
+				throw new DivideByZeroException();
+			return Model.Divide(a, b);
+		}
+	}
+}
+
+//NUnitExamples/NUnitExamples/Calc/CalcModel.cs
+﻿using System;
+
+namespace NUnitExamples
+{
+	public class CalcModel
+	{
+		public double Add(double a, double b)
+		{
+			return a + b;
+		}
+
+		public double Subtract(double a, double b)
+		{
+			return a - b;
+		}
+
+		public double Multiply(double a, double b)
+		{
+			return a--------------------

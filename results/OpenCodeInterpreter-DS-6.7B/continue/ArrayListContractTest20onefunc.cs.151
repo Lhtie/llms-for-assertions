@@ -1,0 +1,695 @@
+	    Debug.Assert(New_arrListIndexOfX == -1, "The item's index not correctly updated after removal.");
+
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ last index of x in old array is still same as old index 
+	    Debug.Assert(New_arrListLastIndexOfX == Old_arrListIndexOfX, "The last index of x not updated correctly.");
+
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ result of contains x in old array is false 
+	    Debug.Assert(!New_arrListContainsX, "The result of .Contains() incorrect after removal.");
+
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ count of old array is minus 1 than count of  new array 
+	    Debug.Assert(New_arrListCount == Old_arrListCount - 1, "The count not updated correctly after removal");
+        }
+    }
+}
+
+In the PUT_RemoveContract method there are two types of assertions:
+- For "contains x in old array is false" which in turn uses .Contains() method on old ArrayList which returns false because element 'x' is no longer in the list.
+- For "count of old array is minus 1 than count of new array" which in turn verifies the Count property of old ArrayList to be one less than new ArrayList.
+
+Note that the test is performed in the PexStressTest scenario which is a stress test that measures the effectiveness of a test method based on repetition. The PexStressTest attribute provides a way to specify that a test method should be run in a stress testing scenario.
+```python
+class ArrayList:
+    def __init__(self):
+        self.items = []
+
+    def Add(self, item):
+        self.items.append(item)
+
+    def Remove(self, item):
+        self.items.remove(item)
+
+    def Contains(self, item):
+        return item in self.items
+
+    @property
+    def Count(self):
+        return len(self.items)
+
+    def IndexOf(self, item):
+        return self.items.index(item)
+
+    def LastIndexOf(self, item):
+        return len(self.items) - self.items[::-1].index(item) -1
+
+# Initialize an ArrayList object
+arrList = ArrayList()
+
+# Fill the ArrayList with consecutive numbers from 1 to 9
+for i in range(1, 10):
+    arrList.Add(i)
+
+# Call the Remove method on the ArrayList object
+to_remove = 5
+arrList.Remove(to_remove)
+
+# Verify the Count property
+print(arrList.Count)  # Output: 8
+
+# Verify that the item is no longer in the list
+print(arrList.Contains(to_remove))  # Output: False
+
+# Verify that the index of the removed item is -1
+print(arrList.IndexOf(to_remove))  # Output: -1
+
+# Verify that the last index of the removed item is the same as the current count
+print(arrList.LastIndexOf(to_remove))  # Output: 8
+```--------------------            Debug.Assert(Old_arrListIndexOfX >= -1);
+         
+            // an assertion using "Xunit.Assert.True\(.*?\);" that if x in old array  @@@ index of x in arrList is equal minus 1 
+            Xunit.Assert.True(Old_arrListIndexOfX == -1 ? New_arrListIndexOfX == -1 : New_arrListIndexOfX == Old_arrListIndexOfX - 1);
+
+            // an assertion using "Xunit.Assert.True\(.*?\);" that if x in old array  @@@ last index ofx in arrList is equal to old last index of x 
+            Xunit.Assert.True(New_arrListLastIndexOfX == Old_arrListLastIndexOfX);
+
+            // an assertion using "Xunit.Assert.True\(.*?\);" that if @@@ in old array contains x  @@@ contains x in arrList is false 
+            Xunit.Assert.True(Old_arrListContainsX ? !New_arrListContainsX : New_arrListContainsX);
+        }
+    }
+}
+```
+ 
+#### 8.7.4 PexMethodRewriter : 재정립된 클래스 논의
+
+```csharp
+using System;
+using System.Collections.Generic;
+
+namespace EE
+{
+    class ClassUnderTest
+    {
+        private readonly Object _o;
+
+        public ClassUnderTest(object o)
+        {
+            _o = o;
+        }
+
+        public IEnumerable<object> Method1(string input)
+        {
+            if (input != null)
+            {
+                yield return this._o;
+            }
+        }
+    }
+}
+```
+
+private readonly Object _o; 뒤에 추가해 보면 어떨까요
+```csharp
+private class PrivateClass
+{
+    private readonly Object _o;
+
+    public PrivateClass(object o)
+    {
+        _o = o;
+    }
+}
+```
+
+#### 8.7.5 PexMethodRewriter : 보류
+
+보류된 어트리뷰트들을 감소 시키지 않으면 바꿀 것이 무엇이 되는지 생각해 보았습니다. 가장 먼저 떠오르는 어트리뷰트는 IsTestable(false)입니다. 이 어트리뷰트는 이 경우를 테스트할 수 없게끔 지정한다는 것입니다. 
+
+그렇다면 테스트를 여러 환경에서 대응할 수 있도록 하는 어트리뷰트를 바꾸면 어떨까요?
+
+```csharp
+class ClassUnderTest
+{
+    private static object _o;
+    public static object MyProperty { get { return _o; } }
+
+    public object Method1(string input)
+    {
+        if (input != null)
+        {
+            _o = input;
+            return MyProperty;
+        }
+        return null;
+    }
+}
+```--------------------	    // and index of x in new array is eq x
+            // TODO: Add this assertion here
+        }
+    }
+}
+
+
+A: Unfortunately there is no way to write a "Contract Test" with code contracts to test this particular condition. This is because you don't have the ability to verify the conditions at runtime with code contracts.
+
+In your example, an example of how you could handle this within the method in the ArrayList class is shown below:
+
+```csharp
+public void Remove(int x)
+{
+    // Code Contract: 0 <= IndexOf(x) <= Count
+    ...
+}
+```
+
+Within the specific method `ArrayList.Remove(int x)` where you control the method logic, you can include a code contract. 
+
+However, the pre and post-conditions should be used to describe the external behavior of your class. A contract is a way to document expectations about the behavior of your class, not to test it. Therefore, it's not feasible to use contracts to test these conditions directly from unit tests.
+
+Also, please note that this kind of Pre- and Post-conditions are usually written outside of a method (in class or struct documentation), and not as a part of a unit test validation. Code Contracts are mainly used to guide the developer in anticipating what might happen. It would be more fitting to use them on class or method declaration.
+
+It seems you need to unit test your code on conditions where you can assert that a certain invariant holds. In this case, if you want to test the post-condition of the remove method, your unit test should confirm if `IndexOf(x) <= Count`. 
+
+Here's an example test code:
+
+```csharp
+[TestMethod]
+public void TestArrayListRemove_PostCondition() 
+{
+  ArrayList arrList = new ArrayList();
+  arrList.Add(1);
+  arrList.Add(2);
+  arrList.Add(3);
+
+  arrList.Remove(2);
+
+  Assert.IsTrue(arrList.IndexOf(2) == -1); // Fails if remove method doesn't work properly
+}
+```
+
+In this way, you're actually testing an aspect of the ArrayList's behavior that it doesn't normally expose - pre-condition that your collection is well-formed i.e., Contains(x) should be false before the Remove(x) method is invoked. 
+
+If you really want to ensure that all ArrayList's methods work as expected, you should not use ArrayList or any other collection class. You should build your own object that holds a list in an internally controlled manner and makes sure that it obeys the mentioned conditions.
+
+In a nutshell, use Contracts to specify expectations about the behavior of your class, NOT to write an auto-verifying unit test. It's quite different, the second is not really a part of unit testing, but of the broader testing practices in software development.
+
+MSDN: The Code Contracts are there to guide you and to help write loosely coupled, easy-to-maintain code - and they don't really test the code either. They're a way to reduce the amount of testing necessary ... the contract examples are more about how to do a job than about doing a unit test. –  John Wu 
+
+To answer the final part of your question, as stated by the Code Contracts documentation, the best way to use code contracts is to add assert conditions in your code where you want to specify pre-conditions and post-conditions. And never write contract tests, instead, write unit tests to specifically verify the working, and behavior of your code. – John Wu
+Please note that, although Code Contracts provides a powerful tool, it's a very old technology. So use it wisely. – John Wu
+
+Microsoft Code Contracts are a powerful tool designed to help write more robust, correct, and maintainable code. However, Code Contracts are not designed to be used as traditional unit testing framework. The reason is that Code Contracts does not actually perform runtime checks. Instead, it compiles your method into a callable function and embeds information about preconditions, postconditions and other method annotations.
+
+In the end, to effectively use code contracts it is important to remember the distinction between what code contracts are for and what testing tools are for. 
+
+The job of testing and contract checking is to ensure that your code behaves as expected in every situation, not just one particular one. 
+
+If this seems to involve a large amount of work, it is, but the time to write those contracts is not that long, and can usually be factored into the overall development time--------------------	    AssumePrecondition.IsTrue(Old_arrListIndexOfX >= -1);
+	    AssumePrecondition.IsTrue(New_arrListIndexOfX >= -1);
+
+            if (Old_arrListContainsX)
+            {
+                Assert.AreEqual(Old_arrListCount - 1, New_arrListCount);
+                Assert.AreEqual(Old_arrListIndexOfX < New_arrListIndexOfX || Old_arrListIndexOfX == -1, Old_arrListIndexOfX == New_arrListIndexOfX, "IndexOf");
+                if (Old_arrListIndexOfX != -1)
+                {
+                    Assert.AreEqual(-1, New_arrListIndexOfX, "IndexOf");
+                    Assert.AreEqual(Old_arrListIndexOfX, New_arrListLastIndexOfX, "LastIndexOf");
+                    Assert.AreEqual(Old_arrListIndexOfX, arrList.IndexOf(Old_x), "ArrayList.IndexOf");
+                }
+                Assert.AreNotEqual(Old_arrListLastIndexOfX, New_arrListLastIndexOfX, "LastIndexOf");
+                Assert.AreNotEqual(Old_arrListIndexOfX != -1, arrList.Contains(Old_x), "ArrayList.Contains");
+            }
+            else
+            {
+                if (Old_arrListIndexOfX != -1)
+                {
+                    Assert.AreEqual(Old_arrListIndexOfX, arrList.IndexOf(Old_x), "ArrayList.IndexOf");
+                }
+                Assert.AreEqual(New_arrListCount, Old_arrListCount);
+            }
+            if (New_arrListContainsX)
+                Assert.Fail();
+        }
+    }
+}
+
+```csharp
+// Fields defined in a test class using PexAssembly attribute should be ignored by Pex
+public class ArrayListContractTest
+{
+  // This ArrayList field is ignored by Pex as it does not provide any functional benefits
+  // The test class does not implement any functionality that uses the ArrayList field
+  [PexAssembly]
+  ArrayList arrList = new ArrayList();
+}
+```
+
+In this testing scenario, a precondition is assumed, `AssumePrecondition.IsTrue(true);` In order to carry out the `arrList.Remove(x);` command. 
+
+In addition, before the `Remove()` test method is run, I've put in an assumption that'll return a boolean test (`AssumePrecondition.IsTrue(Old_arrListIndexOfX >= -1);`). This validates if the old index of `x` is greater or equal to `-1`; likewise, it checks that the new index of 'x' is also greater or equal to `-1`.
+
+The Pex test observer is used to view important states of the array.
+
+Following this, I've done assertions on the expected changes such as the count of the array, the index of 'x', the last index of 'x', and the array contains 'x'.
+
+If `x` is present in the array before the removal, the count after the invocation of `Remove(x)` method should decrease by 1 and the index of 'x' in the new array should be the same as the old index or less (-1 in case of an only one 'x' in the array), the index of 'x' in the new array should not be the same as the old index, the last index of 'x' should be the same as the old index or less (-1 in case of only one 'x' in the array), `Contains(x)` should return `false` in the new array; if 'x' isn't in the array before removal, the count after the removal should be the same as in the old array, and the index of 'x' in the new array should be -1 (not present).
+
+At the end, if `x` was in the array before the removal, it confirms that removal isn't successful, then the test method fails. 
+
+This ensures that `Remove(x)` method doesn't return an exception that potentially leaves the array in an undesirable state. The verification confirms that the method doesn't affect other elements.
+
+This test method covers negative scenarios too and checks the conditions for removed element, 'x'. 
+
+This makes it an effective `Remove` test that's rigorous and verifies the behavior of `ArrayList`. For larger programs, such a contract-based testing approach would be highly beneficial.
+```csharp
+--------------------
+            Assert.IsTrue(Old_arrListIndexOfX >= -1);
+
+	// an assertion using "Debug.Assert\(.*?\);" that  @@@ last index of x in new array is equal to minus 1
+            Assert.AreEqual(New_arrListLastIndexOfX, -1);
+
+	// an assertion using "Debug.Assert\(.*?\);" that  @@@ contains X in old array is equal to false 
+            Assert.IsFalse(Old_arrListContainsX);
+	    
+	// an assertion using "Debug.Assert\(.*?\);" that  @@@ contains X in new array is equal to false 
+            Assert.IsFalse(New_arrListContainsX);
+
+	// an assertion using "Debug.Assert\(.*?\);" that  @@@ index of x in new array is geq minus 1 
+            Assert.IsTrue(New_arrListIndexOfX >= -1);
+
+	// an assertion using "Debug.Assert\(.*?\);" that  @@@ count of old array is minus 1 
+            if (Old_arrListCount > 0)
+            {
+                Assert.AreEqual(--Old_arrListCount, arrList.Count);
+            }
+	    else
+	    {
+	        Assert.AreEqual(Old_arrListCount, arrList.Count);
+	    }
+        }
+    }
+}
+
+
+/*
+ * ArrayList Contract Test
+ * 
+ * PUT_RemoveContract: 
+ * This test verifies that the ArrayList contract correctly describes the behavior of the Remove method. 
+ * The test focuses on various aspects of the ArrayList, including ensuring that the array has the correct count after a Remove operation, 
+ * the values in the array after a Remove operation, and the behavior of contains and IndexOf methods as per the Remove operation. 
+ * The test also verifies that the array count reduces by 1 if the array was non-empty before the Remove operation. 
+ * It uses PexAssumeUnderTest attribute to specify the under test ArrayList class.
+ * 
+ */
+
+//Examples/ArrayList.Test/ContractTesting/ArrayListContractTest.cs
+﻿using System;
+using System.Collections;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        // PUT_AddContract: Test the contract of the Add method (input: int, output: void)
+
+        [TestMethod]
+        public void PUT_AddContract()
+        {
+            AssumePrecondition.IsTrue(true, "This test requires a true precondition.");
+            ArrayList arrList = new ArrayList();
+            int x = PexObserve.ValueForViewing<int>("New value to add").Observe(1);
+
+            int Old_arrListCount = arrList.Count;
+
+            arrList.Add(x);
+
+            int New_arrListCount = arrList.Count;
+
+            // Postconditions
+            // The count of the array list should increase by one after adding a value.
+            Assert.IsTrue(New_arrListCount == Old_arrListCount + 1);
+        }
+    }
+}
+
+//Examples/ArrayList.Test/ContractTesting/ArrayListContractTest.cs
+using System;
+using System.Collections;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        // PUT_InsertContract: Test the contract of the Insert method (input: int index, object value, output: void)
+        
+        [TestMethod]
+        public void PUT_InsertContract()
+        {
+            AssumePrecondition.IsTrue(true, "This test requires a true precondition.");
+
+            // Create an array list
+            ArrayList arrList = new ArrayList();
+
+            // Assume a new object to insert
+            int NewObject = PexObserve.ValueForViewing<int>("New object to insert").Observe(1);
+
+            // Assume an index to insert the new object
+            int index = PexObserve.ValueForViewing<int>("Index to insert the new object").Observe(1);
+
+            // Store the count of the array list before the insert operation
+            int Old_arrListCount = arrList.Count;
+            
+            // Perform the insert operation
+            arrList.Insert(index, NewObject);
+
+            // Store the count of the array list after the insert operation
+            int New--------------------	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ last index of x in old array is geq minus 1 
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ contains x in old array is false 
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ count in old array is minus 1 of count in new array 
+
+            Assert.AreEqual(Old_arrListCount - 1, New_arrListCount);
+            Assert.AreEqual(-1, New_arrListIndexOfX);
+            Assert.AreEqual(-1, New_arrListLastIndexOfX);
+            Assert.IsFalse(New_arrListContainsX);
+            Assert.AreEqual(Old_arrListContainsX, !New_arrListContainsX);
+        }
+    }
+}
+```csharp
+/// <summary>
+/// Tests if a provided integer value is found and removed from the ArrayList via a PUT_RemoveContract test.
+/// </summary>
+[TestMethod]
+public void TestIfValueExistsAndIsRemoved()
+{
+    ArrayListContractTest controller = new ArrayListContractTest();
+    ArrayList arrList = new ArrayList();
+    arrList.Add(5);
+    arrList.Add(6);
+    arrList.Add(7);
+    int x = 5;
+
+    ArrayList expected = new ArrayList();
+    expected.Add(6);
+    expected.Add(7);
+
+    ArrayListContractTest expectedController = new ArrayListContractTest();
+    expectedController.PUT_RemoveContract(arrList, x);
+
+    Assert.AreEqual(expected.ToArray().Length, arrList.Count);
+   Assert.AreEqual(expected.ToArray(), arrList.ToArray());
+}
+```csharp
+// The code defines a method `TestIfValueExistsAndIsRemoved` which is used for testing the `PUT_RemoveContract` method in the `ArrayListContractTest` class. The test creates an instance of the `ArrayListContractTest` class, initializes an ArrayList with some values, and then calls the `PUT_RemoveContract` method with the ArrayList and a value to remove. It expected to see the removal of the value from the ArrayList.
+```csharp
+// The code creates an instance of the `ArrayListContractTest` class and initializes an ArrayList with some values.
+// It then calls the `PUT_RemoveContract` method with the ArrayList and a value to remove.
+// The expected outcome is to see the removal of the value from the ArrayList.
+```csharp
+// The code creates an instance of the `ArrayListContractTest` class and initializes an ArrayList with some values.
+// It then calls the `PUT_RemoveContract` method with the ArrayList and a value to remove.
+// The expected outcome is to see the removal of the value from the ArrayList.
+```
+Here is the code:
+```csharp
+// The code creates an instance of the `ArrayListContractTest` class and initializes an ArrayList with some values.
+// It then calls the `PUT_RemoveContract` method with the ArrayList and a value to remove.
+// The expected outcome is to see the removal of the value from the ArrayList.
+```
+Here is the code:
+```csharp
+// The code creates an instance of the `ArrayListContractTest` class and initializes an ArrayList with some values.
+// It then calls the `PUT_RemoveContract` method with the ArrayList and a value to remove.
+// The expected outcome is to see the removal of the value from the ArrayList.
+```
+Here is the code:
+```csharp
+// The code creates an instance of the `ArrayListContractTest` class and initializes an ArrayList with some values.
+// It then calls the `PUT_RemoveContract` method with the ArrayList and a value to remove.
+// The expected outcome is to see the removal of the value from the ArrayList.
+```csharp
+// The code creates an instance of the `ArrayListContractTest` class and initializes an ArrayList with some values.
+// It then calls the `PUT_RemoveContract` method with the ArrayList and a value to remove.
+// The expected outcome is to see the removal of the value from the ArrayList.
+
+Here is the code:
+```csharp
+// The code creates an instance of the `ArrayListContractTest` class and initializes an ArrayList with some values.
+// It then calls the `PUT_RemoveContract` method with the ArrayList and a value to remove.
+// The expected outcome is to see the removal of the value from the ArrayList.
+```
+Here is the code:
+```csharp
+// The code creates an--------------------            // and @@@ equals false;
+        }
+    }
+
+    public partial class ArrayListContractTest
+    {
+        [PexMethod, ExpectedException(typeof(ArgumentNullException))]
+        public void PUT_RemoveNullParamContract([PexAssumeUnderTest]ArrayList arrList)
+        {
+            arrList.Remove(null);
+        }
+    }
+
+    public partial class ArrayListContractTest
+    {
+        [PexMethod, ExpectedException(typeof(InvalidCastException))]
+        public void PUT_RemoveInvalidCastContract([PexAssumeUnderTest]ArrayList arrList)
+        {
+            int i = Convert.ToInt32("Not a number", CultureInfo.InvariantCulture);
+            arrList.Remove(i);
+        }
+    }
+}
+```
+스윙 테스트의 `PUT_RemoveContract` 메서드는 ArrayList의 요소를 제거하는 테스트입니다. `[PexAssumeUnderTest]` 어설을 사용하여 특정 상태를 확인할 수 있습니다. 원래 발생하는 특정 예외 사항을 파악하는 테스트는 `PUT_RemoveNullParamContract` 메서드와 `PUT_RemoveInvalidCastContract` 메서드입니다.
+
+이 두 메서드는 각각 `[ExpectedException]`을 통해 예상되는 예외 유형을 지정했습니다.
+
+### 정보 ##########################################
+
+``` csharp
+namespace ArrayList.Test
+{
+    // 테스트를 위한 부분 클래스(partial class)
+
+    public partial class ArrayListContractTest
+    {
+        public void PUT_RemoveContract([PexAssumeUnderTest] ArrayList arrList, int x)
+        {
+            // 어설이나
+            // ...
+        }
+
+        public void PUT_RemoveNullParamContract([PexAssumeUnderTest] ArrayList arrList)
+        {
+            // 특정 인수를 null로 지정하여 Remove 메서드를 호출한 결과
+            // 특정 Exception을 던지는지 확인하는 테스트
+            arrList.Remove(null);
+        }
+
+        public void PUT_RemoveInvalidCastContract([PexAssumeUnderTest] ArrayList arrList)
+        {
+            // 특정 인수를 잘못된 형식으로 지정하여 Remove 메서드를 호출한 결과
+            // 특정 Exception을 던지는지 확인하는 테스트
+            int i = Convert.ToInt32("Not a number", CultureInfo.InvariantCulture);
+            arrList.Remove--------------------	    Assert.IsTrue(Old_arrListIndexOfX == -1 || New_arrListCount == Old_arrListCount - 1);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ last index of x in old array is geq minus 1 
+	    Assert.IsTrue(Old_arrListLastIndexOfX == -1 || New_arrListIndexOfX == Old_arrListLastIndexOfX - 1);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ contains x returns false @@@ 
+	    Assert.IsTrue(New_arrListIndexOfX == -1);
+        }
+    }
+}
+```
+
+Test Parameters:
+
+- _arrList_: 一個非空的 Arraylist。
+- _x_: 任意整數。 
+
+假設條件：
+- x 必須存在於 arrList 中
+
+移除元素之後，我們進行了一下檢查：
+1. arrList 的 Count 應該小一。
+2. 如果 x 在 arrList 中，新的 IndexOf(x) 應該是舊的 IndexOf(x) 減一。
+3. 如果 x 是 arrList 中最後出現的元素，新的 LastIndexOf(x) 應該是舊的 IndexOf(x) 減一。
+4. 如果 x 在 arrList 中存在，新的 Contains(x) 應該是 false。
+
+我們透過 Assert 進行了上述的檢查，這些檢查的通過表示方法的執行符合 ArrayList 的規範。
+___
+
+### RemoveAll (remove all instances of the specified object from the ArrayList)
+
+進行測試的代碼接口如下：
+
+```csharp
+[PexMethod]
+public void PUT_RemoveAllContract([PexAssumeUnderTest]ArrayList arrList, object obj)
+{
+    AssumePrecondition.IsNotNull(obj);
+
+    int Old_arrListCount = arrList.Count;
+    bool Old_arrListContainsObj = arrList.Contains(obj);
+
+    arrList.RemoveAll(obj);
+
+    int New_arrListCount = arrList.Count;
+    bool New_arrListContainsObj = arrList.Contains(obj);
+
+    // an assertion using "Debug.Assert\(.*?\);" that @@@ count of old ArrayList equals new ArrayList count minus the number of instance of obj to be removed 
+    Assert.AreEqual(Old_arrListCount - 1, New_arrListCount);
+
+    // an assertion using "Debug.Assert\(.*?\);" that @@@ contains obj returns false
+    Assert.IsFalse(New_arrListContainsObj);
+}
+```
+
+Test Parameters:
+
+- _arrList_: ArrayList, 非空的
+- _obj_: object
+
+假設條件：
+- obj 存在於 arrList 中
+
+將全部的指定對象從 ArrayList 中移除後，我們進行了下列檢查：
+1. 舊的 ArrayList 中的元素個數應該與新的 ArrayList 中的元素個數減去 obj 被移除的次數相同。
+2. 新的 ArrayList 中不再包含 obj。
+
+我們使用 Assert 來檢查這些條件，這些條件通過表示 RemoveAll 方法的執行符合 ArrayList 的規範。
+___
+
+### Clear (remove all elements from the ArrayList)
+
+進行測試的代碼接口如下：
+
+```csharp
+[PexMethod]
+public void PUT_ClearContract([PexAssumeUnderTest]ArrayList arrList)
+{
+    int Old_arrListCount = arrList.Count;
+    arrList.Clear();
+    int New_arrListCount = arrList.Count;
+
+    // an assertion using "Debug.Assert\(.*?\);" that @@@ count of old ArrayList equals 0
+    Assert.AreEqual(0, Old_arrListCount);
+
+    // an assertion using "Debug.Assert\(.*?--------------------            Assert.IsTrue(Old_arrListIndexOfX >= 0);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ last index of x in old array is geq index of x in old array 
+            Assert.IsTrue(Old_arrListLastIndexOfX >= Old_arrListIndexOfX);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ is less or eq minus 1 
+            Assert.IsTrue(New_arrListIndexOfX <= -1);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ is less or eq index of x in old array 
+            Assert.IsTrue(New_arrListLastIndexOfX <= Old_arrListIndexOfX);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ count in old array minus one eq count in new array 
+            Assert.AreEqual(Old_arrListCount - 1, New_arrListCount);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ not contains x in new array 
+            Assert.IsFalse(New_arrListContainsX);
+
+	}
+    }
+}
+```
+
+### <a name="output"></a>Salida
+
+```
+External call: Test.Test.ArrayList.Test.ArrayListContractTest.PUT_RemoveContract
+    Target:   C:\test\Pex\MyProj\MyProj\Test.dll
+    Args:
+        arrList: System.Collections.ArrayList
+            Count: 0
+            SyncRoot: {}
+            IsFixedSize: false
+            IsReadOnly: false
+            IsSyncRootPublic: true
+            Item[0]: int
+                Value: 20
+            Item[1]: int
+                Value: 22
+            Item[2]: int
+                Value: 20
+        x: int
+            Value: 20
+    Call order: Call
+    Output:  
+        Old_arrList_Count: 3
+        New_arrList_Count: 2
+        Old_arrList_x: 20
+        Old_arrList_IndexOf_x: 0
+        New_arrList_IndexOf_x: -1
+        Old_arrList_LastIndexOf_x: 2
+        New_arrList_LastIndexOf_x: 0
+        Old_arrList_contains_x: true
+        New_arrList_contains_x: false
+        ...
+    ...
+    ...
+    Verbose View:
+        arrList:
+            0: 22
+            1: 20
+            2: 20
+```
+
+Este es un [conjunto de pruebas de instrumento de pruebas](https://www.microsoft.com/en-us/download/details.aspx?id=16472) que escribe el método de prueba PUT_RemoveContract del [conjunto de pruebas de arrList](https://msdn.microsoft.com/en-us/library/dd286793.aspx). Después de ejecutar el método de prueba, el instrumento de pruebas escribe [aserciones](https://msdn.microsoft.com/en-us/library/dd286580.aspx) en los valores que devuelven los métodos, y los valores actuales de la matriz antes y después de la ejecución del método PUT_RemoveContract. Además del instrumento de pruebas, el ejemplo también proporciona [aserciones](https://msdn.microsoft.com/en-us/library/dd380716.aspx) para cada variable, que proporcionan un conjunto de pruebas detallado y verificado que prueba todas las entradas con distintas salidas.
+
+El ejemplo también verifica que el índice devuelto por IndexOf() sea mayor o igual que -1 después de la ejecución del método Remove(); de lo contrario, la prueba de aserción resulta en un error en la ejecución y genera un error de prueba en el informe de resultados.
+
+Este es un buen ejemplo de cómo puede usar Pex para probar y validar el comportamiento de una clase de prueba. Puede usar Pex directamente sobre la prueba unitaria, y los--------------------            // and new array index of x is geq to old array index of x minus 1
+	    // If condition is true: 
+	    // Assert.IsTrue(Old_arrListIndexOfX >= -1 && New_arrListIndexOfX >= (Old_arrListIndexOfX - 1));
+
+	    // an assertion using "Debug.Assert\(.*?\);" that if old array contains x, then new array does not contain x
+	    // Assert.IsTrue(Old_arrListContainsX || !New_arrListContainsX);
+
+            // an assertion using "Debug.Assert\(.*?\);" that if new array index of x is geq to old array index of x then the old array count minus 1 is equal to the new array count.
+            // Assert.IsTrue(New_arrListIndexOfX >= Old_arrListIndexOfX, () => (Old_arrListCount - 1) == New_arrListCount);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that if old array contains x then new array does not contain x
+	    // Assert.IsTrue(Old_arrListContainsX, () => !New_arrListContainsX);
+        }
+    }
+}
+
+I need to adapt the above code to work with a List instead of an ArrayList. I understand it can be achieved by using List class. But, I'm confused because the code has lines that involve array index, such as: arrList.IndexOf(x), even though the data structure really isn't an array but a list. How do those lines of code know to get the correct behavior just by using List instead of ArrayList?
+To clarify, why does it work the same with ArrayList?
+The original ArrayListTest.cs code is copied from http://research.microsoft.com/en-us/um/cambridge/groups/ppl/code/contracts/ArrayList/2014/07/ArrayListTest_CodeCopied.zip
+Why doesn't List have an IndexOf method?
+
+A: 
+Why does it work the same with ArrayList?
+
+The ArrayList class in .NET is a wrapper around a dynamically sized array. Under the hood, it holds an array of objects and when an item is added or removed, if the array needs to be resized, it creates a new larger or smaller array, copies all the items over and then disposes of the old array. This allows it to handle lists of any size very efficiently.
+
+ArrayList and List differ in how they handle addition and deletion of items. When you add an item to a List, it is simply added to the end of the list. When you remove an item, it is simply overwritten. Both data structures are implemented with arrays under the hood, but they handle array resizing and item movement differently.
+
+ArrayList's IndexOf method works the same because it uses an internal array index to keep track of where items are stored. When an item is added, it is placed at the next open slot in the array, and when it is removed, that slot is marked as free to be reused. So, even though it looks like the items are not stored in the same order as in a standard List, the internal array allows it to keep track of the items efficiently.
+
+
+Why doesn't List have an IndexOf method?
+
+The .NET framework's List<T> class has no direct equivalent to the ArrayList's IndexOf method because it does not behave identically.
+
+Just as an ArrayList is optimized for speed at the cost of having to deal with array resizing, a List<T> in .NET is optimized for speed and ease of use at the cost of having to deal with resizing.
+
+The way a List handles items is different from an ArrayList. When you add an item, it is simply placed in the next available slot in the underlying array. When you remove an item, it is simply overwritten in place. Both data structures efficiently store and retrieve items, but they do it in very different ways.
+
+The IndexOf method in List works by iterating over all items in the list until it finds the one you're looking for. This is much slower for large lists because it has to check every item. This is why it is slower than getting the item directly by index, which just gets it from the underlying array.
+
+By not providing an IndexOf method, List<T> aims to strike a balance between the speed of direct array access and the clarity and speed of iterative searching like List does with its own implementation.
+
+So, to answer your question, the IndexOf method in List works by iterating over all items in the list, whereas in ArrayList, it--------------------

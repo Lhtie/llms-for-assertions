@@ -1,0 +1,1117 @@
+     	    if (New_Ret >= 0)
+            { 
+                 // this assertion fails with 'new ret = 0, old_arrList contains _x = false, new_arrList_Contains_x = true'
+                 Assert.IsTrue(New_Ret <= New_arrListLastIndexOfX);
+            }
+            else
+            {
+                 // this assertion passes, even the 'old_arrList contains _x = false, new_arrList_Contains_x = false'
+	         Assert.IsTrue(New_arrListContainsX == Old_arrListContainsX);
+            }
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ new arrList count is same as old arrList count
+            Assert.AreEqual(Old_arrListCount, New_arrListCount);
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ old arrList last Index of x is same as new arrList last Index of x
+            Assert.AreEqual(Old_arrListLastIndexOfX, New_arrListLastIndexOfX);
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ old arrList contains x is same as new arrList contains x
+            Assert.AreEqual(Old_arrListContainsX, New_arrListContainsX);
+
+        }
+    }
+}
+```
+
+### <a name="the-arraylistcontracttest-class"></a>ArrayListContractTest クラス
+
+このクラスは、`ArrayList` クラスの `IndexOf` のテスト契約を定義しています。
+
+### <a name="the-put_indexofcontract-method"></a>PUT_IndexOfContract メソッド
+
+`PUT_IndexOfContract` は、`ArrayList` の `IndexOf` メソッドに適用されるテスト契約です。
+
+`PUT_IndexOfContract` により確認される条件の概要を以下に示します。
+
+1. `ArrayList` のカウント値は、変更前後で同じである必要がある。
+1. `ArrayList` の最終位置の `IndexOf` は、変更前後で同じである必要がある。
+1. `ArrayList` に新しい値 `x` が存在するかどうかは、変更前後で変化していない必要がある。
+1. `ArrayList` の `IndexOf` の値は、正になる必要がある (`IndexOf` で `x` が見つからない場合は `-1` になる必要がある)。
+
+最初のアサーションでは、新しい `IndexOf` の値が、古い `IndexOf` と同じかそれより大きくなっていることを確認しています。 2 番目のアサーションでは、古い `ArrayList` に値 `x` が存在するかどうかは、新しい `ArrayList` でも存在している必要があると確認しています。 
+
+もう一方のアサーションは新旧のカウント値が等し--------------------
+            // Verify that the post-condition of IndexOf is correct
+            Assume.State(Old_arrListContainsX);
+            Assume.InRange(New_arrListLastIndexOfX, 0, Old_arrListLastIndexOfX);
+            Assume.True(New_Ret <= New_arrListLastIndexOfX);
+            Assert.True(New_Ret <= New_arrListLastIndexOfX);
+
+
+            Assert.InRange(New_Ret, 0, Old_arrListCount);
+
+
+            // If the pre-condition of IndexOf return value should be always non-negative then we can replace the above assertion with 
+            // Assert.True(New_Ret >= 0);
+        } 
+    } 
+} 
+
+The part of test I'm interested in is:
+
+            Assume.State(Old_arrListContainsX);
+            Assume.InRange(New_arrListLastIndexOfX, 0, Old_arrListLastIndexOfX);
+            Assume.True(New_Ret <= New_arrListLastIndexOfX);
+            Assert.True(New_Ret <= New_arrListLastIndexOfX);
+
+From this code, what exactly does this block do?
+After reading the Pex code analyzer documentation I understand that Pex code analyzer allows you to specify assumptions about the state of your code, but in this case what exactly are we assuming?
+I'm guessing the 'Assume.State' is telling me that to 'assume' that 'arrList' contains the previous value 'x', but this doesn't really make sense to me as 'arrList' isn't changing during this test - it's a list of the previous values already.
+
+A: There seems to be some confusion. Assume.State is a method used by Pex to specify preconditions before calling a method - typically to provide setup data that the method depends on. This method is not used to specify the state of the system after the method has been called.
+
+In the context of testing ArrayList.IndexOf, the purpose of your assumptions is:
+
+1. State of arrList's containing value 'x': It assumes that the `arrList` (ArrayList) that was passed to `IndexOf` before we ran our test, contained that value 'x'.
+2. Range of New_arrListLastIndexOfX: It assumes that the last index of occurrence of 'x' in the `arrList` should be in the range of 0 to previous last index of 'x'. This is because `IndexOf` method always returns index of the element equal to 'x' in the 'arrList'. So it must be either present in 'arrList' or not present in 'arrList'. So, the last index of 'x' can't be greater than the previous last index of 'x'
+3. True(New_Ret <= New_arrListLastIndexOfX): It assumes that IndexOf method return value 'New_Ret' should always be less than or equals to the last index of 'x' i.e, New_arrListLastIndexOfX. 
+
+These assumptions are used to validate the outcomes of the IndexOf method in your test case. If the assumptions are validated successfully, then Pex will generate test cases that verify these post conditions - if the post conditions are met, the test will pass. In practice, ArrayList's IndexOf method will only return -1 if 'x' is not found in the ArrayList. Otherwise, it will return the index within the ArrayList where 'x' was found. Our assumptions therefore make sense as they would ensure the validity range of IndexOf method's return value.
+
+Regarding your other questions:
+
+- PexObserve.ValueForViewing is used to provide extra information to aid in debugging. For example, it's a way for you to see what values are being observed at different steps in your testing. 
+- The line Assert.True(New_Ret <= New_arrListLastIndexOfX) is a postcondition for the IndexOf method. It tests that the return value (New_Ret) is less than or equal to the last index of 'x' (New_arrListLastIndexOfX).
+- In the line Assert.InRange(New_Ret, 0, Old_arrListCount) it is a postcondition for the IndexOf method. It ensures the return value (New_Ret) is a valid index in the range of the list 'arrList'. So, 0 <= New_Ret <= Old_arrListCount should always be True for any valid use of IndexOf.
+
+Hope this clarifies your doubts.
+
+A: In the code you provided, the--------------------            Assert.IsTrue(New_Ret <= New_arrListLastIndexOfX);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ new ret == -1  @@@ implies new count == old count and arrList does not contain x 
+            Assert.IsTrue((New_Ret == -1) == (New_arrListCount == Old_arrListCount && !New_arrListContainsX));
+        }
+	}
+}
+```
+
+如果代码中的 PUT_IndexOfContract 函数未通过，则将发出 PexObserve.ValueForViewing 调用来查看旧有和新值，并检查 assert 中的条件。
+
+如果新返回值为非负数，则意味着数组列表中的索引应小于 x 在数组列表中的最后一个出现位置。
+
+如果新返回值为 -1，则表示数组列表中的计数不变，并且数组列表不包含该值。
+
+## 使用 Partial Trust 的安全漏洞测试
+
+在软件开发中，Partial Trust 是一项安全功能，允许受信任的应用程序在未完全信任的环境中运行。在这种情况下，Partial Trust 可以应用于测试 Web 应用程序来防止其意外运行不安全的代码。
+
+首先，我们需要知道哪些托管代码可以访问沙盒，哪些托管代码不能访问沙盒。在这里，可以通过设置 "tlbimport2.dll" 来访问沙盒并测试不受信任的代码。
+
+在 .NET 中，Partial Trust 仅限制某些托管代码中的代码访问。如果我们将代码标记为允许部分信任，则只有托管代码可以访问沙盒，并且必须授予部分信任权限。
+
+为了测试 Partial Trust 安全漏洞，开发者可以遵循类似的测试步骤：
+
+- 设置一个 Partial Trust 策略文件 .ptf，指定允许部分信任的权限。
+- 在测试配置文件 .testrunconfig 中使用 .ptf 文件。
+- 运行测试。
+
+在测试结束时，请确保检查应用程序是否安全加载了受信任的代码和对不受信任代码的授权访问。
+
+## 结论
+
+本文介绍了一种利用 PowerShell 自动化测试方法来检查与 ArrayList 类相关的不同属性和方法的一致性。我们使用了 .NET Framework 4.5 中包含的 PowerShell Crescendo 模块和 MSBuild，将 PowerShell 脚本嵌入到集成开发环境中来实现 .NET 语言服务。PowerShell 脚本为我们提供了 ArrayList 的强类型实例，并提供了一种编写测试用例的方式，以确保在 .NET Framework 中正确实现 ArrayList 类。
+
+另一个相关的话题是测试 .NET 语言服务 Partial Trust 的安全漏洞。当应用程序需要访问不是完全信任的资源时，可以使用 Partial Trust 来降低运行不受信任代码的整体风险。本文展示了如何通过设置部分信任权限并运行测试来测试 Partial Trust 安全漏洞。通过这种方式，可以确保在 Partial Trust 环境下的 .NET Framework 实现是安全的。
+
+通过这种方式，PowerShell Crescendo 和 MSBuild 结合起来可以为开发自动化和安全测试工具带来巨大的好处，为全面了解 .NET 类和 .NET 语言服务提供了一个良好的解决方案。
+
+然而，值得注意的是，开发自动化测试并不能替代正式的软件测试，比如单元测试、集成测试等，特别是在较新的软件开发周期中，比如 DevOps。对于复杂或不寻常的需求，自动化测试可能无法覆盖到。因此，需要将自动化测试与其他形式的测试相结合，例如传统的黑盒测试和白盒测试。
+
+自动化测试还有一个积极的一面，它可以自动化一些繁琐的工作，比如重复的测试脚本执行，快速和方便地生成测试数据以评估程序的行为，以及报告问题的解决方案的辅助工具。
+
+在选择任何自动化测试工具时，有必要考虑工具是否能满足您的需求，考虑自动化测试的长度、难度和成本效益。
+
+最后，自动化测试不是万能的。自动化测试也是一种形式的测试，需要有意识地进行。我们需要充分理解代码的意图，并在可能的情况下对其进行测试。这是--------------------            throw new NotImplementedException();
+        }
+    }
+}
+
+//source/src/Catel.Extensions.Test/ArrayList/Test/ArrayListTest.cs
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="ArrayListTest.cs" company="Catel development team">
+//   Copyright (c) 2008 - 2015 Catel development team. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
+
+namespace Catel.Extensions.Test.Collections.Test
+{
+    using System.Collections;
+    using Catel.Collections;
+    using NUnit.Framework;
+
+    public class ArrayListTest
+    {
+        #region Methods
+        [Test]
+        public void TestAddAt()
+        {
+            var arrayList = new ArrayListExtended();
+
+            arrayList.Add(10);
+            arrayList.Add(15);
+            arrayList.Add(20);
+
+            arrayList.AddAt(2, "test");
+            Assert.AreEqual("test", arrayList[2]);
+
+            arrayList.AddAt(0, "test2");
+            Assert.AreEqual("test2", arrayList[0]);
+
+            arrayList.AddAt(5, "test3");
+            Assert.AreEqual("test3", arrayList[5]);
+
+            // Add at with invalid position
+            Assert.AreEqual(6, arrayList.Count);
+            arrayList.AddAt(10, "test4");
+            Assert.AreEqual("test4", arrayList[10]);
+            Assert.AreEqual(7, arrayList.Count);
+        }
+
+        [Test]
+        public void TestContains()
+        {
+            var arrayList = new ArrayListExtended();
+
+            arrayList.Add(10);
+            arrayList.Add("test");
+
+            Assert.IsTrue(arrayList.Contains("test"));
+            Assert.IsFalse(arrayList.Contains("Test"));
+            Assert.IsFalse(arrayList.Contains(20));
+        }
+
+        [Test]
+        public void TestRemove()
+        {
+            var arrayList = new ArrayListExtended();
+
+            arrayList.Add(10);
+            arrayList.Add("test");
+            arrayList.Add(20);
+            arrayList.Add(30);
+
+            arrayList.Remove("test");
+            Assert.AreEqual(20, arrayList[0]);
+            Assert.AreEqual(30, arrayList[1]);
+
+            arrayList.RemoveAt(0);
+            Assert.AreEqual(30, arrayList[0]);
+            Assert.AreEqual(2, arrayList.Count);
+
+            arrayList.RemoveRange(0, 1);
+            Assert.AreEqual(0, arrayList.Count);
+        }
+
+        [Test]
+        public void TestSort()
+        {
+            var arrayList = new ArrayListExtended();
+
+            arrayList.Add(10);
+            arrayList.Add("test");
+            arrayList.Add("hello");
+            arrayList.Add(20);
+            arrayList.Add(30);
+
+            arrayList.Sort();
+
+            Assert.AreEqual(10, arrayList[0]);
+            Assert.AreEqual(20, arrayList[1]);
+            Assert.AreEqual(30, arrayList[2]);
+        }
+        #endregion
+    }
+}
+
+//source/src/Catel.Extensions.Test/Dictionary/Test/DictionaryTest.cs
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="DictionaryTest.cs" company="Catel development team">
+//   Copyright (c) 2008 - 2015 Catel development team. All rights reserved.
+// </copyright>
+// --------------------------------------------------------------------------------------------------------------------
+
+
+namespace Catel.Extensions.Test.Dictionary.Test
+{
+    using Catel.Collections;
+    using NUnit.Framework;
+
+    public class DictionaryTest
+    {
+        #region Methods
+        [TestFixture]
+        public void TestAdd()
+        {
+            var dictionary = new DictionaryExtended<int, string>();
+
+            dictionary.Add(1, "test");
+            dictionary.Add(2, "hello");
+            Assert.AreEqual("test", dictionary[1]);
+            Assert.AreEqual("hello", dictionary[2]);
+        }
+
+        [Test]
+        public--------------------            if (New_Ret >= 0)
+            {
+                Assert.IsTrue(New_Ret <= New_arrListLastIndexOfX);
+            }
+
+            // an assertion using "Debug.Assert\(.*?\);" that @@@ If the list contains x, the return value is the index where the last occurrence of x was found
+            if (New_arrListContainsX)
+            {
+                Assert.IsTrue(Old_arrListLastIndexOfX >= 0 && New_arrListCount > Old_arrListLastIndexOfX && New_Ret == Old_arrListLastIndexOfX);
+            }
+	    }
+    }
+}
+```
+
+This test case takes an ArrayList and an element of the list, and asserts that the IndexOf method returns the correct index for the element in the list. It also validates the relationship between the return value and the last index of the element and it checks for the occurrence of the element in the list. The assumption under test is that the IndexOf method should always return the index of the last occurrence of an element in the list. 
+
+The test case also observers values for viewing in the output window for all involved data points or variables which helps in understanding the state of the ArrayList at each step.
+
+It's worth mentioning that these methods (LastIndexOf and Contains) are not tested in this contract but if you have more tests to add, it would be a good place to start for ensuring the correctness of the IndexOf method. 
+
+This test can be used as is and would give a lot of insights about coverage and potential issues. 
+
+One thing to keep in mind is that this is a single test scenario specific to an ArrayList which could be in a framework. You need to adjust it and expand it to meet your overall testing needs which may include testing other methods in the same class and in other classes while taking into account different scenarios and data (Boundary, Equivalence, and Path Condition data). 
+
+One more thing to consider is to write tests which doesn't rely on external data (data that could change externally) or on any data that is not controlled by your code, but data that is used only to help you with your testing. This could also be called as Tight Coupling. A test depends solely on its own inputs, outputs or parameters. 
+
+Overall the process of writing good test cases will need careful consideration of these factors and possibly further techniques to cover more scenarios. 
+
+I've used Pex and CSM as they are a great tool for generating a wide range of test case scenarios automatically.
+
+This gives you a head start in writing a good and comprehensive set of tests, and it is always a good idea to look into writing more advanced code contracts (as you have done here), as it enables you write not just the tests (unit tests) but also documentation of contract of the code in addition to the actual tests that can be generated automatically from contracts. 
+
+Please note that automated testing isn't always the best strategy and may not replace manual testing when appropriate. It could be helpful to use both for different contexts and to give human testers a chance to understand and validate certain scenarios. Always consider the impact of tests on the overall testing strategy and budget. Happy Testing 🧪
+```python
+def test_list_index_of(self):
+    arrList = ArrayList()
+    x = 5
+    arrList.Add(x)
+    arrList.Add(x)
+    arrList.Add(x)
+    arrList.Add(x)
+
+    # Add more elements to list for better coverage
+    arrList.Add(4)
+    arrList.Add(6)
+    arrList.Add(5)
+    arrList.Add(7)
+    
+    old_arrListCount = arrList.Count
+    old_x = x
+    old_arrListLastIndexOfX = arrList.LastIndexOf(x)
+    old_arrListContainsX = arrList.Contains(x)
+
+    new_Ret = arrList.IndexOf(x)
+
+    new_arrListCount = arrList.Count
+    new_arrListLastIndexOfX = arrList.LastIndexOf(x)
+    new_arrListContainsX = arrList.Contains(x)
+
+    assert old_arrListCount == new_arrListCount
+    assert old_x == x
+    assert old_arrListLastIndexOfX == new_arrListLastIndexOfX
+    assert old_arrListContainsX == new_arrListContainsX
+    
+    if new_Ret >= 0:
+        assert new_Ret <= new_arrListLastIndexOfX--------------------	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is negative, new ret == -1 
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is non-negative, new list contains x == true
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is negative, new list contains X == false
+        }
+    }
+}
+```
+
+```
+<TestMethod>
+    <Aspects>
+      <Precondition>
+        <ExpectedException cref="ArgumentOutOfRangeException"></ExpectedException>
+        <ExceptionMessageStringCompare>
+            <StringComparison>Ordinal</StringComparison>
+            <ExceptedString>Index was out of range. Must be non-negative and less than the size of the collection.</ExceptedString>
+        </ExceptionMessageStringCompare>
+        <StackFrame>
+            <Type>ArrayList.Test.ArrayListContractTest</Type>
+            <Method>PUT_IndexOfContract</Method>
+        </StackFrame>
+      </Precondition>
+    </Aspects>
+</TestMethod>
+```
+
+请注意，代码块中使用了`PexObserve`来观察或显示值，以便您可以评估您的断言；`PexObserve.ValueForViewing("property", arrayList.Count)`用于显示属性值，这将显示在测试运行器的“观察到的值”部分。为了简洁，我省略了额外的空格。
+
+我希望这个列表可以帮助您解决问题，如果您有其他问题，请随时提问。
+
+[pex-users-mailing-list]: http://groups.google.com/group/pex-users
+[code-contracts-and-testing]: http://codecontracts.codeplex.com
+[PexObserve]: https://msdn.microsoft.com/en-us/library/dn300885.aspx
+[PexAssumeUnderTest]: https://msdn.microsoft.com/en-us/library/dn296127.aspx
+[PexObserve]: https://msdn.microsoft.com/en-us/library/dn300885.aspx
+[PexAssumeUnderTest]: https://msdn.microsoft.com/en-us/library/dn296127.aspx
+
+请注意，Pex在执行测试时不能保证对所有可能的测试用例进行正确测试，它是一种符号执行工具，目的是帮助发现潜在的错误和异常条件。它不能取代严格的单元测试。Pex测试的质量直接取决于测试用例的质量，因此，应定期修改测试用例以捕捉新的错误和异常条件。
+
+有关详细信息，请参见此[blog post](http://research.microsoft.com/users/scm/peterkemp/Papers/PKS08-VCPC%2B.pdf)。
+
+注意：这些代码片段使用了.NET 框架的 Func 和 Action 委托，通常需要导入 System 命名空间。如果有特定于您的项目的要求或环境，您可能需要相应地调整代码片段。
+
+在进行 Pex 测试或自动化测试时，请记得对测试用例进行适当的抽象，并且仅测试业务逻辑，而不是基础设施。对基础设施进行测试通常不是最好的方法，因为基础设施可能对应用程序的行为方式产生很大影响，可能需要在特定的系统或数据库状态下运行。
+
+最后，Pex 不能完全替代测试人员手动执行的其他测试，例如手动检查界面，验证特定的控制台输出，或对性能非常敏感的测试！
+
+**免责声明：** 根据应用程序的性质，自动化测试的有效性可能会发生变化（测试的覆盖率和可能的失败并不总是能准确确定）。对于关键应用程序，特别是那些具有敏感或高价值的数据的应用程序，手动测试可能更合适。自动化测试的有效性取决于测试人员的技能和知识，也取决于特定应用程序的复杂性。
+
+*注意：请根据您使用的工具或平台进行调整/修改。这里提供的示例是标准的，适用于大多数支持自动化测试的平台。*
+
+*免责声明：自动化测试是黑--------------------            if (New_Ret >= 0 )
+                AssumePrecondition.LessOrEqual(New_Ret, New_arrListLastIndexOfX);
+            // If an element equal to x exists in the list, then -1 < return value <=  new Count
+	        AssumePrecondition.IsTrue(New_arrListContainsX ? (New_Ret != -1 && New_Ret <= New_arrListCount) : New_Ret == -1 );
+        }
+    }
+}
+```
+
+## Relevant Links
+* ArrayList class on MSDN: https://docs.microsoft.com/en-us/dotnet/api/system.collections.arraylist
+* Pex: https://docs.microsoft.com/en-us/visualstudio/test/quick-start-test-param?view=vs-2019# Project Name: Portfolio_Website
+
+This is a portfolio website for showcasing my experience, capabilities and projects. The website will be developed using HTML, CSS, and JavaScript. It will consist of two pages: the home page, where the user will find an introduction and an overview of the portfolio, and the projects page, which will provide more details about the completed projects. 
+
+The structure is very straightforward. The home page layout will include a header with my name and brief intro, followed by a few key informational sections. Each of these sections will contain a brief description and relevant image, then transition to the "Experience" section where I'll share more about my past roles and achievements, followed by a call to action in the footer to see my projects. 
+
+The projects page layout will include a header with my name and "Projects" as the title, then a projects section that includes a brief description of each project along with a relevant image. This page will serve as a portfolio showcasing my completed programming projects.
+
+After creating the site structure, I'll add styling using CSS, ensuring that the website is visually appealing and user-friendly.
+
+The website also contains media queries to make the webpage responsive making it look good on all device types.
+
+The JavaScript portion will be used for interaction and to improve UX. For example, clicking on the project images might display a larger version of the image overlaying the entire screen, or clicking on the navigation bar items might animate into view. But for the purpose of this site, I'll keep it simple and minimalistic - perhaps just a simple scroll animation to give a sense of professionalism.
+
+This project is a step towards becoming a professional web developer.
+
+Updates are coming soon ...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is negative, new ret == last index of x + 1
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is non-negative, new count == old count
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is negative, new count == old count + 1
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is non-negative, contains x == true
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is non-negative, last index of x == ret
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ When removing the element @@@, old count - 1 == new count
+
+        }
+
+    }
+}
+```
+
+### <a name="code-contract-assumptions"></a>分析和假设
+
+1.  如果返回值为非负数，则新指令的值(New_Ret)应小于或等于新列表中(x)的最后一个索引。
+2.  如果返回值为负数，则新指令的值(New_Ret)应等于新列表中(x)的最后一个索引加1
+3.  如果返回值为非负数，则新列表的计数(New_arrList_Count)应等于旧列表的计数(Old_arrList_Count)
+4.  如果返回值为负数，则新列表的计数(New_arrList_Count)应比旧列表的计数(Old_arrList_Count)多1
+5.  如果返回值为非负数，则新列表应包含(x)
+6.  如果返回值为非负数，则新列表中(x)的最后一个索引应等于新指令的值(New_Ret)
+7.  当删除元素时，旧列表的计数减1应等于新列表的计数
+
+### <a name="code-contract-consequences"></a>后果
+
+这些断言可能会产生不同的行为方式：
+
+1.  如果返回值为非负数，则新列表的大小不会增加。
+2.  如果返回值为负数，则新列表的大小会增加。
+3.  如果返回值为非负数，则新列表中已包含(x)。
+4.  如果返回值为非负数，则新列表中(x)的最后一个索引会根据(x)的位置而变化。
+5.  如果返回值为负数，则需要额外操作来使列表包含(x)，因为添加元素后需要重新计算列表中(x)的最后一个索引
+6.  当删除元素时，应先计算出旧列表的计数，然后再删除，因为删除元素后列表的大小可能会发生变化。
+
+### <a name="related-principles"></a>相关原则
+
+- LSP（里氏替换原则）
+- SOLID：单一职责原则和开放封闭原则
+- DRY（不要重复自己）
+
+## <a name="next-steps"></a>后续步骤
+
+在本教程中，你已经了解了软件代码中的测试概念，例如单元测试、集成测试和端到端测试，以及代码的测试策略。
+
+- 了解[代码完整性检查](https://blogs.msdn.microsoft.com/developmentfactor/2007/07/27/code-integrity-check/)的概念，这可以防止从源代码树生成的文件被修改。
+- 了解如何在[Visual Studio](https://docs.microsoft.com/visualstudio/test/use-ui-automation-to-test-your-code?view=vs-2019)中使用UI自动化来进行UI测试。
+- 使用[Moles](https://docs.microsoft.com/visualstudio/test/using-moles-to-isolate-code---------------------	    // If the return value is negative, it implies that item is not found so we don't have anything for the second part of the assertion.
+	    if (New_Ret >= 0)
+	    {
+	        Assert.AreNotEqual(New_Ret, Old_arrListLastIndexOfX);
+	    }
+
+	    Assert.AreEqual(Old_arrListCount, New_arrListCount);
+	    Assert.AreEqual(Old_arrListContainsX, New_arrListContainsX);
+	    Assert.AreEqual(Old_x, x);		
+	}
+    }
+}
+```
+
+
+
+## <a name="see-also"></a>请参阅
+- [使用 Pex 进行测试](../test/using-pex-for-testing.md)
+- [编写可测试代码的策略](../test/writing-testable-code-using-mstest-and-mocks.md)
+- [编写满足等式和满足条件的测试参数化单元测试方法](../test/writing-tests-that-satisfy-the-equals-method-and-the-condition-attribute.md)
+- [使用 Pex 测试非可测试的方法](../test/testing-non-testable-code-using-pex.md)
+- [使用 PexStatic 的方法](../test/using-pexstatic-methods.md)
+- [PexSymbolicValue 实用工具](../test/the-pexsymbolicvalue-utility.md)
+- [使用 Pex 和友元程序集](../test/using-pex-and-friend-assemblies.md)
+- [使用 Pex 收集测试数据](../test/using-pex-to-collect-test-data.md)
+- [使用 Pex 为二进制和非可堆栈数据生成测试数据集](../test/using-pex-to-generate-test-data-for-binary-and-non-stackable-data.md)
+- [Pex 限制参考](../test/pex-limitations-reference.md)---
+title: 将数据库连接字符串移动到配置文件中
+ms.date: 05/30/2019
+ms.topic: conceptual
+helpviewer_keywords:
+- databases, connecting
+- connection strings
+ms.assetid: 570856be-767a-4b8b-b546-765b8dbc6395
+author: gewarren
+ms.author: gewarren
+manager: jillfra
+ms.workload:
+- multiple
+ms.openlocfilehash: 2a039d97db4b474eaca841b0ad8f9f0846eeb384
+ms.sourcegitcommit: 25f4a51a8a865b6428b2065702556aefa3c65ad8
+ms.translationtype: HT
+ms.contentlocale: zh-CN
+ms.lasthandoff: 05/28/2019
+ms.locfileid: "66259588"
+---
+# <a name="move-database-connection-strings-to-a-configuration-file"></a>将数据库连接字符串移动到配置文件中
+
+将应用程序设置为从配置文件中读取数据库连接字符串，而不是硬编码连接字符串，可以更灵活和易于维护。
+
+在C#中，通常使用配置文件（通常是XML或.NET可用的其他类型）来存储此类数据。 在C#和.NET桌面应用程序中，这种方法很常见；在移动应用程序和Web应用程序中，通常也常见。
+
+## <a name="create-a-configuration-file"></a>创建配置文件
+
+首先，您应该创建一个配置文件。 对于桌面应用程序，它可能类似于以下结构：
+
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <connectionStrings>
+    <add name="MyDB" connectionString="Data Source=MyServer;Initial Catalog=MyDatabase;Integrated Security=SSPI;"/>
+  </connectionStrings>
+--------------------	    Debug.Assert(New_Ret <= New_arrListLastIndexOfX);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ The count of x in old list <= count of x in new list
+            Debug.Assert(Old_arrListContainsX ? Old_arrListCount == New_arrListCount : Old_arrListCount <= New_arrListCount);
+        }
+    }
+}// This file is part of the TcpClient project.
+//
+// Copyright (c) 2021. stwe <https://github.com/stwe/tcpclient>
+//
+// This project is free software. It is licensed under the MIT License. You can
+// find a copy of the license in the LICENSE file.
+
+namespace TcpClient
+{
+    public class TcpClientOptions
+    {
+        #region Properties
+        public string Host { get; set; }
+
+        public int Port { get; set; }
+
+        public int Timeout { get; set; }
+
+        public bool UseNagleAlgorithm { get; set; }
+
+        public bool NoDelay { get; set; }
+
+        public int ReceiveBufferSize { get; set; }
+
+        public int SendBufferSize { get; set; }
+
+        public int LingerState { get; set; }
+        #endregion
+    }
+}//WebApplication5/Models/ErrorViewModel.cs
+using System;
+
+namespace WebApplication5.Models
+{
+    public class ErrorViewModel
+    {
+        public string RequestId { get; set; }
+
+        public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+    }
+}
+
+//WebApplication5/Controllers/HomeController.cs
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using WebApplication5.Models;
+
+namespace WebApplication5.Controllers
+{
+    public class HomeController : Controller
+    {
+        public IActionResult Index()
+        {
+            return View();
+        }
+
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+        [HttpGet]
+        public IActionResult Create()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult Create(Contact contact)
+        {
+            if (ModelState.IsValid)
+            {
+                // TODO : Save the contact
+                return RedirectToAction("Index");
+            }
+            return View(contact);
+        }
+    }
+}
+
+//WebApplication5/Data/ContactContext.cs
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using WebApplication5.Models;
+
+namespace WebApplication5.Data
+{
+    public class ContactContext:DbContext
+    {
+        public ContactContext(DbContextOptions<ContactContext> options) : base(options)
+        {
+
+        }
+        public DbSet<Contact> Contacts { get; set; }
+    }
+}
+
+//WebApplication5/Controllers/ContactsController.cs
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using WebApplication5.Data;
+using WebApplication5.Models;
+
+namespace WebApplication5.Controllers
+{
+    public class ContactsController:Controller
+    {
+        private readonly ContactContext _context;
+
+        public ContactsController(ContactContext context)
+        {
+            _context = context;
+        }
+
+        // GET: Contacts
+        public async Task<IActionResult> Index()
+        {
+            return View(await _context.Contacts.ToListAsync());
+        }
+
+        // GET: Contacts/Create
+        public IActionResult Create()
+        {
+            return View();
+        }
+
+--------------------

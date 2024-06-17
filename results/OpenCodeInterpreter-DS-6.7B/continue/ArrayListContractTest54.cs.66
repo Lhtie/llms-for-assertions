@@ -1,0 +1,879 @@
+            // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is false, new list's last index of x is < old list's last index of x
+        }
+    }
+}
+
+//Framework/Pex.Framework.Analyzer/Pex/Pex/RefImpl/Program.cs
+﻿using System;
+
+public class Program
+{
+    // This program is just a place-holder to demonstrate what our main program should be doing. 
+    // It shouldn't do anything but throw an exception if there is an attempt to call `Main()` from the program.
+    // It is needed because the `[PexMethod]` attribute cannot be used with methods marked with `[PexAssemblyCleanup]`
+
+    static void Main()
+    {
+        throw new InvalidOperationException("This code is not supposed to run!");
+    }
+}
+
+//Framework/Pex.Framework.Analyzer/Pex/Pex/RefImpl/RefImplAnalysisResult.cs
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+
+namespace Pex.RefImpl
+{
+    /// <summary>
+    /// Encapsulates the result of an execution of a program under Pex, including the observed values and the derived invariants.
+    /// </summary>
+    public class RefImplAnalysisResult
+    {
+        private List<KeyValuePair<string, object>> m_observedValues = new List<KeyValuePair<string, object>>();
+
+        public void AddObservedValue(string name, object value)
+        {
+            m_observedValues.Add(new KeyValuePair<string, object>(name, value));
+        }
+
+        public bool CheckInvariants(Action<string, object> invariantChecker)
+        {
+            bool result = true;
+            foreach (var kv in m_observedValues)
+            {
+                result &= invariantChecker(kv.Key, kv.Value);
+            }
+            return result;
+        }
+    }
+}
+
+//Framework/Pex.Framework.Analyzer/Pex/Pex.Console.Analyzer/TestRunner.cs
+﻿using System;
+using System.CodeDom.Compiler;
+using System.Diagnostics;
+using Microsoft.CSharp;
+using NUnit.Framework;
+
+using Pex.RefImpl;
+
+namespace Pex.Console.Analyzer
+{
+    /// <summary>
+    /// Runs and checks .NET programs for Pex testing invariants.
+    /// </summary>
+    internal class TestRunner
+    {
+        public RefImplAnalysisResult RunTest(string sourceCode)
+        {
+            var parameters = new CompilerParameters
+            {
+                GenerateExecutable = false,
+                GenerateInMemory = true,
+                TreatWarningsAsErrors = false,
+                WarningLevel = 4
+            };
+
+            parameters.ReferencedAssemblies.Add("Pex.Framework.dll");
+            parameters.ReferencedAssemblies.Add("System.dll");
+            parameters.ReferencedAssemblies.Add("System.Core.dll");
+            parameters.ReferencedAssemblies.Add("mscorlib.dll");
+            parameters.ReferencedAssemblies.Add("System.Data.dll");
+            parameters.ReferencedAssemblies.Add("System.Xml.dll");
+            parameters.ReferencedAssemblies.Add("System.Numerics.dll");
+            parameters.ReferencedAssemblies.Add("System.ServiceModel.dll");
+
+            var providerOptions = new CodeDomProvider().CompilerOptions;
+            parameters.CompilerOptions = "/target:library " + providerOptions;
+
+            var provider = CodeDomProvider.CreateProvider("C#");
+            var results = provider.CompileAssemblyFromSource(parameters, sourceCode);
+
+            var result = new RefImplAnalysisResult();
+
+            // Check for compilation errors
+            if (results.Errors.Count > 0)
+            {
+                foreach (CompilerError error in results.Errors)
+                {
+                    Console.WriteLine(error.ErrorNumber + ": " + error.ErrorText);
+                }
+                Assert.Fail("Compilation failed");
+            }
+            else
+            {
+                // TODO: Run the new assembly and check all the invariants
+                // This part involves loading the assembly,--------------------            Check.IsTrue(New_Ret);
+            Check.IsTrue(New_arrListLastIndexOfX >= Old_arrListLastIndexOfX);
+
+        }
+
+        [PexMethod]
+        public void PUT_IndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_x = x;
+
+            int New_Ret = arrList.IndexOf(x);
+
+            int New_arrListCount = arrList.Count;
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+            PexObserve.ValueForViewing("$New_ret", New_Ret);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is -1, the new list's index of x is >= old list's index of x, means x has not been added to the list
+            Check.IsTrue((New_Ret == -1 && New_arrListCount == Old_arrListCount) || (New_Ret != -1 && New_Ret >= Old_arrListCount && New_arrListCount == Old_arrListCount + 1));
+
+        }
+
+        [PexMethod]
+        public void PUT_LastIndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_x = x;
+
+            int New_Ret = arrList.LastIndexOf(x);
+
+            int New_arrListCount = arrList.Count;
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+            PexObserve.ValueForViewing("$New_ret", New_Ret);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is -1, the new list's last index of x is == old list's last index of x, means x has not been added to the list
+            Check.IsTrue((New_Ret == -1 && New_arrListCount == Old_arrListCount) || (New_Ret != -1 && New_Ret >= Old_arrListCount && New_arrListCount == Old_arrListCount + 1));
+
+        }
+    }
+}
+
+//test/ArrayList/ArrayList.Test/ArrayListContractTest.cs
+using System;
+using System.Collections;
+using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Settings;
+using Microsoft.Pex.Framework.Exceptions;
+
+using ArrayList;
+using PexAPIWrapper;
+
+namespace ArrayList.Test
+{
+    [TestFixture, PexClass]
+    public partial class ArrayListContractTest
+    {
+        [PexMethod]
+        public void PUT_AddContract([PexAssumeUnderTest]ArrayList arrList, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_x = x;
+            int Old_arrListIndexOfX = arrList.IndexOf(x);
+            int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+            bool Old_arrListContainsX = arrList.Contains(x);
+
+            int New_Ret = arrList.Add(x);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndexOfX = arrList.IndexOf(x);
+            int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+
+            bool New_arrListContainsX = arrList.Contains(x);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_--------------------	    // otherwise it will return false.
+            PexAssert.IsTrue(New_Ret, "@@@ If the return value is true, new list's last index of x is >= old list's last index of x", "", "", "Failed", "", "", null, null);
+
+        }
+
+    }
+}
+
+
+PexAPIWrapper
+
+namespace PexAPIWrapper
+{
+    public class PexAPIWrapper
+    {
+    }
+}
+
+I'm writing an ArrayList contract test with Pex. However, I'm facing a problem with the setup of the test project. The compilation of the project is failing because it can not find the reference of "PexAPIWrapper".
+What should be done to setup the test project to compile successfully?
+
+A: It seems like PexAPIWrapper is not being found. Could you provide more details? How are you including the PexAPIWrapper in your test project? 
+
+If PexAPIWrapper is a custom namespace, it may not be recognized by the compiler as it's not a standard/built-in library. You would need reference it as a project or assembly. Do you have the PexAPIWrapper project setup somewhere that's not included in your current project? Also, ensure that it's added as a reference in your test project. 
+
+If you added it as a project make sure that project gets build before yours. In case you added it as a DLL, ensure the DLL is in your test project's bin directory or in your project's references. Also, the DLL should be a .NET Assembly and it should support the right version of the .NET runtime that your project uses.
+
+Hope this helps to ensure a successful test project compilaiton. Let me know if you encounter any other problems.
+
+Also, your test class file must not have the same name as the .cs file since in the build process, all the CS files are squished into a single DLL which makes it difficult for Pex to differentiate one test class from another and hence, leading to failures in execution. Make sure the names do not clash. Your test file's name should end with "Tests". E.g., if your main file was ArrayListTest.cs then your test class should be ArrayListTestTests.cs. Please rename your test file accordingly if necessary. 
+
+Hope this helps to ensure a successful test project compilation. Let me know if you encounter any other problems.
+
+I understand the issue could be due to PexAPIWrapper reference not properly added. 
+If you have the source code of PexAPIWrapper, you should build it first and then add reference to this DLL in your project. 
+If you only have the .dll file, make sure your test project is referencing to the .dll file.
+
+I hope it helps. If you can provide more information about your project configuration and the PexAPIWrapper library, I could give even more specific advice. 
+
+Pex is designed to understand your public API without any additional information. That's why you define your test classes and methods as they should be visible externally. So we cannot "Pex" into the private members of the tested class.
+
+Just ensure PexAPIWrapper is a public class or PexAPIWrapper is a public method or property you are testing. The reason here is that Pex is trying to verify that your class behaves correctly when the public interface is used. So Pex will not be able to test if these private methods or properties are working correctly which are being exposed through your public API. 
+
+So, ensure that your PexAPIWrapper is public and all methods are declared public as well. Or if those methods/properties are meant to be exposed like this, then that's your responsibility to add those methods/properties to your class in order to test them as part of your public interface.
+
+If the issue still persists, please provide details about the PexAPIWrapper library so that I could assist you better. – 
+
+Pex cannot test the internal methods, properties or classes. Since the behavior of the internal methods is not specified in the documentation (i.e., a test can't be written about their behavior), if you test these methods with Pex all the methods will pass irrespective of the actual internal implementation.
+
+In other words – Pex is designed around the idea that a class's internal state can be considered opaque to the user and only the class's public contract matters, i.e., what methods it exposes. Therefore everything inside the class is regarded as an implementation detail and isn't tested with Pex. 
+
+Make sure every internal method and property you want to test is added to the public interface. This--------------------	    //@@@ If the return value is false, new list's last index of x is equals old list's last index of x
+        }
+
+        [PexMethod]
+        public void PUT_IndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_x = x;
+            bool Old_arrListContainsX = arrList.Contains(x);
+
+            int New_Ret = arrList.IndexOf(x);
+
+            int New_arrListCount = arrList.Count;
+            bool New_arrListContainsX = arrList.Contains(x);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+            PexObserve.ValueForViewing("$old_arrList_contains_x", Old_arrListContainsX);
+            PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContainsX);
+            PexObserve.ValueForViewing("$New_ret", New_Ret);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ If x is in old list, new list's index of x is equals old list's index
+	    //@@@ If x is not in old list, new list's index of x is equals -1
+        }
+
+        [PexMethod]
+        public void PUT_LastIndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_x = x;
+            bool Old_arrListContainsX = arrList.Contains(x);
+
+            int New_Ret = arrList.LastIndexOf(x);
+
+            int New_arrListCount = arrList.Count;
+            bool New_arrListContainsX = arrList.Contains(x);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+            PexObserve.ValueForViewing("$old_arrList_contains_x", Old_arrListContainsX);
+            PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContainsX);
+            PexObserve.ValueForViewing("$New_ret", New_Ret);
+
+            // an assertion using "Debug.Assert\(.*?\);" that @@@ If x is in old list, new list's last index of x is equals old list's last index of x
+            //@@@ If x is not in old list, new list's last index of equals -1
+        }
+
+        [PexMethod]
+        public void PUT_CopyToContract([PexAssumeUnderTest]ArrayList arrList,Array array, int index)
+        {
+            AssumePrecondition.IsTrue(array.Length - index >= arrList.Count);
+
+            int Old_arrListCount = arrList.Count;
+            Array old_array = (Array)array.Clone();
+            int Old_index = index;
+
+            arrList.CopyTo(array, index);
+
+            int New_arrListCount = arrList.Count;
+            Array new_array = (Array)array.Clone();
+
+            bool NewArrayContainsAllOldArrayItems = new_array.AllItemsAreContained(old_array, index, old_array.Length - index);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_array", old_array);
+            PexObserve.ValueForViewing("$new_array",--------------------            PexAssert.IsTrue( New_arrListLastIndexOfX >= Old_arrListLastIndexOfX );
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is true, new list's index of x is >= old list's index of x
+
+            PexAssert.IsTrue(New_arrListIndexOfX >= Old_arrListIndexOfX);
+
+            // an assertion using "Debug.Assert\(.*?\);" that if the return value is true, new list's last index of x is ? or equal to old list's last index of x.
+            PexAssert.IsTrue(New_arrListLastIndexOfX == Old_arrListLastIndexOfX || New_arrListLastIndexOfX < Old_arrListLastIndexOfX); 
+
+            // an assertion using "Debug.Assert\(.*?\);" that if the return value is true, new list's index of x is ? or equal to old list's index of x.
+            PexAssert.IsTrue(New_arrListIndexOfX == Old_arrListIndexOfX || New_arrListIndexOfX < Old_arrListIndexOfX); 
+
+
+        }
+
+        [PexMethod]
+        public void PUT_IndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_x = x;
+            int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+            bool Old_arrListContainsX = arrList.Contains(x);
+
+            int New_Ret = arrList.IndexOf(x);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+            bool New_arrListContainsX = arrList.Contains(x);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+            PexObserve.ValueForViewing("$old_arrList_LastIndexOf_x", Old_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_LastIndexOf_x", New_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$old_arrList_contains_x", Old_arrListContainsX);
+            PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContainsX);
+
+            PexObserve.ValueForViewing("$New_ret", New_Ret);
+
+            // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is not -1, new list's last index of x is >= old list's last index of x
+            //PexAssert.IsTrue(New_Ret != -1 ? New_arrListLastIndexOfX >= Old_arrListLastIndexOfX : true );
+            PexAssert.IsTrue(New_Ret != -1);
+
+            // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is not -1, new list's index of x is >= old list's index of x
+            //PexAssert.IsTrue(New_Ret != -1 ? New_arrListLastIndexOfX >= Old_arrListLastIndexOfX : true);
+            PexAssert.IsTrue(New_Ret != -1);
+
+            // an assertion using "Debug.Assert\(.*?\);" that if the return value is not -1, new list's last index of x is ? or equal to old list's last index of x.
+            PexAssert.IsTrue(New_Ret == -1 || New_arrListLastIndexOfX == Old_arrListLastIndexOfX || New_arrListLastIndexOfX <Old_arrListLastIndexOfX);
+
+            // an assertion using "Debug.Assert\(.*?\);" that if the return value is not -1, new list's index--------------------            AssumePrecondition.IsFalse(New_Ret && New_arrListLastIndexOfX < Old_arrListLastIndexOfX);
+
+        }
+    }
+}
+
+
+A: It seems like the issue lies within the AssumePrecondition function. Based on the error message, the test failure occurred because an assumption specified within the function was not met, thus making the test unable to proceed with the execution.
+
+To resolve this issue, you can try the following steps:
+
+1. Check the assumptions provided within the AssumePrecondition function to ensure they accurately represent the conditions under which the test should execute. Ensure that the assumptions are accurate and provide adequate context for the condition.
+
+2. Make any necessary adjustments or additions to the assumptions to ensure that the test execution flow remains intact.
+
+3. If there are any additional conditions or assumptions that need to be checked, add them to the AssumePrecondition function.
+
+By addressing these points, you should be able to further troubleshoot and resolve the test failure that is occurring. Let me know if you need any further assistance.--------------------	    Assert.IsTrue(New_Ret == arrList.Contains(x) && New_arrListLastIndexOfX >= Old_arrListLastIndexOfX);
+
+        }
+
+        [PexMethod]
+        public void PUT_ClearContract([PexAssumeUnderTest]ArrayList arrList)
+        {
+            AssumePrecondition.IsTrue(arrList.Count >= 0);
+
+            int Old_arrListCount = arrList.Count;
+
+            arrList.Clear();
+
+            int New_arrListCount = arrList.Count;
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+        }
+    }
+}//src/Plex.NET/Plex.NET/Models/RootObjectPlex.cs
+﻿namespace Plex.NET.Models
+{
+    using Newtonsoft.Json;
+    using System.Collections.Generic;
+
+    public class RootObjectPlex
+    {
+        [JsonProperty("MediaContainer")]
+        public MediaContainer MediaContainer { get; set; }
+    }
+
+    public class MediaContainer
+    {
+        [JsonProperty("size")]
+        public int Size { get; set; }
+
+        [JsonProperty("title1")]
+        public string Title1 { get; set; }
+
+        [JsonProperty("identifier")]
+        public string Identifier { get; set; }
+
+        [JsonProperty("machineIdentifier")]
+        public string MachineIdentifier { get; set; }
+
+        [JsonProperty("librarySectionID")]
+        public string LibrarySectionID { get; set; }
+        
+        [JsonProperty("librarySections")]
+        public List<LibrarySections> LibrarySections { get; set; }
+    }
+    public class LibrarySections
+    {
+        [JsonProperty("key")]
+        public string Key { get; set; }
+
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        [JsonProperty("title")]
+        public string Title { get; set; }
+    }
+}
+
+//src/Plex.NET/Plex.NET/PlexClient.cs
+﻿using System.Net.Http;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Plex.NET.Models;
+
+namespace Plex.NET
+{
+    public class PlexClient
+    {
+        private readonly HttpClient _httpClient;
+        private readonly string _baseUrl;
+
+        public PlexClient(string baseUrl)
+        {
+            _baseUrl = baseUrl;
+            _httpClient = new HttpClient { BaseAddress = new System.Uri(_baseUrl) };
+        }
+
+        public async Task<RootObjectPlex> GetServer()
+        {
+            HttpResponseMessage response = await _httpClient.GetAsync("/");
+            string json = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<RootObjectPlex>(json);
+        }
+    }
+}
+
+//src/Plex.NET/Plex.NET/Program.cs
+﻿using System;
+
+namespace Plex.NET
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            PlexClient plexclient = new PlexClient("https://plex.tv/api/servers");
+            var server = plexclient.GetServer().Result;
+            Console.WriteLine(server.MediaContainer.Title1);
+            Console.ReadLine();
+        }
+    }
+}
+
+//src/Plex.NET/Plex.NET/Services/IPlexService.cs
+﻿using Plex.NET.Models;
+using System.Threading.Tasks;
+
+namespace Plex.NET.Services
+{
+    public interface IPlexService
+    {
+        Task<RootObjectPlex> GetServer();
+    }
+}
+
+//src/Plex.NET/Plex.NET/Services/PlexService.cs
+﻿using System.Net.Http;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Plex.NET.Models;
+
+namespace Plex.NET.Services
+{
+    public class PlexService : IPlexService
+    {
+        private readonly HttpClient _httpClient;
+        private readonly string _baseUrl;
+
+        public PlexService(string base--------------------	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is false, new list's last index of x is < old list's last index of x
+
+           */
+
+
+        }
+
+        [PexMethod]
+        public void PUT_IndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_x = x;
+            int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+            bool Old_arrListContainsX = arrList.Contains(x);
+
+            int New_Ret = arrList.IndexOf(x);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+            bool New_arrListContainsX = arrList.Contains(x);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+            PexObserve.ValueForViewing("$old_arrList_LastIndexOf_x", Old_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_LastIndexOf_x", New_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$New_ret", New_Ret);
+            PexObserve.ValueForViewing("$old_arrList_contains_x", Old_arrListContainsX);
+            PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContainsX);
+
+        }
+
+        [PexMethod]
+        public void PUT_LastIndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_x = x;
+            int Old_arrListIndexOfX = arrList.IndexOf(x);
+            bool Old_arrListContainsX = arrList.Contains(x);
+
+            int New_Ret = arrList.LastIndexOf(x);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListIndexOfX = arrList.IndexOf(x);
+            bool New_arrListContainsX = arrList.Contains(x);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+            PexObserve.ValueForViewing("$old_arrList_IndexOf_x", Old_arrListIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_IndexOf_x", New_arrListIndexOfX);
+            PexObserve.ValueForViewing("$New_ret", New_Ret);
+            PexObserve.ValueForViewing("$old_arrList_contains_x", Old_arrListContainsX);
+            PexObserve.ValueForViewing("$new_arrList_contains_x", New_arrListContainsX);
+
+        }
+
+        [PexMethod]
+        public void PUT_RemoveAtContract([PexAssumeUnderTest]ArrayList arrList, int index)
+        {
+            AssumePrecondition.IsTrue(index < arrList.Count && index >= 0);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_x = (int)(arrList[index]);
+            int Old_index = index;
+            int Old_arrListIndexOfX = arrList.IndexOf(Old_x);
+            int Old_arrListLastIndexOfX = arrList.LastIndexOf(Old_x);
+            bool Old_arrListContainsX = arrList.Contains(Old_x);
+
+            arrList.RemoveAt(index);
+
+--------------------        }
+
+        [PexMethod]
+        public void PUT_IndexOfContract([PexAssumeUnderTest]ArrayList arrList, int x)
+        {
+            AssumePrecondition.IsTrue(true);
+
+            int Old_arrListCount = arrList.Count;
+            int Old_x = x;
+            int Old_arrListLastIndexOfX = arrList.LastIndexOf(x);
+
+            int New_Ret = arrList.IndexOf(x);
+
+            int New_arrListCount = arrList.Count;
+            int New_arrListLastIndexOfX = arrList.LastIndexOf(x);
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+            PexObserve.ValueForViewing("$old_arrList_x", Old_x);
+            PexObserve.ValueForViewing("$old_arrList_LastIndexOf_x", Old_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$new_arrList_LastIndexOf_x", New_arrListLastIndexOfX);
+            PexObserve.ValueForViewing("$New_ret", New_Ret);
+
+        }
+
+    }
+}
+
+//ArrayList.Test/ArrayListTest.cs
+namespace ArrayList.Test
+{
+    using NUnit.Framework;
+    using ArrayList;
+
+    [TestFixture]
+    public class ArrayListTest
+    {
+        [SetUp]
+        public void Init()
+        {
+        }
+
+        [Test]
+        public void Test()
+        {
+            // arrange
+            var sut = new ArrayList.ArrayList();
+
+            // act
+            var result = sut.Contains(0);
+
+            // assert
+            Assert.That(result, Is.True);
+        }
+    }
+}
+
+//ArrayList.Test/ArrayListToStringTest.cs
+namespace ArrayList.Test
+{
+    using System;
+    using NUnit.Framework;
+    using ArrayList;
+
+    [TestFixture]
+    public class ArrayListToStringTest
+    {
+        [Test]
+        public void CheckingToString()
+        {
+            // arrange
+            ArrayList numbers = new ArrayList();
+            numbers.Add(45);
+            numbers.Add(23);
+            numbers.Add(67);
+            numbers.Add(8);
+
+            // act
+            string s = numbers.ToString();
+
+            // assert
+            Console.WriteLine(s); //  Expected Output: "[45][23][67][8]"
+        }
+    }
+}
+
+//ArrayList.Test/ArrayList_AddTest.cs
+namespace ArrayList.Test
+{
+    using NUnit.Framework;
+    using ArrayList;
+
+    [TestFixture]
+    public class ArrayList_AddTest
+    {
+        ArrayList arrList;
+
+        [SetUp]
+        public void Init()
+        {
+            this.arrList = new ArrayList();
+        }
+
+        [Test]
+        public void Add_Empty_ReturnsIndexOfAddedElement()
+        {
+            // arrange
+            int expectedIndex = 0;
+            int element = 1;
+
+            // act
+            int result = arrList.Add(element);
+
+            // assert
+            Assert.AreEqual(expectedIndex, result);
+        }
+
+        [Test]
+        public void Add_NonEmpty_ReturnsIndexOfAddedElement()
+        {
+            // arrange
+            int expectedIndex1 = 0;
+            int expectedIndex2 = 1;
+            int element1 = 1;
+            int element2 = 2;
+            arrList.Add(element1);
+
+            // act
+            int result = arrList.Add(element2);
+
+            // assert
+            Assert.AreEqual(expectedIndex1, result);
+        }
+    }
+}
+
+//ArrayList.Test/ArrayList_ClearTest.cs
+namespace ArrayList.Test
+{
+    using NUnit.Framework;
+    using ArrayList;
+
+    [TestFixture]
+    public class ArrayList_ClearTest
+    {
+        ArrayList arrList;
+
+        [SetUp]
+        public void Init()
+        {
+            this.arrList = new ArrayList();
+            arrList.Add(1);
+            arrList.Add(2);
+        }
+
+        [Test]
+        public--------------------
+	    bool Assert_new_arrList_LastIndexOf_x_ge_old_arrList_LastIndexOf_x = New_arrListLastIndexOfX >= Old_arrListLastIndexOfX;
+            PexObserve.ValueForViewing("$Assert_new_arrList_LastIndexOf_x_ge_old_arrList_LastIndexOf_x", Assert_new_arrList_LastIndexOf_x_ge_old_arrList_LastIndexOf_x);
+        }
+
+    }
+  
+}//WebApp/Data/Entities/Book.cs
+namespace WebApp.Data.Entities
+{
+    public class Book
+    {
+        public int Id { get; set; }
+
+        public string Title { get; set; }
+
+        public string Author { get; set; }
+
+        public int Year { get; set; }
+
+        public int Price { get; set; }
+    }
+}
+
+//WebApp/Data/BookContext.cs
+using Microsoft.EntityFrameworkCore;
+using WebApp.Data.Entities;
+
+namespace WebApp.Data
+{
+    public class BookContext : DbContext
+    {
+        public BookContext(DbContextOptions options) : base(options) {}
+
+        public DbSet<Book> Books { get; set; }
+    }
+}
+
+//WebApp/Data/BookRepository.cs
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using WebApp.Data.Entities;
+
+namespace WebApp.Data
+{
+    public class BookRepository
+    {
+        private readonly BookContext _context;
+
+        public BookRepository(BookContext context)
+        {
+            _context = context;
+        }
+
+        public Task<List<Book>> GetAllBooks()
+        {
+            return _context.Books.ToListAsync();
+        }
+
+        public Task<Book> GetBook(int id)
+        {
+            return _context.Books.SingleOrDefaultAsync(b => b.Id == id);
+        }
+        
+        public async Task AddBook(Book book)
+        {
+            _context.Books.Add(book);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteBook(int id)
+        {
+            var book = await GetBook(id);
+            _context.Books.Remove(book);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateBook(Book updatedBook)
+        {
+            _context.Entry(updatedBook).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+        }
+    }
+}
+
+//WebApp/Data/Migrations/20220310142954_InitialCreate.Designer.cs
+﻿// <auto-generated />
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using WebApp.Data;
+
+namespace WebApp.Data.Migrations
+{
+    [DbContext(typeof(BookContext))]
+    [Migration("20220310142954_InitialCreate")]
+    partial class InitialCreate
+    {
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        {
+#pragma warning disable 612, 618
+            modelBuilder
+                .HasAnnotation("ProductVersion", "3.1.22");
+
+            modelBuilder.Entity("WebApp.Data.Entities.Book", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Author")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Price")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Books");
+                });
+#pragma warning restore 612, 61--------------------

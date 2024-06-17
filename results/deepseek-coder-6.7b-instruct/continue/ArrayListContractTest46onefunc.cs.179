@@ -1,0 +1,994 @@
+
+            // an assertion using Assert.AreEqual(@@, arrList.Count, @@); where @@ indicates either the previous values or newly added values
+
+            // an assertion using Assert.IsTrue(@@); where @@ indicates the element value exists in the updated ArrayList or not. 
+        }
+    }
+}
+
+//test/ArrayList.Test/ArrayListContractTest.cs
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Validation;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using ArrayList.Test;
+
+namespace ArrayList.Test
+{
+    [TestClass]
+    [PexClass(typeof(ArrayList))]
+    public partial class ArrayListContractTest
+    {
+        private PexSettings _settings;
+
+        public ArrayListContractTest()
+        {
+            _settings = PexSettings.Default;
+        }
+
+        [PexMethod]
+        [PexExploratory]
+        public void PUT_AddContract([PexAssumeUnderTest]ArrayList arrList, int value)
+        {
+            int Old_arrListCount = arrList.Count;
+            arrList.Add(value);
+            int New_arrListCount = arrList.Count;
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+
+            Assert.AreEqual(Old_arrListCount + 1, New_arrListCount);
+        }
+
+        // Add other test cases here...
+    }
+}
+
+//test/ArrayList.Test/RemoveContract.cs
+﻿using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Validation;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using ArrayList.Test;
+
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        [PexMethod]
+        [PexExploratory(5000)]
+        public void PUT_RemoveContract([PexAssumeUnderTest]ArrayList arrList, int index)
+        {
+            Assume.IsTrue(index >= 0 && index < arrList.Count);
+
+            int Old_arrListCount = arrList.Count;
+            arrList.RemoveAt(index);
+            int New_arrListCount = arrList.Count;
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+
+            Assert.AreEqual(Old_arrListCount - 1, New_arrListCount);
+        }
+    }
+}
+
+//test/ArrayList.Test2/AddContract.cs
+﻿using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Validation;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using ArrayList.Test;
+
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        [PexMethod]
+        [PexExploratory]
+        public void PUT_AddContract([PexAssumeUnderTest]ArrayList arrList, int value)
+        {
+            int Old_arrListCount = arrList.Count;
+            arrList.Add(value);
+            int New_arrListCount = arrList.Count;
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+
+            Assert.AreEqual(Old_arrListCount + 1, New_arrListCount);
+        }
+    }
+}
+
+//test/ArrayList.Test2/CapacityContract.cs
+﻿using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Validation;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using ArrayList.Test;
+
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        [PexMethod]
+        [Pex--------------------
+            // an assertion using "Debug.Assert\(.*?\);" that  @@@ index value is less than 'arrList.Count'
+
+
+         // an assertion using "Debug.Assert\(.*?\);" that  @@@ return value equals to '0'
+
+
+	      // an assertion using "Debug.Assert\(.*?\);" that  @@@ the new arrList.Count is equal to the old arrList.Count
+
+
+          // an assertion using "Debug.Assert\(.*?\);" that  @@@ new arraylist contains ret that equals to 'New_Ret'
+
+        }
+    }
+}
+
+In this test, I try to understand an arraylist. But it is throwing an assertion error "Assert expected true but got false". I see that it does not consider index >= 0 and index < Count conditions in the line AssumePrecondition.IsTrue(index < arrList.Count && index >= 0);. I even tried to add a dummy line of code before the test and it ignored my dummy debugging output. Any thoughts?
+
+A: The first problem is that the ArrayList is not serializable which means it cannot be stored and reused in PEX tests.
+So, you'll need to generate a proper ArrayList for each test case, and use the AssumePrecondition method to restrict the values of index to those allowed by Count.
+Also, I suspect that Count property could be a problem with testing, because we can't guarantee the actual count in the context of a list where Pex might modify it.
+Your test case is designed in a way that only checks the behavior if the index is inside the current bounds of the list, which seems good. You should also add boundary checks (like Count of 0) in your assumptions.
+For more complex types, you might have to use a different collection that supports PEX. I suggest you to look at List<T> and consider if it provides enough coverage for your purpose.
+Hope this helps you to address your issue.
+
+A: I've modified your test to this:
+public void PUT_GetContractTest([PexAssumeValid]List<object> list, [PexRange(0, 5)]int index)
+{
+    Assume.True(index < list.Count);
+
+    object expected = list[index];
+    list.RemoveAt(index);
+    bool containsAfterRemove = list.Contains(expected);
+
+    PexObserve.ValueForViewing("$old_list_Count", list.Count);
+    PexObserve.ValueForViewing("$index", index);
+    PexObserve.ValueForViewing("$containsAfterRemove", containsAfterRemove);
+
+    if (list.Count == 0) {
+        AssumePrecondition.IsFalse(containsAfterRemove);
+    }
+    else {
+        AssumePrecondition.AreEqual(false, containsAfterRemove);
+    }
+}
+
+First, I've replaced ArrayList with List<object>. Objects can hold any type of values in .NET, so it's a flexible way to work with lists.
+Then, I used PexRange attribute to limit the index values to 0, 1, 2, 3, 4, or 5 and changed the assumptions around index to better match the list manipulation done in the test.
+Then, I've modified the "$containsAfterRemove" assertion so it matches the expected behavior based upon the removal of the element at the specified index.
+I hope this helps solve the problem you're having. 
+If this doesn't fix the problem, please provide additional details or code related to the test failure, if possible.
+This test is designed to mimic the behavior you're attempting to observe, however PEX may not be able to correctly test the operation of the ArrayList class because it may fail due to the non-serializable ArrayList class.
+I'd suggest using the List<T> class if possible to test your code.
+Also, always remember to use Assume to restrict your test cases to expected valid scenarios.
+Q: Slow response time when running queries with Azure SQL Database I have an Azure SQL database set up with geo-replication. When I run queries, I notice a significant delay. Specifically, I'm working with a table that has about 800,000 rows and my queries currently take between 25 and 70 seconds to execute. This performance is acceptable, but it just doesn't leave me satisfied. 
+I understand that Azure SQL databases scale out, but I can understand a performance hit. The reason why is that whenever I run an update, delete, or insert statement, the time taken--------------------	    Debug.Assert( Old_index >= 0 );
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ index value is less than the arrayList count 
+	    Debug.Assert( Old_index < Old_arrListCount );
+
+            //Assert.AreEqual(Old_arrListCount, New_arrListCount);
+            Assert.AreEqual(Old_index, index);
+            Assert.AreEqual(New_Ret, arrList[index]);
+            Assert.IsTrue(New_containsNewRet);
+        }
+    }
+}//ContractTesting/StackContractTest.cs
+using System;
+using Microsoft.Pex.Framework;
+using Microsoft.Pex.Framework.Validation;
+
+namespace PexDemo.Test
+{
+    public partial class StackContractTest
+    {
+        [PexMethod]
+        public void PUSH_StackContractTest([PexAssumeUnderTest]Stack stk, int valueToPush)
+        {
+            int Old_StackCount = stk.Count;
+
+            stk.Push(valueToPush);
+
+            int New_StackCount = stk.Count;
+            int New_Peek = (int)(stk.Peek());
+            bool New_Conatins = stk.Contains(valueToPush);
+
+            PexObserve.ValueForViewing("$old_stack_count", Old_StackCount);
+            PexObserve.ValueForViewing("$new_stack_count", New_StackCount);
+            PexObserve.ValueForViewing("$value_to_push", valueToPush);
+            PexObserve.ValueForViewing("$new_peek", New_Peek);
+            PexObserve.ValueForViewing("$new_contains", New_Conatins);
+
+            Assert.AreEqual(Old_StackCount + 1, New_StackCount);
+            Assert.AreEqual(valueToPush, New_Peek);
+            Assert.IsTrue(New_Conatins);
+        }
+
+        [PexMethod]
+        public void POP_StackContractTest([PexAssumeUnderTest]Stack stk)
+        {
+            int Old_StackCount = stk.Count;
+
+            int Pop_Value = (int)(stk.Pop());
+
+            int New_StackCount = stk.Count;
+            bool New_Conatins = !stk.Contains(Pop_Value);
+
+            Assert.AreEqual(Old_StackCount - 1, New_StackCount);
+            Assert.IsTrue(New_Conatins);
+        }
+    }
+}
+
+//ContractTesting/StackTest.cs
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using Microsoft.Pex.Framework;
+using PexDemo.Test;
+using NUnit.Framework;
+using Assert = NUnit.Framework.Assert;
+
+namespace PexDemo.Test
+{
+    [TestFixture]
+    public partial class StackContractTest
+    {
+        private Stack stack;
+
+        [SetUp]
+        public void Setup()
+        {
+            this.stack = new Stack();
+        }
+
+        [PexMethod] 
+        public void PUSH_StackContractTest(int valueToPush)
+        {
+            int Old_StackCount = this.stack.Count;
+
+            this.stack.Push(valueToPush);
+
+            int New_StackCount = this.stack.Count;
+            int New_Peek = (int)(this.stack.Peek());
+            bool New_Conatins = this.stack.Contains(valueToPush);
+
+            Assert.AreEqual(Old_StackCount + 1, New_StackCount);
+            Assert.AreEqual(valueToPush, New_Peek);
+            Assert.IsTrue(New_Conatins);
+        }
+        
+        [PexMethod]
+        public void POP_StackContractTest()
+        {
+           int Old_StackCount = this.stack.Count;
+
+           int Pop_Value = (int)(this.stack.Pop());
+
+           int New_StackCount = this.stack.Count;
+           bool New_Conatins = !this.stack.Contains(Pop_Value);
+
+           Assert.AreEqual(Old_StackCount - 1, New_StackCount);
+           Assert.IsTrue(New_--------------------            Debug.Assert(index >= 0);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ index value is less than Count
+            Debug.Assert(index < arrList.Count);
+
+            // Verify Preconditions
+            bool Pre_Condition = (Old_arrListCount == arrList.Count) &&
+                                  (Old_index == index) &&
+                                  (!(New_containsNewRet == arrList.Contains(New_Ret)));
+
+            // if precondition holds then test case will pass
+            Assert.IsTrue(Pre_Condition);
+
+	    // an assertion using "Assert.IsTrue\(.*?\);" verifying @@@ the count of array list equals to old count
+            Assert.IsTrue(Old_arrListCount == arrList.Count);
+
+	    // an assertion to verify the old index equals to new
+            Assert.IsTrue(Old_index == index);
+
+	    // an assertion using "Assert.IsFalse\(.*?\);" verifying @@@ the arrayList contains the new number
+            Assert.IsFalse(New_containsNewRet == arrList.Contains(New_Ret));
+        }
+    }
+}
+```
+
+### Necessary Methods
+
+Necessary methods are required to provide a framework of tests that can be performed.
+
+### Necessary Conditions
+
+Necessary conditions need to be met to assert the expected output and control the outcome of the action being performed.
+
+### Observe Assertions
+
+Observe assertions are used to capture and report the state of the application or the results of the execution.
+
+## Conclusion
+
+In this post, we explored the concept of Property-based testing and how it can be used in conjunction with an Example of using PEX with an Abstract ArrayList data type. We identified key requirements and explained how they are tested using PEX, highlighting what to verify in a test and how to do it.
+
+## References
+
+1. Ranjit, S., & VanDerZwan, M. (2009). Introducing Property-based testing. Proceedings of the 5th international conference on Software testing, verification and validation (pp. 418-427). IEEE.
+
+2. Ranjit, S., Wong, R., & VanDerZwan, M. J. (2010). Practical property-based testing examples (pp. 37-41). Springer, Berlin, Heidelberg.
+
+3. Pérez-Victoria, L., Zarate, M., & Fernández-Alvarez, F. J. (2021). Property-based testing in .NET: a practical guide for software security. Packt Publishing.
+
+4. <https://en.wikipedia.org/wiki/Property-based_testing>
+
+5. <https://github.com/Microsoft/Pex/tree/master/Samples>
+
+```python
+import pandas as pd
+import numpy as np
+data=[['Tom',10],['Nick',15],['John',13]]
+df=pd.DataFrame(data,columns=['Name','Age'])
+print(df)
+```
+```python
+>>> df
+```
+```python
+   Name  Age
+0   Tom   10
+1  Nick   15
+2  John   13
+```
+```python
+print("Type of 'df'")
+type(df)
+```
+```python
+>>> Type of 'df'
+<class 'pandas.core.frame.DataFrame'>
+```
+
+In Python, Pandas library is very useful and widely used for data manipulation and analysis in Python. Pandas provides methods for manipulation of DataFrame, Series indexing, filtering, IO operation etc. Pandas operates on two fundamental elements, namely DataFrame and Series.
+
+1. **DataFrame**: A DataFrame in pandas is a two-dimensional labelled data structure with columns of potentially different types. You can think of it like a spreadsheet or SQL table, or a dict of Series objects. It is generally the most commonly used pandas object. A DataFrame can contain other DataFrame objects as data.
+
+2. **Series**: A Series in pandas is a one-dimensional labelled array capable of holding any data type (integers, strings, floating-point numbers, Python objects, etc.). The axis labels are collectively called index. A `pd.Series` can be created by passing a list, numpy array or even a `dictionary`--------------------            Assert.GreaterOrEqual(index,0);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ Index value is less than arrList.Count
+            Assert.Less(index, arrList.Count);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ index value is less than Count of a new list
+            Assert.Less(index, arrList.Count);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ Count of arrList is same after Get operations is not decreased
+            Assert.AreEqual(Old_arrListCount, New_arrListCount);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ Return value from ArrayList  is equal to the value at retrieved index
+            Assert.AreEqual(New_Ret, arrList[Old_index]);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ New ArrayList contains Retrieved value
+            Assert.IsTrue(New_containsNewRet);
+
+        }
+    }
+}//BlazorWebAssemblyClient/Models/WeatherForecast.cs
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace BlazorWebAssemblyClient.Models
+{
+    public class WeatherForecast
+    {
+        public DateTime Date { get; set; }
+
+        public int TemperatureC { get; set; }
+
+        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+
+        public string Summary { get; set; }
+    }
+}
+
+//BlazorWebAssemblyClient/Pages/FetchData.razor.cs
+﻿using Microsoft.AspNetCore.Components;
+using BlazorWebAssemblyClient.Models;
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+namespace BlazorWebAssemblyClient.Pages
+{
+    public class FetchDataBase : ComponentBase
+    {
+        [Inject]
+        protected HttpClient Http { get; set; }
+
+        public WeatherForecast[] Forecasts { get; set; }
+
+        protected override async Task OnInitializedAsync()
+        {
+            Forecasts = await Http.GetJsonAsync<WeatherForecast[]>("sample-data/weather.json");
+        }
+    }
+}
+
+//BlazorWebAssemblyClient/Program.cs
+﻿using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Hosting;
+
+namespace BlazorWebAssemblyClient
+{
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            CreateWebHostBuilder(args).Build().Run();
+        }
+
+        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
+            WebHost.CreateDefaultBuilder(args)
+                .UseStartup<Startup>();
+    }
+}
+
+//BlazorWebAssemblyClient/Startup.cs
+using BlazorWebAssemblyClient.Data;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+namespace BlazorWebAssemblyClient
+{
+    public class Startup
+    {
+        public Startup(IWebHostEnvironment env)
+        {
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(env.ContentRootPath)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
+                .AddEnvironmentVariables();
+            Configuration = builder.Build();
+        }
+
+        public IConfigurationRoot Configuration { get; }
+
+        // This method gets called by the runtime. Use this method to add services to the container.
+        // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.AddRazorPages--------------------            Debug.Assert(Old_index >= 0);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that Old_arrListCount value is greater than 0 
+            Debug.Assert(Old_arrListCount > 0);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ index value is less than arrList.Count 
+            Debug.Assert(Old_index < arrList.Count);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ index value is greater than or equal to 0 
+            Debug.Assert(index >= 0);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ index value is less than arrList.Count 
+            Debug.Assert(index < arrList.Count);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that New_arrListCount value is greater than or equal to 0 
+            Debug.Assert(New_arrListCount >= 0);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that New_ret value is less than or equal to arrList.Count 
+            Debug.Assert(New_Ret <= arrList.Count);
+
+	    // an assertion using "Debug.Assert\(.*?\);" that New_ret value is greater than or equal to 0 
+            Debug.Assert(New_Ret >= 0);
+        }
+    }
+}
+
+I have the ArrayListContractTest.cstest file in my project. It tells me that "PUT_GetContract" was not instrumented and had unchecked execution. I can't seem to figure out why that would be. I have run this file in my project and it had good coverage before, but now I have manually added the coverage data, and it's still not instrumented. I can't find anything online that helped or if there is something about my test that could be causing this. Any help would be appreciated.
+
+A: I believe the problem here is that the given method PUT_GetContract is not public or internal, nor it is marked with the [PexMethod] attribute.
+The issue of the PUT_Contract method not being instrumented is because these criteria are needed for the method to be picked up by Pex for the coverage criteria to be evaluated. 
+Pex searches for public or internal methods [not static] and that have been marked by attributes such as [PexMethod] or [PexAssembly] to instrument code. 
+If PUT_GetContract method is marked with [PexMethod] attribute or is made public or internal then it should work fine. If not then there can be other reasons for this behavior.
+For example:
+- the assembly containing your test is not referenced from the test project.
+- the test doesn't run after the code coverage has been gathered. 
+
+So make sure you've marked your test method with [PexMethod] attribute, your code with [PexAssembly] if you want to include all types in your code coverage.
+
+A: I can see that you have mentioned some PexObserve and Debug.Assert line, but it seems incomplete, these will be helpful for further analysis on the failing test case. If this all doesn't work, then perhaps the problem might be something else - so I would recommend to use a combination of Debug and System.Diagnostics.Trace for tracing your program execution.
+Can you try running the Pex on a reduced set of code, just to make sure that it is not a issue of testing just one method itself?
+Also, try instrumenting an equivalent method in another project that is working fine. This could give you a clue about the type of errors that may cause it to fail.
+One more thing, since you mentioned about coverage having been added manually, it could be that Pex hasn't been run after this addition for a while, and the coverage might be outdated. Can you try a clean build before continuing?
+If all fails, I'd recommend filing a bug with MS on codeplex, including the failing unit test with the failing method, the source code and any error messages.
+Q: Get current location by Geolocation and show on map I am creating an application where I need to get location of the user by Geolocation and then show this location on the map. For this I will be using AngularJS for frontend and OpenLayers for displaying the map.
+I am stuck at getting the current location.
+This is what I have so far:
+$scope.map = null;
+
+$scope.initializeMap = function() {
+    var--------------------	    Debug.Assert(index >= 0);
+	// an assertion using "Debug.Assert\(.*?\);" that  @@@ index value is less than {@@@arrList.Count\(\)}
+	    Debug.Assert(index < arrList.Count);
+            // an assertion using "Debug.Assert\(.*?\);" that  @@@arrList count before get  is equal to after get
+	    Debug.Assert(Old_arrListCount == New_arrListCount);
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ contains Old value after get
+	    Debug.Assert(arrList.Contains(arrList.Get(Old_index)));
+	    // an assertion using "Debug.Assert\(.*?\);" that  after get ret value contain in arrayList
+	    Debug.Assert(New_containsNewRet);
+        }
+    }
+}
+```
+
+## Conclusion
+
+This demonstrates how Pex annotations can be used to test the code robustly, and ensure it behaves as expected. Pex also offers a number of useful tools to observe and inspect the code test and generate useful coverage criteria. The generated contracts and tests would be helpful for developers to understand the behavior of the code and to catch any possible bugs.
+
+In a real-world scenario, the ArrayList class should be improved to handle exceptions and edge cases more gracefully. Pex is a useful tool for identifying potential problems, but additional test-cases should be written to confirm correct behavior.
+
+## Resources for Learning More
+
+1. [Pex for .NET Developers](https://docs.microsoft.com/en-us/visualstudio/test/quick-start-pex-for-net-developers?view=vs-2019)
+2. [Pex and C# Code Testing](https://www.codeproject.com/Articles/1125987/Pex-and-Csharp-Code-Testing)
+3. [Understanding Code Contracts with Pex](https://devblogs.microsoft.com/devops/understanding-code-contracts-with-pex/)
+4. [What is Code Contracts and Pex?](https://www.codeproject.com/Articles/690374/What-is-Code-Contracts-and-Pex)
+5. [Visual Studio Code Contracts](https://docs.microsoft.com/en-us/visualstudio/test/using-visual-studio-15-preview-conduct-unit-tests-by-using-code-contracts?view=vs-2019)
+6. [Visual Studio Preview](https://visualstudio.microsoft.com/vs/preview/)
+7. [Visual Studio - Code Contracts](https://docs.microsoft.com/en-us/visualstudio/test/quick-start-pex-for-net-developers?view=vs-2019)
+8. [Testing Automated Pex Tests](https://www.codeproject.com/Articles/1125987/Pex-and-Csharp-Code-Testing)
+
+---
+Peer Review Contributions by: [Wanja Mike](/engineering-education/authors/wanja-mike/)
+
+<!-- Do not remove this line -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------	    
+	    if(index < arrList.Count && index >= 0)
+		    Assert.AreEqual(Old_arrListCount, New_arrListCount);
+		
+	    //an assertion using "Debug.Assert\(.*?\);" that  @@@ index value is less than Count of ArrayList. 
+	    
+	    if(index < arrList.Count && index >= 0)
+		    Assert.AreEqual(Old_index, index);
+
+	    //Assertion that @@@ the old count matches with the new Count of ArrayList 
+	    
+	    Assert.AreEqual(Old_arrListCount, New_arrListCount);
+
+        }
+    }
+}
+```
+
+## 3.1.6 自动生成测试用例
+
+Pex 提供了各种方法来生成测试用例。在测试用例开发过程中，当我们不知道我们想要测试什么函数或类的具体参数时，我们应该自动生成测试用例。这可以在测试覆盖率的角度提供很大的帮助。
+
+Pex 提供了方法来在测试某个类的所有方法、特定方法或全部类上生成测试用例。
+
+当我们选择特定方法或者全部方法作为测试目标时，我们应该提供一些假设来指导 Pex 生成测试用例。
+
+例如我们有一个 MathUtil 类的 Math 方法，我们想要生成一些测试用例，那么我们可以通过提供一些假设来指导 Pex，假设 Math 方法的第一个参数应为正数且小于等于 100，第二个参数也应为正数且小于等于 100，然后 Pex 就会自动生成一系列的用例。
+
+这种方法可以大大减少我们需要手动创建测试用例的数量，并且可以更准确地测试到我们意想不到的边界情况。
+
+## 3.1.7 观察返回的值
+
+在 Pex 中我们也可以观察返回的值，这对于我们确定我们编写的测试是否正确非常有用。Pex 允许我们在控制台中查看返回的值，并且还可以通过设置断点来观察返回的值。
+
+```
+PexObserve.ValueForViewing("$actual", actual);
+```
+
+以上代码会将 actual 的返回值添加到控制台中，这样我们可以很容易的观察到这个值。
+
+## 3.1.8 自动生成预备条件
+
+Pex 可以自动生成前置条件，这对于我们检查我们的测试是否正确运行非常有用。Pex 会自动生成函数/方法调用所需的前置条件，并且会在测试执行中检查这些条件。
+
+例如有一个函数将值添加到列表中，Pex 将自动生成一个列表为 null 或超过最大大小的情况来检查这个函数。
+
+```
+[PexMethod]
+[PexEntryPoint]
+public List<string> AddItemToList(string item)
+{
+    // 前置条件
+    if (item == null) throw new ArgumentNullException("item");
+    Assume.IsNotNull(item, "item");
+
+    // ...
+    List<string> list = new List<string>();
+    list.Add(item);
+
+    // ... 
+    return list;
+}
+```
+
+## 3.1.9 强制约束和保证
+
+当 Pex 生成测试用例时，我们可以通过假设和强制来确保某些条件得到满足。假设允许我们向 Pex 提供关于函数参数的常识信息。这可以帮助 Pex 有效地生成测试用例。
+
+```
+[PexMethod]
+[PexEntryPoint]
+public int Add(int a, int b)
+{
+    PexAssume.IsTrue(a >= 0 && b >= 0); // 假设 a 和 b 是正数
+    int sum = a + b;
+    PexAssert.IsTrue(sum >= a); // 保证和不会小于 a
+    return sum;
+}
+```
+
+如果函数的输入或输出违反了这些假设或保证，那么生成的测试用例将不会被执行，这使得我们的测试更具有鲁棒性。
+
+## 3.1.10 自动生成测试覆盖率报告
+
+Pex 可以自动生成测试覆盖率报告，这可以帮助我们了解我们的代码在哪些地方还没有被测试到。
+
+```
+Pex.Re--------------------	    // an assertion using "Debug.Assert\(.*?\);" that get index value is not out of range
+	    // an assertion that the collection count hasn't changed after using the getter 
+	    // an assertion that the collection contains the object after using the getter
+        }
+    }
+}
+
+Thanks in advance
+
+A: The contracts specified for methods are not related to the properties of the list, but rather to the behavior of the method when given some inputs. In the case of your PUT method, the contract specifies the precondition that the provided index is within the range of valid indices for the ArrayList.
+However, the ArrayList in .NET is essentially a wrapper around a T[] array (it inherits from Array and overrides some methods), internally it only knows how to use its own methods and properties, so its contract doesn't consider the T[] array. So according to the PexEngine, the contract of ArrayList.get_Item(index) is not satisfied because it doesn't know that the index should not be out of the range of a T[] array. 
+If you want to add a contract to the getter property, you can try writing a custom contract solver, but it may be overkill and you may easily miss some things. And remember that the main purpose of PEX testing is not to solve contracts but to verify the functionality and behavior of the tests. The contracts are meant to help to understand the behavior of the methods under different conditions, rather than providing a 100% guarantee that the algorithm is correct.
+To make sure the get operation is valid, you should consider testing it with valid inputs and postconditions. 
+Please refer to this link for more details on contract testing: https://msdn.microsoft.com/en-us/library/dn646881.aspx
+It is important to note that Pex does not guarantee that a test case satisfies a method's contracts - it only ensures that the method's behavior at these inputs is well-understood. Also be aware that Pex uses a model of your code to make decisions. When it can't determine a possible value, it uses default values instead.
+
+A: In order to get around this issue, you should consider setting a precondition for your PUT method that ensures the index is within the bounds of the ArrayList. 
+Something along the lines of:
+[PexMethod]
+[PexPrecondition(Method = "typeof(ArrayListContractTest).GetItemPrecondition")] 
+public void PUT_Get(ArrayList arrList, int index) { ... }
+
+Where GetItemPrecondition is a static method that handles the precondition:
+using Microsoft.Practices.EnterpriseLibrary.Common.Utility;
+...
+
+public static bool GetItemPrecondition(int index, ArrayList arrList){
+   Check.IsNotNull(arrList, "arrList"); 
+   return index >= 0 && index < arrList.Count;
+}
+
+Notice the use of Check.IsNotNull to prevent a Null Reference Exception. The precondition must be a static method that returns a bool, the parameters are the inputs to the test, and any additional objects that could affect the outcome as null values of these inputs can cause the test to fail. In your case, the arrList parameter will be preconditioned by a null ArrayList - if this is not a possible state for your code, you should include a non-null assertion in GetItemPrecondition. 
+This way you can make sure that Pex knows not to use the [PexAssumeUnderTest] attribute on your getter test as it already knows its inputs are valid thanks to the [PexPrecondition] attribute.
+Please remember to always return something from the preconditions method, as for a failed precondition, Pex tests will be skipped.
+Also remember to keep Pex happy by only testing a part of your code. Testing all methods from the API might make Pex bored by all the trivial operations and focus on the important things when possible.
+Also, be aware that unit tests should test your code in isolation, so instead of relying on an external ArrayList, you should create your own methods that emulate the behavior of ArrayList to be able to accurately test your code.
+Please try this approach, it should help you getting around the issue. 
+
+A: 
+In order to get around this issue, you should consider setting a precondition for your PUT method that ensures the index is within the bounds of the ArrayList. This can be represented in the PexMethodAttribute. Preconditions specify the conditions that must be met for the execution of a method. 
+
+This can be achieved with the [PexAssumeUnderTest] attribute. This tells Pex to apply the method as a precondition when testing--------------------            PexAssert.AreEqual(Old_arrListCount, New_arrListCount, "Should maintain count");
+            PexAssert.IsTrue(New_containsNewRet, "New element should be contained");
+
+            // an assertion using "Debug.Assert\(.*?\);" that index value is within the boundaries of ArrayList.
+            PexAssert.IsTrue((New_Ret == arrList[Old_index]), "Should maintain elements");
+        }
+    }
+}
+
+I already checked the PexAssumeUnderTest annotation on the first parameter of this test method. It's ArrayList type which is annotated as PexAssumeUnderTest. I cannot see what's wrong with my code.
+Any advice or help is welcome. Thanks in advance.
+
+A: You are using the [PexAssumeUnderTest] attribute on the second parameter, which makes the framework assume that it's under test. But looking at the actual code, you are only checking that the index is within bounds and using it as a condition for an assertion. The check that the index is within bounds isn't guaranteed, because you are using the AssumePrecondition.IsTrue method, which may or may not get run in some testing engine versions.
+In your code, you should use the [PexAssumeValid] attribute for the second parameter. The [PexAssumeValid] attribute ensures that the testing engine assumes that all preconditions for the method are valid, and skips the current test if any of them fail. It guarantees that the framework skips the current test when these conditions are not met.
+You can change 
+public void PUT_GetContract([PexAssumeUnderTest]ArrayList arrList, int index)
+to
+public void PUT_GetContract([PexAssumeUnderTest]ArrayList arrList, [PexAssumeValid]int index)
+Or check if the index is in valid boundary using the following Assert.IsTrue:
+PexAssert.IsTrue(index < arrList.Count && index >= 0, "Invalid index boundary");
+
+A: The issue here is that index in this test is assumed valid by the fuzzer without checking if it is within the ArrayList bounds. You should adjust the second parameter to be [PexAssumeValid] to ensure that it valid for the testing framework to run it.
+Also, you should add an assertion to make sure that index is within the ArrayList bounds.
+This is your revised code: 
+public void PUT_GetContract([PexAssumeUnderTest]ArrayList arrList, [PexAssumeValid]int index)
+{
+    // your code here...
+
+    PexAssert.IsTrue(index < arrList.Count && index >= 0, "Index is out of bounds");
+
+    // rest of your code...
+}
+
+Adding [PexAssumeValid] for index will ensure the tested method to behave uniformly. It informs the fuzzer about the range of values that are valid for testing at design time. And adding index assertion informs the fuzzer about the valid state of your method during testing.
+But remember that the testing engine needs to run the test multiple times for different inputs to understand the behavior of your method, so it needs to be robust and exhaustive. If your method has some exception handling or pre-conditions, consider those in your fuzzing or testing activities.
+Hope this helps, happy testing!!!
+
+A: I ran my test, indeed it was giving an IndexOutOfRange exception as the input index was not in the range. 
+
+I fixed the issue by removing the AssumePrecondition.IsTrue(index < arrList.Count && index >= 0); and replacing it with PexAssert.IsTrue(index < arrList.Count && index >= 0, "Index is out of bounds");. 
+Then this test works fine.
+Hope it helps to those who are encountering the same issue too.
+
+But please note, you must ensure the bounds of your ArrayList always. Because ArrayList is a dynamically-sized array, you can easily add/remove items from it and thus its size can change arbitrarily. So, you should not rely on the size of ArrayList when testing its getter (operator[]) by index. If you really need the size always match some predefined value, you could introduce an other variable holding that size and ensure that it always returns the same.
+
+Thank you, and happy testing.
+
+A: It looks like your index is getting validated in the AssumePrecondition while PexAssumeValid should be used on parameters which are meant to be valid conditions in your method. The index in your code acts as a pre-condition of the method (since you are using arrList[index]), if PexAssumeValid is used on the index--------------------

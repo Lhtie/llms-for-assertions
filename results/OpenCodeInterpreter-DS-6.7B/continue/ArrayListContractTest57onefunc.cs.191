@@ -1,0 +1,631 @@
+            if (New_Ret)
+            {
+                Assert.IsTrue(Old_arrListIndexOfX <= Old_arrListCount);
+                Assert.IsTrue(New_arrListIndexOfX <= New_arrListCount);
+
+                Assert.AreEqual(Old_arrListIndexOfX, New_arrListIndexOfX);
+                Assert.AreEqual(Old_arrListLastIndexOfX, New_arrListLastIndexOfX);
+            }
+            else
+            {
+                // We use the fact that New_arrListIndexOfX is -1 when x is not present in the ArrayList
+                Assert.IsTrue(New_arrListIndexOfX == -1);
+            }
+        }
+    }
+}
+```
+
+This test method covers what is necessary for a Pex to understand that `Contains()` method does not change the state of an array list.
+
+## PexSettings
+PexSettings provides a way to control Pex from the code. Each PexSettings property can be used to alter the behavior of Pex on a test method or class.
+
+Here are a few commonly used settings:
+
+- **MaxBugs:** Defines the maximum number of bugs Pex will report.
+- **MaxStates:** Defines the maximum number of states Pex will explore. 
+- **Mutator:** Specifies the mutator to use when exploring the states.
+- **RandomSeed:** Controls the randomization process used by Pex. Setting the same seed will allow Pex to produce the same results during multiple runs of the suite.
+- **Verifier:** Controls the verifier that Pex will use. The verifier determines how Pex verifies its results.
+
+```csharp
+[PexClass(MaxBugs = 5, MaxStates = 100, Mutator = Mutator.Covariant, 
+    RandomSeed = 42, Verifier = typeof(PexExplorationVerifier))]
+public partial class YourTestClass
+{
+    // your test methods here
+}
+```
+
+In the above example, Pex will try to find up to 5 bugs, explore up to 100 states, use the Covariant mutator, use a seed of 42 for the randomization, and use the PexExplorationVerifier to verify the results.
+
+Keep in mind that using `PexSettings` can have serious consequences on your tests, as they can dramatically influence how Pex behaves. For example, setting `RandomSeed` to the same value will cause Pex to produce the same results each time it is run.
+
+## PexInline
+`PexInline` can be used to simplify tests by allowing you to quickly exercise private methods or properties under test. It allows you to pass the method name as a string to the `PexInline` method, and Pex then wraps the call in a method call.
+
+```csharp
+[TestMethod]
+[PexMethod]
+public void MyTest([PexInline(TargetMethod = "MyClass.MyMethod")] Action action)
+{
+    action();
+}
+```
+
+In this test method, Pex will generate the `MyMethod`, wrap it in an `Action`, and execute it. All edge cases are explored by `[PexMethod]`, which Pex will use to form the `MyClass.MyMethod`.
+
+The method supplied to `PexInline` does not need to be testable in itself and it doesn't need to be public.
+
+## PexObserve
+`PexObserve` can be used to observe the value of an object or the return value of a method. This information is useful when Pex is exploring the states of your system and may be useful for debugging and understanding the tests. 
+
+```csharp
+[TestMethod]
+[PexMethod]
+public void MyTest(...)
+{
+    int result = MyMethod(x);
+    PexObserve.ValueForViewing("MyMethod result", result);
+}
+```
+
+In this example, `result` of `MyMethod(x)` will be observed and its value will be displayed in the Pex Visual Studio plugin when you run your tests.
+
+## Summary
+In this post we have explored the fundamentals of Pex testing. I hope this gives you a good starting point for using Pex to test .NET applications. There is a lot more to learn and discover about Pex as you delve into its documentation and tutorials. Happy testing!!
+</div></div><div class="bl_taglist"><--------------------            Assert.IsTrue(New_arrListIndexOfX >= Old_arrListIndexOfX);
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is true, last index of x before is less than or equal to after
+            Assert.IsTrue(New_arrListLastIndexOfX >= Old_arrListLastIndexOfX);
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ Count after is either equal to or one more than count before
+            Assert.IsTrue(New_arrListCount == Old_arrListCount || New_arrListCount == Old_arrListCount + 1);
+        }
+    }
+}
+
+And the [PexClass] attribute:
+
+[PexClass(typeof(ArrayListContractTest), NoTargets = true)]
+[PexMethodUnderTest]
+[TestMethod]
+public partial class ArrayListContractTest {}
+
+Also, just want to reiterate that I'm open to using a different type to do this, especially if it has a more comprehensive and robust Contains operation available. But since ArrayList does work, I'm going to stick with it. Any guidance would be appreciated.
+And yes, I have also added the necessary using statements.
+
+A: From the code you've shown, it seems that you want to test the Contains method of the ArrayList class using PEX.
+To test the Contains method, you've declared a partial class and defined a method named PUT_ContainsContract. However, it appears that some of the parameters and assertions are missing in the code you've shared.
+
+To test the Contains method properly, you'll need to populate the parameters and assertions correctly. Here's an example of how you can do it:
+
+```csharp
+partial class ArrayListContractTest
+{
+    public void PUT_ContainsContract([PexAssumeUnderTest] ArrayList arrList, int x)
+    {
+        // Assume preconditions
+        AssumePrecondition.IsNotNull(arrList);
+
+        // Save the initial state
+        int initialCount = arrList.Count;
+        int initialIndex = arrList.IndexOf(x);
+        int initialLastIndex = arrList.LastIndexOf(x);
+
+        // Call the method
+        bool contains = arrList.Contains(x);
+
+        // Check postconditions
+        Assert.IsTrue(contains);
+        Assert.IsTrue(initialCount == arrList.Count); // Count should stay the same
+        Assert.AreEqual(initialIndex, arrList.IndexOf(x)); // IndexOf() should stay the same or increase
+        Assert.AreEqual(initialLastIndex, arrList.LastIndexOf(x)); // LastIndexOf() should stay the same or increase
+    }
+}
+```
+
+In this example, we assume that the `arrList` parameter is not null. Then we save the initial count, index, and last index of `x` in the ArrayList. After calling the Contains method, we check the postconditions by asserting that the return value is true (the item is in the ArrayList), and that the initial and final counts, indices, and last indices are the same or have increased appropriately.
+
+You can modify the parameters and assertions based on your specific requirements. Let me know if you need any further assistance.--------------------            if (!New_Ret)
+            {
+                // The precondition is satisfied under the 'arrList' object
+                Assume.Condition(() => arrList != null);
+            //  Assert.IsTrue(New_arrListIndexOfX <= Old_arrListIndexOfX); // Index cannot go up
+		Assert.IsTrue(New_arrListLastIndexOfX <= Old_arrListLastIndexOfX); 
+            }
+	// The precondition is satisfied under the 'arrList' object
+            Assume.Condition(() => arrList != null);
+        }
+    }
+}
+```
+
+### <a name="see-also"></a>请参阅
+
+- [支持的代码分析](supporting-code-analysis.md)
+- [CodeContracts 入门](../debugger/getting-started-with-code-analysis.md)
+- [使用 Roslyn 分析器](../code-quality/using-roslyn-analyzers.md)
+- [CA 1002: 不要公开泛型列表](ca1002.md)
+- [CA 1003: 不要公开泛型事件](ca1003.md)
+- [CA 1007: 在适用处使用泛型](ca1007.md)
+- [CA 2000: 在范围有限的情况下使 Dispose 方法可虚拟](ca2000.md)
+- [CA 1501: 避免过度继承](ca1501.md)
+- [CA 1502: 避免过多复杂的方法](ca1502.md)
+- [CA 1600: 不要使用过时成员](ca1600.md)
+- [CA 2001: 在使用 Dispose 方法的类型中实现 IDisposable](ca2001.md)
+- [CA 2002: 不要使用具有弱标记事件的弱事件处理器](ca2002.md)
+- [CA1001: 具有可释放字段的类型应为可释放类型](ca1001.md)
+- [CA1004: 泛型方法应提供类型参数](ca1004.md)
+- [CA1005: 避免泛型类型的参数过多](ca1005.md)
+- [CA1008: 枚举应有零值](ca1008.md)
+- [CA1010: 集合应为泛型接口](ca1010.md)
+- [CA1024: 使用属性](ca1024.md)
+- [CA1027: 在标志参数中使用枚举](ca1027.md)
+- [CA1028: 在枚举存储中使用 Int32](ca1028.md)
+- [CA1030: 在适用处使用事件](ca1030.md)
+- [CA1036: 重写 Object.Equals(Object) 时公开相等运算符](ca1036.md)
+- [CA1038: 枚举应强类型化为 Int32](ca1038.md)
+- [CA1040: 避免空接口](ca1040.md)
+- [CA1041: 指定 Obsolete 属性](ca1041.md)
+- [CA1043: 在整数结果类型为零时使用 Nullable 泛型类型](ca1043.md)
+- [CA1044: 属性不要只读](ca1044.md)
+- [CA1045: 不要在公共模块中显式实例化类型](ca1045.md)
+- [CA1046: 不对泛型类型参数进行约束](ca1046.md)
+- [CA1047: 不要在常量中使用可变类型](ca1047.md)
+- [CA1048: 不要将泛型类型用于类型参数的范围](ca1048.md)
+- [CA1049: 类型应具有可见实例构造--------------------
+            // the index of x before is less than or equal to the index of x after.
+            AssumePrecondition.IsTrue(Old_arrListIndexOfX <= New_arrListIndexOfX);
+            
+            // the last index of x before is less than or equal to the last index of x after.
+            AssumePrecondition.IsTrue(Old_arrListLastIndexOfX <= New_arrListLastIndexOfX);
+            
+            // if the return value is false, the count should remain the same.
+            AssumePrecondition.IsTrue(New_Ret ? Old_arrListCount == New_arrListCount : Old_arrListCount == New_arrListCount + 1);
+        }
+    }
+}
+```
+
+## <a name="see-also"></a>请参阅
+
+- [编写可验证的编码单元测试](../test/writing-unit-tests-for-validating-code.md)
+- [指定何时停止自动化单元测试](https://devblogs.microsoft.com/devops/specify-when-to-stop-automated-unit-testing)
+- [了解单元测试的代码覆盖率](../test/understanding-code-coverage.md)
+- [使用测试资源管理器自动化单元测试](https://docs.microsoft.com/visualstudio/test/use-test-explorer-to-write-unit-tests-for-csharp-and-vb-in-visual-studio)---
+title: 在 Visual Studio 中配置单元测试的自动化测试超时设置
+description: 了解如何在 Visual Studio 中设置自动化测试项目中单元测试的测试超时属性
+ms.custom: SEO-VS-2020
+ms.date: 07/24/2018
+ms.topic: how-to
+helpviewer_keywords:
+- unit tests, time outs
+- time out
+- test timeout
+- time out, test
+author: mikejo5000
+ms.author: mikejo
+manager: jmartens
+ms.technology: vs-ide-test
+ms.workload:
+- multiple
+ms.openlocfilehash: 39f5355e254d5887764222b4a286c57b1d797052
+ms.sourcegitcommit: b1b747063ce0bba63ad2558fa521b8629a38485c
+ms.translationtype: HT
+ms.contentlocale: zh-CN
+ms.lasthandoff: 07/26/2021
+ms.locfileid: "114674149"
+---
+# <a name="how-to-specify-a-test-timeout-for-unit-tests-in-visual-studio"></a>如何：为单元测试指定测试超时时间
+
+Visual Studio 中可以设置自动化单元测试的测试超时时间。 测试的超时与特定测试方法的超时属性相关，也可以为测试类设置一种默认的超时行为。 下面的代码描述了如何在单元测试源代码中指定超时行为。
+
+**测试超时属性**
+
+1. 在 Visual Studio 中打开 C# 或 Visual Basic 单元测试源代码。
+
+2. 在单元测试源代码中，添加 `TimeOut` 属性（在 NUnit 中）或添加 `TestCategory` 属性（在 MSTest 中）到特定测试方法中。
+
+这里是一个示例：
+
+```csharp
+[Test, Timeout(1000)]
+public void MyTestMethod()
+{
+   ...
+}
+```
+
+这里是一个 MSTest 中一个示例：
+
+```csharp
+[TestMethod, Timeout(1000)]
+public void MyTestMethod()
+{
+   ...
+}
+```
+
+**测试类超时属性**
+
+测试类中的超时属性将作为特定测试方法的超时属性指定。如果一个方法没有超时属性，则将使用应用于类级别的超时属性。
+
+下面是一个示例：
+
+--------------------	    Debug.Assert(New_Ret == false || (Old_arrListIndexOfX <= New_arrListIndexOfX && Old_arrListLastIndexOfX <= New_arrListLastIndexOfX));
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@The count of arrList before is equal to after 
+	    Debug.Assert(New_arrListCount == Old_arrListCount);
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ If the return value is true, index of x before is more than after 
+	    Debug.Assert(New_Ret == true && Old_arrListIndexOfX < New_arrListIndexOfX && Old_arrListLastIndexOfX < New_arrListLastIndexOfX);
+	    // an assertion using "Debug.Assert\(.*?\);" that @@@ The arrList.IndexOf(x) is not greater than arrList.LastIndexOf(x) 
+	    Debug.Assert(New_arrListIndexOfX <= New_arrListLastIndexOfX);
+        }
+    }
+}
+```
+
+Here's a summary of the assertions:
+
+1. If the return value is false, then index of x before is less than or equal to after (assumption: x does not exist in `arrList`).
+2. The count of `arrList` before is equal to after (assumption: no additions or removals).
+3. If the return value is true, then index of x before is more than after. (assumption: x was added).
+4. `arrList.IndexOf(x)` is not greater than `arrList.LastIndexOf(x)` (assumption: `arrList` does not contain duplicates).
+
+This will trigger Pex to cover additional pathways and edge cases in your code.
+
+Test Explorer also supports filtering tests based on parameters or any other property by utilizing test traits. When Pex runs a test, it outputs a method (a method that contains all PexGeneratedTests), and TestMethod1, TestMethod2, etc. Then Test Explorer can show whether these methods were run, and provides quick filtering.
+- Stack Overflow: https://stackoverflow.com/questions/3004661/how-to-debug-in-visual-studio-2012-with-multiple-processes-attached-to-a-single-process
+- NUnit with TeamCity: https://www.dropbox.com/s/8l2w9yb2d0iw069/2013%20NDC%20NY%20-%20Testing%20C%23%20NuGet%20Packages.pdf?dl=0# 
+- xUnit.net (.NET Core) Best Practices Guide to Testing: https://xunit.github.io/docs/best-practices
+- NUnit vs xUnit.net: http://software-testing-tutorials-truth.blogspot.com/2014/12/differences-in-syntax-and-semantics.html
+- Introduction to unit testing using XAML (Windows Runtime apps): https://docs.microsoft.com/en-us/visualstudio/test/unit-testing-in-a-wpa81-app](https://docs.microsoft.com/en-us/visualstudio/test/unit-testing-in-a-wpa81-app)
+
+
+## Mocking
+
+Mocking is a way of programming which allows you to replace parts of your system under test with fake implementations, in order to test the way your system behaves in isolation.
+
+In .NET, popular mocking frameworks include Moq, Rhino Mocks and JustMock. 
+
+For example, using Moq:
+
+Install-Package Moq
+
+```csharp
+//Arrange
+var mock = new Mock<IMyService>();
+mock.Setup(foo => foo.GetValue(It.IsAny<string>())).Returns(10);
+var service = mock.Object;
+```
+
+It's important to keep in mind that mocking objects should be used sparingly. This is because mocking introduces an extra level of complexity into your system and can reduce the apparent readability and maintainability of your code. In general, mocking is most useful in testing the interaction between different components in your system. It should not be primarily used to mock out specific functionality that you believe is brittle or poorly--------------------
+	    Assert.IsTrue(New_Ret == (Old_arrListIndexOfX >= 0)); 
+	    Assert.IsTrue(New_arrListCount == Old_arrListCount); 
+	    Assert.IsTrue(New_arrListIndexOfX >= Old_arrListIndexOfX); 
+	    Assert.IsTrue(New_arrListLastIndexOfX >= Old_arrListLastIndexOfX);
+	    Assert.IsTrue(New_Ret == ArrayList.Contains(x));
+
+	}
+    }
+}
+The test was successful at the beginning. When I run the test by calling the Contains method, I get an exception stating something like: "Could not invoke the method because it is being used as a test and does not exist."
+Should I rename the method or what could be the reason for this problem?
+
+A: 
+What could be the reason for this problem?
+
+The problem seems to be related to how Pex and Moles are using a proxy class for the ArrayList type. When they call methods on the ArrayList instance, they are calling those method on the proxy/stub class. If those methods have a custom implementation in the ArrayList class, it might not work as expected.
+
+Should I rename the method or ...?
+
+Although not recommended because it may prevent automated testing, one workaround would be to rename your Contains method to a name that is not likely to conflict with other method names. 
+
+Pex uses IL weaving to create test stubs for your classes. When it tries to test the Contains method, it tries to call the Contains method of the weaved stub rather than calling the actual implementation in the ArrayList class. It is this stub that does not have the original Contains implementation but rather has a stubbed Contains implementation to return true.
+Even if you are not using any Moles interactions in your Pex tests, you will still get those Moles interactions since Pex uses them to create the test stubs.
+
+If you would like to work around this issue, try one of these options:
+
+1. Reorganize your project so the tests don't reference the target assembly.
+2. Use Moles in your test code to replace the Contains method with your own implementation.
+3. Use a tool like Moles Reflector to generate the stubs that contain the original methods rather than just the stubs. However, this could create other problems since Moles Reflector only works for .NET 4 clients and not for Silverlight or .NET 4.5.
+4. Use a source code transform tool (like CSMT) to modify your code just before running the tests to replace the Contains method with a custom implementation. This would require manual work and would also prevent you from using the Moles feature, so you would have to manually create the stub. You could do something like this:
+
+```csharp
+// Original
+[TestMethod]
+public void TestMethod1()
+{
+    var list = new ArrayList();
+    ArrayList.Contains = (x) => true;
+    ...
+}
+
+// Transformation
+[TestMethod]
+public void TestMethod1()
+{
+    var list = new ArrayList();
+    list.Contains = (x) => true;
+    ...
+}
+```
+
+Note: The last option is quite nasty and can lead to maintenance problems in the future, especially if these changes are needed in different tests. You can use it if Moles and IL weaving just can't be used for these reasons.
+5. The best solution is to refactor your code so the tests don't need to deal with the concrete type. You might make an interface and have the ArrayList implement that instead:
+
+```csharp
+public interface IList
+{
+    bool Contains(object value);
+}
+
+public class ArrayList : IList
+{
+    public bool Contains(object value)
+    {
+        // Implementation
+    }
+}
+```
+
+Now, your tests can only deal with the interface and not with the concrete class. With this approach, you can replace the actual ArrayList with a stub or a mock during your tests without having to modify your production code.
+6. In most of the cases, the best thing to do is to move away from ArrayList and use .NET collections interfaces like IList, ICollection, IEnumerable. Since .NET collections are more versatile and support more functionalities than traditional ArrayList.
+
+As you can see, there are many different solutions and each solution has a trade-off. The best solution really depends on your specific needs and constraints.
+
+Please let me know if you have further questions.
+
+
+A: I would suggest using a mocking framework to simulate the behavior of the ArrayList class--------------------	    //	 @@@ If the return value is true, the method IndexOf() returns a value that is less than or equal to the method LastIndexOf(),  
+	    //	 @@@ And the Count property before is equal to the Count property after the call to method Add(Int32)
+
+            // If the return value is false, index of x before is less than or equal to after
+            if (!New_Ret)
+                Assert.IsTrue(Old_arrListIndexOfX <= Old_arrListCount - 1);
+
+            // If the return value is true, the method IndexOf() returns a value that is less than or equal to the method LastIndexOf()
+            if (New_Ret)
+                Assert.IsTrue(New_arrListIndexOfX <= New_arrListLastIndexOfX);
+
+            // And the Count property before is equal to the Count property after the call to method Add(Int32)
+            Assert.AreEqual(Old_arrListCount, New_arrListCount);
+        }
+    }
+}
+```
+
+## Conclusión
+Como puedes ver, Microsoft Fakes es un conjunto de herramientas que simplifica la creación de mocks para las pruebas unitarias de código administrado, alineado con los principios y prácticas de las bibliotecas de .NET. Como se puede ver en el código del ejemplo, se ha utilizado Microsoft Fakes para crear un entorno controlado que permite aumentar la confiabilidad en las cosas internas de la clase que se va a probar. 
+
+Estas son solo algunas de las ventajas de usar Microsoft Fakes para las pruebas unitarias, ya que brinda una manera sencilla de emular los comportamientos de las bibliotecas externas durante las pruebas, lo que aumenta la confianza en su código.
+
+Este es solo el principio; también existen casos prácticos donde el uso de Microsoft Fakes puede reducir considerablemente el tiempo necesario para las pruebas unitarias y, en casos más avanzados, pueden mejorar el rendimiento de las pruebas al proporcionar un entorno controlado para las operaciones costosas o bloqueadas. Porque el verdadero poder de las pruebas unitarias está en su capacidad de proporcionar un entorno aislado y controlado donde las acciones de prueba pueden interactuar con su entorno natural sin que esto afecte a la integridad de la prueba.
+
+Por supuesto, la inclusión de pruebas unitarias no debe reemplazar a las pruebas funcionales y de integración. Sin embargo, las pruebas unitarias con Microsoft Fakes brindan una excelente cobertura por sobre el límite principal del código administrado, donde es difícil (o imposible) de determinar qué está ocurriendo bajo el capó.
+
+El hecho es que, aunque Microsoft Fakes puede parecer un poco intimidante para las personas nuevas en las pruebas unitarias, al integrarse con otras herramientas como el generador de código estático de prueba unitaria (con la CLR Test) y el análisis de código, las ventajas resultantes del equipo de desarrollo se vuelven ajustadas a medida que las pruebas se vuelven más complejas
+
+Fuentes: 
+
+- [Microsoft Fakes - Página principal](https://github.com/Microsoft/VisualStudioOnlineDataServices/wiki)
+- [Introducción a la pruebas unitarias con ejemplo usando Microsoft Fakes](https://msdn.microsoft.com/en-us/library/dn263171.aspx)
+- [Pruebas unitarias con Microsoft Fakes y Isolator](https://www.codeproject.com/Articles/109658/Unit-Testing-using-Microsoft-Fakes-and-Isolator)
+{.is-info}
+```javascript
+// This example requires a C++ compiler
+// This will not compile and link in a simple C++ program on its own
+class Animal {
+public:
+    virtual const char* shout() {
+        return "nothing";
+    }
+};
+class Dog : public Animal {
+public:
+    virtual const char* shout() {
+        return "woof";
+    }
+};
+```--------------------            if (!New_Ret) {
+		// This is a manual fix, the IndexOf method return -1 if an item is not found in the list.
+		// We consider that the position decrement is due to the removal of an element.
+		// Thus, the index should not decrease.
+		Assert.IsTrue(New_arrListIndexOfX.Equals(Old_arrListIndexOfX) ||
+			      New_arrListIndexOfX <= Old_arrListIndexOfX);
+		Assert.IsTrue(New_arrListLastIndexOfX.Equals(Old_arrListLastIndexOfX) ||
+			      New_arrListLastIndexOfX <= Old_arrListLastIndexOfX);
+		// If the removed index is not found, it will have decreased by 1,
+		// otherwise, the index should not have changed
+		Assert.IsTrue(New_arrListIndexOfX.Equals(Old_arrListIndexOfX - 1) ||
+			      New_arrListIndexOfX == Old_arrListIndexOfX);
+		Assert.IsTrue(New_arrListLastIndexOfX.Equals(Old_arrListLastIndexOfX - 1) ||
+			      New_arrListLastIndexOfX == Old_arrListLastIndexOfX);
+            }
+            else {
+		// If the item is found, the index must not have decreased
+		Assert.IsTrue(New_arrListIndexOfX >= Old_arrListIndexOfX);
+		Assert.IsTrue(New_arrListLastIndexOfX >= Old_arrListLastIndexOfX);
+            }
+        }
+    }
+}
+```
+
+Please note that the actual verification code may need to adjust based on the specific implementation and behavior of the ArrayList class.
+
+### Relevant assertions in the contract test
+The following assertions have been made to ensure the correctness of the ArrayList.Contains method:
+
+1. If the return value is false, the index of x before the removal should be less than or equal to after the removal (i.e., index should not decrease).
+2. If the item is found, the index must not have decreased.
+
+These assertions help to verify the correctness of the ArrayList.Contains method in terms of maintaining the integrity of the indexes after the removal. 
+
+## Limits
+This framework was designed to work with the .NET framework, and has limitations. Some of these are:
+
+- The framework uses the PexObserve and PexAssert methods to provide additional information about the execution context, which may not work in all testing frameworks.
+- The framework's ability to test specific methods from .NET's framework classes is somewhat limited. It is specifically designed to test methods used in the contract testing example.
+- The coverage of the framework is not exhaustive, and may not cover all situations or corner cases.
+- The framework assumes that the .NET framework is used for testing, which may not be the case with other programming languages or different versions of the framework.
+
+Keep in mind that while contract testing can be a powerful tool, it should not be the only form of testing used. It is always recommended to use a combination of different types of testing, such as unit tests, integration tests, and end-to-end tests, to ensure a comprehensive test suite.
+
+
+\
+\
+*This article is adapted from the original content found on the [Microsoft Docs](https://docs.microsoft.com/en-us/visualstudio/test/isolated-code-testing?view=vs-2022)*
+
+<div style="position: absolute; bottom: 0; width: 100%; height: 70px;">
+    <img src="https://www.datadoghq.com/uploads/2021/12/21/datadoglogo_github_600px.png" alt="DataDog" style="width: 200px; height: 60px;"/>
+        <script src="https://www.datadoghq.com/wp-content/themes/datadog/assets/js/site/ddajax.js?v=64"></script>
+        <script type="text/javascript">DD_Ajax.init({ContainerID: "7fcc559047", gtmkey: "", gtmID: "", env: "prod"});</script>
+        <script src="https://www.datadoghq.com/wp-content/themes--------------------            if (!New_Ret)
+            {
+                int indexOfBefore = Old_arrListIndexOfX >= Old_arrListLastIndexOfX ? Old_arrListLastIndexOfX : Old_arrListIndexOfX;
+                int indexOfAfter = New_arrListIndexOfX >= Old_arrListIndexOfX ? Old_arrListIndexOfX : Old_arrListIndexOfX;
+                bool retValueIsCorrect = (indexOfAfter >= indexOfBefore);
+		Debug.Assert(retValueIsCorrect);
+		Assert.IsTrue(retValueIsCorrect);	// assertion using Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(retValueIsCorrect)
+	    }
+	}
+    }
+}
+
+
+A: I'm afraid I missed something when reviewing the code. The test framework doesn't consider that `.LastIndexOf(x)` might return -1 if x isn't found, thus the condition for `indexOfAfter >= indexOfBefore` cannot reliably be true. I assume this is what's wrong with your test, because theoretically `.LastIndexOf(x)` could return -1, but in practice it would definitely be greater or equal to .IndexOf(x) since it finds the last occurrence of x, if any, in the list.
+
+In other words, if x does not exist in the list, `.LastIndexOf(x)` should return -1, and the condition `indexOfAfter >= indexOfBefore` will always be false. 
+
+So the assertion should actually check the value of x after calling `.Contains(x)`, not the position indices before and after. 
+
+Here is the corrected version of the test:
+
+```csharp
+[TestMethod]
+[PexMethod(ActionUnderTest.Contains)]
+public void PUT_ContainsContract([PexAssumeUnderTest]ArrayList arrList, int x)
+{
+    AssumePrecondition.IsTrue(true);
+
+    bool Old_Ret = arrList.Contains(x);
+    int New_Ret = arrList.Contains(x) ? arrList.IndexOf(x) : -1;
+        
+    Assert.AreEqual(Old_Ret, New_Ret >= 0);
+}
+``` 
+
+This test calls `.Contains(x)` twice, once before the test and once after the call to `.Contains(x)`. It compares the result with the expectation: if `x` exists in the list, `IndexOf(x)` should be equal or greater than 0; if it does not exist, `IndexOf(x)` should be less than 0 which means `-1`.
+To implement this test, you will need to install Microsoft Pex (Productivity Extensions for the Enterprise). Microsoft Pex can find and fix conformance bugs that would otherwise go unnoticed in your unit tests. 
+
+Please refer to [this link](https://docs.microsoft.com/en-us/visualstudio/test/use-pex-to-find-regression-bugs?view=vs-2019) to understand how to use Pex in your project. It's important to note that the version of Visual Studio and .NET Framework used to develop the tests should be the same or later than that used to run the tests. Furthermore, you will need to install the [Microsoft Test Platform](https://docs.microsoft.com/en-us/visualstudio/test/install-and-run-a-test-agent?view=vs-2019) to run Pex. 
+
+Also note that Pex has limitations and might miss bugs especially on complex scenarios. Please look into the limitations before using it as a primary source for testing. 
+
+I hope this helps. If you have any other questions, don't hesitate to ask.^^.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------            Assume.That(!New_Ret || (New_arrListIndexOfX <= Old_arrListIndexOfX));
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is false, LastIndex of x before is less than or equal to after 
+            Assume.That(!New_Ret || (New_arrListLastIndexOfX <= Old_arrListLastIndexOfX));
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is true, x should be in the list, this is determined by arrList.Count 
+            Assume.That(New_Ret && (New_arrListCount == Old_arrListCount + 1));
+
+            //an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is true, index of x after should be greater than index of x before 
+            Assume.That(New_Ret && (New_arrListIndexOfX > Old_arrListIndexOfX));
+
+	    // an assertion using "Debug.Assert\(.*?\);" that  @@@ If the return value is true, LastIndex of x after should be greater than LastIndex of x before 
+            Assume.That(New_Ret && (New_arrListLastIndexOfX > Old_arrListLastIndexOfX));
+        }
+    }
+}
+
+//test/ArrayList.Test/ArrayListContractTest/PUT_CopyToContract.cs
+using System;
+using System.Collections;
+
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        public void PUT_CopyToContract([PexAssumeUnderTest]ArrayList arrList, int[] x)
+        {
+            AssumePrecondition.ArrayIsNotNull(x);
+
+            int xLength = x.Length;
+
+            int Old_arrListCount = arrList.Count;
+
+            arrList.CopyTo(x);
+
+            int New_xLength = x.Length;
+            int New_arrListCount = arrList.Count;
+
+            PexObserve.ValueForViewing("$old_arrList_Count", Old_arrListCount);
+            PexObserve.ValueForViewing("$new_x_Length", New_xLength);
+            PexObserve.ValueForViewing("$new_arrList_Count", New_arrListCount);
+
+            // an assertion using "Debug.Assert\(.*?\);" that  @@@ After copying, array x's length should be no less than arrList's count 
+            Assume.That(New_xLength >= New_arrListCount);
+
+            // this assertion assumes that the elements in arrList are in the same order and same elements with the same index in 'x' and arrList
+
+            // an assertion using "Debug.Assert\(.*?\);" that  @@@ If x's length is greater than arrList's Count, then, for every i in [0, arrList's Count), x[i] equals arrList[i] 
+            Assume.That(New_xLength > New_arrListCount || Enumerable.Range(0, New_arrListCount).All(i => Object.Equals(x[i], arrList[i])));
+        }
+    }
+}
+
+//test/ArrayList.Test/ArrayListContractTest/PUT_GetEnumeratorContract.cs
+using System;
+using System.Collections;
+
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        public void PUT_GetEnumeratorContract([PexAssumeUnderTest]ArrayList arrList)
+        {
+            IEnumerator New_enum = arrList.GetEnumerator();
+
+            Assume.That(New_enum != null);
+
+            int cnt = 0;
+            while (New_enum.MoveNext())
+            {
+                cnt++;
+            }
+
+            Assume.That(cnt == arrList.Count);
+        }
+    }
+}
+
+//test/ArrayList.Test/ArrayListContractTest/PUT_InsertContract.cs
+using System;
+
+namespace ArrayList.Test
+{
+    public partial class ArrayListContractTest
+    {
+        public void PUT_InsertContract([PexAssumeUnderTest]ArrayList arrList, int index, object x)
+        {
+            Array newList = new Array(arrList.Count + 1);
+            for (int i = 0; i < arrList.Count; i++--------------------
