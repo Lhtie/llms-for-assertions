@@ -4,6 +4,7 @@ import glob
 import subprocess
 import re
 from z3checker import *
+from fuzzchecker import *
 
 langmap = {
         "py": ("#",     ),
@@ -64,15 +65,7 @@ def fuzz_check(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
             fuzz.append(False)
             continue
 
-        if(langid == "py"):
-            result = True
-
-        elif(langid == "cs"):
-            result = True
-
-        else: 
-            assert False, "Incorrect language id: " + langid
-
+        result = fuzzcheck(langid, pfx, sfx, grnd_truth, asrt, "equality")
         fuzz.append(result)
     return fuzz
 
@@ -120,17 +113,20 @@ if __name__ == "__main__":
                 
                 grnd_truth = lines[asrtlno]
 
-                fd = open(os.path.join(rdir, f + ".extract"), "r")
-                gen_asrts = fd.read().split("-"*20)[:-1]
-                fd.close()
+                try:
+                    fd = open(os.path.join(rdir, f + ".extract"), "r")
+                    gen_asrts = fd.read().split("-"*20)[:-1]
+                    fd.close()
+                except:
+                    continue # result extract file doesnt exist
                 
                 pfx, sfx = "\n".join(lines[:asrtlno]), "\n".join(lines[asrtlno+1:])
 
                 nullity = null_check(langid, pfx, sfx, grnd_truth, gen_asrts, [True]*len(gen_asrts))
-                z3 = z3_check(langid, pfx, sfx, grnd_truth, gen_asrts, nullity)
+                #z3 = z3_check(langid, pfx, sfx, grnd_truth, gen_asrts, nullity)
                 #cmple = compile_check(langid, pfx, sfx, grnd_truth, gen_asrts, nullity)
-                #fuzz = fuzz_check(langid, pfx, sfx, grnd_truth, gen_asrts, cmple)
-                final = z3
+                fuzz = fuzz_check(langid, pfx, sfx, grnd_truth, gen_asrts, nullity)
+                final = fuzz
 
                 print("#"*10, rdir + f + ".check", "#"*10)
                 print(final, f"{sum(final)}/{len(final)}")
