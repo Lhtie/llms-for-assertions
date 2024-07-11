@@ -80,6 +80,7 @@ def z3_check(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
         z3.append(result)
     return z3
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--codedir", type=str, default="./codes")
@@ -119,14 +120,15 @@ if __name__ == "__main__":
                     fd.close()
                 except:
                     continue # result extract file doesnt exist
-                
+
                 pfx, sfx = "\n".join(lines[:asrtlno]), "\n".join(lines[asrtlno+1:])
 
-                nullity = null_check(langid, pfx, sfx, grnd_truth, gen_asrts, [True]*len(gen_asrts))
-                #z3 = z3_check(langid, pfx, sfx, grnd_truth, gen_asrts, nullity)
-                #cmple = compile_check(langid, pfx, sfx, grnd_truth, gen_asrts, nullity)
-                fuzz = fuzz_check(langid, pfx, sfx, grnd_truth, gen_asrts, nullity)
-                final = fuzz
+                checks = [null_check, fuzz_check]
+
+                currmask = [True]*len(gen_asrts)
+                for chk in checks:
+                    currmask = chk(langid, pfx, sfx, grnd_truth, gen_asrts, currmask)
+                final = currmask
 
                 print("#"*10, rdir + f + ".check", "#"*10)
                 print(final, f"{sum(final)}/{len(final)}")

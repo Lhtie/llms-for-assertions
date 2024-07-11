@@ -61,7 +61,8 @@ def cs_z3check(pfx, sfx, grnd_truth, asrt, check):
     fd.close()
 
     proc = subprocess.run(["python3", fname])
-    return proc.returncode == 42 # or proc.returncode == 142
+    # assert proc.returncode == 42 or proc.returncode == 142
+    return proc.returncode == 42 
 
 
 def z3check(langid, pfx, sfx, grnd_truth, asrt, check):

@@ -3,7 +3,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import os
 import argparse
 from prompting import *
-from checker import *
+from secrets import *
 
 modelpaths = {
         "ds7":      "deepseek-ai/deepseek-coder-6.7b-instruct",

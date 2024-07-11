@@ -6,6 +6,8 @@ import re
 import itertools
 from xml.etree import ElementTree
 
+fuzz_objname, fuzz_argname, fuzz_retvar = "obj", "arg", "New_Ret"
+
 cscode = """
 // AssemblyInfo.cs
 using System.Runtime.CompilerServices;
@@ -106,6 +108,8 @@ angello_info = {
         "Remove":       csfunc("void",  ["int"],        False,  cs_generic("Remove"),   cs_trivial), 
         "Set":          csfunc("void",  ["int", "int"], False,  cs_idxsetter(),         cs_idxrange),
         "Get":          csfunc("int",   ["int"],        False,  cs_idxgetter("int"),    cs_idxrange),
+        "_size":        csfunc("int",   [],             False,  cs_getter("Count"),     None), 
+        "_items":       csfunc("var",   [],             False,  cs_getter("_items"),    None), 
     }),        
     "BinaryHeap": ("BinaryHeap<int, int>", []),        
     "Dictionary": ("Dictionary<int, int>", []),        
@@ -114,6 +118,52 @@ angello_info = {
     "Stack": ("Stack<int>", []),        
     "UndirectedGraph": ("UndirectedGraph<int, Edge<int>>", []),        
 }
+
+def closing_paren(string, start):
+    if string[start] != "(":
+        return start
+    end, balance = start + 1, 1
+    while end < len(string):
+        if balance == 0: return end
+        if string[end] == "(": balance += 1
+        elif string[end] == ")": balance -= 1   
+        end += 1
+    return end
+
+# just a hack
+def cs_anlyz_post(pfx, asrt, funcs):
+    for l in pfx.split("\n")[::-1]:
+        match = re.match(r".*public.*[\[(](.*)[\])].*", l.strip())
+        if match:
+            args = [arg.split()[1] for arg in match.group(1).split(",")]
+            break
+
+    if "PexAssumeUnderTest" in pfx:
+        return "", asrt
+    else:
+        for i,arg in enumerate(args):
+            asrt = asrt.replace(arg, fuzz_argname + str(i))
+        for fname in funcs:
+            pieces, lstidx = [], 0
+            for m in re.finditer(f"[^\w]{fname}", asrt):
+                end = closing_paren(asrt, m.span()[1])
+                term = asrt[m.span()[0]:end]
+                params = asrt[m.span()[1]+1:end-1].split(",")
+                new_term = funcs[fname]["call"](fuzz_objname, *params)
+                pieces += [asrt[lstidx:m.span()[0]+1], new_term]
+                lstidx = end
+            asrt = "".join(pieces + [asrt[lstidx:]])
+        
+        asrt = asrt.replace("RET", fuzz_retvar)
+        old_exprs, old_addns = set(), ""
+        for m in re.finditer(r"OLD", asrt):
+            end = closing_paren(asrt, m.span()[1])
+            old_exprs.add(asrt[m.span()[0]:end])
+        for i,var in enumerate(old_exprs):
+            old_addns += f"\nvar Old_var{str(i)} = {var[4:-1]};"
+            asrt = asrt.replace(var, f"Old_var{str(i)}")
+
+        return old_addns, asrt
 
 # just a hack
 def cs_guessfuncname(pfx):
@@ -127,6 +177,13 @@ def cs_guessfuncname(pfx):
                     if _l.strip() == "get": return "Get"
                     if _l.strip() == "set": return "Set"
             return match2.group(1)
+
+# just a hack
+def cs_guessnamespace(pfx):
+    for l in pfx.split("\n")[::-1]:
+        match = re.match(r".*namespace (\w+).*", l.strip())
+        if match:
+            return match.group(1)
 
 def cs_getobs(obj, vdict, fdict):
     ret = []
@@ -149,7 +206,7 @@ def cs_getpostcond(grnd_truth, asrt, check):
     if(check == "equality"):
         postcond_formula = f"({f_true}) == ({f_test})"
     elif(check == "implication"):
-        postcond_formula = f"!({f_true}) || (f_test)"
+        postcond_formula = f"!({f_true}) || ({f_test})"
     else:
         assert False, f"Incorrect check : {check}"
     return postcond_formula
@@ -158,53 +215,55 @@ def parse_pexreport(report):
     passing_tests, total_tests = 0, 0
     tree = ElementTree.parse(report)
     for test in tree.findall(".//generatedTest"):
-            name = test.get("name")
-            status = test.get("status")
-            if name.find("TermDestruction") != -1:
-                continue
-            if status in ("assumptionviolation", "minimizationrequest", "pathboundsexceeded"):
-                continue
-            if status == "normaltermination":
-                passing_tests += 1
-            total_tests += 1
+        name = test.get("name")
+        status = test.get("status")
+        if name.find("TermDestruction") != -1:
+            continue
+        if status in ("assumptionviolation", "minimizationrequest", "pathboundsexceeded"):
+            continue
+        if status == "normaltermination":
+            passing_tests += 1
+        total_tests += 1
     return passing_tests, total_tests
 
 def cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
-    namespace = "ArrayList"
+    namespace = cs_guessnamespace(pfx)
     fuzzfuncname = cs_guessfuncname(pfx)
-    print(pfx, "-"*20, fuzzfuncname)
-    objname, argname, retvar = "obj", "arg", "New_Ret"
     classname, classfuncs = angello_info[namespace]
     fuzzfunc = classfuncs[fuzzfuncname]
 
     nvars, vardict, allvars = 0, {}, []
     for argtyp in fuzzfunc["args"]:
-        newvar = argname + str(nvars)
+        newvar = fuzz_argname + str(nvars)
         allvars.append(newvar)
         if argtyp in vardict: vardict[argtyp] += [newvar]
         else: vardict[argtyp] = [newvar]
         nvars += 1
 
-    params = objname + "," + ",".join([",".join([f"{typ} {v}" 
+    old_addns, tfrmd_asrt = cs_anlyz_post(pfx, asrt, classfuncs)
+
+    params = fuzz_objname + "," + ",".join([",".join([f"{typ} {v}" 
         for v in vardict[typ]]) for typ in vardict])
     
-    precond_formula = fuzzfunc["pre"](objname, *allvars)
+    precond_formula = fuzzfunc["pre"](fuzz_objname, *allvars)
     pre_cond = f"PexAssume.IsTrue({precond_formula});"
     
     old_obs_vals = "\n".join([f"{t} Old_{re.sub('[^0-9a-zA-Z]+', '', c)} = {c};" 
-        for t,c in cs_getobs(objname, vardict, classfuncs)])
+        for t,c in cs_getobs(fuzz_objname, vardict, classfuncs)])
+    old_obs_vals += old_addns
     
-    func_call = ("" if fuzzfunc["rtyp"] == "void" else f"{fuzzfunc['rtyp']} {retvar} = ") + \
-            fuzzfunc["call"](objname, *allvars) + ";"
+    func_call = ("" if fuzzfunc["rtyp"] == "void" \
+            else f"{fuzzfunc['rtyp']} {fuzz_retvar} = ") + \
+            fuzzfunc["call"](fuzz_objname, *allvars) + ";"
 
-    allvars.append(retvar)
-    if fuzzfunc["rtyp"] in vardict: vardict[fuzzfunc["rtyp"]] += [retvar]
-    else: vardict[fuzzfunc["rtyp"]] = [retvar]
+    allvars.append(fuzz_retvar)
+    if fuzzfunc["rtyp"] in vardict: vardict[fuzzfunc["rtyp"]] += [fuzz_retvar]
+    else: vardict[fuzzfunc["rtyp"]] = [fuzz_retvar]
     
     new_obs_vals = "\n".join([f"{t} New_{re.sub('[^0-9a-zA-Z]+', '', c)} = {c};"
-        for t,c in cs_getobs(objname, vardict, classfuncs)])
+        for t,c in cs_getobs(fuzz_objname, vardict, classfuncs)])
     
-    postcond_formula = cs_getpostcond(grnd_truth, asrt, check)
+    postcond_formula = cs_getpostcond(grnd_truth, tfrmd_asrt, check)
     post_cond = f"PexAssert.IsTrue({postcond_formula});"
     if not postcond_formula:
         return False
@@ -213,9 +272,6 @@ def cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
             new_obs_vals, post_cond)
     cmple_cmd = cs_cmple_cmd.format(namespace)
     pex_cmd = cs_pex_cmd.format(namespace)
-
-    print(code)
-    return True
 
     dumpdir = "/home/aman14/code/tmp"
     fname = "/home/aman14/code/tmp/_fuzz_check.cs"
@@ -232,12 +288,13 @@ def cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
         ssh -p 3022 aman@localhost '{pex_cmd}' &&
         scp -r -P 3022 'aman@localhost:C:\\Users\\aman\\test\\bin\\reports' {dumpdir}
     """], stdout = sys.stderr)
-    assert remote_cmds.returncode == 0
+    # assert remote_cmds.returncode == 0
+    if remote_cmds.returncode != 0:
+        return False
 
     reportdir = os.listdir(f"{dumpdir}/reports/")[0]
     passing_tests, total_tests = parse_pexreport(f"{dumpdir}/reports/{reportdir}/report.per")
     
-    print(passing_tests, total_tests)
     return passing_tests == total_tests
 
 def fuzzcheck(langid, pfx, sfx, grnd_truth, asrt, check):
