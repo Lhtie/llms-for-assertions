@@ -1,0 +1,134 @@
+
+Debug.Assert(Array.IndexOf([ARR], OLD(value)) == RET);
+Debug.Assert(Array.LastIndexOf([ARR], OLD(value)) in {-1, RET});
+--------------------
+Debug.Assert(OLD(this.Count) + OLD(((ICollection)value).Count) <= this.Count);
+--------------------
+Debug.Assert(OLD(arrayList.Count).Equals(Count + 1));
+--------------------
+Debug.Assert(LastIndexOf(value, _size - 1, _size) != -1);
+--------------------
+public static List<string> GetArrayListComments(string code)
+{
+    List<string> assertLines = new List<string>();
+
+    StringReader reader = new StringReader(code);
+
+    string line;
+    StringBuilder stringBuilder = new StringBuilder();
+
+    while ((line = reader.ReadLine()) != null)
+    {
+        if (line.StartsWith("// @@@"))
+        {
+            string assertStatement = line.Replace("// @@@", "").Trim();
+            assertLines.Add(assertStatement);
+        }
+        else if (line.StartsWith("Debug.Assert"))
+        {
+            string assertStatement = line.Replace("Debug.Assert", "").Trim();
+            assertLines.Add(assertStatement);
+        }
+
+        stringBuilder.Append(line);
+        if (!line.EndsWith("}"))
+        {
+            stringBuilder.Append(" ");
+        }
+        else // Add the closing bracket only if this is the last line in the function
+        {
+            string functionBody = stringBuilder.ToString();
+            string functionName = functionBody.Substring(0, functionBody.IndexOf(")") + 1).Trim();
+
+            Match match = Regex.Match(code, functionName + @"\{[^\}]*\}");
+            string functionCode = match.Value;
+            List<string> variables = functionCode.Split(';').Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+
+            List<string> accesses = assertLines[assertLines.Count - 1].Split('=').Select(x => x.Trim()).ToList();
+
+            for (int i = 0; i < accesses.Count; i++)
+            {
+                if (accesses[i].StartsWith("OLD(") && accesses[i].EndsWith(")"))
+                {
+                    string oldVar = accesses[i].Replace("OLD(", "").Replace(")", "").Trim();
+                    accesses[i] = GetAccesses(oldVar, variables);
+                }
+                else
+                {
+                    accesses[i] = Regex.Replace(accesses[i], "[^A-Za-z0-9]", "");
+                }
+            }
+
+            if (accesses.Count == 2) // if the assertion involves one return value only
+            {
+                string retAssert = accesses[0] + " = " + accesses[1];
+                assertLines[assertLines.Count - 1] = retAssert;
+            }
+            else if (accesses.Count > 2) // if the assertion involves more than one return value  
+            {
+                Assert.AreEqual(accesses[0], accesses[1], double.Parse(accesses[2]));
+            }
+
+            assertLines.RemoveAt(assertLines.Count - 1);
+            stringBuilder.Clear();
+        }
+    }
+
+    return assertLines;
+}
+
+public static string GetAccesses(string oldVar, List<string> variables)
+{
+    string accesses = string.Empty;
+
+    List<string> varAccesses = variables.Where(x => x.Contains(oldVar)).ToList();
+
+    if (varAccesses.Count > 0)
+    {
+        var access = varAccesses[0].Split('=')[0].Trim();
+
+        if (access.StartsWith("=") && access.EndsWith("") || 
+            access.StartsWith("++") && access.EndsWith("") || 
+            access.StartsWith("--") && access.EndsWith(""))
+        {
+            return "0"; // default initial value
+        }
+
+        int endOfAccess = access.IndexOf(")") + 1;
+        int startOfAccess = access.LastIndexOf(" ", endOfAccess);
+
+        accesses = access.Substring(startOfAccess, endOfAccess - startOfAccess);
+    }
+
+    return accesses;
+}--------------------
+Debug.Assert(OLD(s.Count) + x == s.Count);
+--------------------
+Debug.Assert((int) ArrayList.Count >= 0 && (int) ArrayList.Count <= MaxArrayLength); // 
+Debug.Assert((int) ArrayList["nameof(index)"].Length == ((int) ArrayList["nameof(index)"].Length && (int) ArrayList["nameof(index)"].Length == 0) || ((int) ArrayList["nameof(index)"].Length > 0));
+Debug.Assert((int) ArrayList.Capacity == ((_defaultCapacity << 1) || (_size + 1)));
+Debug.Assert(((int) ArrayList[_size] == value) || (ArrayList[_size] == null && value == null));
+Debug.Assert((int) ArrayList[0] == value);
+Debug.Assert(ArrayList.Contains(value) == ((item == null && null == _items[i]) || (item != null && item.Equals(_items[i])))));
+Debug.Assert(ArrayList.LastIndexOf(value) == (value == null ? Array.LastIndexOf((Array) _items, null, 0, _size) : Array.LastIndexOf((Array) _items, value, 0, _size)));
+Debug.Assert((int) ArrayList.IndexOf(value) == (value == null ? Array.IndexOf((Array) _items, null, 0, _size) : Array.IndexOf((Array) _items, value, 0, _size)));
+Debug.Assert((int) ArrayList.Count == _size);
+--------------------
+NotpAssume.IsTrue(index >= 0 && index < _size);
+--------------------
+    public int Add(Object value)
+    {
+        // @@@ Size of the list increases by one after operation
+        if (_size == _items.Length) EnsureCapacity(_size + 1);
+        // ...
+    }
+    public void Insert(int index, Object value)
+    {
+        // NotpAssume.IsTrue(index >= 0 && index <= _size);
+        if (index < 0 || index > _size) throw new ArgumentOutOfRangeException("nameof(index)", "SR.ArgumentOutOfRange_ArrayListInsert");
+        if (_size == _items.Length) EnsureCapacity(_size + 1);
+        // ...
+    }
+--------------------
+Debug.Assert(OLD(ArrayList.Count) - x >= 0);
+--------------------

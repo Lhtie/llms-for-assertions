@@ -114,10 +114,13 @@ Now, read the following {0} code and output an assert statement corresponding to
 
 
 def apply_chat_template(tokenizer, inst):
-    return tokenizer.apply_chat_template(
-            [{ 'role': 'user', 'content': inst }],
-            return_tensors="pt",
-            add_generation_prompt=True)
+    if tokenizer:
+        return tokenizer.apply_chat_template(
+                [{ 'role': 'user', 'content': inst }],
+                return_tensors="pt",
+                add_generation_prompt=True)
+    else:
+        return inst
 
 
 def transform(tid, tokenizer, code, langid):
@@ -179,7 +182,12 @@ def transform(tid, tokenizer, code, langid):
         assert langid == "cs"
         inst = test.format(lang, langid, "", "", code)
         prompt = apply_chat_template(tokenizer, inst)
-        #return prompt
+        return prompt
+
+    elif(tid == "test-enf"):
+        assert langid == "cs"
+        inst = test.format(lang, langid, "", "", code)
+        prompt = apply_chat_template(tokenizer, inst)
         suprt = tokenizer.encode("<code>",
                 add_special_tokens=False, return_tensors="pt")
         return torch.cat((prompt, suprt), 1)
@@ -215,6 +223,10 @@ def extract(tid, rspnse, langid):
         return match.group(0) if match else ""
 
     elif(tid == "test"):
+        match = re.search(r"<code>(.*?)</code>", rspnse, re.DOTALL)
+        return match.group(1) if match else ""
+
+    elif(tid == "test-enf"):
         match = re.search(r"(.*?)</code>", rspnse, re.DOTALL)
         return match.group(1) if match else ""
     
