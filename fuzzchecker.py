@@ -242,8 +242,8 @@ def cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
 
     old_addns, tfrmd_asrt = cs_anlyz_post(pfx, asrt, classfuncs)
 
-    params = fuzz_objname + "," + ",".join([",".join([f"{typ} {v}" 
-        for v in vardict[typ]]) for typ in vardict])
+    params = ",".join([fuzz_objname] + [",".join([f"{typ} {v}" for v in vardict[typ]])
+        for typ in vardict])
     
     precond_formula = fuzzfunc["pre"](fuzz_objname, *allvars)
     pre_cond = f"PexAssume.IsTrue({precond_formula});"
