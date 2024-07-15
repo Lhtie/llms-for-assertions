@@ -66,7 +66,7 @@ Now, read the following {0} code and output an assert statement corresponding to
 {4}
 ```"""
 
-test = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable. For example, if the code is: 
+test = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. Use only publicly accessible methods in the assertion. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable. For example, if the code is: 
 ```{1}
 {2}public static void Insert(Stack s, int x)
 {{

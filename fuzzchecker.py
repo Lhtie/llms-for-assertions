@@ -81,7 +81,7 @@ namespace {0}.Test
 
 cs_cmple_cmd = "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\Csc.exe /noconfig /nowarn:\"1701,1702\" /nostdlib+ /errorreport:prompt /warn:4 /define:\"DEBUG;TRACE\" /highentropyva-  /reference:\"C:\\Program Files (x86)\\Common Files\\Microsoft Shared\\ExtendedReflection\\0.94.51006.1\\bin\\Microsoft.ExtendedReflection.dll\" /reference:\"C:\\Program Files (x86)\\Microsoft Moles\\PublicAssemblies\\Microsoft.Pex.Framework.dll\" /reference:\"C:\\Program Files (x86)\\Reference Assemblies\\Microsoft\\Framework\\.NETFramework\\v4.0\\mscorlib.dll\" /reference:\"test\\bin\\nunit.framework.dll\" /reference:\"C:\\Program Files (x86)\\Reference Assemblies\\Microsoft\\Framework\\.NETFramework\\v4.0\\System.Core.dll\" /reference:\"C:\\Program Files (x86)\\Reference Assemblies\\Microsoft\\Framework\\.NETFramework\\v4.0\\System.dll\" /reference:\"test\\bin\\Utility.dll\" /reference:\"test\\bin\\{0}.dll\" /debug+ /debug:full /filealign:512 /optimize- /out:test\\bin\\FuzzTest.dll /target:library /utf8output test\\FuzzTest.cs test\\Factories\\{0}Factory.cs \"C:\\Users\\aman\\AppData\\Local\\Temp\\.NETFramework,Version=v4.0.AssemblyAttributes.cs\""
 
-cs_pex_cmd = "\"C:\\Program Files (x86)\\Microsoft Pex\\bin\\pex.exe\" test\\bin\\FuzzTest.dll /membernamefilter:M:PUT_FuzzTest! /methodnamefilter:PUT_FuzzTest! /namespacefilter:{0}.Test! /typefilter:FuzzTest! /NoConsole /donotopenreport"
+cs_pex_cmd = "\"C:\\Program Files (x86)\\Microsoft Pex\\bin\\pex.exe\" test\\bin\\FuzzTest.dll /membernamefilter:M:PUT_FuzzTest! /methodnamefilter:PUT_FuzzTest! /namespacefilter:{0}.Test! /typefilter:FuzzTest! /NoConsole /donotopenreport /x86"
 
 def csfunc(rtyp, args, isobs, call, pre):
     # return type, args type list, is observer,
