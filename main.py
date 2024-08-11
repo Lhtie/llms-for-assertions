@@ -12,7 +12,8 @@ modelpaths = {
         "mc7":      "/home/aman14/models/Magicoder-S-DS-6.7B",
         "oc7":      "/home/aman14/models/OpenCodeInterpreter-DS-6.7B",
 #        "oc33":     "/home/aman14/models/OpenCodeInterpreter-DS-33B",
-        "gpt3":      "gpt-3.5-turbo"
+        "gpt3":      "gpt-3.5-turbo",
+        "gpt4":      "gpt-4",
 }
 
 def run(model, tokenizer, inputs):
@@ -28,7 +29,7 @@ def run(model, tokenizer, inputs):
         return tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
     else:
         sleep(1)
-        outputs = model(inputs, max_tokens=1024)
+        outputs = model(inputs, max_tokens=1024, temperature=0)
         return outputs.choices[0].message.content
 
 if __name__ == "__main__":
@@ -54,7 +55,7 @@ if __name__ == "__main__":
         dirname = args.resultdir + "/" + mname + "/" + params
         assert mname and params
 
-        if mkey in ["gpt3"]:
+        if mkey in ["gpt3", "gpt4"]:
             tokenizer = None
             model = lambda msg, **k : oai_client.chat.completions.create(
                     messages = [{"role": "user", "content": msg}],
@@ -81,7 +82,7 @@ if __name__ == "__main__":
             langid = f.split('.')[-2]
 
             prompt = transform(args.prompt, tokenizer, code, langid)
-            if mkey in ["gpt3"]:
+            if mkey in ["gpt3", "gpt4"]:
                 inputs = prompt
             else:
                 inputs = prompt.to(model.device)

@@ -5,6 +5,7 @@ import subprocess
 import re
 from z3checker import *
 from fuzzchecker import *
+from compilechecker import *
 
 langmap = {
         "py": ("#",     ),
@@ -29,32 +30,7 @@ def compile_check(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
             cmple.append(False)
             continue
 
-        # must be a better way to match indentation levels for python
-        asrt = asrt.replace("\r", "\n").replace("\f", "\n").replace("\v", "\n").strip("\n")
-        asrt = asrt.replace("\t", "    ") # pep8 prefers spaces
-        curshift = re.match(r"^\s*", asrt).group(0)
-        shift = re.match(r"^\s*", grnd_truth).group(0)
-        code = "\n".join(
-                [pfx] + [shift + l.removeprefix(curshift) for l in asrt.split("\n")] + [sfx])
-
-        # code = "\n".join([pfx, asrt, sfx]) # simple
-        
-        fname = "/home/aman14/code/tmp/_compile_check." + langid
-        fd = open(fname, "w")
-        fd.write(code)
-        fd.close()
-
-        if(langid == "py"):
-            proc = subprocess.run(["python3", "-m", "py_compile", fname],
-                        stderr=subprocess.DEVNULL)
-            result = proc.returncode == 0
-
-        elif(langid == "cs"):
-            result = True
-
-        else: 
-            assert False, "Incorrect language id: " + langid
-
+        result = cmplecheck(langid, pfx, sfx, grnd_truth, asrt)
         cmple.append(result)
     return cmple
 
@@ -65,7 +41,7 @@ def fuzz_check(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
             fuzz.append(False)
             continue
 
-        result = fuzzcheck(langid, pfx, sfx, grnd_truth, asrt, "equality")
+        result = fuzzcheck(langid, pfx, sfx, grnd_truth, asrt, "soundness")
         fuzz.append(result)
     return fuzz
 
@@ -86,16 +62,28 @@ if __name__ == "__main__":
     parser.add_argument("--codedir", type=str, default="./codes")
     parser.add_argument("--codelist", nargs='+', default=[])
     parser.add_argument("--resultlist", nargs='+', default=["./results/*/*/"])
+    parser.add_argument("--outdir", type=str, default="./results/checks/")
+    parser.add_argument("--write", type=int, default=0)
+    parser.add_argument("--outname", type=str, default="")
+    
     args = parser.parse_args()
+
+    if args.outname: outname = args.outname
+    else: 
+        outname = "N".join([x.translate({ord('.'):'', ord('/'):'', ord('*'):'X'})
+            for x in args.resultlist]) + ".txt"
+    if args.write: outfd = open(os.path.join(args.outdir, outname), "w")
+    else: print(args.outdir + "/" + outname)
 
     succs, tries = 0, 0
     solvedps, totalps = 0, 0
 
-
     for glob_fmt in args.resultlist:
         for rdir in glob.glob(glob_fmt):
 
-            for f in os.listdir(args.codedir):
+            sort_func = lambda x : int(x.split('.')[-1]) if x.split('.')[-1].isnumeric() else -1
+            sorted_ls = sorted(os.listdir(args.codedir), key = sort_func)
+            for f in sorted_ls:
                 if(len(args.codelist) != 0 and f.split('.')[-1] not in args.codelist):
                     continue
 
@@ -123,19 +111,26 @@ if __name__ == "__main__":
 
                 pfx, sfx = "\n".join(lines[:asrtlno]), "\n".join(lines[asrtlno+1:])
 
-                checks = [null_check, fuzz_check]
+                checks = [null_check, compile_check, fuzz_check]
+                
+                toprint = f"{'#'*10} {rdir}/{f}.check {'#'*10}\n"
 
                 currmask = [True]*len(gen_asrts)
                 for chk in checks:
                     currmask = chk(langid, pfx, sfx, grnd_truth, gen_asrts, currmask)
+                    toprint += f"{str(currmask)} {sum(currmask)}/{len(currmask)}\n"
                 final = currmask
 
-                print("#"*10, rdir + f + ".check", "#"*10)
-                print(final, f"{sum(final)}/{len(final)}")
-                print("#"*20)
+                toprint += "#"*20 + "\n"
+
+                if args.write: outfd.write(toprint)
+                else: print(toprint, end="")
 
                 succs, tries = succs + sum(final), tries + len(final)
                 solvedps, totalps = solvedps + (sum(final) > 0), totalps + 1 
     
-    print(f"Successful tries / Total tries = {succs}/{tries}")
-    print(f"Solved problems / Total problems = {solvedps}/{totalps}")
+    toprint = f"Successful tries / Total tries = {succs}/{tries}\n"
+    toprint += f"Solved problems / Total problems = {solvedps}/{totalps}"
+    if args.write: outfd.write(toprint)
+    else: print(toprint)
+

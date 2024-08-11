@@ -58,7 +58,7 @@ oldret_kwds = """Your task is to read {0} code and output an assert statement co
 ```
 The output should be:
 <code>
-{3}Debug.Assert(OLD(x) + y = x);
+{3}Debug.Assert(OLD(x) + y == x);
 </code>
 
 Now, read the following {0} code and output an assert statement corresponding to the comment that start with "@@@".
@@ -66,7 +66,7 @@ Now, read the following {0} code and output an assert statement corresponding to
 {4}
 ```"""
 
-test = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. Use only publicly accessible methods in the assertion. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable. For example, if the code is: 
+threes_oldret_kwds = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. Use only publicly accessible methods in the assertion. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable. For example, if the code is: 
 ```{1}
 {2}public static void Insert(Stack s, int x)
 {{
@@ -79,7 +79,7 @@ test = """Your task is to read {0} code and output an assert statement correspon
 ```
 The output should be:
 <code>
-{3}Debug.Assert(OLD(s.size) + x = s.size);
+{3}Debug.Assert(OLD(s.size) + x == s.size);
 </code>
 Another example:
 ```{1}
@@ -106,6 +106,209 @@ public static int Search(Collection c, int val)
 The output should be:
 <code>
 {3}Debug.Assert(index == -1 || index >= 2);
+</code>
+Now, read the following {0} code and output an assert statement corresponding to the comment that start with "@@@".
+```{1}
+{4}
+```"""
+
+threes_oldret_kwds_b_eg = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. Use only publicly accessible methods in the assertion. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable. For example, if the code is: 
+```{1}
+{2}public static void Insert(Stack s, int x)
+{{
+    for (int i = 0; i < x; i++){{
+        int inp = Input();
+        s.push(inp);
+    }}
+    // @@@ Size of stack increases by x in the function
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert(OLD(s.size) + x == s.size);
+</code>
+Another example:
+```{1}
+public static int Padd(int x, int y)
+{{
+    sum = x + y;
+    // @@@ return value is greater than or equal to x and y 
+    return sum;
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert(RET >= x && RET >= y);
+</code>
+Another example:
+```{1}
+public static bool IsEqual(Object a, Object b);
+public static Object Next(Collection c, Object a);
+public static bool Contains(Collection c, Object a);
+public static int Len(Collection c);
+public static int Search(Collection c, Object obj)
+{{
+    int index = 0;
+    Object elem = c.first;
+    while(elem){{
+        if(IsEqual(obj, elem)){{
+            break;
+        }}
+        elem = Next(c, elem);
+        index += 1;
+    }}
+
+    // @@@ if c contains obj then return value is smaller than collection's length
+    return index;
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert(!Contains(c, obj) || RET < Len(c));
+</code>
+Now, read the following {0} code and output an assert statement corresponding to the comment that start with "@@@".
+```{1}
+{4}
+```"""
+
+fours_implies_v1 = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. Use only publicly accessible methods in the assertion. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable. To write A implies B, you may use the `A => B` syntax. For example, if the code is: 
+```{1}
+{2}public static void Insert(Stack s, int x)
+{{
+    for (int i = 0; i < x; i++){{
+        int inp = Input();
+        s.push(inp);
+    }}
+    // @@@ Size of stack increases by x in the function
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert(OLD(s.size) + x == s.size);
+</code>
+Another example:
+```{1}
+public static int Padd(int x, int y)
+{{
+    sum = x + y;
+    // @@@ return value is greater than or equal to x and y 
+    return sum;
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert(RET >= x && RET >= y);
+</code>
+Another example:
+```{1}
+public static int Padd(int val, int x)
+{{
+    sum = val + x;
+    // @@@ return value is greater than old value of val if x is positive
+    return val;
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert((x > 0) => (RET > OLD(val)));
+</code>
+Another example:
+```{1}
+public static bool IsEqual(Object a, Object b);
+public static Object Next(Collection c, Object a);
+public static bool Contains(Collection c, Object a);
+public static int Len(Collection c);
+public static int Search(Collection c, Object obj)
+{{
+    int index = 0;
+    Object elem = c.first;
+    while(elem){{
+        if(IsEqual(obj, elem)){{
+            break;
+        }}
+        elem = Next(c, elem);
+        index += 1;
+    }}
+
+    // @@@ if c contains obj then return value is smaller than collection's length
+    return index;
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert((Contains(c, obj)) => (RET < Len(c)));
+</code>
+Now, read the following {0} code and output an assert statement corresponding to the comment that start with "@@@".
+```{1}
+{4}
+```"""
+
+fours_implies_v2 = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. Use only publicly accessible methods in the assertion. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable. To write A implies B, you may use the `IMPLIES(A, B)` syntax. For example, if the code is: 
+```{1}
+{2}public static void Insert(Stack s, int x)
+{{
+    for (int i = 0; i < x; i++){{
+        int inp = Input();
+        s.push(inp);
+    }}
+    // @@@ Size of stack increases by x in the function
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert(OLD(s.size) + x == s.size);
+</code>
+Another example:
+```{1}
+public static int Padd(int x, int y)
+{{
+    sum = x + y;
+    // @@@ return value is greater than or equal to x and y 
+    return sum;
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert(RET >= x && RET >= y);
+</code>
+Another example:
+```{1}
+public static int Padd(int val, int x)
+{{
+    sum = val + x;
+    // @@@ return value is greater than old value of val if x is positive
+    return val;
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert(IMPLIES(x > 0, RET > OLD(val)));
+</code>
+Another example:
+```{1}
+public static bool IsEqual(Object a, Object b);
+public static Object Next(Collection c, Object a);
+public static bool Contains(Collection c, Object a);
+public static int Len(Collection c);
+public static int Search(Collection c, Object obj)
+{{
+    int index = 0;
+    Object elem = c.first;
+    while(elem){{
+        if(IsEqual(obj, elem)){{
+            break;
+        }}
+        elem = Next(c, elem);
+        index += 1;
+    }}
+
+    // @@@ if c contains obj then return value is smaller than collection's length
+    return index;
+}}
+```
+The output should be:
+<code>
+{3}Debug.Assert(IMPLIES(Contains(c, obj), RET < Len(c)));
 </code>
 Now, read the following {0} code and output an assert statement corresponding to the comment that start with "@@@".
 ```{1}
@@ -178,6 +381,62 @@ def transform(tid, tokenizer, code, langid):
                 add_special_tokens=False, return_tensors="pt")
         return torch.cat((prompt, suprt), 1)
 
+    elif(tid == "3s-oldret"):
+        assert langid == "cs"
+        inst = threes_oldret_kwds.format(lang, langid, "", "", code)
+        prompt = apply_chat_template(tokenizer, inst)
+        return prompt
+
+    elif(tid == "3s-oldret-enf"):
+        assert langid == "cs"
+        inst = threes_oldret_kwds.format(lang, langid, "", "", code)
+        prompt = apply_chat_template(tokenizer, inst)
+        suprt = tokenizer.encode("<code>",
+                add_special_tokens=False, return_tensors="pt")
+        return torch.cat((prompt, suprt), 1)
+
+    elif(tid == "3s-oldret-better-eg"):
+        assert langid == "cs"
+        inst = threes_oldret_kwds_b_eg.format(lang, langid, "", "", code)
+        prompt = apply_chat_template(tokenizer, inst)
+        return prompt
+
+    elif(tid == "3s-oldret-better-eg-enf"):
+        assert langid == "cs"
+        inst = threes_oldret_kwds_b_eg.format(lang, langid, "", "", code)
+        prompt = apply_chat_template(tokenizer, inst)
+        suprt = tokenizer.encode("<code>",
+                add_special_tokens=False, return_tensors="pt")
+        return torch.cat((prompt, suprt), 1)
+
+    elif(tid == "4s-implies-v1"):
+        assert langid == "cs"
+        inst = fours_implies_v1.format(lang, langid, "", "", code)
+        prompt = apply_chat_template(tokenizer, inst)
+        return prompt
+
+    elif(tid == "4s-implies-v1-enf"):
+        assert langid == "cs"
+        inst = fours_implies_v1.format(lang, langid, "", "", code)
+        prompt = apply_chat_template(tokenizer, inst)
+        suprt = tokenizer.encode("<code>",
+                add_special_tokens=False, return_tensors="pt")
+        return torch.cat((prompt, suprt), 1)
+
+    elif(tid == "4s-implies-v2"):
+        assert langid == "cs"
+        inst = fours_implies_v2.format(lang, langid, "", "", code)
+        prompt = apply_chat_template(tokenizer, inst)
+        return prompt
+
+    elif(tid == "4s-implies-v2-enf"):
+        assert langid == "cs"
+        inst = fours_implies_v2.format(lang, langid, "", "", code)
+        prompt = apply_chat_template(tokenizer, inst)
+        suprt = tokenizer.encode("<code>",
+                add_special_tokens=False, return_tensors="pt")
+        return torch.cat((prompt, suprt), 1)
+
     elif(tid == "test"):
         assert langid == "cs"
         inst = test.format(lang, langid, "", "", code)
@@ -210,11 +469,11 @@ def extract(tid, rspnse, langid):
         match = re.search(r"<code>(.*?)</code>", rspnse, re.DOTALL)
         return match.group(1) if match else ""
     
-    elif(tid == "one-shot" or tid == "os-oldret"):
+    elif(tid == "one-shot" or tid == "os-oldret" or tid == "3s-oldret" or tid == "3s-oldret-better-eg" or tid == "4s-implies-v1" or tid == "4s-implies-v2"):
         match = re.search(r"<code>(.*?)</code>", rspnse, re.DOTALL)
         return match.group(1) if match else ""
 
-    elif(tid == "one-shot-enf" or tid == "os-oldret-enf"):
+    elif(tid == "one-shot-enf" or tid == "os-oldret-enf" or tid == "3s-oldret-enf" or tid == "3s-oldret-better-eg-enf" or tid == "4s-implies-v1-enf" or tid == "4s-implies-v2-enf"):
         match = re.search(r"(.*?)</code>", rspnse, re.DOTALL)
         return match.group(1) if match else ""
 
