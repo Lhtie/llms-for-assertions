@@ -3,8 +3,6 @@ import os
 import shutil
 import sys
 import re
-import itertools
-from xml.etree import ElementTree
 from csharphelper import *
 
 cscode = """
@@ -78,56 +76,25 @@ namespace {0}.Test
 }}
 """
 
-cs_pex_cmd = "\"C:\\Program Files (x86)\\Microsoft Pex\\bin\\pex.exe\" test\\bin\\FuzzTest.dll /membernamefilter:M:PUT_FuzzTest! /methodnamefilter:PUT_FuzzTest! /namespacefilter:{0}.Test! /typefilter:FuzzTest! /NoConsole /donotopenreport /x86"
-
-def cs_getobs(obj, vdict, fdict):
-    ret = []
-    for f in fdict:
-        if not fdict[f]["isobs"]:
-            continue
-        combos = itertools.product(*[vdict[typ] if typ in vdict else []
-            for typ in fdict[f]["args"]])
-        ret += [(fdict[f]["rtyp"], fdict[f]["call"](obj, *combo)) 
-            for combo in combos]
-    return ret
-
 def cs_getpostcond(grnd_truth, asrt, check):
-    f_true, f_test = [
-            re.match(r".*Assert[(](.*)[)]\s*;.*", x.strip()) for x in [grnd_truth, asrt]]
-    assert f_true, "Ground truth assertion not in the required format"
-    if f_test == None: return None
-    f_true, f_test = f_true.group(1), f_test.group(1)
-
     if(check == "equality"):
-        postcond_formula = f"({f_true}) == ({f_test})"
+        postcond_formula = f"({grnd_truth}) == ({asrt})"
     elif(check == "implication"):
-        postcond_formula = f"!({f_true}) || ({f_test})"
+        postcond_formula = f"!({grnd_truth}) || ({asrt})"
     elif(check == "soundness"):
-        postcond_formula = f"({f_test})"
+        postcond_formula = f"({asrt})"
     else:
         assert False, f"Incorrect check : {check}"
     return postcond_formula
-
-def parse_pexreport(report):
-    passing_tests, total_tests = 0, 0
-    tree = ElementTree.parse(report)
-    for test in tree.findall(".//generatedTest"):
-        name = test.get("name")
-        status = test.get("status")
-        if name.find("TermDestruction") != -1:
-            continue
-        if status in ("assumptionviolation", "minimizationrequest", "pathboundsexceeded"):
-            continue
-        if status == "normaltermination":
-            passing_tests += 1
-        total_tests += 1
-    return passing_tests, total_tests
 
 def cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     namespace = cs_guessnamespace(pfx)
     fuzzfuncname = cs_guessfuncname(pfx)
     classname, classfuncs = angello_info[namespace]
     fuzzfunc = classfuncs[fuzzfuncname]
+    
+    grnd_truth, asrt = extrct_formula(grnd_truth, asrt)
+    if not asrt: return False
 
     nvars, vardict, allvars = 0, {}, []
     for argtyp in fuzzfunc["args"]:
@@ -137,7 +104,8 @@ def cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
         else: vardict[argtyp] = [newvar]
         nvars += 1
 
-    old_addns, tfrmd_asrt = cs_anlyz_post(pfx, asrt, fuzzfuncname, classfuncs)
+    old_addns, tfrmd_asrt = cs_anlyz_post(pfx, asrt, fuzzfuncname, classfuncs,
+            fuzz_objname, fuzz_objname, fuzz_argname, fuzz_retvar)
 
     params = ",".join([fuzz_objname] + [",".join([f"{typ} {v}" for v in vardict[typ]])
         for typ in vardict])
@@ -151,7 +119,7 @@ def cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     
     func_call = ("" if fuzzfunc["rtyp"] == "void" \
             else f"{fuzzfunc['rtyp']} {fuzz_retvar} = ") + \
-            fuzzfunc["call"](fuzz_objname, *allvars) + ";"
+            fuzzfunc["call"](fuzz_objname, *allvars[:len(fuzzfunc["args"])]) + ";"
 
     allvars.append(fuzz_retvar)
     if fuzzfunc["rtyp"] in vardict: vardict[fuzzfunc["rtyp"]] += [fuzz_retvar]
@@ -162,14 +130,11 @@ def cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     
     postcond_formula = cs_getpostcond(grnd_truth, tfrmd_asrt, check)
     post_cond = f"PexAssert.IsTrue({postcond_formula});"
-    if not postcond_formula:
-        return False
 
     code = cscode.format(namespace, classname, params, pre_cond, old_obs_vals, func_call, 
             new_obs_vals, post_cond)
     cmple_cmd = cs_cmple_cmd.format(namespace)
     pex_cmd = cs_pex_cmd.format(namespace)
-    print(code)
 
     dumpdir = "/home/aman14/code/tmp"
     fname = "/home/aman14/code/tmp/_fuzz_check.cs"
@@ -187,7 +152,9 @@ def cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
         scp -r -P 3022 'aman@localhost:C:\\Users\\aman\\test\\bin\\reports' {dumpdir}
     """], stdout = sys.stderr)
 
-    assert remote_cmds.returncode == 0
+    # assert remote_cmds.returncode == 0
+    if remote_cmds.returncode != 0: print("!"*10 + " fuzz check failure", file=sys.stderr)
+    if remote_cmds.returncode != 0: return False
 
     reportdir = os.listdir(f"{dumpdir}/reports/")[0]
     passing_tests, total_tests = parse_pexreport(f"{dumpdir}/reports/{reportdir}/report.per")

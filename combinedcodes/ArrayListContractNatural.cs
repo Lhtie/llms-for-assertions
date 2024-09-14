@@ -78,7 +78,7 @@ namespace ArrayList
                 // @@@ the array contains the value being returned
 	        Debug.Assert(New_objContainsNewRet );
 	        // @@@ index passed in is less than the array size and greater than or same as 0
-	        Debug.Assert( arg0 < Old_objCount && arg0 >= 0 );
+	        Debug.Assert( arg0 < New_objCount && arg0 >= 0 );
 	        // @@@ size of array does not change after the operation 
 	        Debug.Assert( New_objCount == Old_objCount );
 
@@ -143,7 +143,7 @@ namespace ArrayList
 	    Debug.Assert(New_objCount == Old_objCount );
 
 	    // @@@ If the list contains item, last index of item must be less than array size
-	    Debug.Assert(!(New_Ret) ||  New_objLastIndexOfarg0 < Old_objCount );
+	    Debug.Assert(!(New_Ret) ||  New_objLastIndexOfarg0 < New_objCount );
 	    // @@@ If the return value is true, first index of item in the array is more than or same as 0
 	    Debug.Assert(!(New_Ret) ||  New_objIndexOfarg0 >= 0);
 
@@ -177,7 +177,7 @@ namespace ArrayList
         public virtual int IndexOf(Object value)
         {
 	    // @@@ If and only if the index-of operation for value returns -1, value is not in array 
-	    Debug.Assert((New_Ret == -1) ==  !Old_objContainsarg0 );
+	    Debug.Assert((New_Ret == -1) ==  !New_objContainsarg0 );
 
 	    // @@@ If the first index of value is -1 then so is the last index
 	    Debug.Assert(New_Ret != -1 ||  New_objLastIndexOfarg0 == -1 );
@@ -228,10 +228,10 @@ namespace ArrayList
         public virtual int LastIndexOf(Object value)
         {
 	    // @@@ The last index return value must be smaller than the array size 
-	    Debug.Assert( New_Ret < Old_objCount );
+	    Debug.Assert( New_Ret < New_objCount );
 
 	    // @@@ If the return value is -1, the array list must not have value 
-	    Debug.Assert(New_Ret != -1 ||  (!(Old_objContainsarg0)) );
+	    Debug.Assert(New_Ret != -1 ||  (!(New_objContainsarg0)) );
 	    // @@@ If the last-index-of operation returns -1 it implies that the first index of value should also be -1 
 	    Debug.Assert(New_Ret != -1 ||  New_objIndexOfarg0 == -1);
 	    

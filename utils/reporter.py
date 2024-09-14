@@ -30,8 +30,9 @@ print("""
 .body_background { background-color: #000000; }
 .inv_foreground { color: #000000; }
 .inv_background { background-color: #AAAAAA; }
-.ansi42 { color: #00aa00; }
+.ansi42 { color: #aaaaaa; }
 .ansi43 { color: #aa5500; }
+.ansi44 { color: #00aa00; }
 </style>
 </head>
 <body class="body_foreground body_background" style="font-size: normal;" >
@@ -52,22 +53,28 @@ for i in range(0, len(cmnt_lnos), 2):
     gen_asrts = extrct_fd.read().split("-"*20)[:-1]
     extrct_fd.close()
 
-    chk = " ".join(lines[cmnt_lnos[i+1]-1].split(" ")[:-1]) \
+    chk_correct = " ".join(lines[cmnt_lnos[i+1]-1].split(" ")[:-1]) \
+            .strip()[1:-1] \
+            .split(",")
+    chk_sound = " ".join(lines[cmnt_lnos[i+1]-2].split(" ")[:-1]) \
             .strip()[1:-1] \
             .split(",")
 
-    assert len(chk) == len(gen_asrts)
-
     #print("#"*10, bname + ".report", "#"*10)
+    assert len(gen_asrts) == len(chk_correct)
+    assert len(gen_asrts) == len(chk_sound)
     
     row = "<tr>"
-    for asrt, res in zip(gen_asrts, chk):
+    for j in range(len(gen_asrts)):
+        asrt, res_c, res_s = gen_asrts[j], chk_correct[j], chk_sound[j]
         cell = "<td>"
-        if res.strip() == "True": cell += "<span class=\"ansi42\">"
-        else: cell += "<span class=\"ansi43\">"
+        if res_c.strip() == "True": cell += "<span class=\"ansi44\">"
+        elif res_s.strip() == "True": cell += "<span class=\"ansi43\">"
+        else: cell += "<span class=\"ansi42\">"
         cell += asrt.strip()[13:-2]
         cell += "</span> </td>"
         row += cell
+    row += "<td>" + lines[cmnt_lnos[i+1]-4].split("]")[1].strip().split("/")[0] + "</td>"
     row += "<td>" + lines[cmnt_lnos[i+1]-3].split("]")[1].strip().split("/")[0] + "</td>"
     row += "<td>" + lines[cmnt_lnos[i+1]-2].split("]")[1].strip().split("/")[0] + "</td>"
     row += "<td>" + lines[cmnt_lnos[i+1]-1].split("]")[1].strip().split("/")[0] + "</td>"

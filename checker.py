@@ -1,61 +1,41 @@
 import os
+import sys
 import argparse
 import glob
 import subprocess
 import re
-from z3checker import *
-from fuzzchecker import *
-from compilechecker import *
+import z3checker
+import fuzzchecker
+import compilechecker
+import equivchecker
 
 langmap = {
         "py": ("#",     ),
         "cs": ("//",    ),
 }
 
+def check_gen(func):
+    def f(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
+        arr, dp = [], {}
+        for i, asrt in enumerate(gen_asrts):
+            if not mask[i]:
+                arr.append(False)
+                continue
+            if asrt in dp:
+                arr.append(dp[asrt])
+                continue
+            print("!"*10 + f" Entry {i}", file=sys.stderr)
+            result = func(langid, pfx, sfx, grnd_truth, asrt)
+            arr.append(result)
+            dp[asrt] = result
+        return arr
+    return f
 
-def null_check(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
-    nullity = []
-    for i, asrt in enumerate(gen_asrts):
-        if not mask[i]:
-            nullity.append(False)
-            continue
-        nullity.append(asrt.strip() != "")
-    return nullity
-
-
-def compile_check(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
-    cmple = []
-    for i, asrt in enumerate(gen_asrts):
-        if not mask[i]:
-            cmple.append(False)
-            continue
-
-        result = cmplecheck(langid, pfx, sfx, grnd_truth, asrt)
-        cmple.append(result)
-    return cmple
-
-def fuzz_check(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
-    fuzz = []
-    for i, asrt in enumerate(gen_asrts):
-        if not mask[i]:
-            fuzz.append(False)
-            continue
-
-        result = fuzzcheck(langid, pfx, sfx, grnd_truth, asrt, "soundness")
-        fuzz.append(result)
-    return fuzz
-
-def z3_check(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
-    z3 = []
-    for i, asrt in enumerate(gen_asrts):
-        if not mask[i]:
-            z3.append(False)
-            continue
-
-        result = z3check(langid, pfx, sfx, grnd_truth, asrt, "equality")
-        z3.append(result)
-    return z3
-
+null_check      = check_gen(lambda *args : args[-1].strip() != "")
+compile_check   = check_gen(compilechecker.cmplecheck)
+fuzz_check      = check_gen(lambda *args : fuzzchecker.fuzzcheck(*args, "soundness"))
+z3_check        = check_gen(lambda *args : z3checker.z3check(*args, "equality"))
+equiv_check     = check_gen(equivchecker.equivcheck)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -65,6 +45,7 @@ if __name__ == "__main__":
     parser.add_argument("--outdir", type=str, default="./results/checks/")
     parser.add_argument("--write", type=int, default=0)
     parser.add_argument("--outname", type=str, default="")
+    parser.add_argument("--mask", nargs='+', default=[])
     
     args = parser.parse_args()
 
@@ -111,11 +92,19 @@ if __name__ == "__main__":
 
                 pfx, sfx = "\n".join(lines[:asrtlno]), "\n".join(lines[asrtlno+1:])
 
-                checks = [null_check, compile_check, fuzz_check]
+                checks = [null_check, compile_check, fuzz_check, equiv_check]
                 
                 toprint = f"{'#'*10} {rdir}/{f}.check {'#'*10}\n"
 
-                currmask = [True]*len(gen_asrts)
+                if len(args.mask):
+                    currmask = [False]*len(gen_asrts)
+                    for idx in args.mask:
+                        currmask[int(idx)] = True
+                else:
+                    currmask = [True]*len(gen_asrts)
+
+                print("!"*10 + f" {rdir}/{f}", file=sys.stderr)
+
                 for chk in checks:
                     currmask = chk(langid, pfx, sfx, grnd_truth, gen_asrts, currmask)
                     toprint += f"{str(currmask)} {sum(currmask)}/{len(currmask)}\n"

@@ -72,16 +72,14 @@ namespace {0}.Test
 }}
 """
 
-def cs_getpostcond(asrt):
-    f_test = re.match(r".*Assert[(](.*)[)]\s*;.*", asrt.strip())
-    if f_test == None: return None
-    return f"({f_test.group(1)})"
-
-def cs_cmplecheck(pfx, sfx, asrt):
+def cs_cmplecheck(pfx, sfx, grnd_truth, asrt):
     namespace = cs_guessnamespace(pfx)
     fuzzfuncname = cs_guessfuncname(pfx)
     classname, classfuncs = angello_info[namespace]
     fuzzfunc = classfuncs[fuzzfuncname]
+
+    grnd_truth, asrt = extrct_formula(grnd_truth, asrt)
+    if not asrt: return False
 
     nvars, vardict, allvars = 0, {}, []
     for argtyp in fuzzfunc["args"]:
@@ -91,7 +89,8 @@ def cs_cmplecheck(pfx, sfx, asrt):
         else: vardict[argtyp] = [newvar]
         nvars += 1
 
-    old_addns, tfrmd_asrt = cs_anlyz_post(pfx, asrt, fuzzfuncname, classfuncs)
+    old_addns, tfrmd_asrt = cs_anlyz_post(pfx, asrt, fuzzfuncname, classfuncs,
+            fuzz_objname, fuzz_objname, fuzz_argname, fuzz_retvar)
 
     params = ",".join([fuzz_objname] + [",".join([f"{typ} {v}" for v in vardict[typ]])
         for typ in vardict])
@@ -100,16 +99,12 @@ def cs_cmplecheck(pfx, sfx, asrt):
     
     func_call = ("" if fuzzfunc["rtyp"] == "void" \
             else f"{fuzzfunc['rtyp']} {fuzz_retvar} = ") + \
-            fuzzfunc["call"](fuzz_objname, *allvars) + ";"
+            fuzzfunc["call"](fuzz_objname, *allvars[:len(fuzzfunc["args"])]) + ";"
 
-    postcond_formula = cs_getpostcond(tfrmd_asrt)
-    post_cond = f"PexAssert.IsTrue({postcond_formula});"
-    if not postcond_formula:
-        return False
+    post_cond = f"PexAssert.IsTrue({tfrmd_asrt});"
 
     code = cscode.format(namespace, classname, params, old_vals, func_call, post_cond)
     cmple_cmd = cs_cmple_cmd.format(namespace)
-    print(code)
 
     fname = "/home/aman14/code/tmp/_compile_check.cs"
     fd = open(fname, "w")
@@ -123,6 +118,7 @@ def cs_cmplecheck(pfx, sfx, asrt):
     """], stdout = sys.stderr)
     
     # assert remote_cmds.returncode == 0
+    if remote_cmds.returncode != 0: print("!"*10 + " compile check failure", file=sys.stderr)
     return remote_cmds.returncode == 0
 
 
@@ -152,7 +148,7 @@ def cmplecheck(langid, pfx, sfx, grnd_truth, asrt):
         result = py_cmplecheck(pfx, sfx, grnd_truth, asrt)
         
     elif(langid == "cs"):
-        result = cs_cmplecheck(pfx, sfx, asrt)
+        result = cs_cmplecheck(pfx, sfx, grnd_truth, asrt)
 
     else: 
         assert False, "Incorrect language id: " + langid

@@ -16,21 +16,22 @@ modelpaths = {
         "gpt4":      "gpt-4",
 }
 
-def run(model, tokenizer, inputs):
-    if tokenizer:
+def run(mkey, model, tokenizer, inputs, temp):
+    if mkey in ["gpt3", "gpt4"]:
+        sleep(1)
+        outputs = model(inputs, max_tokens=1024, temperature=temp)
+        return outputs.choices[0].message.content
+    else:
         outputs = model.generate(
             inputs, 
             max_new_tokens=1024,
             do_sample=True,
             pad_token_id=tokenizer.eos_token_id,
             eos_token_id=tokenizer.eos_token_id,
+            temperature=temp
         ) # other params: https://huggingface.co/docs/transformers/v4.39.3/en/main_classes/text_generation
         
         return tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
-    else:
-        sleep(1)
-        outputs = model(inputs, max_tokens=1024, temperature=0)
-        return outputs.choices[0].message.content
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -40,6 +41,8 @@ if __name__ == "__main__":
     parser.add_argument("--modellist", nargs='+', default=[])
     parser.add_argument("--nsamples", type=int, default=5)
     parser.add_argument("--prompt", type=str, required=True)
+    parser.add_argument("--temp", type=float, default=0.0)
+    parser.add_argument("--onemsg", type=int, default=1)
     parser.add_argument("--write", type=int, default=0)
     args = parser.parse_args()
 
@@ -51,14 +54,14 @@ if __name__ == "__main__":
 
         mpath = modelpaths[mkey]
         mname = mpath.split("/")[-1]
-        params = "-".join([args.prompt]) # add temp, generation method etc here
+        params = "-".join([args.prompt, str(args.temp), str(args.onemsg)]) # add temp, generation method etc here
         dirname = args.resultdir + "/" + mname + "/" + params
         assert mname and params
 
         if mkey in ["gpt3", "gpt4"]:
             tokenizer = None
-            model = lambda msg, **k : oai_client.chat.completions.create(
-                    messages = [{"role": "user", "content": msg}],
+            model = lambda msgdict, **k : oai_client.chat.completions.create(
+                    messages = msgdict,
                     model = mpath,
                     **k
             )
@@ -81,7 +84,7 @@ if __name__ == "__main__":
 
             langid = f.split('.')[-2]
 
-            prompt = transform(args.prompt, tokenizer, code, langid)
+            prompt = transform(mkey, args.prompt, tokenizer, code, langid, args.onemsg)
             if mkey in ["gpt3", "gpt4"]:
                 inputs = prompt
             else:
@@ -89,7 +92,7 @@ if __name__ == "__main__":
 
             allrspnse, allasrts  = "", ""
             for _ in range(args.nsamples):
-                response = run(model, tokenizer, inputs)
+                response = run(mkey, model, tokenizer, inputs, args.temp)
                 asrt = extract(args.prompt, response, langid)
                 allrspnse += response + "-"*20
                 allasrts += asrt + "-"*20
