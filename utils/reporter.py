@@ -71,7 +71,7 @@ for i in range(0, len(cmnt_lnos), 2):
         if res_c.strip() == "True": cell += "<span class=\"ansi44\">"
         elif res_s.strip() == "True": cell += "<span class=\"ansi43\">"
         else: cell += "<span class=\"ansi42\">"
-        cell += asrt.strip()[13:-2]
+        cell += asrt.replace("\n", "")#.strip()[13:-2]
         cell += "</span> </td>"
         row += cell
     row += "<td>" + lines[cmnt_lnos[i+1]-4].split("]")[1].strip().split("/")[0] + "</td>"

@@ -72,7 +72,70 @@ namespace {0}.Test
 }}
 """
 
+# handle test bench generations
+def cs_handle_cmple_testbench(pfx, sfx, grnd_truth, asrt):
+    namespace = cs_guessnamespace(pfx)
+    fuzzfuncname = cs_guessfuncname(pfx)
+    classname, classfuncs = angello_info[namespace]
+    fuzzfunc = classfuncs[fuzzfuncname]
+    
+    nvars, vardict, allvars = 0, {}, []
+    for argtyp in fuzzfunc["args"]:
+        newvar = fuzz_argname + str(nvars)
+        allvars.append(newvar)
+        if argtyp in vardict: vardict[argtyp] += [newvar]
+        else: vardict[argtyp] = [newvar]
+        nvars += 1
+    
+    asrt = asrt.split("\n")
+    for i,l in enumerate(asrt):
+        match = re.match(r".*TestFunction[(]([^()]*)[)].*", l.strip())
+        if match:
+            if match.group(1): args = [arg.split()[1] for arg in match.group(1).split(",")]
+            else: args = []
+            asrt = "\n".join(asrt[i:])
+            break
+    
+    tfunc_start = asrt.find('{')
+    asrt = asrt[tfunc_start+1:closing_paren(asrt, tfunc_start)-1]
+
+    if len(classfuncs[fuzzfuncname]['args']) != len(args):
+        print("!"*10 + f" TestFunction args don't match {len(classfuncs[fuzzfuncname]['args'])},{len(args)}",
+                file=sys.stderr)
+
+    for i,arg in enumerate(args):
+        subf = lambda m : m.group()[0]+fuzz_argname+str(i) if m.group() else None
+        asrt = re.sub(f"[^.\w]{arg}", subf, asrt)
+
+    asrt = asrt.replace("this", fuzz_objname)
+
+    params = ",".join([fuzz_objname] + [",".join([f"{typ} {v}" for v in vardict[typ]])
+        for typ in vardict])
+
+    asrt = asrt.replace("Debug.Assert", "PexAssert.IsTrue")
+
+    code = cscode.format(namespace, classname, params, '', '', asrt)
+    cmple_cmd = cs_cmple_cmd.format(namespace)
+
+    fname = "/home/aman14/code/tmp/_compile_check.cs"
+    fd = open(fname, "w")
+    fd.write(code)
+    fd.close()
+
+    remote_cmds = subprocess.run(["bash", "-c", f"""
+        ssh -p 3022 aman@localhost 'del test\\FuzzTest.cs test\\bin\\FuzzTest.dll test\\bin\\FuzzTest.pdb';
+        scp -P 3022 {fname} 'aman@localhost:C:\\Users\\aman\\test\\FuzzTest.cs' &&
+        ssh -p 3022 aman@localhost '{cmple_cmd}'
+    """], stdout = sys.stderr)
+    
+    # assert remote_cmds.returncode == 0
+    if remote_cmds.returncode != 0: print("!"*10 + " compile check failure", file=sys.stderr)
+    return remote_cmds.returncode == 0
+
 def cs_cmplecheck(pfx, sfx, grnd_truth, asrt):
+    if "TestFunction" in asrt:
+        return cs_handle_cmple_testbench(pfx, sfx, grnd_truth, asrt)    
+
     namespace = cs_guessnamespace(pfx)
     fuzzfuncname = cs_guessfuncname(pfx)
     classname, classfuncs = angello_info[namespace]
@@ -105,7 +168,7 @@ def cs_cmplecheck(pfx, sfx, grnd_truth, asrt):
 
     code = cscode.format(namespace, classname, params, old_vals, func_call, post_cond)
     cmple_cmd = cs_cmple_cmd.format(namespace)
-
+    
     fname = "/home/aman14/code/tmp/_compile_check.cs"
     fd = open(fname, "w")
     fd.write(code)

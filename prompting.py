@@ -43,7 +43,14 @@ eg_cs = [
     sum = x + y;
     // @@@ return value is greater than or equal to x and y 
     return sum;
-}""", "<code>\nDebug.Assert(RET >= x && RET >= y);\n</code>"),
+}""", ["<code>\nDebug.Assert(RET >= x && RET >= y);\n</code>",
+       """<code>
+void TestFunction(int x, int y)
+{
+    int ret = Padd(x, y);
+    Debug.Assert(ret >= x && ret >= y);
+}
+</code>"""]),
 #4
 ("""public static int Search(Collection c, int val)
 {
@@ -79,9 +86,17 @@ public static int Search(Collection c, Object obj)
     val = val + x;
     // @@@ return value is greater than old value of val if x is positive
     return val;
-}""", ["<code>\nDebug.Assert(!(x > 0) | RET > OLD(val));\n</code>", 
+}""", ["<code>\nDebug.Assert(!(x > 0) || RET > OLD(val));\n</code>", 
        "<code>\nDebug.Assert((x > 0) => (RET > OLD(val)));\n</code>",
-       "<code>\nDebug.Assert(IMPLIES(x > 0, RET > OLD(val)));\n</code>"""]), 
+       "<code>\nDebug.Assert(IMPLIES(x > 0, RET > OLD(val)));\n</code>",
+       """<code>
+void TestFunction(int val, int x)
+{
+    int old_val = val;
+    int ret = Padd(val, x);
+    Debug.Assert(!(x > 0) || ret > old_val );
+}
+</code>"""]), 
 #7
 ("""public static void Insert(int x)
 {
@@ -90,7 +105,15 @@ public static int Search(Collection c, Object obj)
         Push(inp);
     }
     // @@@ Size of stack increases by x in the function
-}""", "<code>\nDebug.Assert(OLD(this.Size) + x == this.Size);\n</code>"),
+}""", ["<code>\nDebug.Assert(OLD(this.Size) + x == this.Size);\n</code>",
+       """<code>
+void TestFunction(int x)
+{
+    int old_size = this.Size;
+    Insert(x);
+    Debug.Assert(old_size + x == this.Size);
+}
+</code>"""]),
 #8
 ("""private Collection c;
 public static bool IsEqual(Object a, Object b);
@@ -111,7 +134,14 @@ public static int Search(Object obj)
 
     // @@@ if collection contains obj then return value is smaller than its length
     return index;
-}""", "<code>\nDebug.Assert(!this.Contains(obj) || RET < this.Len());\n</code>"),
+}""", ["<code>\nDebug.Assert(!this.Contains(obj) || RET < this.Len());\n</code>",
+       """<code>
+void TestFunction(Object obj)
+{
+    int ret = this.Search(obj);
+    Debug.Assert(!this.Contains(obj) || ret < this.Len());
+}
+</code>"""]),
 ]
 
 langmap = {
@@ -153,6 +183,8 @@ fours_implies_v1 = """Your task is to read {0} code and output an assert stateme
 fours_implies_v2 = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. Use only publicly accessible methods in the assertion. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable. To write A implies B, you may use the `IMPLIES(A, B)` syntax."""
 
 this_force = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. Use only publicly accessible methods in the assertion. All function calls in the assertion should be of the format `this.func_name(args_list)`. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable."""
+
+this_force_bench = """Your task is to read {0} code and output a test function corresponding to the comment that start with "@@@". Output the {0} test function code in a <code></code> block. Use only publicly accessible methods in the test function. All function calls in the test function should be of the format `this.func_name(args_list)`. The test function should be of the signature "void TestFunction(<arguments>)" and it should take as arguments the values it needs for the test."""
 
 def apply_chat_template(mkey, tokenizer, inst, langid, onemsg):
     assert len(inst) >= 3 and type(inst[0]) == str and type(inst[-1]) == str
@@ -221,30 +253,44 @@ def transform(mkey, tid, tokenizer, code, langid, onemsg):
         prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
 
     elif(tid == "3s-oldret"):
-        inst = [threes_oldret_kwds.format(lang), *eg_lang[2:5], code]
+        inst = [threes_oldret_kwds.format(lang), eg_lang[2],
+                (eg_lang[3][0], eg_lang[3][1][0]), eg_lang[4], code]
         prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
 
     elif(tid == "3s-oldret-better-eg"):
-        inst = [threes_oldret_kwds.format(lang), *eg_lang[2:4], 
+        inst = [threes_oldret_kwds.format(lang), eg_lang[2],
+                (eg_lang[3][0], eg_lang[3][1][0]), 
                 (eg_lang[5][0], eg_lang[5][1][0]), code]
         prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
 
     elif(tid == "4s-implies-v1"):
-        inst = [fours_implies_v1.format(lang), *eg_lang[2:4],
+        inst = [fours_implies_v1.format(lang), eg_lang[2],
+                (eg_lang[3][0], eg_lang[3][1][0]),
                 (eg_lang[6][0], eg_lang[6][1][1]),
                 (eg_lang[5][0], eg_lang[5][1][1]), code]
         prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
 
     elif(tid == "4s-implies-v2"):
-        inst = [fours_implies_v1.format(lang), *eg_lang[2:4],
+        inst = [fours_implies_v1.format(lang), eg_lang[2],
+                (eg_lang[3][0], eg_lang[3][1][0]),
                 (eg_lang[6][0], eg_lang[6][1][2]),
                 (eg_lang[5][0], eg_lang[5][1][2]), code]
         prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
 
     elif(tid == "this-fmt"):
-        inst = [this_force.format(lang), eg_lang[7], eg_lang[3],
+        inst = [this_force.format(lang),
+                (eg_lang[7][0], eg_lang[7][1][0]),
+                (eg_lang[3][0], eg_lang[3][1][0]),
                 (eg_lang[6][0], eg_lang[6][1][0]),
-                eg_lang[8], code]
+                (eg_lang[8][0], eg_lang[8][1][0]), code]
+        prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
+
+    elif(tid == "this-fmt-bench"):
+        inst = [this_force_bench.format(lang), 
+                (eg_lang[7][0], eg_lang[7][1][1]),
+                (eg_lang[3][0], eg_lang[3][1][1]),
+                (eg_lang[6][0], eg_lang[6][1][3]),
+                (eg_lang[8][0], eg_lang[8][1][1]), code]
         prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
 
     else:   
@@ -261,6 +307,9 @@ def transform(mkey, tid, tokenizer, code, langid, onemsg):
 def extract(tid, rspnse, langid):
     _, _, _, srch_term = langmap[langid]
 
+    tag_fmt_tids = ["one-shot", "os-oldret", "3s-oldret", "3s-oldret-better-eg",
+                    "4s-implies-v1", "4s-implies-v2", "this-fmt", "this-fmt-bench"]
+
     if(tid == "trivial"):
         for l in rspnse.split("\n"):
             if re.match(r"^\s*" + srch_term + r".*$", l):
@@ -271,11 +320,11 @@ def extract(tid, rspnse, langid):
         match = re.search(r"<code>(.*?)</code>", rspnse, re.DOTALL)
         return match.group(1) if match else ""
     
-    elif(tid in ["one-shot", "os-oldret", "3s-oldret", "3s-oldret-better-eg", "4s-implies-v1", "4s-implies-v2", "this-fmt"]):
+    elif(tid in tag_fmt_tids):
         match = re.search(r"<code>(.*?)</code>", rspnse, re.DOTALL)
         return match.group(1) if match else ""
 
-    elif(tid in [t+"-enf" for t in ["one-shot", "os-oldret", "3s-oldret", "3s-oldret-better-eg", "4s-implies-v1", "4s-implies-v2", "this-fmt"]]):
+    elif(tid in [t+"-enf" for t in tag_fmt_tids]):
         match = re.search(r"(.*?)</code>", rspnse, re.DOTALL)
         return match.group(1) if match else ""
 

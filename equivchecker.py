@@ -79,6 +79,9 @@ def cs_getpostcond(grnd_truth, asrt):
     return f"({grnd_truth}) == ({asrt})"
 
 def cs_equivcheck(pfx, sfx, grnd_truth, asrt):
+    if "TestFunction" in asrt:
+        return False
+
     namespace = cs_guessnamespace(pfx)
     fuzzfuncname = cs_guessfuncname(pfx)
     classname, classfuncs = angello_info[namespace]
