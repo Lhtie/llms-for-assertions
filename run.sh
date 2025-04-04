@@ -32,4 +32,6 @@
 #python3 main.py --prompt "os-oldret-enf" --write 1 --modellist ds7 --nsamples 10 --codelist {109..139}
 #python3 main.py --prompt "os-oldret-enf" --write 1 --modellist oc7 --nsamples 10 --codelist {109..139}
 
-python3 main.py --prompt "3s-oldret-better-eg-enf" --write 1 --modellist ds7 --nsamples 10 --codelist {236..266}
+# python3 main.py --prompt "3s-oldret-better-eg-enf" --write 1 --modellist ds7 --nsamples 10 --codelist {236..266}
+
+python nlassertiongenerator.py --write --modellist gpt4 --temp 0.5 --nsamples 1 --codelist {316..320}
