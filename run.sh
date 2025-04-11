@@ -34,4 +34,6 @@
 
 # python3 main.py --prompt "3s-oldret-better-eg-enf" --write 1 --modellist ds7 --nsamples 10 --codelist {236..266}
 
-python nlassertiongenerator.py --write --modellist gpt4 --temp 0.5 --nsamples 1 --codelist {316..320}
+# python nlassertiongenerator.py --write --modellist gpt4 --temp 0.5 --nsamples 1 --codelist {316..320}
+
+python checker.py --codelist 236 --resultlist ./results/gpt-4/3s-oldret-better-eg --write 1 
