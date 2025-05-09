@@ -1,7 +1,7 @@
 package fuzztests;
 import java.util.ArrayList;
 
-public class FuzzTest{
+public class FuzzTest_equivchecker{
     public static void ADD_FuzzTest(ArrayList<Integer> fuzzobj_old, ArrayList<Integer> fuzzobj_new, int fuzzarg0, int New_Ret){
         // pre condition
         if (!(true && true))
