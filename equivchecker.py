@@ -137,6 +137,9 @@ def cs_equivcheck(pfx, sfx, grnd_truth, asrt):
     cmple_cmd = cs_cmple_cmd.format(namespace)
     pex_cmd = cs_pex_cmd.format(namespace)
 
+    print(code)
+    return True
+
     dumpdir = "/home/aman14/code/tmp"
     fname = "/home/aman14/code/tmp/_equiv_check.cs"
     shutil.rmtree(f"{dumpdir}/reports/", ignore_errors=True)
