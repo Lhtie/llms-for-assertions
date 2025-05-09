@@ -3,10 +3,16 @@ RANDOOP_PATH := ../randoop/
 
 Generate_tests:
 	java -classpath ${RANDOOP_JAR}:. randoop.main.Main gentests \
-		--classlist=classlist.txt \
+		--testclass=wrappers.ArrayListWrapper \
+		--unchecked-exception=ERROR \
 		--time-limit=60 \
-		--output-limit=100 \
-		--specifications=ArrayList_Specs.json \
+		--no-error-revealing-tests=false \
+		--no-regression-tests=true \
+		--output-limit=100
 
 Compile:
-	javac -cp .:classes classes/ArrayList.java
+	javac -cp .:wrappers wrappers/ArrayListWrapper.java
+
+Run_tests:
+	javac -classpath .:../junit.jar RegressionTest0.java
+	java -jar ../junit.jar -cp . -c RegressionTest0
