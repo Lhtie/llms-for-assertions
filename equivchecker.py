@@ -3,7 +3,10 @@ import os
 import shutil
 import sys
 import re
-from csharphelper import *
+
+from codehelper.csharphelper import *
+from codehelper.javahelper import javahelper
+from codehelper.javahelper import third_party, combinedcodes
 
 cscode = """
 // AssemblyInfo.cs
@@ -75,6 +78,30 @@ namespace {0}.Test
 }}
 """
 
+javacode = """
+package fuzztests;
+
+{0}
+
+import combinedcodes.{1};
+
+public class FuzzTest{2}{{
+    public void FuzzTest_{3}({4}, {5}, {6}){{
+        // pre condition
+        if (!({8}))
+            throw new RuntimeException("Precondition Violated");
+
+{7}
+
+        // normal post condition
+        if (!({9}))
+            throw new RuntimeException("Postcondition Violated");
+    }}
+}}
+"""
+
+tmp_dir = "./checktmp"
+
 def cs_getpostcond(grnd_truth, asrt):
     return f"({grnd_truth}) == ({asrt})"
 
@@ -137,9 +164,6 @@ def cs_equivcheck(pfx, sfx, grnd_truth, asrt):
     cmple_cmd = cs_cmple_cmd.format(namespace)
     pex_cmd = cs_pex_cmd.format(namespace)
 
-    print(code)
-    return True
-
     dumpdir = "/home/aman14/code/tmp"
     fname = "/home/aman14/code/tmp/_equiv_check.cs"
     shutil.rmtree(f"{dumpdir}/reports/", ignore_errors=True)
@@ -165,12 +189,86 @@ def cs_equivcheck(pfx, sfx, grnd_truth, asrt):
     
     return passing_tests == total_tests
 
+def java_equivcheck(pfx, sfx, grnd_truth, asrt):
+    jh = javahelper(pfx + '\n' + sfx)
+    jh.fuzz_objname = jh.fuzz_objname + "_new"
+    asrt = jh.extract_formula(asrt)
+    grnd_truth = jh.extract_formula(grnd_truth)
+    spec = f"({asrt}) == ({grnd_truth})"
+    spec, old_addns = jh.trans_formula(spec)
+
+    imports = "\n".join([f"import {x};" for x in jh.imports])
+    generic = jh.classname[jh.classname.find("<"):]
+    objarg_new = jh.classname + ' ' + jh.fuzz_objname
+    objarg_old = jh.classname + ' ' + jh.fuzz_objname.replace("_new", "_old")
+    rettyp = jh.funcs[jh.funcname]["rtyp"]
+    funcargs = jh.funcs[jh.funcname]["args"]
+    funcargs = ", ".join([f"{typ} {var}" for var, typ in funcargs.items()]) \
+                + f", {rettyp} {jh.fuzz_retvar}" if rettyp != "void" else ""
+    old_addns = "\n".join(["\t\t" + l.strip().replace("_new", "_old") for l in old_addns])
+
+    code = javacode.format(
+        imports, jh.namespace, generic, jh.funcname,
+        objarg_old, objarg_new, funcargs, old_addns,
+        "true && true", spec
+    )
+
+    if os.path.exists(tmp_dir):
+        shutil.rmtree(tmp_dir)
+    os.makedirs(tmp_dir, exist_ok=False)
+
+    for file in third_party:
+        if os.path.isdir(file):
+            shutil.copytree(file, os.path.join(tmp_dir, os.path.basename(file)), dirs_exist_ok=True)
+        else:
+            shutil.copyfile(file, os.path.join(tmp_dir, os.path.basename(file)))
+
+    os.makedirs(os.path.join(tmp_dir, "fuzztests"), exist_ok=False)
+    fname = os.path.join(tmp_dir, "fuzztests/FuzzTest.java")
+    with open(fname, "w") as fd:
+        fd.write(code)
+
+    _ = subprocess.run([
+            "javac",
+            "-cp", f"{os.path.dirname(fname)}:{combinedcodes}",
+            fname,
+            f"{combinedcodes}/{jh.namespace}.java"
+        ], stderr=subprocess.DEVNULL)
+
+    randoop_jar = os.path.join(tmp_dir, "randoop/randoop-all-4.3.3.jar")
+    randoop_path = os.path.join(tmp_dir, "randoop")
+    randoop_cmd = [
+        "java", "-classpath", f"{randoop_jar}:{tmp_dir}:{os.path.dirname(combinedcodes)}",
+        "randoop.main.Main", "gentests",
+        "--testclass=fuzztests.FuzzTest",
+        "--unchecked-exception=ERROR",
+        "--time-limit=30",
+        "--no-error-revealing-tests=false",
+        "--no-regression-tests=true",
+        "--output-limit=100",
+        f"--junit-output-dir={tmp_dir}",
+    ]
+    proc = subprocess.run(randoop_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    # shutil.rmtree(tmp_dir)
+    if proc.returncode != 0:
+        print("!"*10 + " equiv check failure", file=sys.stderr)
+        print(proc.stdout)
+        return False
+    else:
+        if "No error-revealing tests to output" in proc.stdout:
+            return True
+        return False
+
 def equivcheck(langid, pfx, sfx, grnd_truth, asrt):
     if(langid == "py"):
         result = True
 
     elif(langid == "cs"):
         result = cs_equivcheck(pfx, sfx, grnd_truth, asrt)
+
+    elif(langid == "java"):
+        result = java_equivcheck(pfx, sfx, grnd_truth, asrt)
 
     else: 
         assert False, "Incorrect language id: " + langid

@@ -11,6 +11,7 @@ parser.add_argument("--infile", type=str)
 parser.add_argument("--outdir", type=str)
 parser.add_argument("--write", type=int, default=0)
 parser.add_argument("--startidx", type=int, default=-1)
+parser.add_argument("--langid", type=str, default="cs")
 args = parser.parse_args()
 
 f = open(args.infile, "r")

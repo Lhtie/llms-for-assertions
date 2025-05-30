@@ -3,7 +3,10 @@ import os
 import shutil
 import sys
 import re
-from csharphelper import *
+
+from codehelper.csharphelper import *
+from codehelper.javahelper import javahelper
+from codehelper.javahelper import third_party, combinedcodes
 
 cscode = """
 // AssemblyInfo.cs
@@ -75,6 +78,38 @@ namespace {0}.Test
     }}
 }}
 """
+
+javacode = """
+package fuzztests;
+
+{0}
+
+import combinedcodes.{1};
+
+public class FuzzTest{2}{{
+    public void FuzzTest_{3}({4}, {5}){{
+        // pre condition
+        if (!({8}))
+            throw new RuntimeException("Precondition Violated");
+
+{6}
+
+        try{{
+            {7}
+        }} catch (Exception exception){{
+            // exceptional post condition
+            if (!({9}))
+                throw new RuntimeException("Ex-postcondition Violated");
+        }}
+
+        // normal post condition
+        if (!({10}))
+            throw new RuntimeException("Postcondition Violated");
+    }}
+}}
+"""
+
+tmp_dir = "./checktmp"
 
 # handle test bench generations
 def cs_handle_fuzz_testbench(pfx, sfx, grnd_truth, asrt):
@@ -236,12 +271,81 @@ def cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     
     return passing_tests == total_tests
 
+def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
+    jh = javahelper(pfx + '\n' + sfx)
+    asrt = jh.extract_formula(asrt)
+    asrt, old_addns = jh.trans_formula(asrt)
+
+    imports = "\n".join([f"import {x};" for x in jh.imports])
+    generic = jh.classname[jh.classname.find("<"):]
+    objarg = jh.classname + ' ' + jh.fuzz_objname
+    funcargs = jh.funcs[jh.funcname]["args"]
+    funcargs = ", ".join([f"{typ} {var}" for var, typ in funcargs.items()])
+    old_addns = "\n".join(["\t\t" + l.strip() for l in old_addns])
+    func_call = jh.func_call(jh.funcname, jh.funcs[jh.funcname]["args"].keys())
+
+    code = javacode.format(
+        imports, jh.namespace, generic, jh.funcname,
+        objarg, funcargs, old_addns, func_call,
+        "true", "true", asrt
+    )
+
+    if os.path.exists(tmp_dir):
+        shutil.rmtree(tmp_dir)
+    os.makedirs(tmp_dir, exist_ok=False)
+
+    for file in third_party:
+        if os.path.isdir(file):
+            shutil.copytree(file, os.path.join(tmp_dir, os.path.basename(file)), dirs_exist_ok=True)
+        else:
+            shutil.copyfile(file, os.path.join(tmp_dir, os.path.basename(file)))
+
+    os.makedirs(os.path.join(tmp_dir, "fuzztests"), exist_ok=False)
+    fname = os.path.join(tmp_dir, "fuzztests/FuzzTest.java")
+    with open(fname, "w") as fd:
+        fd.write(code)
+    
+    _ = subprocess.run([
+            "javac",
+            "-cp", f"{os.path.dirname(fname)}:{combinedcodes}",
+            fname,
+            f"{combinedcodes}/{jh.namespace}.java"
+        ], stderr=subprocess.DEVNULL)
+
+    randoop_jar = os.path.join(tmp_dir, "randoop/randoop-all-4.3.3.jar")
+    randoop_path = os.path.join(tmp_dir, "randoop")
+    randoop_cmd = [
+        "java", "-classpath", f"{randoop_jar}:{tmp_dir}:{os.path.dirname(combinedcodes)}",
+        "randoop.main.Main", "gentests",
+        "--testclass=fuzztests.FuzzTest",
+        "--unchecked-exception=ERROR",
+        "--time-limit=30",
+        "--no-error-revealing-tests=false",
+        "--no-regression-tests=true",
+        "--output-limit=100",
+        f"--junit-output-dir={tmp_dir}",
+    ]
+    proc = subprocess.run(randoop_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    shutil.rmtree(tmp_dir)
+    if proc.returncode != 0:
+        print("!"*10 + " fuzz check failure", file=sys.stderr)
+        print(proc.stdout)
+        return False
+    else:
+        if "No error-revealing tests to output" in proc.stdout:
+            return True
+        return False
+
 def fuzzcheck(langid, pfx, sfx, grnd_truth, asrt, check):
     if(langid == "py"):
         result = True
 
     elif(langid == "cs"):
         result = cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check)
+
+    elif(langid == "java"):
+        result = java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check)
 
     else: 
         assert False, "Incorrect language id: " + langid

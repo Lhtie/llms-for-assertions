@@ -5,6 +5,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--infile", type=str)
 parser.add_argument("--outdir", type=str)
 parser.add_argument("--write", type=int, default=0)
+parser.add_argument("--langid", type=str, default="cs")
 args = parser.parse_args()
 
 f = open(args.infile, "r")
@@ -30,7 +31,10 @@ def closing_paren(lines, start):
 
 
 # onefunc
-func_starts = get_lines("public virtual", code)
+if args.langid == "cs":
+    func_starts = get_lines("public virtual", code)
+elif args.langid == "java":
+    func_starts = get_lines("public ", code)
 comment = get_lines("@@@", code)[0]
 idx, content = 0, []
 for f in func_starts:
@@ -46,7 +50,10 @@ content = "\n".join(content)
 
 # movedown
 code = content.split("\n")
-func_starts = get_lines("public virtual", code)
+if args.langid == "cs":
+    func_starts = get_lines("public virtual", code)
+elif args.langid == "java":
+    func_starts = get_lines("public ", code)
 comment = get_lines("@@@", code)[0]
 for f in func_starts:
     clp = closing_paren(code, f+1)

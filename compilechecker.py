@@ -1,7 +1,13 @@
 import re
 import subprocess
 import sys
-from csharphelper import *
+import os
+import shutil
+import glob
+
+from codehelper.csharphelper import *
+from codehelper.javahelper import javahelper
+from codehelper.javahelper import third_party, combinedcodes
 
 cscode = """
 // AssemblyInfo.cs
@@ -71,6 +77,38 @@ namespace {0}.Test
     }}
 }}
 """
+
+javacode = """
+package fuzztests;
+
+{0}
+
+import combinedcodes.{1};
+
+public class FuzzTest{2}{{
+    public void FuzzTest_{3}({4}, {5}){{
+        // pre condition
+        if (!({8}))
+            throw new RuntimeException("Precondition Violated");
+
+{6}
+
+        try{{
+            {7}
+        }} catch (Exception exception){{
+            // exceptional post condition
+            if (!({9}))
+                throw new RuntimeException("Ex-postcondition Violated");
+        }}
+
+        // normal post condition
+        if (!({10}))
+            throw new RuntimeException("Postcondition Violated");
+    }}
+}}
+"""
+
+tmp_dir = "./checktmp"
 
 # handle test bench generations
 def cs_handle_cmple_testbench(pfx, sfx, grnd_truth, asrt):
@@ -205,6 +243,43 @@ def py_cmplecheck(pfx, sfx, grnd_truth, asrt):
                 stderr=subprocess.DEVNULL)
     return proc.returncode == 0
 
+def java_cmplecheck(pfx, sfx, grnd_truth, asrt):
+    jh = javahelper(pfx + '\n' + sfx)
+    asrt = jh.extract_formula(asrt)
+    asrt, old_addns = jh.trans_formula(asrt)
+
+    imports = "\n".join([f"import {x};" for x in jh.imports])
+    generic = jh.classname[jh.classname.find("<"):]
+    objarg = jh.classname + ' ' + jh.fuzz_objname
+    funcargs = jh.funcs[jh.funcname]["args"]
+    funcargs = ", ".join([f"{typ} {var}" for var, typ in funcargs.items()])
+    old_addns = "\n".join(["\t\t" + l.strip() for l in old_addns])
+    func_call = jh.func_call(jh.funcname, jh.funcs[jh.funcname]["args"].keys())
+
+    code = javacode.format(
+        imports, jh.namespace, generic, jh.funcname,
+        objarg, funcargs, old_addns, func_call,
+        "true", "true", asrt
+    )
+
+    if os.path.exists(tmp_dir):
+        shutil.rmtree(tmp_dir)
+    os.makedirs(tmp_dir, exist_ok=False)
+
+    fname = os.path.join(tmp_dir, "FuzzTest.java")
+    with open(fname, "w") as fd:
+        fd.write(code)
+    
+    proc = subprocess.run([
+            "javac",
+            "-cp", f"{tmp_dir}:{combinedcodes}",
+            fname,
+            f"{combinedcodes}/{jh.namespace}.java"
+        ], stderr=subprocess.DEVNULL)
+    
+    shutil.rmtree(tmp_dir)
+    return proc.returncode == 0
+
 def cmplecheck(langid, pfx, sfx, grnd_truth, asrt):
 
     if(langid == "py"):
@@ -212,6 +287,9 @@ def cmplecheck(langid, pfx, sfx, grnd_truth, asrt):
         
     elif(langid == "cs"):
         result = cs_cmplecheck(pfx, sfx, grnd_truth, asrt)
+    
+    elif(langid == "java"):
+        result = java_cmplecheck(pfx, sfx, grnd_truth, asrt)
 
     else: 
         assert False, "Incorrect language id: " + langid

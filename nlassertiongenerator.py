@@ -13,6 +13,7 @@ modelpaths = {
         "oc7":      "m-a-p/OpenCodeInterpreter-DS-6.7B",
         # "oc33":     "/home/aman14/models/OpenCodeInterpreter-DS-33B",
         "gpt3":      "gpt-3.5-turbo",
+        "gpt4o":     "gpt-4o",
         "gpt4":      "gpt-4",
 }
 
@@ -107,12 +108,58 @@ Debug.Assert(New_Ret  ||  (New_objIndexOfarg0 == -1 && New_objLastIndexOfarg0 ==
 "// @@@ If the return value is true, first index of item in the array is more than or same as 0"
 )
 ]
-eg_java = []
+eg_java = [
+#0
+("""public int getCount() {
+    // @@@ natural language assertion here
+    Assert \\result >= 0;
+    return _size;
+}""",
+"Assert \\result >= 0;",
+"// @@@ size of array is always greater than or equal to 0"
+),
+#1
+("""public int add(Object value) {
+    if (_size == _items.length) ensureCapacity(_size + 1);
+    _items[_size] = value;
+    _version++;
+    // @@@ natural language assertion here
+    Assert this.contains(value);
+    // @@@ natural language assertion here
+    Assert \\old(this.getCount()) + 1 == this.getCount();
+    // @@@ natural language assertion here
+    Assert this.lastIndexOf(value) > \\old(this.lastIndexOf(value));
+    // @@@ natural language assertion here
+    Assert \\old(this.contains(value))=>this.indexOf(value) == \\old(this.indexOf(value));
+    return _size++;
+}""", 
+"Assert this.contains(value);",
+"// @@@ array contains the added value after the operation"
+),
+#2
+("""public int add(Object value) {
+    if (_size == _items.length) ensureCapacity(_size + 1);
+    _items[_size] = value;
+    _version++;
+    // @@@ natural language assertion here
+    Assert this.contains(value);
+    // @@@ natural language assertion here
+    Assert \\old(this.getCount()) + 1 == this.getCount();
+    // @@@ natural language assertion here
+    Assert this.lastIndexOf(value) > \\old(this.lastIndexOf(value));
+    // @@@ natural language assertion here
+    Assert \\old(this.contains(value))=>this.indexOf(value) == \\old(this.indexOf(value));
+    return _size++;
+}""", 
+"Assert \\old(this.contains(value))=>this.indexOf(value) == \\old(this.indexOf(value));",
+"// @@@ first index of value in the list remains same if value was already in the list"
+)
+]
 
 langmap = {
         "py": ("python",    "#",    eg_py, r"assert .*?"),
         "cs": ("csharp",    "//",   eg_cs, r"Debug.Assert\(.*?\);"),
-        "java": ("java",    "//",   eg_java, r"assert .*?;"),
+        "java": ("java",    "//",   eg_java, r"Assert .*?;"),
 }
 
 def run(mkey, model, tokenizer, inputs, temp):
@@ -198,7 +245,7 @@ if __name__ == "__main__":
         dirname = args.resultdir + "/" + mname
         assert mname
 
-        if mkey in ["gpt3", "gpt4"]:
+        if mkey in ["gpt3", "gpt4", "gpt4o"]:
             tokenizer = None
             model = lambda msgdict, **k : oai_client.chat.completions.create(
                     messages = msgdict,

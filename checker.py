@@ -12,6 +12,7 @@ import equivchecker
 langmap = {
         "py": ("#",     ),
         "cs": ("//",    ),
+        "java": ("//",    ),
 }
 
 def check_gen(func):
@@ -92,8 +93,7 @@ if __name__ == "__main__":
 
                 pfx, sfx = "\n".join(lines[:asrtlno]), "\n".join(lines[asrtlno+1:])
 
-                # checks = [null_check, compile_check, fuzz_check, equiv_check]
-                checks = [equiv_check]
+                checks = [null_check, compile_check, fuzz_check, equiv_check]
                 
                 toprint = f"{'#'*10} {rdir}/{f}.check {'#'*10}\n"
 
