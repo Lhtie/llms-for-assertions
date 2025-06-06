@@ -45,10 +45,10 @@ public class ArrayList<E> extends AbstractList<E>
      */
     public ArrayList() {
         this.elementData = DEFAULTCAPACITY_EMPTY_ELEMENTDATA;
-        // @@@ The array is initially empty
-        // Assert this.isEmpty();
-        // @@@ The size of the array is initially zero
-        // Assert this.size()==0;
+        // @@@ natural language assertion here
+        // assert this.isEmpty();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
     }
 
     /**
@@ -71,10 +71,12 @@ public class ArrayList<E> extends AbstractList<E>
             // replace with empty array.
             elementData = EMPTY_ELEMENTDATA;
         }
-        // @@@ If the input is not null, size of the array is the same as the input collection
-        // Assert c!=null => this.size()==c.size();
-        // @@@ If the input is not null, the array is identical to the input collection
-        // Assert c!=null => this.equals(c);
+        // @@@ natural language assertion here
+        // assert c!=null => this.size()==c.size();
+        // @@@ natural language assertion here
+        // assert c!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==c.get(i);
+        // @@@ natural language assertion here
+        // assert c!=null => this.equals(c);
     }
 
      /**
@@ -143,13 +145,13 @@ public class ArrayList<E> extends AbstractList<E>
     public boolean add(E e) {
         modCount++;
         add(e, elementData, size);
-        // @@@ The array contains the element
-        // Assert this.contains(e);
-        // @@@ It returns true
-        // Assert \result==true;
-        // @@@ natural language assertion here
-        // Assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
         return true;
+        // @@@ natural language assertion here
+        // assert this.contains(e);
+        // @@@ natural language assertion here
+        // assert \result==true;
+        // @@@ natural language assertion here
+        // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
     }
 
     /**
@@ -174,9 +176,13 @@ public class ArrayList<E> extends AbstractList<E>
         elementData[index] = element;
         size = s + 1;
         // @@@ natural language assertion here
-        // Assert index>=0 && index<=this.size() => this.contains(element);
+        // assert index>=0 && index<=this.size() => this.contains(element);
         // @@@ natural language assertion here
-        // Assert index>=0 && index<=this.size() => element==null&&this.get(index)==null)||this.get(index).equals(element);
+        // assert index>=0 && index<=this.size() => element==null&&this.get(index)==null || this.get(index).equals(element);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
     /**
@@ -273,10 +279,13 @@ public class ArrayList<E> extends AbstractList<E>
         @SuppressWarnings("unchecked") E oldValue = (E) es[index];
         fastRemove(es, index);
 
-        // @@@ natural langauge assertion here
-        // Assert index>=0 && index<this.size() => \result==\old(this.get(index));
-
         return oldValue;
+        // @@@ natural langauge assertion here
+        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+        // @@@ natural langauge assertion here
+        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural langauge assertion here
+        // assert index>=0 && index<this.size() => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
     /**
@@ -309,9 +318,9 @@ public class ArrayList<E> extends AbstractList<E>
             return false;
         }
         fastRemove(es, i);
-        // @@@ natural langauge assertion here
-        // Assert \old(this.contains(o)) => \result==true;
         return true;
+        // @@@ natural langauge assertion here
+        // assert \old(this.contains(o)) => \result==true;
     }
 
     /** Erases the gap from lo to hi, by sliding down following elements. */
@@ -425,9 +434,13 @@ public class ArrayList<E> extends AbstractList<E>
         Objects.checkIndex(index, size);
         E oldValue = elementData(index);
         elementData[index] = element;
-        // @@@ natural language assertion here
-        // Assert index>=0 && index<this.size() => \result==\old(this.get(index));
         return oldValue;
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
     /**
@@ -440,9 +453,9 @@ public class ArrayList<E> extends AbstractList<E>
         for (int to = size, i = size = 0; i < to; i++)
             es[i] = null;
         // @@@ natural language assertion here
-        // Assert this.isEmpty();
+        // assert this.isEmpty();
         // @@@ natural language assertion here
-        // Assert this.size()==0;
+        // assert this.size()==0;
     }
 
     /**
@@ -462,13 +475,15 @@ public class ArrayList<E> extends AbstractList<E>
             throw new InternalError(e);
         }
         // @@@ natural language assertion here
-        // Assert \result!=this;
+        // assert \result!=this;
         // @@@ natural language assertion here
-        // Assert \result.equals(this);
+        // assert \result.equals(this);
         // @@@ natural language assertion here
-        // Assert \result.size()==this.size();
+        // assert \result.size()==this.size();
         // @@@ natural language assertion here
-        // Assert \result!=null;
+        // assert \forall int i; 0<=i && i<this.size(); result.get(i)==this.get(i);
+        // @@@ natural language assertion here
+        // assert \result!=null;
     }
 
     /**
@@ -488,9 +503,11 @@ public class ArrayList<E> extends AbstractList<E>
     public Object[] toArray() {
         return Arrays.copyOf(elementData, size);
         // @@@ natural language assertion here
-        // Assert \result!=null;
+        // assert \result!=null;
         // @@@ natural language assertion here
-        // Assert \result.length==this.size();
+        // assert \result.length==this.size();
+        // @@@ natural language assertion here
+        // assert \forall int i; 0<=i && i<this.size(); this.get(i)==null && \result[i]==null || this.get(i).equals(\result[i]);
     }
 
     /**
@@ -525,9 +542,9 @@ public class ArrayList<E> extends AbstractList<E>
         System.arraycopy(elementData, 0, a, 0, size);
         if (a.length > size)
             a[size] = null;
-        // @@@ natural language assertion here
-        // Assert a!=null => \result!=null;
         return a;
+        // @@@ natural language assertion here
+        // assert a!=null => \result!=null;
     }
 
     // The followings are observation methods.
@@ -540,7 +557,7 @@ public class ArrayList<E> extends AbstractList<E>
     public boolean isEmpty() {
         return size == 0;
         // @@@ natural language assertion here
-        // Assert \result==(this.size()==0);
+        // assert \result==(this.size()==0);
     }
 
     /**
@@ -551,7 +568,7 @@ public class ArrayList<E> extends AbstractList<E>
     public int size() {
         return size;
         // @@@ natural language assertion here
-        // Assert \result>=0;
+        // assert \result>=0;
     }
 
     @SuppressWarnings("unchecked")
@@ -581,9 +598,11 @@ public class ArrayList<E> extends AbstractList<E>
     public int indexOf(Object o) {
         return indexOfRange(o, 0, size);
         // @@@ natural language assertion here
-        // Assert \result!=-1 && this.get(\result)==null ==> o==null;
+        // assert \result!=-1 && this.get(\result)==null ==> o==null;
         // @@@ natural language assertion here
-        // Assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
+        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
+        // @@@ natural language assertion here
+        // assert \result!=-1 => \forall int i; 0<=i && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
     int indexOfRange(Object o, int start, int end) {
@@ -614,9 +633,11 @@ public class ArrayList<E> extends AbstractList<E>
     public int lastIndexOf(Object o) {
         return lastIndexOfRange(o, 0, size);
         // @@@ natural language assertion here
-        // Assert \result!=-1 && this.get(\result)==null ==> o==null;
+        // assert \result!=-1 && this.get(\result)==null ==> o==null;
         // @@@ natural language assertion here
-        // Assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
+        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
+        // @@@ natural language assertion here
+        // assert \result!=-1 => \forall int i; \result<i && i<this.size(); this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
     int lastIndexOfRange(Object o, int start, int end) {

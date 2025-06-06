@@ -11,4 +11,4 @@ unzip deepseek-coder-6.7b-instructD.zip
 # cp -r /app/* .
 
 # run the main python script. Add arguments as needed.
-python main.py
+/bin/bash run.sh

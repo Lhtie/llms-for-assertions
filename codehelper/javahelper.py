@@ -89,6 +89,9 @@ class javahelper(codehelper):
         if "=>" in asrt:
             fp, sp = asrt.split("=>")
             return f"!({fp.strip()}) || ({sp.strip()})"
+        if "==>" in asrt:
+            fp, sp = asrt.split("==>")
+            return f"!({fp.strip()}) || ({sp.strip()})"
         return asrt
     
     def handle_old(self, asrt):
@@ -164,7 +167,7 @@ class javahelper(codehelper):
         raise Exception("Class name not found")
 
     def extract_formula(self, asrt):
-        match = re.match(r".*Assert\s*(.*)\s*;.*", asrt.strip())
+        match = re.match(r".*assert\s*(.*)\s*;.*", asrt.strip())
         assert match, "Assertion not in the required format"
         asrt = match.group(1)
         return asrt.strip()

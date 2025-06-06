@@ -8,12 +8,13 @@ from openai import OpenAI
 from time import sleep
 
 modelpaths = {
-        "ds7":      "deepseek-ai/deepseek-coder-6.7b-instruct",
-        "mc7":      "/home/aman14/models/Magicoder-S-DS-6.7B",
-        "oc7":      "/home/aman14/models/OpenCodeInterpreter-DS-6.7B",
+        "ds7":      "deepseek-coder-6.7b-instructD",
+        "mc7":      "Magicoder-S-DS-6.7B",
+        "oc7":      "OpenCodeInterpreter-DS-6.7B",
 #        "oc33":     "/home/aman14/models/OpenCodeInterpreter-DS-33B",
         "gpt3":      "gpt-3.5-turbo",
         "gpt4":      "gpt-4",
+        "gpt4o":     "gpt-4o",
 }
 
 def run(mkey, model, tokenizer, inputs, temp):
