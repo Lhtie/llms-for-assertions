@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
     ripgrep \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file
