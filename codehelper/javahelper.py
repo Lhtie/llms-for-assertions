@@ -16,6 +16,9 @@ third_party = [
     "./java-testgen/randoop",
     "./java-testgen/hamcrest-core.jar",
     "./java-testgen/junit.jar"
+    "./java-thirdparty/commons-collections4-4.5.0.jar",
+    "./java-thirdparty/gs-core-2.0.jar",
+    "./java-thirdparty/jgrapht-core-1.5.2.jar"
 ]
 combinedcodes = "./combinedcodes"
 
@@ -25,6 +28,7 @@ def dropext(typ):
     return typ
 
 def closing_paren(string, start):
+    # Find the closing parenthesis for the opening parenthesis at index `start`
     if string[start] not in "[({":
         return start
     left = string[start]
@@ -36,6 +40,35 @@ def closing_paren(string, start):
         elif string[end] == right: balance -= 1   
         end += 1
     return end
+
+def contains_var(expr, var_name):
+    # Check if the expression contains the variable name
+    # but not as a part of another variable name
+    pattern = r'\b' + re.escape(var_name) + r'\b'
+    return re.search(pattern, expr) is not None
+
+def find_bounds(cond_expr, var_name):
+    lo, hi = None, None
+    for cond in cond_expr.split("&&"):
+        cond = cond.strip()
+        if ">" in cond or ">=" in cond:
+            lhs, rhs = cond.split(">") if ">" in cond else cond.split(">=")
+            lhs = lhs.strip()
+            rhs = rhs.strip()
+            if lhs == var_name and not contains_var(rhs, var_name):
+                lo = rhs if ">=" in cond else f"{rhs} + 1"
+            elif rhs == var_name and not contains_var(lhs, var_name):
+                hi = lhs if ">=" in cond else f"{lhs} - 1"
+        elif "<" in cond or "<=" in cond:
+            lhs, rhs = cond.split("<") if "<" in cond else cond.split("<=")
+            lhs = lhs.strip()
+            rhs = rhs.strip()
+            if lhs == var_name and not contains_var(rhs, var_name):
+                hi = rhs if "<=" in cond else f"{rhs} - 1"
+            elif rhs == var_name and not contains_var(lhs, var_name):
+                lo = lhs if "<=" in cond else f"{lhs} + 1"
+
+    return lo if lo is not None else "-65536", hi if hi is not None else "65536"
     
 class javahelper(codehelper):
     def __init__(self, code):
@@ -53,6 +86,8 @@ class javahelper(codehelper):
         self.funcname = self.guessfuncname()
 
         self.anlyz_class()
+        self.old_exprs = {}             # map raw \old exprs: tuple(var name, replaced exprs)
+        self.old_vars = {}              # map var names: raw \old exprs
     
     def anlyz_class(self):
         self.funcs = {}
@@ -96,7 +131,6 @@ class javahelper(codehelper):
     
     def handle_old(self, asrt):
         tr = parseTree()
-        old_exprs = dict()
 
         def recursive_replace(asrt, par):
             cur = tr.add_node(asrt, par)
@@ -109,12 +143,13 @@ class javahelper(codehelper):
                 end = closing_paren(asrt, m.span()[1])
                 old_expr = asrt[start + 5:end - 1]
 
-                if old_expr not in old_exprs:
+                if old_expr not in self.old_exprs:
                     replaced_asrt = recursive_replace(old_expr, cur)
-                    new_expr = f"OLD_var{old_exprs.__len__()}"
-                    old_exprs[old_expr] = (new_expr, replaced_asrt)
+                    new_expr = f"OLD_var{self.old_exprs.__len__()}"
+                    self.old_exprs[old_expr] = (new_expr, replaced_asrt)
+                    self.old_vars[new_expr] = old_expr
                 else:
-                    new_expr = old_exprs[old_expr][0]
+                    new_expr = self.old_exprs[old_expr][0]
                 asrt = asrt[:m.span()[0]] + new_expr + asrt[end:]
 
             return asrt
@@ -128,11 +163,92 @@ class javahelper(codehelper):
             for child in node.children:
                 old_addns += traverse_tree(child)
             if node != tr.root:
-                old_addns += [f"var {old_exprs[node.value][0]} = {old_exprs[node.value][1]};"]
+                old_addns += [f"var {self.old_exprs[node.value][0]} = {self.old_exprs[node.value][1]};"]
             return old_addns
         
         old_addns = traverse_tree(tr.root)
         return old_addns, asrt
+    
+    def handle_forall(self, asrt):
+        old_addns, forall_addns = [], []
+        forall_idx = 0
+
+        while True:
+            m = re.search(r"\\forall", asrt)
+            if not m:
+                break
+            start = m.span()[0]
+            end = closing_paren(asrt[:start] + "(" + asrt[start+1:] + ")", start)
+            forall_expr = asrt[start:end-1]
+            match = re.match(r"\\forall\s*(.*?);(.*?);(.*)", forall_expr)
+
+            var_expr = match.group(1).strip()
+            cond_expr = match.group(2).strip()
+            spec_expr = match.group(3).strip()
+
+            var_type, var_name = var_expr.split()
+            if var_type != "int":
+                raise Exception("Only int type is supported for forall quantifier")
+            
+            lo, hi = find_bounds(cond_expr, var_name)
+            old_addns_lo, lo = self.handle_old(lo)
+            old_addns_hi, hi = self.handle_old(hi)
+            old_addns += old_addns_lo + old_addns_hi
+
+            old_addns_cond, cond_expr = self.handle_old(cond_expr)
+            old_addns_spec, spec_expr = self.handle_old(spec_expr)
+            old_addns_arr = []
+            for t in old_addns_cond + old_addns_spec:
+                old_var_name, old_expr = t[4:-1].split(" = ")
+                if not contains_var(old_expr, var_name):
+                    old_addns.append(t)
+                else:
+                    # upd old_exprs map
+                    self.old_exprs.pop(self.old_vars[old_var_name])
+                    self.old_vars.pop(old_var_name)
+                    old_addns_arr.append((f"{old_var_name}_forallidx{forall_idx}", old_expr))
+
+            if old_addns_arr != []:
+                old_addns += [
+                    f"int capacity = ({hi}) - ({lo}) + 1;"
+                ]
+                for old_var_name, old_expr in old_addns_arr:
+                    old_addns += [
+                        f"Object ex = {old_expr.replace(var_name, lo)};",
+                        f"var {old_var_name} = Array.newInstance(ex.getClass(), capacity);"
+                    ]
+                old_addns += [
+                    f"int cur_idx = 0;",
+                    f"for ({var_type} {var_name} = {lo}; {var_name} <= {hi}; {var_name} += 1) {{",
+                ]
+                for old_var_name, old_expr in old_addns_arr:
+                    old_addns += [
+                        f"\tArray.set({old_var_name}, cur_idx, {old_expr});",
+                    ]
+                old_addns += [
+                    f"\tcur_idx += 1;",
+                    f"}}",
+                ]
+                for old_var_name, old_expr in old_addns_arr:
+                    cond_expr = cond_expr.replace(
+                        old_var_name.split("_forallidx")[0], f"Array.get({old_var_name}, cur_idx)")
+                    spec_expr = spec_expr.replace(
+                        old_var_name.split("_forallidx")[0], f"Array.get({old_var_name}, cur_idx)")
+
+            forall_addns += [
+                f"boolean forall_holds_forallidx{forall_idx} = true;",
+                f"int cur_idx = 0;",
+                f"for ({var_type} {var_name} = {lo}; {var_name} <= {hi}; {var_name} += 1) {{",
+                f"\tif ({cond_expr}) {{",
+                f"\t\tforall_holds_forallidx{forall_idx} &= {spec_expr}",
+                f"\t}}",
+                f"\tcur_idx += 1;",
+                f"}}",
+            ]
+            asrt = asrt[:start] + f"forall_holds_forallidx{forall_idx}" + asrt[start + len(forall_expr):]
+            forall_idx += 1
+
+        return forall_addns, old_addns, asrt
 
     def guessimports(self):
         import_list = []
@@ -170,15 +286,18 @@ class javahelper(codehelper):
         match = re.match(r".*assert\s*(.*)\s*;.*", asrt.strip())
         assert match, "Assertion not in the required format"
         asrt = match.group(1)
+        asrt = self.handle_implies(asrt)
+
         return asrt.strip()
     
     def trans_formula(self, asrt):
-        asrt = self.handle_implies(asrt)
         asrt = asrt.replace("this", self.fuzz_objname)
         asrt = asrt.replace("\\result", self.fuzz_retvar)
 
-        old_addns, asrt = self.handle_old(asrt)
-        return asrt, old_addns 
+        forall_addns, old_addns_0, asrt = self.handle_forall(asrt)
+        old_addns_1, asrt = self.handle_old(asrt)
+
+        return asrt, old_addns_0 + old_addns_1, forall_addns
 
     def func_call(self, funcname, args):
         assert funcname in self.funcs, f"Function {funcname} not found"
@@ -189,3 +308,4 @@ class javahelper(codehelper):
             return f"{self.fuzz_objname}.{funcname}({', '.join(args)});"
         else:
             return f"var {self.fuzz_retvar} = {self.fuzz_objname}.{funcname}({', '.join(args)});"
+        

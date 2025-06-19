@@ -1,7 +1,7 @@
-package java.util;
+package combinedcodes;
 
+import java.util.*;
 import java.io.InvalidObjectException;
-import jdk.internal.misc.SharedSecrets;
 
 /**
  * This class implements the {@code Set} interface, backed by a hash table
@@ -79,6 +79,10 @@ public class HashSet<E>
      */
     public HashSet() {
         map = new HashMap<>();
+        // @@@ natural language assertion here
+        // assert this.isEmpty();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
     }
 
     /**
@@ -93,6 +97,8 @@ public class HashSet<E>
     public HashSet(Collection<? extends E> c) {
         map = new HashMap<>(Math.max((int) (c.size()/.75f) + 1, 16));
         addAll(c);
+        // @@@ natural language assertion here
+        // assert c!=null => this.size()==c.size();
     }
 
     /**
@@ -106,6 +112,10 @@ public class HashSet<E>
      */
     public HashSet(int initialCapacity, float loadFactor) {
         map = new HashMap<>(initialCapacity, loadFactor);
+        // @@@ natural language assertion here
+        // assert initialCapacity>=0 && loadFactor>0 => this.isEmpty();
+        // @@@ natural language assertion here
+        // assert initialCapacity>=0 && loadFactor>0 => this.size()==0;
     }
 
     /**
@@ -118,6 +128,10 @@ public class HashSet<E>
      */
     public HashSet(int initialCapacity) {
         map = new HashMap<>(initialCapacity);
+        // @@@ natural language assertion here
+        // assert initialCapacity>=0 => this.isEmpty();
+        // @@@ natural language assertion here
+        // assert initialCapacity>=0 => this.size()==0;
     }
 
     /**
@@ -155,6 +169,8 @@ public class HashSet<E>
      */
     public int size() {
         return map.size();
+        // @@@ natural language assertion here
+        // assert \result==map.size();
     }
 
     /**
@@ -164,6 +180,8 @@ public class HashSet<E>
      */
     public boolean isEmpty() {
         return map.isEmpty();
+        // @@@ natural language assertion here
+        // assert \result==(this.size()==0);
     }
 
     /**
@@ -193,6 +211,8 @@ public class HashSet<E>
      */
     public boolean add(E e) {
         return map.put(e, PRESENT)==null;
+        // @@@ natural language assertion here
+        // assert this.contains(e);
     }
 
     /**
@@ -209,6 +229,10 @@ public class HashSet<E>
      */
     public boolean remove(Object o) {
         return map.remove(o)==PRESENT;
+        // @@@ natural language assertion here
+        // assert \old(this.contains(o)) => \result==true;
+        // @@@ natural language assertion here
+        // assert !this.contains(o);
     }
 
     /**
@@ -217,6 +241,10 @@ public class HashSet<E>
      */
     public void clear() {
         map.clear();
+        // @@@ natural language assertion here
+        // assert this.isEmtpy();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
     }
 
     /**
@@ -234,88 +262,14 @@ public class HashSet<E>
         } catch (CloneNotSupportedException e) {
             throw new InternalError(e);
         }
-    }
-
-    /**
-     * Save the state of this {@code HashSet} instance to a stream (that is,
-     * serialize it).
-     *
-     * @serialData The capacity of the backing {@code HashMap} instance
-     *             (int), and its load factor (float) are emitted, followed by
-     *             the size of the set (the number of elements it contains)
-     *             (int), followed by all of its elements (each an Object) in
-     *             no particular order.
-     */
-    private void writeObject(java.io.ObjectOutputStream s)
-        throws java.io.IOException {
-        // Write out any hidden serialization magic
-        s.defaultWriteObject();
-
-        // Write out HashMap capacity and load factor
-        s.writeInt(map.capacity());
-        s.writeFloat(map.loadFactor());
-
-        // Write out size
-        s.writeInt(map.size());
-
-        // Write out all elements in the proper order.
-        for (E e : map.keySet())
-            s.writeObject(e);
-    }
-
-    /**
-     * Reconstitute the {@code HashSet} instance from a stream (that is,
-     * deserialize it).
-     */
-    private void readObject(java.io.ObjectInputStream s)
-        throws java.io.IOException, ClassNotFoundException {
-        // Read in any hidden serialization magic
-        s.defaultReadObject();
-
-        // Read capacity and verify non-negative.
-        int capacity = s.readInt();
-        if (capacity < 0) {
-            throw new InvalidObjectException("Illegal capacity: " +
-                                             capacity);
-        }
-
-        // Read load factor and verify positive and non NaN.
-        float loadFactor = s.readFloat();
-        if (loadFactor <= 0 || Float.isNaN(loadFactor)) {
-            throw new InvalidObjectException("Illegal load factor: " +
-                                             loadFactor);
-        }
-
-        // Read size and verify non-negative.
-        int size = s.readInt();
-        if (size < 0) {
-            throw new InvalidObjectException("Illegal size: " +
-                                             size);
-        }
-
-        // Set the capacity according to the size and load factor ensuring that
-        // the HashMap is at least 25% full but clamping to maximum capacity.
-        capacity = (int) Math.min(size * Math.min(1 / loadFactor, 4.0f),
-                HashMap.MAXIMUM_CAPACITY);
-
-        // Constructing the backing map will lazily create an array when the first element is
-        // added, so check it before construction. Call HashMap.tableSizeFor to compute the
-        // actual allocation size. Check Map.Entry[].class since it's the nearest public type to
-        // what is actually created.
-        SharedSecrets.getJavaObjectInputStreamAccess()
-                     .checkArray(s, Map.Entry[].class, HashMap.tableSizeFor(capacity));
-
-        // Create backing HashMap
-        map = (((HashSet<?>)this) instanceof LinkedHashSet ?
-               new LinkedHashMap<>(capacity, loadFactor) :
-               new HashMap<>(capacity, loadFactor));
-
-        // Read in all elements in the proper order.
-        for (int i=0; i<size; i++) {
-            @SuppressWarnings("unchecked")
-                E e = (E) s.readObject();
-            map.put(e, PRESENT);
-        }
+        // @@@ natural language assertion here
+        // assert \result!=this;
+        // @@@ natural language assertion here
+        // assert \result.equals(this);
+        // @@@ natural language assertion here
+        // assert \result.size()==this.size();
+        // @@@ natural language assertion here
+        // assert \result!=null;
     }
 
     /**
@@ -331,6 +285,6 @@ public class HashSet<E>
      * @since 1.8
      */
     public Spliterator<E> spliterator() {
-        return new HashMap.KeySpliterator<>(map, 0, -1, 0, 0);
+        return null;
     }
 }

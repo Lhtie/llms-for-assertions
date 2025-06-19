@@ -31,7 +31,7 @@ def splitter(args):
     for inst in lnos:
         content = instance(code, lnos, inst)
         split = args.infile.split("/")[-1].split(".")
-        fname = ".".join(split[:-1]) + str(instid-start) + "." + split[-1] + "." + str(instid)
+        fname = ".".join(split[:-1]) + str(instid-start) + "." + split[-1] + ".0"
         fpath = args.outdir + "/" + fname
 
         if args.write:

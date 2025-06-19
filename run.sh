@@ -34,9 +34,11 @@
 
 # python3 main.py --prompt "3s-oldret-better-eg-enf" --write 1 --modellist ds7 --nsamples 10 --codelist {236..266}
 
-# python utils/dispatch.py --infile combinedcodes/ArrayList.java --outdir javacodes --startidx 0 --write
+for cls in $(ls combinedcodes/*.java); do
+    python utils/dispatch.py --infile combinedcodes/$cls --outdir javacodes --write
+done
 
-python nlasrtgen.py --write --codedir javacodes --modellist ds7 --temp 0.5 --nsamples 3 --codelist {39..76} --resultdir results_nl
+python nlasrtgen.py --write --codedir javacodes --modellist ds7 --temp 0.5 --nsamples 3 --codelist {1..} --resultdir results_nl
 
 # python checker.py --codedir csharpcodes --codelist 240 --resultlist ./results/gpt-4/3s-oldret-better-eg --write 1 
 # python checker.py --codedir javacodes --codelist 1 --resultlist ./results/java-pilot --write 1

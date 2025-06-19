@@ -3,6 +3,7 @@ import os
 import shutil
 import sys
 import re
+import glob
 
 from codehelper.csharphelper import *
 from codehelper.javahelper import javahelper
@@ -82,29 +83,31 @@ namespace {0}.Test
 javacode = """
 package fuzztests;
 
+import java.lang.reflect.Array;
 {0}
 
 import combinedcodes.{1};
 
 public class FuzzTest{2}{{
     public void FuzzTest_{3}({4}, {5}){{
-        // pre condition
-        if (!({8}))
-            throw new RuntimeException("Precondition Violated");
 
 {6}
 
+        String exception = null;
         try{{
             {7}
-        }} catch (Exception exception){{
-            // exceptional post condition
-            if (!({9}))
-                throw new RuntimeException("Ex-postcondition Violated");
+        }} catch (Exception e){{
+            exception = e.getClass().getSimpleName();
         }}
 
+{8}
+
         // normal post condition
-        if (!({10}))
+        if (!({9}))
             throw new RuntimeException("Postcondition Violated");
+        // exceptional post condition
+        if (!{10}))
+            throw new RuntimeException("Exceptional Postcondition Violated");
     }}
 }}
 """
@@ -274,7 +277,7 @@ def cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
 def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     jh = javahelper(pfx + '\n' + sfx)
     asrt = jh.extract_formula(asrt)
-    asrt, old_addns = jh.trans_formula(asrt)
+    asrt, old_addns, forall_addns = jh.trans_formula(asrt)
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
     generic = jh.classname[jh.classname.find("<"):]
@@ -282,12 +285,13 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     funcargs = jh.funcs[jh.funcname]["args"]
     funcargs = ", ".join([f"{typ} {var}" for var, typ in funcargs.items()])
     old_addns = "\n".join(["\t\t" + l.strip() for l in old_addns])
+    forall_addns = "\n".join(["\t\t" + l.strip() for l in forall_addns])
     func_call = jh.func_call(jh.funcname, jh.funcs[jh.funcname]["args"].keys())
 
     code = javacode.format(
         imports, jh.namespace, generic, jh.funcname,
-        objarg, funcargs, old_addns, func_call,
-        "true", "true", asrt
+        objarg, funcargs, old_addns, func_call, forall_addns,
+        asrt, "true"
     )
 
     if os.path.exists(tmp_dir):
@@ -314,8 +318,9 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
 
     randoop_jar = os.path.join(tmp_dir, "randoop/randoop-all-4.3.3.jar")
     randoop_path = os.path.join(tmp_dir, "randoop")
+    jar_files = ":".join(glob.glob(os.path.join(tmp_dir, "*.jar")))
     randoop_cmd = [
-        "java", "-classpath", f"{randoop_jar}:{tmp_dir}:{os.path.dirname(combinedcodes)}",
+        "java", "-classpath", f"{randoop_jar}:{tmp_dir}:{os.path.dirname(combinedcodes)}:{jar_files}",
         "randoop.main.Main", "gentests",
         "--testclass=fuzztests.FuzzTest",
         "--unchecked-exception=ERROR",

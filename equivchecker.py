@@ -3,6 +3,7 @@ import os
 import shutil
 import sys
 import re
+import glob
 
 from codehelper.csharphelper import *
 from codehelper.javahelper import javahelper
@@ -87,15 +88,17 @@ import combinedcodes.{1};
 
 public class FuzzTest{2}{{
     public void FuzzTest_{3}({4}, {5}, {6}){{
-        // pre condition
-        if (!({8}))
-            throw new RuntimeException("Precondition Violated");
 
 {7}
+
+{8}
 
         // normal post condition
         if (!({9}))
             throw new RuntimeException("Postcondition Violated");
+        // exception post condition
+        if (!({10}))
+            throw new RuntimeException("Exception Postcondition Violated");
     }}
 }}
 """
@@ -195,7 +198,7 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     asrt = jh.extract_formula(asrt)
     grnd_truth = jh.extract_formula(grnd_truth)
     spec = f"({asrt}) == ({grnd_truth})"
-    spec, old_addns = jh.trans_formula(spec)
+    spec, old_addns, forall_addns = jh.trans_formula(spec)
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
     generic = jh.classname[jh.classname.find("<"):]
@@ -206,11 +209,12 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     funcargs = ", ".join([f"{typ} {var}" for var, typ in funcargs.items()]) \
                 + f", {rettyp} {jh.fuzz_retvar}" if rettyp != "void" else ""
     old_addns = "\n".join(["\t\t" + l.strip().replace("_new", "_old") for l in old_addns])
+    forall_addns = "\n".join(["\t\t" + l.strip() for l in forall_addns])
 
     code = javacode.format(
         imports, jh.namespace, generic, jh.funcname,
-        objarg_old, objarg_new, funcargs, old_addns,
-        "true && true", spec
+        objarg_old, objarg_new, funcargs, old_addns, forall_addns,
+        spec, "true"
     )
 
     if os.path.exists(tmp_dir):
@@ -237,8 +241,9 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
 
     randoop_jar = os.path.join(tmp_dir, "randoop/randoop-all-4.3.3.jar")
     randoop_path = os.path.join(tmp_dir, "randoop")
+    jar_files = ":".join(glob.glob(os.path.join(tmp_dir, "*.jar")))
     randoop_cmd = [
-        "java", "-classpath", f"{randoop_jar}:{tmp_dir}:{os.path.dirname(combinedcodes)}",
+        "java", "-classpath", f"{randoop_jar}:{tmp_dir}:{os.path.dirname(combinedcodes)}:{jar_files}",
         "randoop.main.Main", "gentests",
         "--testclass=fuzztests.FuzzTest",
         "--unchecked-exception=ERROR",
@@ -250,7 +255,7 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     ]
     proc = subprocess.run(randoop_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    # shutil.rmtree(tmp_dir)
+    shutil.rmtree(tmp_dir)
     if proc.returncode != 0:
         print("!"*10 + " equiv check failure", file=sys.stderr)
         print(proc.stdout)

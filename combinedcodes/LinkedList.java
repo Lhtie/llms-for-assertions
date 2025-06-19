@@ -1,5 +1,6 @@
-package java.util;
+package combinedcodes;
 
+import java.util.*;
 import java.util.function.Consumer;
 
 /**
@@ -57,7 +58,7 @@ import java.util.function.Consumer;
 
 public class LinkedList<E>
     extends AbstractSequentialList<E>
-    implements List<E>, Deque<E>, Cloneable, java.io.Serializable
+    implements List<E>, Cloneable, java.io.Serializable
 {
     transient int size = 0;
 
@@ -83,6 +84,10 @@ public class LinkedList<E>
      * Constructs an empty list.
      */
     public LinkedList() {
+        // @@@ natural language assertion here
+        // assert this.isEmpty();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
     }
 
     /**
@@ -96,6 +101,12 @@ public class LinkedList<E>
     public LinkedList(Collection<? extends E> c) {
         this();
         addAll(c);
+        // @@@ natural language assertion here
+        // assert c!=null => this.size()==c.size();
+        // @@@ natural language assertion here
+        // assert c!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==c.get(i);
+        // @@@ natural language assertion here
+        // assert c!=null => this.equals(c);
     }
 
     /**
@@ -222,6 +233,8 @@ public class LinkedList<E>
         if (f == null)
             throw new NoSuchElementException();
         return f.item;
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null && this.get(0)==null|| \result.equals(this.get(0));
     }
 
     /**
@@ -235,6 +248,8 @@ public class LinkedList<E>
         if (l == null)
             throw new NoSuchElementException();
         return l.item;
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null || \result.equals(this.get(this.size()-1));
     }
 
     /**
@@ -248,6 +263,12 @@ public class LinkedList<E>
         if (f == null)
             throw new NoSuchElementException();
         return unlinkFirst(f);
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
+        // @@@ natural language assertion here
+        // assert \result==\old(this.get(0));
+        // @@@ natural language assertion here
+        // assert \forall int i; 0<=i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
     /**
@@ -261,6 +282,12 @@ public class LinkedList<E>
         if (l == null)
             throw new NoSuchElementException();
         return unlinkLast(l);
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null && \old(this.get(\old(this.size()-1)))==null|| \result.equals(\old(this.get(\old(this.size()-1))));
+        // @@@ natural language assertion here
+        // assert \result==\old(this.get(this.size()-1))
+        // @@@ natural language assertion here
+        // assert \forall int i; 0<=i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
     /**
@@ -270,6 +297,10 @@ public class LinkedList<E>
      */
     public void addFirst(E e) {
         linkFirst(e);
+        // @@@ natural language assertion here
+        // assert this.contains(e);
+        // @@@ natural language assertion here
+        // assert e==null && this.get(0)==null || e!=null && e.equals(this.get(0));
     }
 
     /**
@@ -281,6 +312,10 @@ public class LinkedList<E>
      */
     public void addLast(E e) {
         linkLast(e);
+        // @@@ natural language assertion here
+        // assert this.contains(e);
+        // @@@ natural language assertion here
+        // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
     }
 
     /**
@@ -303,6 +338,8 @@ public class LinkedList<E>
      */
     public int size() {
         return size;
+        // @@@ natural language assertion here
+        // assert \result>=0;
     }
 
     /**
@@ -316,6 +353,12 @@ public class LinkedList<E>
     public boolean add(E e) {
         linkLast(e);
         return true;
+        // @@@ natural language assertion here
+        // assert this.contains(e);
+        // @@@ natural language assertion here
+        // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
+        // @@@ natural language assertion here
+        // assert \result==true;
     }
 
     /**
@@ -348,6 +391,8 @@ public class LinkedList<E>
             }
         }
         return false;
+        // @@@ natural language assertion here
+        // assert \old(this.contains(o)) => \result==true;
     }
 
     /**
@@ -439,6 +484,10 @@ public class LinkedList<E>
         first = last = null;
         size = 0;
         modCount++;
+        // @@@ natural language assertion here
+        // assert this.isEmtpy();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
     }
 
 
@@ -471,6 +520,12 @@ public class LinkedList<E>
         E oldVal = x.item;
         x.item = element;
         return oldVal;
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
     /**
@@ -489,6 +544,14 @@ public class LinkedList<E>
             linkLast(element);
         else
             linkBefore(element, node(index));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => this.contains(element);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => element==null&&this.get(index)==null||this.get(index).equals(element);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
     /**
@@ -503,6 +566,12 @@ public class LinkedList<E>
     public E remove(int index) {
         checkElementIndex(index);
         return unlink(node(index));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
     /**
@@ -587,6 +656,12 @@ public class LinkedList<E>
             }
         }
         return -1;
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)==null ==> o==null;
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
+        // @@@ natural language assertion here
+        // assert \result!=-1 => \forall int i; 0<=I && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
     /**
@@ -616,6 +691,12 @@ public class LinkedList<E>
             }
         }
         return -1;
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)==null ==> o==null;
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
+        // @@@ natural language assertion here
+        // assert \result!=-1 => \forall int i; \result<i && i<this.size(); this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
     // Queue operations.
@@ -629,6 +710,10 @@ public class LinkedList<E>
     public E peek() {
         final Node<E> f = first;
         return (f == null) ? null : f.item;
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null && this.get(0)==null|| \result.equals(this.get(0));
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
     }
 
     /**
@@ -640,6 +725,8 @@ public class LinkedList<E>
      */
     public E element() {
         return getFirst();
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null && this.get(0)==null|| \result.equals(this.get(0));
     }
 
     /**
@@ -651,6 +738,10 @@ public class LinkedList<E>
     public E poll() {
         final Node<E> f = first;
         return (f == null) ? null : unlinkFirst(f);
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
     }
 
     /**
@@ -662,6 +753,8 @@ public class LinkedList<E>
      */
     public E remove() {
         return removeFirst();
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
     }
 
     /**
@@ -673,6 +766,12 @@ public class LinkedList<E>
      */
     public boolean offer(E e) {
         return add(e);
+        // @@@ natural language assertion here
+        // asssert this.contains(e);
+        // @@@ natural language assertion here
+        // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
+        // @@@ natural language assertion here
+        // assert \result==true;
     }
 
     // Deque operations
@@ -686,6 +785,12 @@ public class LinkedList<E>
     public boolean offerFirst(E e) {
         addFirst(e);
         return true;
+        // @@@ natural language assertion here
+        // assert this.contains(e);
+        // @@@ natural language assertion here
+        // assert e==null && this.get(0)==null || e!=null && e.equals(this.get(0));
+        // @@@ natural language assertion here
+        // assert \result==true;
     }
 
     /**
@@ -698,6 +803,12 @@ public class LinkedList<E>
     public boolean offerLast(E e) {
         addLast(e);
         return true;
+        // @@@ natural language assertion here
+        // assert this.contains(e);
+        // @@@ natural language assertion here
+        // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
+        // @@@ natural language assertion here
+        // assert \result==true;
     }
 
     /**
@@ -711,6 +822,10 @@ public class LinkedList<E>
     public E peekFirst() {
         final Node<E> f = first;
         return (f == null) ? null : f.item;
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null && this.get(0)==null|| \result.equals(this.get(0));
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
      }
 
     /**
@@ -724,6 +839,10 @@ public class LinkedList<E>
     public E peekLast() {
         final Node<E> l = last;
         return (l == null) ? null : l.item;
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null || \result.equals(this.get(this.size()-1));
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
     }
 
     /**
@@ -737,6 +856,10 @@ public class LinkedList<E>
     public E pollFirst() {
         final Node<E> f = first;
         return (f == null) ? null : unlinkFirst(f);
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
     }
 
     /**
@@ -750,6 +873,10 @@ public class LinkedList<E>
     public E pollLast() {
         final Node<E> l = last;
         return (l == null) ? null : unlinkLast(l);
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null && \old(this.get(\old(this.size()-1)))==null|| \result.equals(\old(this.get(\old(this.size()-1))));
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
     }
 
     /**
@@ -763,6 +890,10 @@ public class LinkedList<E>
      */
     public void push(E e) {
         addFirst(e);
+        // @@@ natural language assertion here
+        // assert this.contains(e);
+        // @@@ natural language assertion here
+        // assert e==null && this.get(0)==null || e!=null && e.equals(this.get(0));
     }
 
     /**
@@ -778,6 +909,8 @@ public class LinkedList<E>
      */
     public E pop() {
         return removeFirst();
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
     }
 
     /**
@@ -791,6 +924,8 @@ public class LinkedList<E>
      */
     public boolean removeFirstOccurrence(Object o) {
         return remove(o);
+        // @@@ natural language assertion here
+        // assert \old(this.contains(o)) => \result==true;
     }
 
     /**
@@ -819,6 +954,8 @@ public class LinkedList<E>
             }
         }
         return false;
+        // @@@ natural language assertion here
+        // assert \old(this.contains(o)) => \result==true;
     }
 
     /**
@@ -844,106 +981,7 @@ public class LinkedList<E>
      */
     public ListIterator<E> listIterator(int index) {
         checkPositionIndex(index);
-        return new ListItr(index);
-    }
-
-    private class ListItr implements ListIterator<E> {
-        private Node<E> lastReturned;
-        private Node<E> next;
-        private int nextIndex;
-        private int expectedModCount = modCount;
-
-        ListItr(int index) {
-            // assert isPositionIndex(index);
-            next = (index == size) ? null : node(index);
-            nextIndex = index;
-        }
-
-        public boolean hasNext() {
-            return nextIndex < size;
-        }
-
-        public E next() {
-            checkForComodification();
-            if (!hasNext())
-                throw new NoSuchElementException();
-
-            lastReturned = next;
-            next = next.next;
-            nextIndex++;
-            return lastReturned.item;
-        }
-
-        public boolean hasPrevious() {
-            return nextIndex > 0;
-        }
-
-        public E previous() {
-            checkForComodification();
-            if (!hasPrevious())
-                throw new NoSuchElementException();
-
-            lastReturned = next = (next == null) ? last : next.prev;
-            nextIndex--;
-            return lastReturned.item;
-        }
-
-        public int nextIndex() {
-            return nextIndex;
-        }
-
-        public int previousIndex() {
-            return nextIndex - 1;
-        }
-
-        public void remove() {
-            checkForComodification();
-            if (lastReturned == null)
-                throw new IllegalStateException();
-
-            Node<E> lastNext = lastReturned.next;
-            unlink(lastReturned);
-            if (next == lastReturned)
-                next = lastNext;
-            else
-                nextIndex--;
-            lastReturned = null;
-            expectedModCount++;
-        }
-
-        public void set(E e) {
-            if (lastReturned == null)
-                throw new IllegalStateException();
-            checkForComodification();
-            lastReturned.item = e;
-        }
-
-        public void add(E e) {
-            checkForComodification();
-            lastReturned = null;
-            if (next == null)
-                linkLast(e);
-            else
-                linkBefore(e, next);
-            nextIndex++;
-            expectedModCount++;
-        }
-
-        public void forEachRemaining(Consumer<? super E> action) {
-            Objects.requireNonNull(action);
-            while (modCount == expectedModCount && nextIndex < size) {
-                action.accept(next.item);
-                lastReturned = next;
-                next = next.next;
-                nextIndex++;
-            }
-            checkForComodification();
-        }
-
-        final void checkForComodification() {
-            if (modCount != expectedModCount)
-                throw new ConcurrentModificationException();
-        }
+        return null;
     }
 
     private static class Node<E> {
@@ -962,23 +1000,7 @@ public class LinkedList<E>
      * @since 1.6
      */
     public Iterator<E> descendingIterator() {
-        return new DescendingIterator();
-    }
-
-    /**
-     * Adapter to provide descending iterators via ListItr.previous
-     */
-    private class DescendingIterator implements Iterator<E> {
-        private final ListItr itr = new ListItr(size());
-        public boolean hasNext() {
-            return itr.hasPrevious();
-        }
-        public E next() {
-            return itr.previous();
-        }
-        public void remove() {
-            itr.remove();
-        }
+        return null;
     }
 
     @SuppressWarnings("unchecked")
@@ -1009,6 +1031,16 @@ public class LinkedList<E>
             clone.add(x.item);
 
         return clone;
+        // @@@ natural language assertion here
+        // assert \result!=this;
+        // @@@ natural language assertion here
+        // assert \result.equals(this);
+        // @@@ natural language assertion here
+        // assert \result.size()==this.size();
+        // @@@ natural language assertion here
+        // assert \forall int i; 0<=i && i<this.size(); result.get(i)==this.get(i);
+        // @@@ natural language assertion here
+        // assert \result!=null;
     }
 
     /**
@@ -1031,6 +1063,12 @@ public class LinkedList<E>
         for (Node<E> x = first; x != null; x = x.next)
             result[i++] = x.item;
         return result;
+        // @@@ natural language assertion here
+        // assert \result!=null;
+        // @@@ natural language assertion here
+        // assert \result.length==this.size();
+        // @@@ natural language assertion here
+        // assert \forall int i; 0<=i && i<this.size(); this.get(i)==null && \result[i]==null || this.get(i).equals(\result[i]);
     }
 
     /**
@@ -1085,48 +1123,11 @@ public class LinkedList<E>
             a[size] = null;
 
         return a;
+        // @@@ natural language assertion here
+        // assert a!=null => \result!=null;
     }
 
     private static final long serialVersionUID = 876323262645176354L;
-
-    /**
-     * Saves the state of this {@code LinkedList} instance to a stream
-     * (that is, serializes it).
-     *
-     * @serialData The size of the list (the number of elements it
-     *             contains) is emitted (int), followed by all of its
-     *             elements (each an Object) in the proper order.
-     */
-    private void writeObject(java.io.ObjectOutputStream s)
-        throws java.io.IOException {
-        // Write out any hidden serialization magic
-        s.defaultWriteObject();
-
-        // Write out size
-        s.writeInt(size);
-
-        // Write out all elements in the proper order.
-        for (Node<E> x = first; x != null; x = x.next)
-            s.writeObject(x.item);
-    }
-
-    /**
-     * Reconstitutes this {@code LinkedList} instance from a stream
-     * (that is, deserializes it).
-     */
-    @SuppressWarnings("unchecked")
-    private void readObject(java.io.ObjectInputStream s)
-        throws java.io.IOException, ClassNotFoundException {
-        // Read in any hidden serialization magic
-        s.defaultReadObject();
-
-        // Read in size
-        int size = s.readInt();
-
-        // Read in all elements in the proper order.
-        for (int i = 0; i < size; i++)
-            linkLast((E)s.readObject());
-    }
 
     /**
      * Creates a <em><a href="Spliterator.html#binding">late-binding</a></em>
@@ -1146,96 +1147,7 @@ public class LinkedList<E>
      */
     @Override
     public Spliterator<E> spliterator() {
-        return new LLSpliterator<>(this, -1, 0);
-    }
-
-    /** A customized variant of Spliterators.IteratorSpliterator */
-    static final class LLSpliterator<E> implements Spliterator<E> {
-        static final int BATCH_UNIT = 1 << 10;  // batch array size increment
-        static final int MAX_BATCH = 1 << 25;  // max batch array size;
-        final LinkedList<E> list; // null OK unless traversed
-        Node<E> current;      // current node; null until initialized
-        int est;              // size estimate; -1 until first needed
-        int expectedModCount; // initialized when est set
-        int batch;            // batch size for splits
-
-        LLSpliterator(LinkedList<E> list, int est, int expectedModCount) {
-            this.list = list;
-            this.est = est;
-            this.expectedModCount = expectedModCount;
-        }
-
-        final int getEst() {
-            int s; // force initialization
-            final LinkedList<E> lst;
-            if ((s = est) < 0) {
-                if ((lst = list) == null)
-                    s = est = 0;
-                else {
-                    expectedModCount = lst.modCount;
-                    current = lst.first;
-                    s = est = lst.size;
-                }
-            }
-            return s;
-        }
-
-        public long estimateSize() { return (long) getEst(); }
-
-        public Spliterator<E> trySplit() {
-            Node<E> p;
-            int s = getEst();
-            if (s > 1 && (p = current) != null) {
-                int n = batch + BATCH_UNIT;
-                if (n > s)
-                    n = s;
-                if (n > MAX_BATCH)
-                    n = MAX_BATCH;
-                Object[] a = new Object[n];
-                int j = 0;
-                do { a[j++] = p.item; } while ((p = p.next) != null && j < n);
-                current = p;
-                batch = j;
-                est = s - j;
-                return Spliterators.spliterator(a, 0, j, Spliterator.ORDERED);
-            }
-            return null;
-        }
-
-        public void forEachRemaining(Consumer<? super E> action) {
-            Node<E> p; int n;
-            if (action == null) throw new NullPointerException();
-            if ((n = getEst()) > 0 && (p = current) != null) {
-                current = null;
-                est = 0;
-                do {
-                    E e = p.item;
-                    p = p.next;
-                    action.accept(e);
-                } while (p != null && --n > 0);
-            }
-            if (list.modCount != expectedModCount)
-                throw new ConcurrentModificationException();
-        }
-
-        public boolean tryAdvance(Consumer<? super E> action) {
-            Node<E> p;
-            if (action == null) throw new NullPointerException();
-            if (getEst() > 0 && (p = current) != null) {
-                --est;
-                E e = p.item;
-                current = p.next;
-                action.accept(e);
-                if (list.modCount != expectedModCount)
-                    throw new ConcurrentModificationException();
-                return true;
-            }
-            return false;
-        }
-
-        public int characteristics() {
-            return Spliterator.ORDERED | Spliterator.SIZED | Spliterator.SUBSIZED;
-        }
+        return null;
     }
 
 }

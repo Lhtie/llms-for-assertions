@@ -20,14 +20,14 @@ def get_funcs(lines, langid="cs"):
             buff.append((i, l))
             if balance == 0:
                 line = "\n".join([x for _, x in buff])
-                pattern = r"""(public|protected|private\s+)?
+                pattern = r"""^(public|protected|private\s+)?
                               (static\s+)?
                               (final\s+)?
                               (?!if|else|for|while|switch|catch|throw|return)\b
                               (\w+[\w\<\>\[\],\s\?]*)\s+
-                              ()(\w+)\s*
+                              (\w+)\s*
                               \(([\w\<\>\[\],\s\?]*)\)\s*
-                              ({|;).*
+                              ({|;)?.*
                             """
                 if re.match(pattern, line.strip(), re.VERBOSE):
                     ret.append(buff[0][0])
@@ -35,9 +35,8 @@ def get_funcs(lines, langid="cs"):
         return ret
 
 def closing_paren(lines, start):
-    if "{" not in lines[start]:
-        return start
-    end, balance = start + 1, 1
+    end = start + 1
+    balance = lines[start].count("{") - lines[start].count("}")
     while end < len(lines):
         if balance == 0: return end
         balance += lines[end].count("{") - lines[end].count("}")
@@ -53,20 +52,24 @@ def onedown(args):
     func_starts = get_funcs(code, args.langid)
     comment = get_lines("@@@", code)[0]
     idx, content = 0, []
+    print("#"*10, "func_starts", func_starts, "#"*10)
     for f in func_starts:
         content.append("\n".join(code[idx:f]))
-        clp = closing_paren(code, f if "{" in code[f] else f+1)
+        start = f
+        while start < len(code) and "{" not in code[start] and ";" not in code[start]:
+            start += 1
+        clp = closing_paren(code, start)
         idx = clp
         if comment < clp and comment >= f:
             content.append("\n".join(code[f:clp]))
         else:
-            start, balance = f, 0
-            while start < len(code):
-                balance += code[start].count("(") - code[start].count(")")
-                start += 1
-                if balance == 0:
-                    break
-            content.append("\n".join(code[f:start]).split("{", 1)[0] + ";")
+            # start, balance = f, 0
+            # while start < len(code):
+            #     balance += code[start].count("(") - code[start].count(")")
+            #     start += 1
+            #     if balance == 0:
+            #         break
+            content.append("\n".join(code[f:start+1]).split("{", 1)[0] + ";")
     end_part = "\n".join(code[idx:]) # imp in movedown
     content = "\n".join(content)
 
@@ -75,9 +78,12 @@ def onedown(args):
     func_starts = get_funcs(code, args.langid)
     comment = get_lines("@@@", code)[0]
     for f in func_starts:
-        clp = closing_paren(code, f if "{" in code[f] else f+1)
+        s = f
+        while s < len(code) and "{" not in code[s] and ";" not in code[s]:
+            s += 1
+        clp = closing_paren(code, s)
         start = f-1
-        if "{" in code[f] or "{" in code[f+1]:
+        if "{" in code[s]:
             while code[start].strip().startswith(tuple(["//", "/*", "*", "*/"])):
                 start -= 1
             content = code[:start+1] + code[clp:] + ["\n"] + code[start+1:clp]

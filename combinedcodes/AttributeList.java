@@ -1,43 +1,10 @@
-/* AttributeList.java -- A list of MBean attributes.
-   Copyright (C) 2006 Free Software Foundation, Inc.
+package combinedcodes;
 
-This file is part of GNU Classpath.
-
-GNU Classpath is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2, or (at your option)
-any later version.
-
-GNU Classpath is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with GNU Classpath; see the file COPYING.  If not, write to the
-Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-02110-1301 USA.
-
-Linking this library statically or dynamically with other modules is
-making a combined work based on this library.  Thus, the terms and
-conditions of the GNU General Public License cover the whole
-combination.
-
-As a special exception, the copyright holders of this library give you
-permission to link this library with independent modules to produce an
-executable, regardless of the license terms of these independent
-modules, and to copy and distribute the resulting executable under
-terms of your choice, provided that you also meet, for each linked
-independent module, the terms and conditions of the license of that
-module.  An independent module is a module which is not derived from
-or based on this library.  If you modify this library, you may extend
-this exception to your version of the library, but you are not
-obligated to do so.  If you do not wish to do so, delete this
-exception statement from your version. */
-
-package javax.management;
-
+import java.util.*;
 import java.util.ArrayList;
+
+import javax.naming.directory.Attribute;
+import javax.management.RuntimeOperationsException;
 
 /**
  * Represents a list of MBean {@link Attribute}s, with their
@@ -65,6 +32,10 @@ public class AttributeList
   public AttributeList()
   {
     super();
+    // @@@ natural language assertion here
+    // assert this.isEmpty();
+    // @@@ natural language assertion here
+    // assert this.size()==0;
   }
 
   /**
@@ -78,6 +49,12 @@ public class AttributeList
   public AttributeList(AttributeList list)
   {
     super(list);
+    // @@@ natural language assertion here
+    // assert list!=null => this.size()==list.size();
+    // @@@ natural language assertion here
+    // assert list!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==list.get(i);
+    // @@@ natural language assertion here
+    // assert list!=null => this.equals(list);
   }
 
   /**
@@ -89,6 +66,10 @@ public class AttributeList
   public AttributeList(int capacity)
   {
     super(capacity);
+    // @@@ natural language assertion here
+    // assert initialCapacity>=0 => this.isEmpty();
+    // @@@ natural language assertion here
+    // assert initialCapacity>=0 => this.size()==0;
   }
 
   /**
@@ -100,6 +81,10 @@ public class AttributeList
   public void add(Attribute attribute)
   {
     super.add(attribute);
+    // @@@ natural language assertion here
+    // assert this.contains(attribute);
+    // @@@ natural language assertion here
+    // assert attribute==null && this.get(this.size()-1)==null || attribute!=null && attribute.equals(this.get(this.size()-1));
   }
 
   /**
@@ -136,6 +121,14 @@ public class AttributeList
       {
     throw new RuntimeOperationsException(e, "Invalid index.");
       }
+    // @@@ natural language assertion here
+    // assert index>=0 && index<=this.size() => this.contains(attribute);
+    // @@@ natural language assertion here
+    // assert index>=0 && index<=this.size() => attribute==null&&this.get(index)==null||this.get(index).equals(attribute);
+    // @@@ natural language assertion here
+    // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+    // @@@ natural language assertion here
+    // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
   }
 
   /**
@@ -215,6 +208,12 @@ public class AttributeList
       {
     throw new RuntimeOperationsException(e, "Invalid index.");
       }
+    // @@@ natural language assertion here
+    // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+    // @@@ natural language assertion here
+    // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+    // @@@ natural language assertion here
+    // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i))); 
   }
-    
+
 }

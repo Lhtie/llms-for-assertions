@@ -1,10 +1,10 @@
-package java.util;
+package combinedcodes;
 
+import java.util.*;
 import java.io.Serializable;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
-import jdk.internal.misc.SharedSecrets;
 
 /**
  * Resizable-array implementation of the {@link Deque} interface.  Array
@@ -147,6 +147,10 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public ArrayDeque() {
         elements = new Object[16];
+        // @@@ natural language assertion here
+        // assert this.isEmpty();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
     }
 
     /**
@@ -160,6 +164,10 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             new Object[(numElements < 1) ? 1 :
                        (numElements == Integer.MAX_VALUE) ? Integer.MAX_VALUE :
                        numElements + 1];
+        // @@@ natural language assertion here
+        // assert this.isEmpty();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
     }
 
     /**
@@ -175,6 +183,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public ArrayDeque(Collection<? extends E> c) {
         this(c.size());
         copyElements(c);
+        // @@@ natural language assertion here
+        // assert c!=null => this.size()==c.size();
     }
 
     /**
@@ -255,6 +265,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         es[head = dec(head, es.length)] = e;
         if (head == tail)
             grow(1);
+        // @@@ natural language assertion here
+        // assert e!=null => this.contains(e);
     }
 
     /**
@@ -272,6 +284,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         es[tail] = e;
         if (head == (tail = inc(tail, es.length)))
             grow(1);
+        // @@@ natural language assertion here
+        // assert e!=null => this.contains(e);
     }
 
     /**
@@ -306,6 +320,10 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public boolean offerFirst(E e) {
         addFirst(e);
         return true;
+        // @@@ natural language assertion here
+        // assert e!=null => this.contains(e);
+        // @@@ natural language assertion here
+        // assert e!=null => \result==true;
     }
 
     /**
@@ -318,6 +336,10 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public boolean offerLast(E e) {
         addLast(e);
         return true;
+        // @@@ natural language assertion here
+        // assert e!=null => this.contains(e);
+        // @@@ natural language assertion here
+        // assert e!=null => \result==true;
     }
 
     /**
@@ -349,6 +371,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             head = inc(h, es.length);
         }
         return e;
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
     }
 
     public E pollLast() {
@@ -358,6 +382,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         if (e != null)
             es[tail = t] = null;
         return e;
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
     }
 
     /**
@@ -383,11 +409,15 @@ public class ArrayDeque<E> extends AbstractCollection<E>
 
     public E peekFirst() {
         return elementAt(elements, head);
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
     }
 
     public E peekLast() {
         final Object[] es;
         return elementAt(es = elements, dec(tail, es.length));
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
     }
 
     /**
@@ -416,6 +446,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             }
         }
         return false;
+        // @@@ natural language assertion here
+        // assert \old(this.contains(o)) => \result==true;
     }
 
     /**
@@ -444,6 +476,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             }
         }
         return false;
+        // @@@ natural language assertion here
+        // assert \old(this.contains(o)) => \result==true;
     }
 
     // *** Queue methods ***
@@ -460,6 +494,10 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public boolean add(E e) {
         addLast(e);
         return true;
+        // @@@ natural language assertion here
+        // assert e!=null => this.contains(e);
+        // @@@ natural language assertion here
+        // assert e!=null =>\result==true;
     }
 
     /**
@@ -473,6 +511,10 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public boolean offer(E e) {
         return offerLast(e);
+        // @@@ natural language assertion here
+        // assert e!=null => this.contains(e);
+        // @@ natural language assertion here
+        // assert e!=null => \result==true;
     }
 
     /**
@@ -502,6 +544,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public E poll() {
         return pollFirst();
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
     }
 
     /**
@@ -529,6 +573,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public E peek() {
         return peekFirst();
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
     }
 
     // *** Stack methods ***
@@ -544,6 +590,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public void push(E e) {
         addFirst(e);
+        // @@@ natural language assertion here
+        // assert e!=null => this.contains(e);
     }
 
     /**
@@ -614,6 +662,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public int size() {
         return sub(tail, head, elements.length);
+        // @@@ natural language assertion here
+        // assert \result>=0;
     }
 
     /**
@@ -623,128 +673,24 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public boolean isEmpty() {
         return head == tail;
+        // @@@ natural language assertion here
+        // assert \result==(this.size()==0);
     }
 
     /**
      * Returns an iterator over the elements in this deque.  The elements
      * will be ordered from first (head) to last (tail).  This is the same
      * order that elements would be dequeued (via successive calls to
-     * {@link #remove} or popped (via successive calls to {@link #pop}).
+     * {@link #remove}) or popped (via successive calls to {@link #pop}).
      *
      * @return an iterator over the elements in this deque
      */
     public Iterator<E> iterator() {
-        return new DeqIterator();
+        return null;
     }
 
     public Iterator<E> descendingIterator() {
-        return new DescendingIterator();
-    }
-
-    private class DeqIterator implements Iterator<E> {
-        /** Index of element to be returned by subsequent call to next. */
-        int cursor;
-
-        /** Number of elements yet to be returned. */
-        int remaining = size();
-
-        /**
-         * Index of element returned by most recent call to next.
-         * Reset to -1 if element is deleted by a call to remove.
-         */
-        int lastRet = -1;
-
-        DeqIterator() { cursor = head; }
-
-        public final boolean hasNext() {
-            return remaining > 0;
-        }
-
-        public E next() {
-            if (remaining <= 0)
-                throw new NoSuchElementException();
-            final Object[] es = elements;
-            E e = nonNullElementAt(es, cursor);
-            cursor = inc(lastRet = cursor, es.length);
-            remaining--;
-            return e;
-        }
-
-        void postDelete(boolean leftShifted) {
-            if (leftShifted)
-                cursor = dec(cursor, elements.length);
-        }
-
-        public final void remove() {
-            if (lastRet < 0)
-                throw new IllegalStateException();
-            postDelete(delete(lastRet));
-            lastRet = -1;
-        }
-
-        public void forEachRemaining(Consumer<? super E> action) {
-            Objects.requireNonNull(action);
-            int r;
-            if ((r = remaining) <= 0)
-                return;
-            remaining = 0;
-            final Object[] es = elements;
-            if (es[cursor] == null || sub(tail, cursor, es.length) != r)
-                throw new ConcurrentModificationException();
-            for (int i = cursor, end = tail, to = (i <= end) ? end : es.length;
-                 ; i = 0, to = end) {
-                for (; i < to; i++)
-                    action.accept(elementAt(es, i));
-                if (to == end) {
-                    if (end != tail)
-                        throw new ConcurrentModificationException();
-                    lastRet = dec(end, es.length);
-                    break;
-                }
-            }
-        }
-    }
-
-    private class DescendingIterator extends DeqIterator {
-        DescendingIterator() { cursor = dec(tail, elements.length); }
-
-        public final E next() {
-            if (remaining <= 0)
-                throw new NoSuchElementException();
-            final Object[] es = elements;
-            E e = nonNullElementAt(es, cursor);
-            cursor = dec(lastRet = cursor, es.length);
-            remaining--;
-            return e;
-        }
-
-        void postDelete(boolean leftShifted) {
-            if (!leftShifted)
-                cursor = inc(cursor, elements.length);
-        }
-
-        public final void forEachRemaining(Consumer<? super E> action) {
-            Objects.requireNonNull(action);
-            int r;
-            if ((r = remaining) <= 0)
-                return;
-            remaining = 0;
-            final Object[] es = elements;
-            if (es[cursor] == null || sub(cursor, head, es.length) + 1 != r)
-                throw new ConcurrentModificationException();
-            for (int i = cursor, end = head, to = (i >= end) ? end : 0;
-                 ; i = es.length - 1, to = end) {
-                // hotspot generates faster code than for: i >= to !
-                for (; i > to - 1; i--)
-                    action.accept(elementAt(es, i));
-                if (to == end) {
-                    if (end != head)
-                        throw new ConcurrentModificationException();
-                    lastRet = end;
-                    break;
-                }
-            }
-        }
+        return null;
     }
 
     /**
@@ -761,86 +707,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      * @since 1.8
      */
     public Spliterator<E> spliterator() {
-        return new DeqSpliterator();
-    }
-
-    final class DeqSpliterator implements Spliterator<E> {
-        private int fence;      // -1 until first use
-        private int cursor;     // current index, modified on traverse/split
-
-        /** Constructs late-binding spliterator over all elements. */
-        DeqSpliterator() {
-            this.fence = -1;
-        }
-
-        /** Constructs spliterator over the given range. */
-        DeqSpliterator(int origin, int fence) {
-            // assert 0 <= origin && origin < elements.length;
-            // assert 0 <= fence && fence < elements.length;
-            this.cursor = origin;
-            this.fence = fence;
-        }
-
-        /** Ensures late-binding initialization; then returns fence. */
-        private int getFence() { // force initialization
-            int t;
-            if ((t = fence) < 0) {
-                t = fence = tail;
-                cursor = head;
-            }
-            return t;
-        }
-
-        public DeqSpliterator trySplit() {
-            final Object[] es = elements;
-            final int i, n;
-            return ((n = sub(getFence(), i = cursor, es.length) >> 1) <= 0)
-                ? null
-                : new DeqSpliterator(i, cursor = inc(i, n, es.length));
-        }
-
-        public void forEachRemaining(Consumer<? super E> action) {
-            if (action == null)
-                throw new NullPointerException();
-            final int end = getFence(), cursor = this.cursor;
-            final Object[] es = elements;
-            if (cursor != end) {
-                this.cursor = end;
-                // null check at both ends of range is sufficient
-                if (es[cursor] == null || es[dec(end, es.length)] == null)
-                    throw new ConcurrentModificationException();
-                for (int i = cursor, to = (i <= end) ? end : es.length;
-                     ; i = 0, to = end) {
-                    for (; i < to; i++)
-                        action.accept(elementAt(es, i));
-                    if (to == end) break;
-                }
-            }
-        }
-
-        public boolean tryAdvance(Consumer<? super E> action) {
-            Objects.requireNonNull(action);
-            final Object[] es = elements;
-            if (fence < 0) { fence = tail; cursor = head; } // late-binding
-            final int i;
-            if ((i = cursor) == fence)
-                return false;
-            E e = nonNullElementAt(es, i);
-            cursor = inc(i, es.length);
-            action.accept(e);
-            return true;
-        }
-
-        public long estimateSize() {
-            return sub(getFence(), cursor, elements.length);
-        }
-
-        public int characteristics() {
-            return Spliterator.NONNULL
-                | Spliterator.ORDERED
-                | Spliterator.SIZED
-                | Spliterator.SUBSIZED;
-        }
+        return null;
     }
 
     /**
@@ -995,6 +862,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public boolean remove(Object o) {
         return removeFirstOccurrence(o);
+        // @@@ natural language assertion here
+        // assert \old(this.contains(o)) => \result==true;
     }
 
     /**
@@ -1004,6 +873,10 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public void clear() {
         circularClear(elements, head, tail);
         head = tail = 0;
+        // @@@ natural language assertion here
+        // assert this.isEmtpy();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
     }
 
     /**
@@ -1035,6 +908,10 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public Object[] toArray() {
         return toArray(Object[].class);
+        // @@@ natural language assertion here
+        // assert \result!=null;
+        // @@@ natural language assertion here
+        // assert \result.length==this.size();
     }
 
     private <T> T[] toArray(Class<T[]> klazz) {
@@ -1104,6 +981,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         if (size < a.length)
             a[size] = null;
         return a;
+        // @@@ natural language assertion here
+        // assert a!=null => \result!=null;
     }
 
     // *** Object methods ***
@@ -1122,78 +1001,14 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         } catch (CloneNotSupportedException e) {
             throw new AssertionError();
         }
+        // @@@ natural language assertion here
+        // assert \result!=this;
+        // @@@ natural language assertion here
+        // assert \result.size()==this.size();
+        // @@@ natural language assertion here
+        // assert \result!=null;
     }
 
     private static final long serialVersionUID = 2340985798034038923L;
-
-    /**
-     * Saves this deque to a stream (that is, serializes it).
-     *
-     * @param s the stream
-     * @throws java.io.IOException if an I/O error occurs
-     * @serialData The current size ({@code int}) of the deque,
-     * followed by all of its elements (each an object reference) in
-     * first-to-last order.
-     */
-    private void writeObject(java.io.ObjectOutputStream s)
-            throws java.io.IOException {
-        s.defaultWriteObject();
-
-        // Write out size
-        s.writeInt(size());
-
-        // Write out elements in order.
-        final Object[] es = elements;
-        for (int i = head, end = tail, to = (i <= end) ? end : es.length;
-             ; i = 0, to = end) {
-            for (; i < to; i++)
-                s.writeObject(es[i]);
-            if (to == end) break;
-        }
-    }
-
-    /**
-     * Reconstitutes this deque from a stream (that is, deserializes it).
-     * @param s the stream
-     * @throws ClassNotFoundException if the class of a serialized object
-     *         could not be found
-     * @throws java.io.IOException if an I/O error occurs
-     */
-    private void readObject(java.io.ObjectInputStream s)
-            throws java.io.IOException, ClassNotFoundException {
-        s.defaultReadObject();
-
-        // Read in size and allocate array
-        int size = s.readInt();
-        SharedSecrets.getJavaObjectInputStreamAccess().checkArray(s, Object[].class, size + 1);
-        elements = new Object[size + 1];
-        this.tail = size;
-
-        // Read in all elements in the proper order.
-        for (int i = 0; i < size; i++)
-            elements[i] = s.readObject();
-    }
-
-    /** debugging */
-    void checkInvariants() {
-        // Use head and tail fields with empty slot at tail strategy.
-        // head == tail disambiguates to "empty".
-        try {
-            int capacity = elements.length;
-            // assert 0 <= head && head < capacity;
-            // assert 0 <= tail && tail < capacity;
-            // assert capacity > 0;
-            // assert size() < capacity;
-            // assert head == tail || elements[head] != null;
-            // assert elements[tail] == null;
-            // assert head == tail || elements[dec(tail, capacity)] != null;
-        } catch (Throwable t) {
-            System.err.printf("head=%d tail=%d capacity=%d%n",
-                              head, tail, elements.length);
-            System.err.printf("elements=%s%n",
-                              Arrays.toString(elements));
-            throw t;
-        }
-    }
 
 }

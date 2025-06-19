@@ -1,5 +1,6 @@
-package java.util;
+package combinedcodes;
 
+import java.util.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.StreamCorruptedException;
@@ -116,6 +117,10 @@ public class Vector<E>
                                                initialCapacity);
         this.elementData = new Object[initialCapacity];
         this.capacityIncrement = capacityIncrement;
+        // @@@ natural language assertion here
+        // assert initialCapacity>=0 && capacityIncrement>=0 => this.isEmpty();
+        // @@@ natural language assertion here
+        // assert initialCapacity>=0 && capacityIncrement>=0 => this.size()==0;
     }
 
     /**
@@ -128,6 +133,10 @@ public class Vector<E>
      */
     public Vector(int initialCapacity) {
         this(initialCapacity, 0);
+        // @@@ natural language assertion here
+        // assert initialCapacity>=0 => this.isEmpty();
+        // @@@ natural language assertion here
+        // assert initialCapacity>=0 => this.size()==0;
     }
 
     /**
@@ -137,6 +146,10 @@ public class Vector<E>
      */
     public Vector() {
         this(10);
+        // @@@ natural language assertion here
+        // assert this.isEmpty();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
     }
 
     /**
@@ -156,6 +169,12 @@ public class Vector<E>
         // (see e.g. https://bugs.openjdk.java.net/browse/JDK-6260652)
         if (elementData.getClass() != Object[].class)
             elementData = Arrays.copyOf(elementData, elementCount, Object[].class);
+        // @@@ natural language assertion here
+        // assert c!=null => this.size()==c.size();
+        // @@@ natural language assertion here
+        // assert c!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==c.get(i);
+        // @@@ natural language assertion here
+        // assert c!=null => this.equals(c);
     }
 
     /**
@@ -308,6 +327,8 @@ public class Vector<E>
      */
     public synchronized int size() {
         return elementCount;
+        // @@@ natural language assertion here
+        // assert \result>=0;
     }
 
     /**
@@ -319,36 +340,8 @@ public class Vector<E>
      */
     public synchronized boolean isEmpty() {
         return elementCount == 0;
-    }
-
-    /**
-     * Returns an enumeration of the components of this vector. The
-     * returned {@code Enumeration} object will generate all items in
-     * this vector. The first item generated is the item at index {@code 0},
-     * then the item at index {@code 1}, and so on. If the vector is
-     * structurally modified while enumerating over the elements then the
-     * results of enumerating are undefined.
-     *
-     * @return  an enumeration of the components of this vector
-     * @see     Iterator
-     */
-    public Enumeration<E> elements() {
-        return new Enumeration<E>() {
-            int count = 0;
-
-            public boolean hasMoreElements() {
-                return count < elementCount;
-            }
-
-            public E nextElement() {
-                synchronized (Vector.this) {
-                    if (count < elementCount) {
-                        return elementData(count++);
-                    }
-                }
-                throw new NoSuchElementException("Vector Enumeration");
-            }
-        };
+        // @@@ natural language assertion here
+        // assert \result==(this.size()==0);
     }
 
     /**
@@ -377,6 +370,12 @@ public class Vector<E>
      */
     public int indexOf(Object o) {
         return indexOf(o, 0);
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)==null ==> o==null;
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
+        // @@@ natural language assertion here
+        // assert \result!=-1 => \forall int i; 0<=I && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
     /**
@@ -406,6 +405,10 @@ public class Vector<E>
                     return i;
         }
         return -1;
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)==null ==> o==null;
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
     }
 
     /**
@@ -421,6 +424,12 @@ public class Vector<E>
      */
     public synchronized int lastIndexOf(Object o) {
         return lastIndexOf(o, elementCount-1);
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)==null ==> o==null;
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
+        // @@@ natural language assertion here
+        // assert \result!=-1 => \forall int i; \result<i && i<this.size(); this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
     /**
@@ -453,6 +462,10 @@ public class Vector<E>
                     return i;
         }
         return -1;
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)==null ==> o==null;
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
     }
 
     /**
@@ -472,6 +485,8 @@ public class Vector<E>
         }
 
         return elementData(index);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \result==this.get(index);
     }
 
     /**
@@ -486,6 +501,8 @@ public class Vector<E>
             throw new NoSuchElementException();
         }
         return elementData(0);
+        // @@@ natural language assertion here
+        // assert this.size()!=0 => \result==this.get(0);
     }
 
     /**
@@ -500,6 +517,8 @@ public class Vector<E>
             throw new NoSuchElementException();
         }
         return elementData(elementCount - 1);
+        // @@@ natural language assertion here
+        // assert this.size()!=0 => \result==this.get(this.size()-1);
     }
 
     /**
@@ -528,6 +547,12 @@ public class Vector<E>
                                                      elementCount);
         }
         elementData[index] = obj;
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
     /**
@@ -564,6 +589,12 @@ public class Vector<E>
         modCount++;
         elementCount--;
         elementData[elementCount] = null; /* to let gc do its work */
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
     /**
@@ -604,6 +635,14 @@ public class Vector<E>
                          s - index);
         elementData[index] = obj;
         elementCount = s + 1;
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => this.contains(obj);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => obj==null&&this.get(index)==null||this.get(index).equals(obj);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
     /**
@@ -620,6 +659,8 @@ public class Vector<E>
     public synchronized void addElement(E obj) {
         modCount++;
         add(obj, elementData, elementCount);
+        // @@@ natural language assertion here
+        // assert this.contains(obj);
     }
 
     /**
@@ -645,6 +686,8 @@ public class Vector<E>
             return true;
         }
         return false;
+        // @@@ natural language assertion here
+        // assert \old(this.contains(o)) => \result==true;
     }
 
     /**
@@ -658,6 +701,10 @@ public class Vector<E>
         for (int to = elementCount, i = elementCount = 0; i < to; i++)
             es[i] = null;
         modCount++;
+        // @@@ natural language assertion here
+        // assert this.isEmpty();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
     }
 
     /**
@@ -678,6 +725,16 @@ public class Vector<E>
             // this shouldn't happen, since we are Cloneable
             throw new InternalError(e);
         }
+        // @@@ natural language assertion here
+        // assert \result!=this;
+        // @@@ natural language assertion here
+        // assert \result.equals(this);
+        // @@@ natural language assertion here
+        // assert \result.size()==this.size();
+        // @@@ natural language assertion here
+        // assert \forall int i; 0<=i && i<this.size(); result.get(i)==this.get(i);
+        // @@@ natural language assertion here
+        // assert \result!=null;
     }
 
     /**
@@ -688,6 +745,12 @@ public class Vector<E>
      */
     public synchronized Object[] toArray() {
         return Arrays.copyOf(elementData, elementCount);
+        // @@@ natural language assertion here
+        // assert \result!=null;
+        // @@@ natural language assertion here
+        // assert \result.length==this.size();
+        // @@@ natural language assertion here
+        // assert \forall int i; 0<=i && i<this.size(); this.get(i)==null && \result[i]==null || this.get(i).equals(\result[i]);
     }
 
     /**
@@ -727,6 +790,8 @@ public class Vector<E>
             a[elementCount] = null;
 
         return a;
+        // @@@ natural language assertion here
+        // assert a!=null => \result!=null;
     }
 
     // Positional Access Operations
@@ -775,6 +840,12 @@ public class Vector<E>
         E oldValue = elementData(index);
         elementData[index] = element;
         return oldValue;
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
     /**
@@ -800,6 +871,12 @@ public class Vector<E>
         modCount++;
         add(e, elementData, elementCount);
         return true;
+        // @@@ natural language assertion here
+        // assert this.contains(e);
+        // @@@ natural language assertion here
+        // assert \result==true;
+        // @@@ natural language assertion here
+        // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
     }
 
     /**
@@ -815,6 +892,8 @@ public class Vector<E>
      */
     public boolean remove(Object o) {
         return removeElement(o);
+        // @@@ natural language assertion here
+        // assert \old(this.contains(o)) => \result==true;
     }
 
     /**
@@ -830,6 +909,14 @@ public class Vector<E>
      */
     public void add(int index, E element) {
         insertElementAt(element, index);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => this.contains(element);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => element==null&&this.get(index)==null||this.get(index).equals(element);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
     /**
@@ -856,6 +943,12 @@ public class Vector<E>
         elementData[--elementCount] = null; // Let gc do its work
 
         return oldValue;
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
     /**
@@ -866,6 +959,10 @@ public class Vector<E>
      */
     public void clear() {
         removeAllElements();
+        // @@@ natural language assertion here
+        // assert this.isEmtpy();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
     }
 
     // Bulk Operations
@@ -1123,8 +1220,7 @@ public class Vector<E>
      *         {@code (fromIndex > toIndex)}
      */
     public synchronized List<E> subList(int fromIndex, int toIndex) {
-        return Collections.synchronizedList(super.subList(fromIndex, toIndex),
-                                            this);
+        return null;
     }
 
     /**
@@ -1147,51 +1243,6 @@ public class Vector<E>
     }
 
     /**
-     * Loads a {@code Vector} instance from a stream
-     * (that is, deserializes it).
-     * This method performs checks to ensure the consistency
-     * of the fields.
-     *
-     * @param in the stream
-     * @throws java.io.IOException if an I/O error occurs
-     * @throws ClassNotFoundException if the stream contains data
-     *         of a non-existing class
-     */
-    private void readObject(ObjectInputStream in)
-            throws IOException, ClassNotFoundException {
-        ObjectInputStream.GetField gfields = in.readFields();
-        int count = gfields.get("elementCount", 0);
-        Object[] data = (Object[])gfields.get("elementData", null);
-        if (count < 0 || data == null || count > data.length) {
-            throw new StreamCorruptedException("Inconsistent vector internals");
-        }
-        elementCount = count;
-        elementData = data.clone();
-    }
-
-    /**
-     * Saves the state of the {@code Vector} instance to a stream
-     * (that is, serializes it).
-     * This method performs synchronization to ensure the consistency
-     * of the serialized data.
-     *
-     * @param s the stream
-     * @throws java.io.IOException if an I/O error occurs
-     */
-    private void writeObject(java.io.ObjectOutputStream s)
-            throws java.io.IOException {
-        final java.io.ObjectOutputStream.PutField fields = s.putFields();
-        final Object[] data;
-        synchronized (this) {
-            fields.put("capacityIncrement", capacityIncrement);
-            fields.put("elementCount", elementCount);
-            data = elementData.clone();
-        }
-        fields.put("elementData", data);
-        s.writeFields();
-    }
-
-    /**
      * Returns a list iterator over the elements in this list (in proper
      * sequence), starting at the specified position in the list.
      * The specified index indicates the first element that would be
@@ -1206,7 +1257,7 @@ public class Vector<E>
     public synchronized ListIterator<E> listIterator(int index) {
         if (index < 0 || index > elementCount)
             throw new IndexOutOfBoundsException("Index: "+index);
-        return new ListItr(index);
+        return null;
     }
 
     /**
@@ -1218,7 +1269,7 @@ public class Vector<E>
      * @see #listIterator(int)
      */
     public synchronized ListIterator<E> listIterator() {
-        return new ListItr(0);
+        return null;
     }
 
     /**
@@ -1229,124 +1280,7 @@ public class Vector<E>
      * @return an iterator over the elements in this list in proper sequence
      */
     public synchronized Iterator<E> iterator() {
-        return new Itr();
-    }
-
-    /**
-     * An optimized version of AbstractList.Itr
-     */
-    private class Itr implements Iterator<E> {
-        int cursor;       // index of next element to return
-        int lastRet = -1; // index of last element returned; -1 if no such
-        int expectedModCount = modCount;
-
-        public boolean hasNext() {
-            // Racy but within spec, since modifications are checked
-            // within or after synchronization in next/previous
-            return cursor != elementCount;
-        }
-
-        public E next() {
-            synchronized (Vector.this) {
-                checkForComodification();
-                int i = cursor;
-                if (i >= elementCount)
-                    throw new NoSuchElementException();
-                cursor = i + 1;
-                return elementData(lastRet = i);
-            }
-        }
-
-        public void remove() {
-            if (lastRet == -1)
-                throw new IllegalStateException();
-            synchronized (Vector.this) {
-                checkForComodification();
-                Vector.this.remove(lastRet);
-                expectedModCount = modCount;
-            }
-            cursor = lastRet;
-            lastRet = -1;
-        }
-
-        @Override
-        public void forEachRemaining(Consumer<? super E> action) {
-            Objects.requireNonNull(action);
-            synchronized (Vector.this) {
-                final int size = elementCount;
-                int i = cursor;
-                if (i >= size) {
-                    return;
-                }
-                final Object[] es = elementData;
-                if (i >= es.length)
-                    throw new ConcurrentModificationException();
-                while (i < size && modCount == expectedModCount)
-                    action.accept(elementAt(es, i++));
-                // update once at end of iteration to reduce heap write traffic
-                cursor = i;
-                lastRet = i - 1;
-                checkForComodification();
-            }
-        }
-
-        final void checkForComodification() {
-            if (modCount != expectedModCount)
-                throw new ConcurrentModificationException();
-        }
-    }
-
-    /**
-     * An optimized version of AbstractList.ListItr
-     */
-    final class ListItr extends Itr implements ListIterator<E> {
-        ListItr(int index) {
-            super();
-            cursor = index;
-        }
-
-        public boolean hasPrevious() {
-            return cursor != 0;
-        }
-
-        public int nextIndex() {
-            return cursor;
-        }
-
-        public int previousIndex() {
-            return cursor - 1;
-        }
-
-        public E previous() {
-            synchronized (Vector.this) {
-                checkForComodification();
-                int i = cursor - 1;
-                if (i < 0)
-                    throw new NoSuchElementException();
-                cursor = i;
-                return elementData(lastRet = i);
-            }
-        }
-
-        public void set(E e) {
-            if (lastRet == -1)
-                throw new IllegalStateException();
-            synchronized (Vector.this) {
-                checkForComodification();
-                Vector.this.set(lastRet, e);
-            }
-        }
-
-        public void add(E e) {
-            int i = cursor;
-            synchronized (Vector.this) {
-                checkForComodification();
-                Vector.this.add(i, e);
-                expectedModCount = modCount;
-            }
-            cursor = i + 1;
-            lastRet = -1;
-        }
+        return null;
     }
 
     /**
@@ -1389,96 +1323,5 @@ public class Vector<E>
             throw new ConcurrentModificationException();
         modCount++;
     }
-
-    /**
-     * Creates a <em><a href="Spliterator.html#binding">late-binding</a></em>
-     * and <em>fail-fast</em> {@link Spliterator} over the elements in this
-     * list.
-     *
-     * <p>The {@code Spliterator} reports {@link Spliterator#SIZED},
-     * {@link Spliterator#SUBSIZED}, and {@link Spliterator#ORDERED}.
-     * Overriding implementations should document the reporting of additional
-     * characteristic values.
-     *
-     * @return a {@code Spliterator} over the elements in this list
-     * @since 1.8
-     */
-    @Override
-    public Spliterator<E> spliterator() {
-        return new VectorSpliterator(null, 0, -1, 0);
-    }
-
-    /** Similar to ArrayList Spliterator */
-    final class VectorSpliterator implements Spliterator<E> {
-        private Object[] array;
-        private int index; // current index, modified on advance/split
-        private int fence; // -1 until used; then one past last index
-        private int expectedModCount; // initialized when fence set
-
-        /** Creates new spliterator covering the given range. */
-        VectorSpliterator(Object[] array, int origin, int fence,
-                          int expectedModCount) {
-            this.array = array;
-            this.index = origin;
-            this.fence = fence;
-            this.expectedModCount = expectedModCount;
-        }
-
-        private int getFence() { // initialize on first use
-            int hi;
-            if ((hi = fence) < 0) {
-                synchronized (Vector.this) {
-                    array = elementData;
-                    expectedModCount = modCount;
-                    hi = fence = elementCount;
-                }
-            }
-            return hi;
-        }
-
-        public Spliterator<E> trySplit() {
-            int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
-            return (lo >= mid) ? null :
-                new VectorSpliterator(array, lo, index = mid, expectedModCount);
-        }
-
-        @SuppressWarnings("unchecked")
-        public boolean tryAdvance(Consumer<? super E> action) {
-            Objects.requireNonNull(action);
-            int i;
-            if (getFence() > (i = index)) {
-                index = i + 1;
-                action.accept((E)array[i]);
-                if (modCount != expectedModCount)
-                    throw new ConcurrentModificationException();
-                return true;
-            }
-            return false;
-        }
-
-        @SuppressWarnings("unchecked")
-        public void forEachRemaining(Consumer<? super E> action) {
-            Objects.requireNonNull(action);
-            final int hi = getFence();
-            final Object[] a = array;
-            int i;
-            for (i = index, index = hi; i < hi; i++)
-                action.accept((E) a[i]);
-            if (modCount != expectedModCount)
-                throw new ConcurrentModificationException();
-        }
-
-        public long estimateSize() {
-            return getFence() - index;
-        }
-
-        public int characteristics() {
-            return Spliterator.ORDERED | Spliterator.SIZED | Spliterator.SUBSIZED;
-        }
-    }
-
-    void checkInvariants() {
-        // assert elementCount >= 0;
-        // assert elementCount == elementData.length || elementData[elementCount] == null;
-    }
+    
 }

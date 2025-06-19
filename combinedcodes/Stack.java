@@ -1,4 +1,6 @@
-package java.util;
+package combinedcodes;
+
+import java.util.*;
 
 /**
  * The {@code Stack} class represents a last-in-first-out
@@ -26,6 +28,10 @@ class Stack<E> extends Vector<E> {
      * Creates an empty Stack.
      */
     public Stack() {
+        // @@@ natural language assertion here
+        // assert this.empty();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
     }
 
     /**
@@ -42,6 +48,10 @@ class Stack<E> extends Vector<E> {
         addElement(item);
 
         return item;
+        // @@@ natural language assertion here
+        // assert this.contains(e);
+        // @@@ natural language assertion here
+        // assert item==null && this.get(this.size()-1)==null || item!=null && item.equals(this.get(this.size()-1));
     }
 
     /**
@@ -60,6 +70,8 @@ class Stack<E> extends Vector<E> {
         removeElementAt(len - 1);
 
         return obj;
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
     /**
@@ -76,6 +88,8 @@ class Stack<E> extends Vector<E> {
         if (len == 0)
             throw new EmptyStackException();
         return elementAt(len - 1);
+        // @@@ natural language assertion here
+        // assert !this.isEmpty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
     /**
@@ -86,6 +100,8 @@ class Stack<E> extends Vector<E> {
      */
     public boolean empty() {
         return size() == 0;
+        // @@@ natural language assertion here
+        // assert \result==(this.size()==0);
     }
 
     /**

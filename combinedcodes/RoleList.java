@@ -1,34 +1,7 @@
-/*
- * Copyright (c) 2000, 2008, Oracle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *
- * This code is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
- *
- * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- * version 2 for more details (a copy is included in the LICENSE file that
- * accompanied this code).
- *
- * You should have received a copy of the GNU General Public License version
- * 2 along with this work; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
- * or visit www.oracle.com if you need additional information or have any
- * questions.
- */
+package combinedcodes;
 
-package javax.management.relation;
-
-import com.sun.jmx.mbeanserver.Util;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import javax.management.relation.Role;
 
 /**
  * A RoleList represents a list of roles (Role objects). It is used as
@@ -38,21 +11,24 @@ import java.util.List;
  *
  * @since 1.5
  */
-/* We cannot extend ArrayList<Role> because our legacy
-   add(Role) method would then override add(E) in ArrayList<E>,
-   and our return value is void whereas ArrayList.add(E)'s is boolean.
-   Likewise for set(int,Role).  Grrr.  We cannot use covariance
-   to override the most important methods and have them return
-   Role, either, because that would break subclasses that
-   override those methods in turn (using the original return type
-   of Object).  Finally, we cannot implement Iterable<Role>
-   so you could write
-       for (Role r : roleList)
-   because ArrayList<> implements Iterable<> and the same class cannot
-   implement two versions of a generic interface.  Instead we provide
-   the asList() method so you can write
-       for (Role r : roleList.asList())
+
+/** 
+ * We cannot extend ArrayList<Role> because our legacy
+ * add(Role) method would then override add(E) in ArrayList<E>,
+ * and our return value is void whereas ArrayList.add(E)'s is boolean.
+ * Likewise for set(int,Role).  Grrr.  We cannot use covariance
+ * to override the most important methods and have them return
+ * Role, either, because that would break subclasses that
+ * override those methods in turn (using the original return type
+ * of Object).  Finally, we cannot implement Iterable<Role>
+ * so you could write
+ *     for (Role r : roleList)
+ * because ArrayList<> implements Iterable<> and the same class cannot
+ * implement two versions of a generic interface.  Instead we provide
+ * the asList() method so you can write
+ *     for (Role r : roleList.asList())
 */
+
 public class RoleList extends ArrayList<Object> {
 
     private transient boolean typeSafe;
@@ -70,6 +46,10 @@ public class RoleList extends ArrayList<Object> {
      */
     public RoleList() {
         super();
+        // @@@ natural language assertion here
+        // assert this.isEmpty();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
     }
 
     /**
@@ -80,6 +60,10 @@ public class RoleList extends ArrayList<Object> {
      */
     public RoleList(int initialCapacity) {
         super(initialCapacity);
+        // @@@ natural language assertion here
+        // assert initialCapacity>=0 => this.isEmpty();
+        // @@@ natural language assertion here
+        // assert initialCapacity>=0 => this.size()==0;
     }
 
     /**
@@ -111,37 +95,12 @@ public class RoleList extends ArrayList<Object> {
         // Build the List<Role>
         //
         super.addAll(list);
-    }
-
-    /**
-     * Return a view of this list as a {@code List<Role>}.
-     * Changes to the returned value are reflected by changes
-     * to the original {@code RoleList} and vice versa.
-     *
-     * @return a {@code List<Role>} whose contents
-     * reflect the contents of this {@code RoleList}.
-     *
-     * <p>If this method has ever been called on a given
-     * {@code RoleList} instance, a subsequent attempt to add
-     * an object to that instance which is not a {@code Role}
-     * will fail with an {@code IllegalArgumentException}. For compatibility
-     * reasons, a {@code RoleList} on which this method has never
-     * been called does allow objects other than {@code Role}s to
-     * be added.</p>
-     *
-     * @throws IllegalArgumentException if this {@code RoleList} contains
-     * an element that is not a {@code Role}.
-     *
-     * @since 1.6
-     */
-    @SuppressWarnings("unchecked")
-    public List<Role> asList() {
-        if (!typeSafe) {
-            if (tainted)
-                checkTypeSafe(this);
-            typeSafe = true;
-        }
-        return Util.cast(this);
+        // @@@ natural language assertion here
+        // assert list!=null => this.size()==list.size();
+        // @@@ natural language assertion here
+        // assert list!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==list.get(i);
+        // @@@ natural language assertion here
+        // assert list!=null => this.equals(list);
     }
 
     //
@@ -163,6 +122,10 @@ public class RoleList extends ArrayList<Object> {
             throw new IllegalArgumentException(excMsg);
         }
         super.add(role);
+        // @@@ natural language assertion here
+        // assert this.contains(role);
+        // @@@ natural language assertion here
+        // assert role==null && this.get(this.size()-1)==null || role!=null && role.equals(this.get(this.size()-1));
     }
 
     /**
@@ -189,6 +152,14 @@ public class RoleList extends ArrayList<Object> {
         }
 
         super.add(index, role);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => this.contains(role);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => role==null&&this.get(index)==null||this.get(index).equals(role);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this)size(); this.get(i+1) == null&&\old(this).get(i) == null||this.get(i+1).equals(\old(this).get(i));
     }
 
     /**
@@ -215,6 +186,12 @@ public class RoleList extends ArrayList<Object> {
         }
 
         super.set(index, role);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this).get(i)==null || this.get(i).equals(\old(this).get(i));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
      }
 
     /**
