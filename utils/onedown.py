@@ -52,7 +52,7 @@ def onedown(args):
     func_starts = get_funcs(code, args.langid)
     comment = get_lines("@@@", code)[0]
     idx, content = 0, []
-    print("#"*10, "func_starts", func_starts, "#"*10)
+    # print("#"*10, "func_starts", func_starts, "#"*10)
     for f in func_starts:
         content.append("\n".join(code[idx:f]))
         start = f

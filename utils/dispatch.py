@@ -15,6 +15,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     args.langid = args.infile.split("/")[-1].split(".")[-1]
+    os.makedirs(args.outdir, exist_ok=True)
 
     # splitter
     outfiles = splitter.splitter(args)
