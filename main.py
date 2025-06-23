@@ -11,14 +11,14 @@ modelpaths = {
         "ds7":      "deepseek-coder-6.7b-instructD",
         "mc7":      "Magicoder-S-DS-6.7B",
         "oc7":      "OpenCodeInterpreter-DS-6.7B",
+        "ow32":     "Owen2.5-Coder-32B-Instruct",
 #        "oc33":     "/home/aman14/models/OpenCodeInterpreter-DS-33B",
         "gpt3":      "gpt-3.5-turbo",
-        "gpt4":      "gpt-4",
-        "gpt4o":     "gpt-4o",
+        "gpt4":      "gpt-4-turbo"
 }
 
 def run(mkey, model, tokenizer, inputs, temp):
-    if mkey in ["gpt3", "gpt4"]:
+    if mkey.startswith(("gpt3", "gpt4")):
         sleep(1)
         outputs = model(inputs, max_tokens=1024, temperature=temp)
         return outputs.choices[0].message.content
@@ -40,11 +40,11 @@ if __name__ == "__main__":
     parser.add_argument("--resultdir", type=str, default="./results")
     parser.add_argument("--codelist", nargs='+', default=[])
     parser.add_argument("--modellist", nargs='+', default=[])
-    parser.add_argument("--nsamples", type=int, default=5)
-    parser.add_argument("--prompt", type=str, required=True)
+    parser.add_argument("--nsamples", type=int, default=3)
+    parser.add_argument("--prompt", type=str, default="default")
     parser.add_argument("--temp", type=float, default=0.0)
-    parser.add_argument("--onemsg", type=int, default=1)
-    parser.add_argument("--write", type=int, default=0)
+    parser.add_argument("--onemsg", type=bool, default=True)
+    parser.add_argument("--write", default=False, action="store_true")
     args = parser.parse_args()
 
     oai_client = OpenAI(api_key = oai_key)
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         dirname = args.resultdir + "/" + mname + "/" + params
         assert mname and params
 
-        if mkey in ["gpt3", "gpt4"]:
+        if mkey.startswith(("gpt3", "gpt4")):
             tokenizer = None
             model = lambda msgdict, **k : oai_client.chat.completions.create(
                     messages = msgdict,
@@ -86,7 +86,7 @@ if __name__ == "__main__":
             langid = f.split('.')[-2]
 
             prompt = transform(mkey, args.prompt, tokenizer, code, langid, args.onemsg)
-            if mkey in ["gpt3", "gpt4"]:
+            if mkey.startswith(("gpt3", "gpt4")):
                 inputs = prompt
             else:
                 inputs = prompt.to(model.device)

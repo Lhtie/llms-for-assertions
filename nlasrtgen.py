@@ -13,10 +13,10 @@ modelpaths = {
         "ds7":      "deepseek-coder-6.7b-instructD",
         "mc7":      "Magicoder-S-DS-6.7B",
         "oc7":      "OpenCodeInterpreter-DS-6.7B",
+        "ow32":     "Owen2.5-Coder-32B-Instruct",
         # "oc33":     "/home/aman14/models/OpenCodeInterpreter-DS-33B",
         "gpt3":      "gpt-3.5-turbo",
-        "gpt4o":     "gpt-4o",
-        "gpt4":      "gpt-4",
+        "gpt4":      "gpt-4-turbo",
 }
 
 eg_py = []
@@ -185,11 +185,11 @@ eg_java = [
 langmap = {
         "py": ("python",    "#",    eg_py, r"assert .*?"),
         "cs": ("csharp",    "//",   eg_cs, r"Debug.Assert\(.*?\);"),
-        "java": ("java",    "//",   eg_java, r"Assert .*?;"),
+        "java": ("java",    "//",   eg_java, r"assert .*?;"),
 }
 
 def run(mkey, model, tokenizer, inputs, temp):
-    if mkey in ["gpt3", "gpt4"]:
+    if mkey.startswith(("gpt3", "gpt4")):
         sleep(1)
         outputs = model(inputs, max_tokens=1024, temperature=temp)
         return outputs.choices[0].message.content
@@ -222,6 +222,8 @@ def prompt_transform(mkey, tokenizer, code, langid):
         msg += f"2. If \\old(...) appears, it means the value of the expression before execution.\n"
         msg += f"3. If \\result appears, it means the return value of the execution.\n"
         msg += f"4. If \\forall appears, its formal structure is \"\\forall var i; cond; spec\", which means for all the \"i\" that \"cond\" holds, the \"spec\" should jointly hold.\n"
+    else:
+        raise NotImplementedError
     msg += f"Please try to make as consistent as possible. Your explanation should be equivalent to the original specification. Do not include anything extra, and also do not leave anything out.\n"
     msg += f"Your output should be one single line starting with \"{cmnt_tkn} @@@ \"\n"
     msg += f"Here are several examples for your reference:\n"
@@ -263,9 +265,9 @@ if __name__ == "__main__":
     parser.add_argument("--resultdir", type=str, default="./results_nl")
     parser.add_argument("--codelist", nargs='+', default=[])
     parser.add_argument("--modellist", nargs='+', default=[])
-    parser.add_argument("--nsamples", type=int, default=5)
+    parser.add_argument("--nsamples", type=int, default=3)
     parser.add_argument("--temp", type=float, default=0.0)
-    parser.add_argument("--write", action="store_true", default=False)
+    parser.add_argument("--write", default=False, action="store_true")
     args = parser.parse_args()
 
     oai_client = OpenAI(api_key = oai_key)
@@ -279,7 +281,7 @@ if __name__ == "__main__":
         dirname = args.resultdir + "/" + mname
         assert mname
 
-        if mkey.startswith(("gpt3", "gpt4", "gpt4o")):
+        if mkey.startswith(("gpt3", "gpt4")):
             tokenizer = None
             model = lambda msgdict, **k : oai_client.chat.completions.create(
                     messages = msgdict,

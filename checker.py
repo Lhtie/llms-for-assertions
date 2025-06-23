@@ -44,7 +44,7 @@ if __name__ == "__main__":
     parser.add_argument("--codelist", nargs='+', default=[])
     parser.add_argument("--resultlist", nargs='+', default=["./results/*/*/"])
     parser.add_argument("--outdir", type=str, default="./results/checks/")
-    parser.add_argument("--write", type=int, default=0)
+    parser.add_argument("--write", default=False, action="store_true")
     parser.add_argument("--outname", type=str, default="")
     parser.add_argument("--mask", nargs='+', default=[])
     

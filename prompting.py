@@ -144,53 +144,19 @@ void TestFunction(Object obj)
 </code>"""]),
 ]
 
+eg_java = [
+    
+]
+
 langmap = {
         "py": ("python",    "#",    eg_py, r"assert .*?"),
         "cs": ("csharp",    "//",   eg_cs, r"Debug.Assert\(.*?\);"),
+        "java": ("java",    "//",   eg_java, r"Assert .*?;"),
 }
 
-# C# one doesnt find Contract.Assert, Assert.Equals etc. but we already bias it towards Debug.Assert in most prompts
-
-tvl = """Read the following {0} code and output assert statements corresponding to the comments that start with "@@@". Your output should just be {0} code that uses "{3}".
-```{1}
-{2}
-```"""
-
-enf_fmt = """Read the following {0} code and output assert statements corresponding to the comments that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block.
-```{1}
-{2}
-```"""
-
-one_sht = """Your task is to read {0} code and output assert statements corresponding to the comments that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. For example if the code is: 
-```{1}
-{2}
-```
-The output should be:
-<code>
-{3}
-</code>
-Now, read the following {0} code and output assert statements corresponding to the comments that start with "@@@".
-```{1}
-{4}
-```"""
-
-oldret_kwds = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable."""
-
-threes_oldret_kwds = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. Use only publicly accessible methods in the assertion. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable."""
-
-fours_implies_v1 = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. Use only publicly accessible methods in the assertion. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable. To write A implies B, you may use the `A => B` syntax."""
-
-fours_implies_v2 = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. Use only publicly accessible methods in the assertion. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable. To write A implies B, you may use the `IMPLIES(A, B)` syntax."""
-
-this_force = """Your task is to read {0} code and output an assert statement corresponding to the comment that start with "@@@". Output the {0} code that is related to the assert statement in a <code></code> block. Use only publicly accessible methods in the assertion. All function calls in the assertion should be of the format `this.func_name(args_list)`. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `OLD(variable_name)` syntax. To refer to the return value of the function in the assert statement, you can use `RET` variable."""
-
-this_force_bench = """Your task is to read {0} code and output a test function corresponding to the comment that start with "@@@". Output the {0} test function code in a <code></code> block. Use only publicly accessible methods in the test function. All function calls in the test function should be of the format `this.func_name(args_list)`. The test function should be of the signature "void TestFunction(<arguments>)" and it should take as arguments the values it needs for the test."""
+default = """Your task is to read {0} code and output an assert statement (specification) corresponding to the comment that starts with "@@@". Please output the {0} code of the assert statement in a <code></code> block."""
 
 def apply_chat_template(mkey, tokenizer, inst, langid, onemsg):
-    assert len(inst) >= 3 and type(inst[0]) == str and type(inst[-1]) == str
-    for egid in range(1, len(inst)-1):
-        assert type(inst[egid][0]) == str and type(inst[egid][1]) == str
-    
     if onemsg:
         msg = inst[0] + \
                 f""" For example, if the code is:\n```{langid}\n{inst[1][0]}\n```\nThe output should be:\n{inst[1][1]}\n"""
@@ -206,7 +172,7 @@ def apply_chat_template(mkey, tokenizer, inst, langid, onemsg):
             msgdict += [{ 'role': 'assistant', 'content': inst[egid][1] }]
         msgdict += [{ 'role': 'user', 'content':  f"```{langid}\n{inst[-1]}\n```" }]
 
-    if mkey in ["gpt3", "gpt4"]:
+    if mkey.startswith(("gpt3", "gpt4")):
         return msgdict
     else:
         return tokenizer.apply_chat_template(
@@ -227,161 +193,33 @@ def transform(mkey, tid, tokenizer, code, langid, onemsg):
 
     assert sum([i != -1 for i in cmnt_idx]) == 1, "too few or many assertions to work on"
 
-    oldtid = tid
-    if tid[-4:] == "-enf": tid = tid[:-4]
+    if (tid == "default"):
+        header = default.format(lang)
 
-    if(tid == "trivial"):
-        inst = tvl.format(lang, langid, code, srch_term)
+        if langid == "java":
+            header += f"Here are some rules and tips:\n"
+            header += f"1. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `\\old(variable_name)` syntax.\n"
+            header += f"2. To refer to the return value of the function in the assert statement, you can use `\\result` variable.\n"
+            header += f"3. To write A implies B, you may use the `A => B` syntax."
+            header += f"4. If the assert statment needs to express that for all the variable `i` that `cond` holds, the `spec` should jointly hold, you may use `\\forall var i; cond; spec` syntax.\n"
+            header += f"5. Use only publicly accessible methods in the test function. All function calls in the test function should be of the format `this.func_name(args_list)`."
+        else: raise NotImplementedError
+        
+        inst = [header] + eg_java + [code]
         prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
     
-    elif(tid == "enforce-fmt"):
-        inst = enf_fmt.format(lang, langid, code)
-        prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
-    
-    elif(tid == "one-shot"):
-        inst = one_sht.format(lang, langid, eg_lang[0][0], eg_lang[0][1], code)
-        prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
-
-    elif(tid == "continue"):
-        splitted = lines[cmntlno].split(cmnt_tkn)
-        rplce =  f"{splitted[0]}{cmnt_tkn} an assertion using \"{srch_term}\" that {splitted[1]}"  # @@@ still in the comment
-        pfx = "\n".join(lines[:cmntlno] + [rplce, ""])
-        prompt = tokenizer.encode(pfx, return_tensors="pt")
-
-    elif(tid == "os-oldret"):
-        inst = [oldret_kwds.format(lang), eg_lang[1], code]
-        prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
-
-    elif(tid == "3s-oldret"):
-        inst = [threes_oldret_kwds.format(lang), eg_lang[2],
-                (eg_lang[3][0], eg_lang[3][1][0]), eg_lang[4], code]
-        prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
-
-    elif(tid == "3s-oldret-better-eg"):
-        inst = [threes_oldret_kwds.format(lang), eg_lang[2],
-                (eg_lang[3][0], eg_lang[3][1][0]), 
-                (eg_lang[5][0], eg_lang[5][1][0]), code]
-        prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
-
-    elif(tid == "4s-implies-v1"):
-        inst = [fours_implies_v1.format(lang), eg_lang[2],
-                (eg_lang[3][0], eg_lang[3][1][0]),
-                (eg_lang[6][0], eg_lang[6][1][1]),
-                (eg_lang[5][0], eg_lang[5][1][1]), code]
-        prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
-
-    elif(tid == "4s-implies-v2"):
-        inst = [fours_implies_v1.format(lang), eg_lang[2],
-                (eg_lang[3][0], eg_lang[3][1][0]),
-                (eg_lang[6][0], eg_lang[6][1][2]),
-                (eg_lang[5][0], eg_lang[5][1][2]), code]
-        prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
-
-    elif(tid == "this-fmt"):
-        inst = [this_force.format(lang),
-                (eg_lang[7][0], eg_lang[7][1][0]),
-                (eg_lang[3][0], eg_lang[3][1][0]),
-                (eg_lang[6][0], eg_lang[6][1][0]),
-                (eg_lang[8][0], eg_lang[8][1][0]), code]
-        prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
-
-    elif(tid == "this-fmt-bench"):
-        inst = [this_force_bench.format(lang), 
-                (eg_lang[7][0], eg_lang[7][1][1]),
-                (eg_lang[3][0], eg_lang[3][1][1]),
-                (eg_lang[6][0], eg_lang[6][1][3]),
-                (eg_lang[8][0], eg_lang[8][1][1]), code]
-        prompt = apply_chat_template(mkey, tokenizer, inst, langid, onemsg)
-
     else:   
         assert False, "Incorrect transform id: " + tid
-
-    if oldtid[-4:] == "-enf":
-        suprt = tokenizer.encode("<code>",
-                add_special_tokens=False, return_tensors="pt")
-        return torch.cat((prompt, suprt), 1)
-    else:
-        return prompt
+        
+    return prompt
 
 
 def extract(tid, rspnse, langid):
     _, _, _, srch_term = langmap[langid]
 
-    tag_fmt_tids = ["one-shot", "os-oldret", "3s-oldret", "3s-oldret-better-eg",
-                    "4s-implies-v1", "4s-implies-v2", "this-fmt", "this-fmt-bench"]
-
-    if(tid == "trivial"):
-        for l in rspnse.split("\n"):
-            if re.match(r"^\s*" + srch_term + r".*$", l):
-                return l
-        return ""
-    
-    elif(tid == "enforce-fmt"):
+    if(tid == "default"):
         match = re.search(r"<code>(.*?)</code>", rspnse, re.DOTALL)
-        return match.group(1) if match else ""
-    
-    elif(tid in tag_fmt_tids):
-        match = re.search(r"<code>(.*?)</code>", rspnse, re.DOTALL)
-        return match.group(1) if match else ""
-
-    elif(tid in [t+"-enf" for t in tag_fmt_tids]):
-        match = re.search(r"(.*?)</code>", rspnse, re.DOTALL)
-        return match.group(1) if match else ""
-
-    elif(tid == "continue"):
-        match = re.search(r".*?" + srch_term + r".*?\n", rspnse, re.DOTALL)
-        return match.group(0) if match else ""
-
-    elif(tid == "test"):
-        match = re.search(r"<code>(.*?)</code>", rspnse, re.DOTALL)
-        return match.group(1) if match else ""
-
-    elif(tid == "test-enf"):
-        match = re.search(r"(.*?)</code>", rspnse, re.DOTALL)
         return match.group(1) if match else ""
     
     else:   
         assert False, "Incorrect transform id: " + tid
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--codedir", type=str, default="./codes")
-    parser.add_argument("--codelist", nargs='+', default=[])
-    parser.add_argument("--modellist", nargs='+', default=[])
-    parser.add_argument("--prompt", type=str, required=True)
-    parser.add_argument("--onemsg", type=int, default=1)
-    args = parser.parse_args()
-
-    modelpaths = {
-            "ds7":      "deepseek-ai/deepseek-coder-6.7b-instruct",
-            "mc7":      "/home/aman14/models/Magicoder-S-DS-6.7B",
-            "oc7":      "/home/aman14/models/OpenCodeInterpreter-DS-6.7B",
-#            "oc33":     "/home/aman14/models/OpenCodeInterpreter-DS-33B",
-    }
-    
-    for mkey in modelpaths:
-        if(len(args.modellist) != 0 and mkey not in args.modellist):
-            continue
-
-        mpath = modelpaths[mkey]
-        tokenizer = AutoTokenizer.from_pretrained(mpath)
-
-        dirname = mpath.split("/")[-1] + "/" + args.prompt
-
-        for f in os.listdir(args.codedir):
-            if(len(args.codelist) != 0 and f.split('.')[-1] not in args.codelist):
-                continue
-
-            fd = open(os.path.join(args.codedir, f), "r")
-            code = fd.read()
-            fd.close()
-
-            langid = f.split('.')[-2]
-
-            prompt = transform(mkey, args.prompt, tokenizer, code, langid, args.onemsg)
-        
-            print("#"*10, dirname + "/" + f, "#"*10)
-            print(tokenizer.decode(prompt[0]))
-            print("#"*20)
-
