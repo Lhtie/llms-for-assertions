@@ -20,5 +20,8 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy Accelerate configuration
+COPY default_config.yaml ~/.cache/huggingface/accelerate/
+
 # Copy project files
 COPY . .

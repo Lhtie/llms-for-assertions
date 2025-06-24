@@ -13,4 +13,11 @@ for file in /app/*; do
 done
 
 # run the main python script. Add arguments as needed.
-/bin/bash run.sh
+# /bin/bash run.sh
+if [ ! -d "javacodes" ]; then
+  for cls in $(ls combinedcodes/*.java); do
+    python utils/dispatch.py --infile $cls --outdir javacodes --write
+  done
+fi
+
+accelerate launch --num_processes=2 nlasrtgen.py --codedir javacodes --modellist ow32 --temp 0.3 --nsamples 10 --codelist {1..463} --resultdir results_nl --write

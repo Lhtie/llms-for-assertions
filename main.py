@@ -66,6 +66,7 @@ if __name__ == "__main__":
                     model = mpath,
                     **k
             )
+            devices = None
         else:
             tokenizer = AutoTokenizer.from_pretrained(mpath)
             model = AutoModelForCausalLM.from_pretrained(
@@ -74,6 +75,7 @@ if __name__ == "__main__":
                 device_map="auto",
             )
             model.eval()
+            devices = {p.device for p in model.parameters()}
 
         for f in os.listdir(args.codedir):
             if(len(args.codelist) != 0 and f.split('.')[-1] not in args.codelist):
@@ -86,9 +88,7 @@ if __name__ == "__main__":
             langid = f.split('.')[-2]
 
             prompt = transform(mkey, args.prompt, tokenizer, code, langid, args.onemsg)
-            if mkey.startswith(("gpt3", "gpt4")):
-                inputs = prompt
-            else:
+            if devices is not None and len(devices) <= 1:
                 inputs = prompt.to(model.device)
 
             allrspnse, allasrts  = "", ""
