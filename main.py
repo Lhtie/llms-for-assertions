@@ -12,9 +12,8 @@ modelpaths = {
         "mc7":      "Magicoder-S-DS-6.7B",
         "oc7":      "OpenCodeInterpreter-DS-6.7B",
         "ow32":     "Owen2.5-Coder-32B-Instruct",
-#        "oc33":     "/home/aman14/models/OpenCodeInterpreter-DS-33B",
-        "gpt3":      "gpt-3.5-turbo",
-        "gpt4":      "gpt-4-turbo"
+        "gpt3":     "gpt-3.5-turbo",
+        "gpt4":     "gpt-4-turbo"
 }
 
 def run(mkey, model, tokenizer, inputs, temp):
@@ -90,6 +89,8 @@ if __name__ == "__main__":
             prompt = transform(mkey, args.prompt, tokenizer, code, langid, args.onemsg)
             if devices is not None and len(devices) <= 1:
                 inputs = prompt.to(model.device)
+            else:
+                inputs = prompt
 
             allrspnse, allasrts  = "", ""
             for _ in range(args.nsamples):

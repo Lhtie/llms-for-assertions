@@ -5,9 +5,11 @@ import glob
 import subprocess
 import re
 import z3checker
-import fuzzchecker
-import compilechecker
-import equivchecker
+
+import checkers.fuzzchecker as fuzzchecker
+import checkers.compilechecker as compilechecker
+import checkers.rdtpchecker as rdtpchecker
+import checkers.equivchecker as equivchecker
 
 langmap = {
         "py": ("#",     ),
@@ -36,6 +38,7 @@ null_check      = check_gen(lambda *args : args[-1].strip() != "")
 compile_check   = check_gen(compilechecker.cmplecheck)
 fuzz_check      = check_gen(lambda *args : fuzzchecker.fuzzcheck(*args, "soundness"))
 z3_check        = check_gen(lambda *args : z3checker.z3check(*args, "equality"))
+rdtp_check      = check_gen(lambda *args : rdtpchecker.rdtpcheck(*args, "equality"))
 equiv_check     = check_gen(equivchecker.equivcheck)
 
 if __name__ == "__main__":
@@ -82,7 +85,9 @@ if __name__ == "__main__":
                 asrtlno = max(cmnt_idx) + 1
                 assert sum([i != -1 for i in cmnt_idx]) == 1, "too few or many assertions to work on"
                 
-                grnd_truth = lines[asrtlno]
+                grnd_truth = lines[asrtlno].strip()
+                if grnd_truth.startswith(cmnt_tkn):
+                    grnd_truth = grnd_truth.strip(cmnt_tkn).strip()
 
                 try:
                     fd = open(os.path.join(rdir, f + ".extract"), "r")
@@ -93,7 +98,7 @@ if __name__ == "__main__":
 
                 pfx, sfx = "\n".join(lines[:asrtlno]), "\n".join(lines[asrtlno+1:])
 
-                checks = [null_check, compile_check, fuzz_check, equiv_check]
+                checks = [null_check, compile_check, fuzz_check, rdtp_check, equiv_check]
                 
                 toprint = f"{'#'*10} {rdir}/{f}.check {'#'*10}\n"
 

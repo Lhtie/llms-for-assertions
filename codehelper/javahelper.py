@@ -15,7 +15,7 @@ obs_funcs = [
 third_party = [
     "./java-testgen/randoop",
     "./java-testgen/hamcrest-core.jar",
-    "./java-testgen/junit.jar"
+    "./java-testgen/junit.jar",
     "./java-thirdparty/commons-collections4-4.5.0.jar",
     "./java-thirdparty/gs-core-2.0.jar",
     "./java-thirdparty/jgrapht-core-1.5.2.jar"

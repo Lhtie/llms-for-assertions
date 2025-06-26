@@ -20,4 +20,11 @@ if [ ! -d "javacodes" ]; then
   done
 fi
 
-accelerate launch --num_processes=2 nlasrtgen.py --codedir javacodes --modellist ow32 --temp 0.3 --nsamples 10 --codelist {1..463} --resultdir results_nl --write
+accelerate launch --num_processes=2 --config_file default_config.yaml \
+  nlasrtgen.py \
+    --codedir javacodes \
+    --modellist ow32 \
+    --temp 0.3 --nsamples 10 \
+    --codelist {1..463} \
+    --resultdir results_nl \
+    --write

@@ -10,4 +10,4 @@ python nlasrtgen.py --codedir javacodes --modellist ow32 --nsamples 10 --codelis
 
 # python main.py --codedir javacodes --modellist gpt4 --nsamples 3 --codelist {1..463} --resultdir ./results --write
 
-# python checker.py --codedir javacodes --codelist {1..463} --resultlist ./results --write
+# python checker.py --codedir javacodes --codelist 2025 --resultlist ./results/java-pilot --write

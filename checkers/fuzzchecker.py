@@ -1,8 +1,8 @@
-import re
 import subprocess
-import sys
 import os
 import shutil
+import sys
+import re
 import glob
 
 from codehelper.csharphelper import *
@@ -73,6 +73,8 @@ namespace {0}.Test
             {3}
             {4}
             {5}
+            {6}
+            {7}
         }}
     }}
 }}
@@ -91,11 +93,11 @@ public class FuzzTest{2}{{
 
 {6}
 
-        String exception = null;
+        String exceptionType = null;
         try{{
             {7}
-        }} catch (Exception e){{
-            exception = e.getClass().getSimpleName();
+        }} catch (Exception fuzzexception){{
+            exceptionType = fuzzexception.getClass().getSimpleName();
         }}
 
 {8}
@@ -104,7 +106,7 @@ public class FuzzTest{2}{{
         if (!({9}))
             throw new RuntimeException("Postcondition Violated");
         // exceptional post condition
-        if (!{10}))
+        if (!({10}))
             throw new RuntimeException("Exceptional Postcondition Violated");
     }}
 }}
@@ -113,7 +115,7 @@ public class FuzzTest{2}{{
 tmp_dir = "./checktmp"
 
 # handle test bench generations
-def cs_handle_cmple_testbench(pfx, sfx, grnd_truth, asrt):
+def cs_handle_fuzz_testbench(pfx, sfx, grnd_truth, asrt):
     namespace = cs_guessnamespace(pfx)
     fuzzfuncname = cs_guessfuncname(pfx)
     classname, classfuncs = angello_info[namespace]
@@ -154,33 +156,56 @@ def cs_handle_cmple_testbench(pfx, sfx, grnd_truth, asrt):
 
     asrt = asrt.replace("Debug.Assert", "PexAssert.IsTrue")
 
-    code = cscode.format(namespace, classname, params, '', '', asrt)
+    code = cscode.format(namespace, classname, params, '', '', '', '', asrt)
     cmple_cmd = cs_cmple_cmd.format(namespace)
+    pex_cmd = cs_pex_cmd.format(namespace)
+    print(code)
 
-    fname = "/home/aman14/code/tmp/_compile_check.cs"
+    dumpdir = "/home/aman14/code/tmp"
+    fname = "/home/aman14/code/tmp/_fuzz_check.cs"
+    shutil.rmtree(f"{dumpdir}/reports/", ignore_errors=True)
     fd = open(fname, "w")
     fd.write(code)
     fd.close()
 
     remote_cmds = subprocess.run(["bash", "-c", f"""
+        ssh -p 3022 aman@localhost 'rmdir /s /q test\\bin\\reports';
         ssh -p 3022 aman@localhost 'del test\\FuzzTest.cs test\\bin\\FuzzTest.dll test\\bin\\FuzzTest.pdb';
         scp -P 3022 {fname} 'aman@localhost:C:\\Users\\aman\\test\\FuzzTest.cs' &&
-        ssh -p 3022 aman@localhost '{cmple_cmd}'
+        ssh -p 3022 aman@localhost '{cmple_cmd}' &&
+        ssh -p 3022 aman@localhost '{pex_cmd}' &&
+        scp -r -P 3022 'aman@localhost:C:\\Users\\aman\\test\\bin\\reports' {dumpdir}
     """], stdout = sys.stderr)
-    
-    # assert remote_cmds.returncode == 0
-    if remote_cmds.returncode != 0: print("!"*10 + " compile check failure", file=sys.stderr)
-    return remote_cmds.returncode == 0
 
-def cs_cmplecheck(pfx, sfx, grnd_truth, asrt):
+    # assert remote_cmds.returncode == 0
+    if remote_cmds.returncode != 0: print("!"*10 + " fuzz check failure", file=sys.stderr)
+    if remote_cmds.returncode != 0: return False
+
+    reportdir = os.listdir(f"{dumpdir}/reports/")[0]
+    passing_tests, total_tests = parse_pexreport(f"{dumpdir}/reports/{reportdir}/report.per")
+    
+    return passing_tests == total_tests
+
+def cs_getpostcond(grnd_truth, asrt, check):
+    if(check == "equality"):
+        postcond_formula = f"({grnd_truth}) == ({asrt})"
+    elif(check == "implication"):
+        postcond_formula = f"!({grnd_truth}) || ({asrt})"
+    elif(check == "soundness"):
+        postcond_formula = f"({asrt})"
+    else:
+        assert False, f"Incorrect check : {check}"
+    return postcond_formula
+
+def cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     if "TestFunction" in asrt:
-        return cs_handle_cmple_testbench(pfx, sfx, grnd_truth, asrt)    
+        return cs_handle_fuzz_testbench(pfx, sfx, grnd_truth, asrt)    
 
     namespace = cs_guessnamespace(pfx)
     fuzzfuncname = cs_guessfuncname(pfx)
     classname, classfuncs = angello_info[namespace]
     fuzzfunc = classfuncs[fuzzfuncname]
-
+    
     grnd_truth, asrt = extrct_formula(grnd_truth, asrt)
     if not asrt: return False
 
@@ -198,54 +223,58 @@ def cs_cmplecheck(pfx, sfx, grnd_truth, asrt):
     params = ",".join([fuzz_objname] + [",".join([f"{typ} {v}" for v in vardict[typ]])
         for typ in vardict])
     
-    old_vals = old_addns
+    precond_formula = fuzzfunc["pre"](fuzz_objname, *allvars)
+    pre_cond = f"PexAssume.IsTrue({precond_formula});"
+    
+    old_obs_vals = "\n".join([f"{t} Old_{re.sub('[^0-9a-zA-Z]+', '', c)} = {c};" 
+        for t,c in cs_getobs(fuzz_objname, vardict, classfuncs)])
+    old_obs_vals += old_addns
     
     func_call = ("" if fuzzfunc["rtyp"] == "void" \
             else f"{fuzzfunc['rtyp']} {fuzz_retvar} = ") + \
             fuzzfunc["call"](fuzz_objname, *allvars[:len(fuzzfunc["args"])]) + ";"
 
-    post_cond = f"PexAssert.IsTrue({tfrmd_asrt});"
-
-    code = cscode.format(namespace, classname, params, old_vals, func_call, post_cond)
-    cmple_cmd = cs_cmple_cmd.format(namespace)
+    allvars.append(fuzz_retvar)
+    if fuzzfunc["rtyp"] in vardict: vardict[fuzzfunc["rtyp"]] += [fuzz_retvar]
+    else: vardict[fuzzfunc["rtyp"]] = [fuzz_retvar]
     
-    fname = "/home/aman14/code/tmp/_compile_check.cs"
+    new_obs_vals = "\n".join([f"{t} New_{re.sub('[^0-9a-zA-Z]+', '', c)} = {c};"
+        for t,c in cs_getobs(fuzz_objname, vardict, classfuncs)])
+    
+    postcond_formula = cs_getpostcond(grnd_truth, tfrmd_asrt, check)
+    post_cond = f"PexAssert.IsTrue({postcond_formula});"
+
+    code = cscode.format(namespace, classname, params, pre_cond, old_obs_vals, func_call, 
+            new_obs_vals, post_cond)
+    cmple_cmd = cs_cmple_cmd.format(namespace)
+    pex_cmd = cs_pex_cmd.format(namespace)
+
+    dumpdir = "/home/aman14/code/tmp"
+    fname = "/home/aman14/code/tmp/_fuzz_check.cs"
+    shutil.rmtree(f"{dumpdir}/reports/", ignore_errors=True)
     fd = open(fname, "w")
     fd.write(code)
     fd.close()
 
     remote_cmds = subprocess.run(["bash", "-c", f"""
+        ssh -p 3022 aman@localhost 'rmdir /s /q test\\bin\\reports';
         ssh -p 3022 aman@localhost 'del test\\FuzzTest.cs test\\bin\\FuzzTest.dll test\\bin\\FuzzTest.pdb';
         scp -P 3022 {fname} 'aman@localhost:C:\\Users\\aman\\test\\FuzzTest.cs' &&
-        ssh -p 3022 aman@localhost '{cmple_cmd}'
+        ssh -p 3022 aman@localhost '{cmple_cmd}' &&
+        ssh -p 3022 aman@localhost '{pex_cmd}' &&
+        scp -r -P 3022 'aman@localhost:C:\\Users\\aman\\test\\bin\\reports' {dumpdir}
     """], stdout = sys.stderr)
-    
+
     # assert remote_cmds.returncode == 0
-    if remote_cmds.returncode != 0: print("!"*10 + " compile check failure", file=sys.stderr)
-    return remote_cmds.returncode == 0
+    if remote_cmds.returncode != 0: print("!"*10 + " fuzz check failure", file=sys.stderr)
+    if remote_cmds.returncode != 0: return False
 
-
-def py_cmplecheck(pfx, sfx, grnd_truth, asrt):
-    # must be a better way to match indentation levels for python
-    asrt = asrt.replace("\r", "\n").replace("\f", "\n").replace("\v", "\n").strip("\n")
-    asrt = asrt.replace("\t", "    ") # pep8 prefers spaces
-    curshift = re.match(r"^\s*", asrt).group(0)
-    shift = re.match(r"^\s*", grnd_truth).group(0)
-    code = "\n".join(
-            [pfx] + [shift + l.removeprefix(curshift) for l in asrt.split("\n")] + [sfx])
-
-    # code = "\n".join([pfx, asrt, sfx]) # simple
+    reportdir = os.listdir(f"{dumpdir}/reports/")[0]
+    passing_tests, total_tests = parse_pexreport(f"{dumpdir}/reports/{reportdir}/report.per")
     
-    fname = "/home/aman14/code/tmp/_compile_check.py"
-    fd = open(fname, "w")
-    fd.write(code)
-    fd.close()
+    return passing_tests == total_tests
 
-    proc = subprocess.run(["python3", "-m", "py_compile", fname],
-                stderr=subprocess.DEVNULL)
-    return proc.returncode == 0
-
-def java_cmplecheck(pfx, sfx, grnd_truth, asrt):
+def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     jh = javahelper(pfx + '\n' + sfx)
     asrt = jh.extract_formula(asrt)
     asrt, old_addns, forall_addns = jh.trans_formula(asrt)
@@ -269,33 +298,62 @@ def java_cmplecheck(pfx, sfx, grnd_truth, asrt):
         shutil.rmtree(tmp_dir)
     os.makedirs(tmp_dir, exist_ok=False)
 
-    fname = os.path.join(tmp_dir, "FuzzTest.java")
+    for file in third_party:
+        if os.path.isdir(file):
+            shutil.copytree(file, os.path.join(tmp_dir, os.path.basename(file)), dirs_exist_ok=True)
+        else:
+            shutil.copyfile(file, os.path.join(tmp_dir, os.path.basename(file)))
+
+    os.makedirs(os.path.join(tmp_dir, "fuzztests"), exist_ok=False)
+    fname = os.path.join(tmp_dir, "fuzztests/FuzzTest.java")
     with open(fname, "w") as fd:
         fd.write(code)
-
-    jar_files = ":".join(glob.glob(os.path.join(tmp_dir, "*.jar")))
-    proc = subprocess.run([
+    
+    _ = subprocess.run([
             "javac",
-            "-cp", f"{tmp_dir}:{combinedcodes}:{jar_files}",
+            "-cp", f"{os.path.dirname(fname)}:{combinedcodes}",
             fname,
             f"{combinedcodes}/{jh.namespace}.java"
         ], stderr=subprocess.DEVNULL)
-    
+
+    randoop_jar = os.path.join(tmp_dir, "randoop/randoop-all-4.3.3.jar")
+    randoop_path = os.path.join(tmp_dir, "randoop")
+    jar_files = ":".join(glob.glob(os.path.join(tmp_dir, "*.jar")))
+    randoop_cmd = [
+        "java", "-classpath", f"{randoop_jar}:{tmp_dir}:{os.path.dirname(combinedcodes)}:{jar_files}",
+        "randoop.main.Main", "gentests",
+        "--testclass=fuzztests.FuzzTest",
+        "--unchecked-exception=ERROR",
+        "--time-limit=30",
+        "--no-error-revealing-tests=false",
+        "--no-regression-tests=true",
+        "--output-limit=100",
+        f"--junit-output-dir={tmp_dir}",
+    ]
+    proc = subprocess.run(randoop_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
     shutil.rmtree(tmp_dir)
-    return proc.returncode == 0
+    if proc.returncode != 0:
+        print("!"*10 + " fuzz check failure", file=sys.stderr)
+        print(proc.stdout)
+        return False
+    else:
+        if "No error-revealing tests to output" in proc.stdout:
+            return True
+        return False
 
-def cmplecheck(langid, pfx, sfx, grnd_truth, asrt):
-
+def fuzzcheck(langid, pfx, sfx, grnd_truth, asrt, check):
     if(langid == "py"):
-        result = py_cmplecheck(pfx, sfx, grnd_truth, asrt)
-        
+        result = True
+
     elif(langid == "cs"):
-        result = cs_cmplecheck(pfx, sfx, grnd_truth, asrt)
-    
+        result = cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check)
+
     elif(langid == "java"):
-        result = java_cmplecheck(pfx, sfx, grnd_truth, asrt)
+        result = java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check)
 
     else: 
         assert False, "Incorrect language id: " + langid
 
     return result
+
