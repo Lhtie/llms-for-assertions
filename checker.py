@@ -4,7 +4,6 @@ import argparse
 import glob
 import subprocess
 import re
-import z3checker
 
 import checkers.fuzzchecker as fuzzchecker
 import checkers.compilechecker as compilechecker
@@ -37,7 +36,6 @@ def check_gen(func):
 null_check      = check_gen(lambda *args : args[-1].strip() != "")
 compile_check   = check_gen(compilechecker.cmplecheck)
 fuzz_check      = check_gen(lambda *args : fuzzchecker.fuzzcheck(*args, "soundness"))
-z3_check        = check_gen(lambda *args : z3checker.z3check(*args, "equality"))
 rdtp_check      = check_gen(lambda *args : rdtpchecker.rdtpcheck(*args, "equality"))
 equiv_check     = check_gen(equivchecker.equivcheck)
 

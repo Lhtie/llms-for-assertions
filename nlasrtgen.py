@@ -111,73 +111,88 @@ Debug.Assert(New_Ret  ||  (New_objIndexOfarg0 == -1 && New_objLastIndexOfarg0 ==
 ]
 eg_java = [
 #0
-("""public int getCount() {
-    // @@@ natural language assertion here
-    assert \\result >= 0;
-    return _size;
+("""public class Array<T> {
+    ...
+    
+    /**
+     * Returns the number of elements in this array.
+     *
+     * @return the number of elements in this array
+     */
+    public int getCount() {
+        return _sz;
+        // @@@ natural language assertion here
+        // assert \\result >= 0;
+    }
 }""",
-"assert \\result >= 0;",
-"// @@@ size of array is always greater than or equal to 0"
+"// assert \\result >= 0;",
+"// @@@ size of the array is always greater than or equal to 0"
 ),
 #1
-("""public int add(Object value) {
-    if (_size == _items.length) ensureCapacity(_size + 1);
-    _items[_size] = value;
-    _version++;
-    // @@@ natural language assertion here
-    assert this.contains(value);
-    // @@@ natural language assertion here
-    assert \\old(this.getCount()) + 1 == this.getCount();
-    // @@@ natural language assertion here
-    assert this.lastIndexOf(value) > \\old(this.lastIndexOf(value));
-    // @@@ natural language assertion here
-    assert \\old(this.contains(value))=>this.indexOf(value) == \\old(this.indexOf(value));
-    // @@@ natural language assertion here
-    assert \\forall int i; 0<=i && i<\\old(this.size()-1); this.get(i)==\\old(this.get(i));
-    return _size++;
+("""public class Array<T> {
+    ...
+    
+    /**
+     * Appends the specified element to the end of this array.
+     *
+     * @param value element to be appended to this array
+     * @return sz the number of elements in the result array
+     */
+    public int add(Object value) {
+        if (_sz == _items.length) ensureCapacity(_sz + 1);
+        _items[_sz] = value;
+        _version++;
+        return _sz++;
+        // @@@ natural language assertion here
+        // assert this.contains(value);
+    }
 }""", 
-"assert this.contains(value);",
+"// assert this.contains(value);",
 "// @@@ array contains the added value after the operation"
 ),
 #2
-("""public int add(Object value) {
-    if (_size == _items.length) ensureCapacity(_size + 1);
-    _items[_size] = value;
-    _version++;
-    // @@@ natural language assertion here
-    assert this.contains(value);
-    // @@@ natural language assertion here
-    assert \\old(this.getCount()) + 1 == this.getCount();
-    // @@@ natural language assertion here
-    assert this.lastIndexOf(value) > \\old(this.lastIndexOf(value));
-    // @@@ natural language assertion here
-    assert \\old(this.contains(value))=>this.indexOf(value) == \\old(this.indexOf(value));
-    // @@@ natural language assertion here
-    assert \\forall int i; 0<=i && i<\\old(this.size()-1); this.get(i)==\\old(this.get(i));
-    return _size++;
+("""public class Array<T> {
+    ...
+    
+    /**
+     * Appends the specified element to the end of this array.
+     *
+     * @param value element to be appended to this array
+     * @return sz the number of elements in the result array
+     */
+    public int add(Object value) {
+        if (_sz == _items.length) ensureCapacity(_sz + 1);
+        _items[_sz] = value;
+        _version++;
+        return _sz++;
+        // @@@ natural language assertion here
+        // assert \\old(this.contains(value)) => this.indexOf(value) == \\old(this.indexOf(value));
+    }
 }""", 
-"assert \\old(this.contains(value))=>this.indexOf(value) == \\old(this.indexOf(value));",
-"// @@@ first index of value in the list remains same if value was already in the list"
+"// assert \\old(this.contains(value)) => this.indexOf(value) == \\old(this.indexOf(value));",
+"// @@@ first index of value in the array remains the same if value was already in the list"
 ),
 #3
-("""public int add(Object value) {
-    if (_size == _items.length) ensureCapacity(_size + 1);
-    _items[_size] = value;
-    _version++;
-    // @@@ natural language assertion here
-    assert this.contains(value);
-    // @@@ natural language assertion here
-    assert \\old(this.getCount()) + 1 == this.getCount();
-    // @@@ natural language assertion here
-    assert this.lastIndexOf(value) > \\old(this.lastIndexOf(value));
-    // @@@ natural language assertion here
-    assert \\old(this.contains(value))=>this.indexOf(value) == \\old(this.indexOf(value));
-    // @@@ natural language assertion here
-    assert \\forall int i; 0<=i && i<\\old(this.size()-1); this.get(i)==\\old(this.get(i));
-    return _size++;
+("""public class Array<T> {
+    ...
+    
+    /**
+     * Appends the specified element to the end of this array.
+     *
+     * @param value element to be appended to this array
+     * @return sz the number of elements in the result array
+     */
+    public int add(Object value) {
+        if (_sz == _items.length) ensureCapacity(_sz + 1);
+        _items[_sz] = value;
+        _version++;
+        return _sz++;
+        // @@@ natural language assertion here
+        // assert \\forall int i; 0<=i && i<\\old(this.size()-1); this.get(i)==\\old(this.get(i));
+    }
 }""",
-"assert \\forall int i; 0<=i && i<\\old(this.size()-1); this.get(i)==\\old(this.get(i));",
-"// @@@ All the elements before add remain the same after add."
+"// assert \\forall int i; 0<=i && i<\\old(this.size()-1); this.get(i)==\\old(this.get(i));",
+"// @@@ All the valid indices (between 0 and old size) in the array before add have the same element after add."
 )
 ]
 
@@ -217,13 +232,14 @@ def prompt_transform(mkey, tokenizer, code, langid):
     msg = f"Your task is to read {lang} code, and write a natural language assertion that describes a specific assertion in the code.\n"
     if lang == "java":
         msg += f"Here are some rules and tips:\n"
-        msg += f"1. If the assertion is composed by \"=>\" or \"==>\", that means the former condition implies the latter specification.\n"
-        msg += f"2. If \\old(...) appears, it means the value of the expression before execution.\n"
-        msg += f"3. If \\result appears, it means the return value of the execution.\n"
-        msg += f"4. If \\forall appears, its formal structure is \"\\forall var i; cond; spec\", which means for all the \"i\" that \"cond\" holds, the \"spec\" should jointly hold.\n"
+        msg += f"1. If the assertion is composed by \"=>\" or \"==>\", such as \"A => B\", that means \"A\" implies \"B\".\n"
+        msg += f"2. \\old(expression) means the value of expression before the method is executed.\n"
+        msg += f"3. \\result means the return value of the method.\n"
+        msg += f"4. \"\\forall var i; cond; spec\" means that the \"spec\" should hold for all the \"i\" such that \"cond\" holds.\n"
     else:
         raise NotImplementedError
-    msg += f"Please try to make as consistent as possible. Your explanation should be equivalent to the original specification. Do not include anything extra, and also do not leave anything out.\n"
+    msg += f"Please try to make your translation as consistent as possible. Your translation should be equivalent to the original specification. Do not include anything extra, and also do not leave anything out.\n"
+    msg += f"Also try to make your translation sound natural. For example, to translate \"A => B\", prefer to say if A happens, then B, rather than A implies B. Another example is, to translate \"\\forall\", prefer to say for each or for every, rather than for all.\n"
     msg += f"Your output should be one single line starting with \"{cmnt_tkn} @@@ \"\n"
     msg += f"Here are several examples for your reference:\n"
     for i, (eg, asrt, nl_asrt) in enumerate(eg_lang):
