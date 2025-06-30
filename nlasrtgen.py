@@ -13,7 +13,7 @@ modelpaths = {
         "ds7":      "deepseek-coder-6.7b-instructD",
         "mc7":      "Magicoder-S-DS-6.7B",
         "oc7":      "OpenCodeInterpreter-DS-6.7B",
-        "ow32":     "Owen2.5-Coder-32B-Instruct",
+        "qw32":     "Qwen2.5-Coder-32B-Instruct",
         "gpt3":     "gpt-3.5-turbo",
         "gpt4":     "gpt-4-turbo",
 }

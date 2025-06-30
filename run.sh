@@ -6,7 +6,7 @@ if [ ! -d "javacodes" ]; then
     done
 fi
 
-python nlasrtgen.py --codedir javacodes --modellist ow32 --nsamples 10 --codelist {1..463} --resultdir results_nl --write
+python nlasrtgen.py --codedir javacodes --modellist qw32 --temp 0.3 --nsamples 10 --codelist {1..463} --resultdir results_nl --write
 
 # python main.py --codedir javacodes --modellist gpt4 --nsamples 3 --codelist {1..463} --resultdir ./results --write
 
