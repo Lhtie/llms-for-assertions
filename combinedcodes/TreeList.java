@@ -80,6 +80,60 @@ public class TreeList<E> extends AbstractList<E> {
         /** The stored element. */
         private E value;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    }
+
+    /** The root node in the AVL tree */
+    private AVLNode<E> root;
+
+    /** The current size of the list */
+    private int size;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         /**
          * Constructs a new AVL tree from a collection.
          * <p>
@@ -149,6 +203,61 @@ public class TreeList<E> extends AbstractList<E> {
             }
             recalcHeight();
         }
+
+    /**
+     * Constructs a new empty list.
+     */
+    public TreeList() {
+        // @@@ natural language assertion here
+        // assert this.isEmpty();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
+    }
+
+    /**
+     * Constructs a new empty list that copies the specified collection.
+     *
+     * @param coll  the collection to copy
+     * @throws NullPointerException if the collection is null
+     */
+    public TreeList(final Collection<? extends E> coll) {
+        if (!coll.isEmpty()) {
+            root = new AVLNode<>(coll);
+            size = coll.size();
+        }
+        // @@@ natural language assertion here
+        // assert coll!=null => this.size()==coll.size();
+        // @@@ natural language assertion here
+        // assert coll!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==coll.get(i);
+        // @@@ natural language assertion here
+        // assert coll!=null => this.equals(coll);
+    }
+
+    /**
+     * Adds a new element to the list.
+     *
+     * @param index  the index to add before
+     * @param obj  the element to add
+     */
+    @Override
+    public void add(final int index, final E obj) {
+        modCount++;
+        checkInterval(index, 0, size());
+        if (root == null) {
+            root = new AVLNode<>(index, obj, null, null);
+        } else {
+            root = root.insert(index, obj);
+        }
+        size++;
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => this.contains(obj);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => obj==null&&this.get(index)==null||this.get(index).equals(obj);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
+    }
 
         /**
          * Appends the elements of another tree list to this tree list by efficiently
@@ -256,6 +365,31 @@ public class TreeList<E> extends AbstractList<E> {
             return s;
         }
 
+    /**
+     * Appends all the elements in the specified collection to the end of this list,
+     * in the order that they are returned by the specified collection's Iterator.
+     * <p>
+     * This method runs in O(n + log m) time, where m is
+     * the size of this list and n is the size of {@code c}.
+     *
+     * @param c  the collection to be added to this list
+     * @return {@code true} if this list changed as a result of the call
+     * @throws NullPointerException if the specified collection contains a
+     *         null element and this collection does not permit null elements,
+     *         or if the specified collection is null
+     */
+    @Override
+    public boolean addAll(final Collection<? extends E> c) {
+        if (c.isEmpty()) {
+            return false;
+        }
+        modCount += c.size();
+        final AVLNode<E> cTree = new AVLNode<>(c);
+        root = root == null ? cTree : root.addAll(cTree, size);
+        size += c.size();
+        return true;
+    }
+
         /**
          * Balances according to the AVL algorithm.
          */
@@ -280,6 +414,45 @@ public class TreeList<E> extends AbstractList<E> {
             }
         }
 
+    /**
+     * Checks whether the index is valid.
+     *
+     * @param index  the index to check
+     * @param startIndex  the first allowed index
+     * @param endIndex  the last allowed index
+     * @throws IndexOutOfBoundsException if the index is invalid
+     */
+    private void checkInterval(final int index, final int startIndex, final int endIndex) {
+        if (index < startIndex || index > endIndex) {
+            throw new IndexOutOfBoundsException("Invalid index:" + index + ", size=" + size());
+        }
+    }
+
+    /**
+     * Clears the list, removing all entries.
+     */
+    @Override
+    public void clear() {
+        modCount++;
+        root = null;
+        size = 0;
+        // @@@ natural language assertion here
+        // assert this.isEmtpy();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
+    }
+
+    /**
+     * Searches for the presence of an object in the list.
+     *
+     * @param object  the object to check
+     * @return true if the object is found
+     */
+    @Override
+    public boolean contains(final Object object) {
+        return indexOf(object) >= 0;
+    }
+
         /**
          * Gets the element with the given index relative to the
          * offset of the parent of this node.
@@ -297,6 +470,18 @@ public class TreeList<E> extends AbstractList<E> {
             }
             return nextNode.get(indexRelativeToMe);
         }
+
+    /**
+     * Gets the element at the specified index.
+     *
+     * @param index  the index to retrieve
+     * @return the element at the specified index
+     */
+    @Override
+    public E get(final int index) {
+        checkInterval(index, 0, size() - 1);
+        return root.get(index).getValue();
+    }
 
         /**
          * Gets the height of the node or -1 if the node is null.
@@ -364,6 +549,21 @@ public class TreeList<E> extends AbstractList<E> {
             return -1;
         }
 
+    /**
+     * Searches for the index of an object in the list.
+     *
+     * @param object  the object to search
+     * @return the index of the object, -1 if not found
+     */
+    @Override
+    public int indexOf(final Object object) {
+        // override to go 75% faster
+        if (root == null) {
+            return -1;
+        }
+        return root.indexOf(object, root.relativePosition);
+    }
+
         /**
          * Inserts a node at the position index.
          *
@@ -408,6 +608,42 @@ public class TreeList<E> extends AbstractList<E> {
             recalcHeight();
             return ret;
         }
+
+    /**
+     * Gets an iterator over the list.
+     *
+     * @return an iterator over the list
+     */
+    @Override
+    public Iterator<E> iterator() {
+        // override to go 75% faster
+        return null;
+    }
+
+    /**
+     * Gets a ListIterator over the list.
+     *
+     * @return the new iterator
+     */
+    @Override
+    public ListIterator<E> listIterator() {
+        // override to go 75% faster
+        return null;
+    }
+
+    /**
+     * Gets a ListIterator over the list.
+     *
+     * @param fromIndex  the index to start from
+     * @return the new iterator
+     */
+    @Override
+    public ListIterator<E> listIterator(final int fromIndex) {
+        // override to go 75% faster
+        // cannot use EmptyIterator as iterator.add() must work
+        checkInterval(fromIndex, 0, size());
+        return null;
+    }
 
         /**
          * Gets the rightmost child of this node.
@@ -486,6 +722,28 @@ public class TreeList<E> extends AbstractList<E> {
             recalcHeight();
             return balance();
         }
+
+    /**
+     * Removes the element at the specified index.
+     *
+     * @param index  the index to remove
+     * @return the previous object at that index
+     */
+    @Override
+    public E remove(final int index) {
+        modCount++;
+        checkInterval(index, 0, size() - 1);
+        final E result = get(index);
+        root = root.remove(index);
+        size--;
+        return result;
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \forall int i; index<i && i<\old(this).size()-1; this.get(i)==null && \old(this).get(i+1)==null || this.get(i).equals(\old(this).get(i+1));
+    }
 
         private AVLNode<E> removeMax() {
             if (getRightSubTree() == null) {
@@ -601,6 +859,29 @@ public class TreeList<E> extends AbstractList<E> {
             return newTop;
         }
 
+    /**
+     * Sets the element at the specified index.
+     *
+     * @param index  the index to set
+     * @param obj  the object to store at the specified index
+     * @return the previous object at that index
+     * @throws IndexOutOfBoundsException if the index is invalid
+     */
+    @Override
+    public E set(final int index, final E obj) {
+        checkInterval(index, 0, size() - 1);
+        final AVLNode<E> node = root.get(index);
+        final E result = node.value;
+        node.setValue(obj);
+        return result;
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this).get(i)==null || this.get(i).equals(\old(this).get(i));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+    }
+
         /**
          * Sets the left field to the node, or the previous node if that is null
          *
@@ -646,6 +927,18 @@ public class TreeList<E> extends AbstractList<E> {
             this.value = obj;
         }
 
+    /**
+     * Gets the current size of the list.
+     *
+     * @return the current size
+     */
+    @Override
+    public int size() {
+        return size;
+        // @@@ natural language assertion here
+        // assert \result>=0;
+    }
+
         /**
          * Stores the node and its children into the array specified.
          *
@@ -661,271 +954,6 @@ public class TreeList<E> extends AbstractList<E> {
                 right.toArray(array, index + right.relativePosition);
             }
         }
-
-        /**
-         * Used for debugging.
-         */
-        @Override
-        public String toString() {
-            return new StringBuilder()
-                .append("AVLNode(")
-                .append(relativePosition)
-                .append(CollectionUtils.COMMA)
-                .append(left != null)
-                .append(CollectionUtils.COMMA)
-                .append(value)
-                .append(CollectionUtils.COMMA)
-                .append(getRightSubTree() != null)
-                .append(rightIsNext)
-                .append(")")
-                .toString();
-        }
-    }
-
-    /** The root node in the AVL tree */
-    private AVLNode<E> root;
-
-    /** The current size of the list */
-    private int size;
-
-    /**
-     * Constructs a new empty list.
-     */
-    public TreeList() {
-        // @@@ natural language assertion here
-        // assert this.isEmpty();
-        // @@@ natural language assertion here
-        // assert this.size()==0;
-    }
-
-    /**
-     * Constructs a new empty list that copies the specified collection.
-     *
-     * @param coll  the collection to copy
-     * @throws NullPointerException if the collection is null
-     */
-    public TreeList(final Collection<? extends E> coll) {
-        if (!coll.isEmpty()) {
-            root = new AVLNode<>(coll);
-            size = coll.size();
-        }
-        // @@@ natural language assertion here
-        // assert coll!=null => this.size()==coll.size();
-        // @@@ natural language assertion here
-        // assert coll!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==coll.get(i);
-        // @@@ natural language assertion here
-        // assert coll!=null => this.equals(coll);
-    }
-
-    /**
-     * Adds a new element to the list.
-     *
-     * @param index  the index to add before
-     * @param obj  the element to add
-     */
-    @Override
-    public void add(final int index, final E obj) {
-        modCount++;
-        checkInterval(index, 0, size());
-        if (root == null) {
-            root = new AVLNode<>(index, obj, null, null);
-        } else {
-            root = root.insert(index, obj);
-        }
-        size++;
-        // @@@ natural language assertion here
-        // assert index>=0 && index<=this.size() => this.contains(obj);
-        // @@@ natural language assertion here
-        // assert index>=0 && index<=this.size() => obj==null&&this.get(index)==null||this.get(index).equals(obj);
-        // @@@ natural language assertion here
-        // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
-        // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
-    }
-
-    /**
-     * Appends all the elements in the specified collection to the end of this list,
-     * in the order that they are returned by the specified collection's Iterator.
-     * <p>
-     * This method runs in O(n + log m) time, where m is
-     * the size of this list and n is the size of {@code c}.
-     *
-     * @param c  the collection to be added to this list
-     * @return {@code true} if this list changed as a result of the call
-     * @throws NullPointerException if the specified collection contains a
-     *         null element and this collection does not permit null elements,
-     *         or if the specified collection is null
-     */
-    @Override
-    public boolean addAll(final Collection<? extends E> c) {
-        if (c.isEmpty()) {
-            return false;
-        }
-        modCount += c.size();
-        final AVLNode<E> cTree = new AVLNode<>(c);
-        root = root == null ? cTree : root.addAll(cTree, size);
-        size += c.size();
-        return true;
-    }
-
-    /**
-     * Checks whether the index is valid.
-     *
-     * @param index  the index to check
-     * @param startIndex  the first allowed index
-     * @param endIndex  the last allowed index
-     * @throws IndexOutOfBoundsException if the index is invalid
-     */
-    private void checkInterval(final int index, final int startIndex, final int endIndex) {
-        if (index < startIndex || index > endIndex) {
-            throw new IndexOutOfBoundsException("Invalid index:" + index + ", size=" + size());
-        }
-    }
-
-    /**
-     * Clears the list, removing all entries.
-     */
-    @Override
-    public void clear() {
-        modCount++;
-        root = null;
-        size = 0;
-        // @@@ natural language assertion here
-        // assert this.isEmtpy();
-        // @@@ natural language assertion here
-        // assert this.size()==0;
-    }
-
-    /**
-     * Searches for the presence of an object in the list.
-     *
-     * @param object  the object to check
-     * @return true if the object is found
-     */
-    @Override
-    public boolean contains(final Object object) {
-        return indexOf(object) >= 0;
-    }
-
-    /**
-     * Gets the element at the specified index.
-     *
-     * @param index  the index to retrieve
-     * @return the element at the specified index
-     */
-    @Override
-    public E get(final int index) {
-        checkInterval(index, 0, size() - 1);
-        return root.get(index).getValue();
-    }
-
-    /**
-     * Searches for the index of an object in the list.
-     *
-     * @param object  the object to search
-     * @return the index of the object, -1 if not found
-     */
-    @Override
-    public int indexOf(final Object object) {
-        // override to go 75% faster
-        if (root == null) {
-            return -1;
-        }
-        return root.indexOf(object, root.relativePosition);
-    }
-
-    /**
-     * Gets an iterator over the list.
-     *
-     * @return an iterator over the list
-     */
-    @Override
-    public Iterator<E> iterator() {
-        // override to go 75% faster
-        return null;
-    }
-
-    /**
-     * Gets a ListIterator over the list.
-     *
-     * @return the new iterator
-     */
-    @Override
-    public ListIterator<E> listIterator() {
-        // override to go 75% faster
-        return null;
-    }
-
-    /**
-     * Gets a ListIterator over the list.
-     *
-     * @param fromIndex  the index to start from
-     * @return the new iterator
-     */
-    @Override
-    public ListIterator<E> listIterator(final int fromIndex) {
-        // override to go 75% faster
-        // cannot use EmptyIterator as iterator.add() must work
-        checkInterval(fromIndex, 0, size());
-        return null;
-    }
-
-    /**
-     * Removes the element at the specified index.
-     *
-     * @param index  the index to remove
-     * @return the previous object at that index
-     */
-    @Override
-    public E remove(final int index) {
-        modCount++;
-        checkInterval(index, 0, size() - 1);
-        final E result = get(index);
-        root = root.remove(index);
-        size--;
-        return result;
-        // @@@ natural language assertion here
-        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ natural language assertion here
-        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
-        // assert index>=0 && index<this.size() => \forall int i; index<i && i<\old(this).size()-1; this.get(i)==null && \old(this).get(i+1)==null || this.get(i).equals(\old(this).get(i+1));
-    }
-
-    /**
-     * Sets the element at the specified index.
-     *
-     * @param index  the index to set
-     * @param obj  the object to store at the specified index
-     * @return the previous object at that index
-     * @throws IndexOutOfBoundsException if the index is invalid
-     */
-    @Override
-    public E set(final int index, final E obj) {
-        checkInterval(index, 0, size() - 1);
-        final AVLNode<E> node = root.get(index);
-        final E result = node.value;
-        node.setValue(obj);
-        return result;
-        // @@@ natural language assertion here
-        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ natural language assertion here
-        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this).get(i)==null || this.get(i).equals(\old(this).get(i));
-        // @@@ natural language assertion here
-        // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-    }
-
-    /**
-     * Gets the current size of the list.
-     *
-     * @return the current size
-     */
-    @Override
-    public int size() {
-        return size;
-        // @@@ natural language assertion here
-        // assert \result>=0;
-    }
 
     /**
      * Converts the list into an array.
@@ -948,4 +976,22 @@ public class TreeList<E> extends AbstractList<E> {
         // assert \forall int i; 0<=i && i<this.size(); this.get(i)==null && \result[i]==null || this.get(i).equals(\result[i]);
     }
 
+        /**
+         * Used for debugging.
+         */
+        @Override
+        public String toString() {
+            return new StringBuilder()
+                .append("AVLNode(")
+                .append(relativePosition)
+                .append(CollectionUtils.COMMA)
+                .append(left != null)
+                .append(CollectionUtils.COMMA)
+                .append(value)
+                .append(CollectionUtils.COMMA)
+                .append(getRightSubTree() != null)
+                .append(rightIsNext)
+                .append(")")
+                .toString();
+        }
 }

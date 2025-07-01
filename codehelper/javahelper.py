@@ -308,4 +308,3 @@ class javahelper(codehelper):
             return f"{self.fuzz_objname}.{funcname}({', '.join(args)});"
         else:
             return f"var {self.fuzz_retvar} = {self.fuzz_objname}.{funcname}({', '.join(args)});"
-        

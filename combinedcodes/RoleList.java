@@ -37,9 +37,11 @@ public class RoleList extends ArrayList<Object> {
     /* Serial version */
     private static final long serialVersionUID = 5568344346499649313L;
 
-    //
-    // Constructors
-    //
+    /*
+     * Override all of the methods from ArrayList<Object> that might add
+     * a non-Role to the List, and disallow that if asList has ever
+     * been called on this instance.
+     */
 
     /**
      * Constructs an empty RoleList.
@@ -103,10 +105,6 @@ public class RoleList extends ArrayList<Object> {
         // assert list!=null => this.equals(list);
     }
 
-    //
-    // Accessors
-    //
-
     /**
      * Adds the Role specified as the last element of the list.
      *
@@ -162,37 +160,23 @@ public class RoleList extends ArrayList<Object> {
         // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this)size(); this.get(i+1) == null&&\old(this).get(i) == null||this.get(i+1).equals(\old(this).get(i));
     }
 
-    /**
-     * Sets the element at the position specified to be the role
-     * specified.
-     * The previous element at that position is discarded.
-     *
-     * @param index  The position specified.
-     * @param role  The value to which the role element should be set.
-     *
-     * @exception IllegalArgumentException  if the role is null.
-     * @exception IndexOutOfBoundsException  if accessing with an index
-     * outside of the list.
-     */
-     public void set(int index,
-                     Role role)
-         throws IllegalArgumentException,
-                IndexOutOfBoundsException {
+    @Override
+    public boolean add(Object o) {
+        if (!tainted)
+            tainted = isTainted(o);
+        if (typeSafe)
+            checkTypeSafe(o);
+        return super.add(o);
+    }
 
-        if (role == null) {
-            // Revisit [cebro] Localize message
-            String excMsg = "Invalid parameter.";
-            throw new IllegalArgumentException(excMsg);
-        }
-
-        super.set(index, role);
-        // @@@ natural language assertion here
-        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ natural language assertion here
-        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this).get(i)==null || this.get(i).equals(\old(this).get(i));
-        // @@@ natural language assertion here
-        // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-     }
+    @Override
+    public void add(int index, Object element) {
+        if (!tainted)
+            tainted = isTainted(element);
+        if (typeSafe)
+            checkTypeSafe(element);
+        super.add(index, element);
+    }
 
     /**
      * Appends all the elements in the RoleList specified to the end
@@ -249,30 +233,6 @@ public class RoleList extends ArrayList<Object> {
         return (super.addAll(index, roleList));
     }
 
-    /*
-     * Override all of the methods from ArrayList<Object> that might add
-     * a non-Role to the List, and disallow that if asList has ever
-     * been called on this instance.
-     */
-
-    @Override
-    public boolean add(Object o) {
-        if (!tainted)
-            tainted = isTainted(o);
-        if (typeSafe)
-            checkTypeSafe(o);
-        return super.add(o);
-    }
-
-    @Override
-    public void add(int index, Object element) {
-        if (!tainted)
-            tainted = isTainted(element);
-        if (typeSafe)
-            checkTypeSafe(element);
-        super.add(index, element);
-    }
-
     @Override
     public boolean addAll(Collection<?> c) {
         if (!tainted)
@@ -289,15 +249,6 @@ public class RoleList extends ArrayList<Object> {
         if (typeSafe)
             checkTypeSafe(c);
         return super.addAll(index, c);
-    }
-
-    @Override
-    public Object set(int index, Object element) {
-        if (!tainted)
-            tainted = isTainted(element);
-        if (typeSafe)
-            checkTypeSafe(element);
-        return super.set(index, element);
     }
 
     /**
@@ -346,5 +297,46 @@ public class RoleList extends ArrayList<Object> {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Sets the element at the position specified to be the role
+     * specified.
+     * The previous element at that position is discarded.
+     *
+     * @param index  The position specified.
+     * @param role  The value to which the role element should be set.
+     *
+     * @exception IllegalArgumentException  if the role is null.
+     * @exception IndexOutOfBoundsException  if accessing with an index
+     * outside of the list.
+     */
+     public void set(int index,
+                     Role role)
+         throws IllegalArgumentException,
+                IndexOutOfBoundsException {
+
+        if (role == null) {
+            // Revisit [cebro] Localize message
+            String excMsg = "Invalid parameter.";
+            throw new IllegalArgumentException(excMsg);
+        }
+
+        super.set(index, role);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this).get(i)==null || this.get(i).equals(\old(this).get(i));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+     }
+
+    @Override
+    public Object set(int index, Object element) {
+        if (!tainted)
+            tainted = isTainted(element);
+        if (typeSafe)
+            checkTypeSafe(element);
+        return super.set(index, element);
     }
 }

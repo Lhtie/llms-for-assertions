@@ -36,6 +36,58 @@ public class DefaultListenableGraph<V, E>
     private FlyweightVertexEvent<V> reuseableVertexEvent;
     private boolean reuseEvents;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * A reuseable edge event.
+     *
+     * @author Barak Naveh
+     */
+    private static class FlyweightEdgeEvent<VV, EE>
+        extends GraphEdgeChangeEvent<VV, EE>
+    {
+        private static final long serialVersionUID = 3907207152526636089L;
+
+
+
+
+
+    }
+
+    /**
+     * A reuseable vertex event.
+     *
+     * @author Barak Naveh
+     */
+    private static class FlyweightVertexEvent<VV>
+        extends GraphVertexChangeEvent<VV>
+    {
+        private static final long serialVersionUID = 3257848787857585716L;
+
+
+
     /**
      * Creates a new listenable graph.
      *
@@ -75,31 +127,21 @@ public class DefaultListenableGraph<V, E>
         }
     }
 
-    /**
-     * If the {@code reuseEvents} flag is set to {@code true} this class will reuse
-     * previously fired events and will not create a new object for each event. This option
-     * increases performance but should be used with care, especially in multithreaded environment.
-     *
-     * @param reuseEvents whether to reuse previously fired event objects instead of creating a new
-     *        event object for each event.
-     */
-    public void setReuseEvents(boolean reuseEvents)
-    {
-        this.reuseEvents = reuseEvents;
-    }
+        /**
+         * @see GraphEdgeChangeEvent
+         */
+        public FlyweightEdgeEvent(Object eventSource, int type, EE e)
+        {
+            super(eventSource, type, e, null, null);
+        }
 
-    /**
-     * Tests whether the {@code reuseEvents} flag is set. If the flag is set to
-     * {@code true} this class will reuse previously fired events and will not create a new
-     * object for each event. This option increases performance but should be used with care,
-     * especially in multithreaded environment.
-     *
-     * @return the value of the {@code reuseEvents} flag.
-     */
-    public boolean isReuseEvents()
-    {
-        return reuseEvents;
-    }
+        /**
+         * @see GraphVertexChangeEvent#GraphVertexChangeEvent(Object, int, Object)
+         */
+        public FlyweightVertexEvent(Object eventSource, int type, VV vertex)
+        {
+            super(eventSource, type, vertex);
+        }
 
     @Override
     public E addEdge(V sourceVertex, V targetVertex)
@@ -135,6 +177,13 @@ public class DefaultListenableGraph<V, E>
     public void addGraphListener(GraphListener<V, E> l)
     {
         addToListenerList(graphListeners, l);
+    }
+
+    private static <L extends EventListener> void addToListenerList(List<L> list, L l)
+    {
+        if (!list.contains(l)) {
+            list.add(l);
+        }
     }
 
     @Override
@@ -182,75 +231,32 @@ public class DefaultListenableGraph<V, E>
         }
     }
 
-    @Override
-    public E removeEdge(V sourceVertex, V targetVertex)
+    private GraphEdgeChangeEvent<V, E> createGraphEdgeChangeEvent(
+        int eventType, E edge, V source, V target, double weight)
     {
-        E e = super.getEdge(sourceVertex, targetVertex);
-        if (e != null) {
-            double weight = super.getEdgeWeight(e);
-            if (super.removeEdge(e)) {
-                fireEdgeRemoved(e, sourceVertex, targetVertex, weight);
-            }
-        }
-        return e;
-    }
+        if (reuseEvents) {
+            reuseableEdgeEvent.setType(eventType);
+            reuseableEdgeEvent.setEdge(edge);
+            reuseableEdgeEvent.setEdgeSource(source);
+            reuseableEdgeEvent.setEdgeTarget(target);
+            reuseableEdgeEvent.setEdgeWeight(weight);
 
-    @Override
-    public boolean removeEdge(E e)
-    {
-        V sourceVertex = getEdgeSource(e);
-        V targetVertex = getEdgeTarget(e);
-        double weight = getEdgeWeight(e);
-
-        boolean modified = super.removeEdge(e);
-
-        if (modified) {
-            fireEdgeRemoved(e, sourceVertex, targetVertex, weight);
-        }
-
-        return modified;
-    }
-
-    @Override
-    public void removeGraphListener(GraphListener<V, E> l)
-    {
-        graphListeners.remove(l);
-    }
-
-    @Override
-    public boolean removeVertex(V v)
-    {
-        if (containsVertex(v)) {
-            Set<E> touchingEdgesList = edgesOf(v);
-
-            // copy set to avoid ConcurrentModificationException
-            removeAllEdges(new ArrayList<>(touchingEdgesList));
-
-            super.removeVertex(v); // remove the vertex itself
-
-            fireVertexRemoved(v);
-
-            return true;
+            return reuseableEdgeEvent;
         } else {
-            return false;
+            return new GraphEdgeChangeEvent<>(this, eventType, edge, source, target, weight);
         }
     }
 
-    @Override
-    public void setEdgeWeight(E e, double weight)
+    private GraphVertexChangeEvent<V> createGraphVertexChangeEvent(int eventType, V vertex)
     {
-        super.setEdgeWeight(e, weight);
+        if (reuseEvents) {
+            reuseableVertexEvent.setType(eventType);
+            reuseableVertexEvent.setVertex(vertex);
 
-        V sourceVertex = getEdgeSource(e);
-        V targetVertex = getEdgeTarget(e);
-
-        fireEdgeWeightUpdated(e, sourceVertex, targetVertex, weight);
-    }
-
-    @Override
-    public void removeVertexSetListener(VertexSetListener<V> l)
-    {
-        vertexSetListeners.remove(l);
+            return reuseableVertexEvent;
+        } else {
+            return new GraphVertexChangeEvent<>(this, eventType, vertex);
+        }
     }
 
     /**
@@ -345,58 +351,78 @@ public class DefaultListenableGraph<V, E>
         }
     }
 
-    private static <L extends EventListener> void addToListenerList(List<L> list, L l)
-    {
-        if (!list.contains(l)) {
-            list.add(l);
-        }
-    }
-
-    private GraphEdgeChangeEvent<V, E> createGraphEdgeChangeEvent(
-        int eventType, E edge, V source, V target, double weight)
-    {
-        if (reuseEvents) {
-            reuseableEdgeEvent.setType(eventType);
-            reuseableEdgeEvent.setEdge(edge);
-            reuseableEdgeEvent.setEdgeSource(source);
-            reuseableEdgeEvent.setEdgeTarget(target);
-            reuseableEdgeEvent.setEdgeWeight(weight);
-
-            return reuseableEdgeEvent;
-        } else {
-            return new GraphEdgeChangeEvent<>(this, eventType, edge, source, target, weight);
-        }
-    }
-
-    private GraphVertexChangeEvent<V> createGraphVertexChangeEvent(int eventType, V vertex)
-    {
-        if (reuseEvents) {
-            reuseableVertexEvent.setType(eventType);
-            reuseableVertexEvent.setVertex(vertex);
-
-            return reuseableVertexEvent;
-        } else {
-            return new GraphVertexChangeEvent<>(this, eventType, vertex);
-        }
-    }
-
     /**
-     * A reuseable edge event.
+     * Tests whether the {@code reuseEvents} flag is set. If the flag is set to
+     * {@code true} this class will reuse previously fired events and will not create a new
+     * object for each event. This option increases performance but should be used with care,
+     * especially in multithreaded environment.
      *
-     * @author Barak Naveh
+     * @return the value of the {@code reuseEvents} flag.
      */
-    private static class FlyweightEdgeEvent<VV, EE>
-        extends GraphEdgeChangeEvent<VV, EE>
+    public boolean isReuseEvents()
     {
-        private static final long serialVersionUID = 3907207152526636089L;
+        return reuseEvents;
+    }
 
-        /**
-         * @see GraphEdgeChangeEvent
-         */
-        public FlyweightEdgeEvent(Object eventSource, int type, EE e)
-        {
-            super(eventSource, type, e, null, null);
+    @Override
+    public E removeEdge(V sourceVertex, V targetVertex)
+    {
+        E e = super.getEdge(sourceVertex, targetVertex);
+        if (e != null) {
+            double weight = super.getEdgeWeight(e);
+            if (super.removeEdge(e)) {
+                fireEdgeRemoved(e, sourceVertex, targetVertex, weight);
+            }
         }
+        return e;
+    }
+
+    @Override
+    public boolean removeEdge(E e)
+    {
+        V sourceVertex = getEdgeSource(e);
+        V targetVertex = getEdgeTarget(e);
+        double weight = getEdgeWeight(e);
+
+        boolean modified = super.removeEdge(e);
+
+        if (modified) {
+            fireEdgeRemoved(e, sourceVertex, targetVertex, weight);
+        }
+
+        return modified;
+    }
+
+    @Override
+    public void removeGraphListener(GraphListener<V, E> l)
+    {
+        graphListeners.remove(l);
+    }
+
+    @Override
+    public boolean removeVertex(V v)
+    {
+        if (containsVertex(v)) {
+            Set<E> touchingEdgesList = edgesOf(v);
+
+            // copy set to avoid ConcurrentModificationException
+            removeAllEdges(new ArrayList<>(touchingEdgesList));
+
+            super.removeVertex(v); // remove the vertex itself
+
+            fireVertexRemoved(v);
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public void removeVertexSetListener(VertexSetListener<V> l)
+    {
+        vertexSetListeners.remove(l);
+    }
 
         /**
          * Sets the edge of this event.
@@ -418,10 +444,34 @@ public class DefaultListenableGraph<V, E>
             this.edgeTarget = v;
         }
 
+    @Override
+    public void setEdgeWeight(E e, double weight)
+    {
+        super.setEdgeWeight(e, weight);
+
+        V sourceVertex = getEdgeSource(e);
+        V targetVertex = getEdgeTarget(e);
+
+        fireEdgeWeightUpdated(e, sourceVertex, targetVertex, weight);
+    }
+
         protected void setEdgeWeight(double weight)
         {
             this.edgeWeight = weight;
         }
+
+    /**
+     * If the {@code reuseEvents} flag is set to {@code true} this class will reuse
+     * previously fired events and will not create a new object for each event. This option
+     * increases performance but should be used with care, especially in multithreaded environment.
+     *
+     * @param reuseEvents whether to reuse previously fired event objects instead of creating a new
+     *        event object for each event.
+     */
+    public void setReuseEvents(boolean reuseEvents)
+    {
+        this.reuseEvents = reuseEvents;
+    }
 
         /**
          * Set the event type of this event.
@@ -431,25 +481,6 @@ public class DefaultListenableGraph<V, E>
         protected void setType(int type)
         {
             this.type = type;
-        }
-    }
-
-    /**
-     * A reuseable vertex event.
-     *
-     * @author Barak Naveh
-     */
-    private static class FlyweightVertexEvent<VV>
-        extends GraphVertexChangeEvent<VV>
-    {
-        private static final long serialVersionUID = 3257848787857585716L;
-
-        /**
-         * @see GraphVertexChangeEvent#GraphVertexChangeEvent(Object, int, Object)
-         */
-        public FlyweightVertexEvent(Object eventSource, int type, VV vertex)
-        {
-            super(eventSource, type, vertex);
         }
 
         /**
@@ -470,7 +501,6 @@ public class DefaultListenableGraph<V, E>
         protected void setVertex(VV vertex)
         {
             this.vertex = vertex;
-        }
-    }
+        }    }
 
 }

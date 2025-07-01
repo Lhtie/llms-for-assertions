@@ -24,6 +24,7 @@ import java.util.*;
  */
 public
 class Stack<E> extends Vector<E> {
+
     /**
      * Creates an empty Stack.
      */
@@ -35,23 +36,33 @@ class Stack<E> extends Vector<E> {
     }
 
     /**
-     * Pushes an item onto the top of this stack. This has exactly
-     * the same effect as:
-     * <blockquote><pre>
-     * addElement(item)</pre></blockquote>
+     * Tests if this stack is empty.
      *
-     * @param   item   the item to be pushed onto this stack.
-     * @return  the {@code item} argument.
-     * @see     java.util.Vector#addElement
+     * @return  {@code true} if and only if this stack contains
+     *          no items; {@code false} otherwise.
      */
-    public E push(E item) {
-        addElement(item);
+    public boolean empty() {
+        return size() == 0;
+        // @@@ natural language assertion here
+        // assert \result==(this.size()==0);
+    }
 
-        return item;
+    /**
+     * Looks at the object at the top of this stack without removing it
+     * from the stack.
+     *
+     * @return  the object at the top of this stack (the last item
+     *          of the {@code Vector} object).
+     * @throws  EmptyStackException  if this stack is empty.
+     */
+    public synchronized E peek() {
+        int     len = size();
+
+        if (len == 0)
+            throw new EmptyStackException();
+        return elementAt(len - 1);
         // @@@ natural language assertion here
-        // assert this.contains(e);
-        // @@@ natural language assertion here
-        // assert item==null && this.get(this.size()-1)==null || item!=null && item.equals(this.get(this.size()-1));
+        // assert !this.isEmpty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
     /**
@@ -75,33 +86,23 @@ class Stack<E> extends Vector<E> {
     }
 
     /**
-     * Looks at the object at the top of this stack without removing it
-     * from the stack.
+     * Pushes an item onto the top of this stack. This has exactly
+     * the same effect as:
+     * <blockquote><pre>
+     * addElement(item)</pre></blockquote>
      *
-     * @return  the object at the top of this stack (the last item
-     *          of the {@code Vector} object).
-     * @throws  EmptyStackException  if this stack is empty.
+     * @param   item   the item to be pushed onto this stack.
+     * @return  the {@code item} argument.
+     * @see     java.util.Vector#addElement
      */
-    public synchronized E peek() {
-        int     len = size();
+    public E push(E item) {
+        addElement(item);
 
-        if (len == 0)
-            throw new EmptyStackException();
-        return elementAt(len - 1);
+        return item;
         // @@@ natural language assertion here
-        // assert !this.isEmpty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
-    }
-
-    /**
-     * Tests if this stack is empty.
-     *
-     * @return  {@code true} if and only if this stack contains
-     *          no items; {@code false} otherwise.
-     */
-    public boolean empty() {
-        return size() == 0;
+        // assert this.contains(e);
         // @@@ natural language assertion here
-        // assert \result==(this.size()==0);
+        // assert item==null && this.get(this.size()-1)==null || item!=null && item.equals(this.get(this.size()-1));
     }
 
     /**
@@ -126,7 +127,7 @@ class Stack<E> extends Vector<E> {
         }
         return -1;
     }
-
+    
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
     private static final long serialVersionUID = 1224463164541339165L;
 }

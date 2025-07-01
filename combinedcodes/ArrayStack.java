@@ -34,6 +34,13 @@ public class ArrayStack<E> extends ArrayList<E> {
     /** Ensure serialization compatibility */
     private static final long serialVersionUID = 2130079159931574599L;
 
+
+
+
+
+
+
+
     /**
      * Constructs a new empty {@code ArrayStack}. The initial size
      * is controlled by {@code ArrayList} and is currently 10.
@@ -161,5 +168,4 @@ public class ArrayStack<E> extends ArrayList<E> {
         }
         return -1;
     }
-
 }

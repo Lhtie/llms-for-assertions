@@ -94,6 +94,46 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      */
     transient int modCount;     // non-private to simplify nested class access
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // A tiny bit set implementation
+
+
+
+
+
     /**
      * Creates a {@code PriorityQueue} with the default initial
      * capacity (11) that orders its elements according to their
@@ -191,18 +231,151 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         // assert c!=null => \forall int i; 0<=i && i<c.size(); this.contains(c.get(i));
     }
 
+    /**
+     * Inserts the specified element into this priority queue.
+     *
+     * @return {@code true} (as specified by {@link Collection#add})
+     * @throws ClassCastException if the specified element cannot be
+     *         compared with elements currently in this priority queue
+     *         according to the priority queue's ordering
+     * @throws NullPointerException if the specified element is null
+     */
+    public boolean add(E e) {
+        return offer(e);
+    }
+
+    /** Implementation of bulk remove methods. */
+    private boolean bulkRemove(Predicate<? super E> filter) {
+        final int expectedModCount = ++modCount;
+        final Object[] es = queue;
+        final int end = size;
+        int i;
+        // Optimize for initial run of survivors
+        for (i = 0; i < end && !filter.test((E) es[i]); i++)
+            ;
+        if (i >= end) {
+            if (modCount != expectedModCount)
+                throw new ConcurrentModificationException();
+            return false;
+        }
+        // Tolerate predicates that reentrantly access the collection for
+        // read (but writers still get CME), so traverse once to find
+        // elements to delete, a second pass to physically expunge.
+        final int beg = i;
+        final long[] deathRow = nBits(end - beg);
+        deathRow[0] = 1L;   // set bit 0
+        for (i = beg + 1; i < end; i++)
+            if (filter.test((E) es[i]))
+                setBit(deathRow, i - beg);
+        if (modCount != expectedModCount)
+            throw new ConcurrentModificationException();
+        int w = beg;
+        for (i = beg; i < end; i++)
+            if (isClear(deathRow, i - beg))
+                es[w++] = es[i];
+        for (i = size = w; i < end; i++)
+            es[i] = null;
+        heapify();
+        return true;
+    }
+
+    /**
+     * Removes all of the elements from this priority queue.
+     * The queue will be empty after this call returns.
+     */
+    public void clear() {
+        modCount++;
+        final Object[] es = queue;
+        for (int i = 0, n = size; i < n; i++)
+            es[i] = null;
+        size = 0;
+        // @@@ natural language assertion here
+        // assert this.size()==0;
+    }
+
+    /**
+     * Returns the comparator used to order the elements in this
+     * queue, or {@code null} if this queue is sorted according to
+     * the {@linkplain Comparable natural ordering} of its elements.
+     *
+     * @return the comparator used to order this queue, or
+     *         {@code null} if this queue is sorted according to the
+     *         natural ordering of its elements
+     */
+    public Comparator<? super E> comparator() {
+        return comparator;
+    }
+
+    /**
+     * Returns {@code true} if this queue contains the specified element.
+     * More formally, returns {@code true} if and only if this queue contains
+     * at least one element {@code e} such that {@code o.equals(e)}.
+     *
+     * @param o object to be checked for containment in this queue
+     * @return {@code true} if this queue contains the specified element
+     */
+    public boolean contains(Object o) {
+        return indexOf(o) >= 0;
+    }
+
     /** Ensures that queue[0] exists, helping peek() and poll(). */
     private static Object[] ensureNonEmpty(Object[] es) {
         return (es.length > 0) ? es : new Object[1];
     }
 
-    private void initFromPriorityQueue(PriorityQueue<? extends E> c) {
-        if (c.getClass() == PriorityQueue.class) {
-            this.queue = ensureNonEmpty(c.toArray());
-            this.size = c.size();
-        } else {
-            initFromCollection(c);
+    /**
+     * @throws NullPointerException {@inheritDoc}
+     */
+    public void forEach(Consumer<? super E> action) {
+        Objects.requireNonNull(action);
+        final int expectedModCount = modCount;
+        final Object[] es = queue;
+        for (int i = 0, n = size; i < n; i++)
+            action.accept((E) es[i]);
+        if (expectedModCount != modCount)
+            throw new ConcurrentModificationException();
+    }
+
+    /**
+     * Increases the capacity of the array.
+     *
+     * @param minCapacity the desired minimum capacity
+     */
+    private void grow(int minCapacity) {
+        int oldCapacity = queue.length;
+        // Double size if small; else grow by 50%
+        int minGrowth = minCapacity - oldCapacity;
+        int prefGrowth = (oldCapacity < 64) ? (oldCapacity + 2) : (oldCapacity >> 1);
+
+        int newCapacity = oldCapacity + Math.max(minGrowth, prefGrowth);
+        queue = Arrays.copyOf(queue, newCapacity);
+    }
+
+    /**
+     * Establishes the heap invariant (described above) in the entire tree,
+     * assuming nothing about the order of the elements prior to the call.
+     * This classic algorithm due to Floyd (1964) is known to be O(size).
+     */
+    private void heapify() {
+        final Object[] es = queue;
+        int n = size, i = (n >>> 1) - 1;
+        final Comparator<? super E> cmp;
+        if ((cmp = comparator) == null)
+            for (; i >= 0; i--)
+                siftDownComparable(i, (E) es[i], es, n);
+        else
+            for (; i >= 0; i--)
+                siftDownUsingComparator(i, (E) es[i], es, n, cmp);
+    }
+
+    private int indexOf(Object o) {
+        if (o != null) {
+            final Object[] es = queue;
+            for (int i = 0, n = size; i < n; i++)
+                if (o.equals(es[i]))
+                    return i;
         }
+        return -1;
     }
 
     private void initElementsFromCollection(Collection<? extends E> c) {
@@ -228,32 +401,30 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         heapify();
     }
 
-    /**
-     * Increases the capacity of the array.
-     *
-     * @param minCapacity the desired minimum capacity
-     */
-    private void grow(int minCapacity) {
-        int oldCapacity = queue.length;
-        // Double size if small; else grow by 50%
-        int minGrowth = minCapacity - oldCapacity;
-        int prefGrowth = (oldCapacity < 64) ? (oldCapacity + 2) : (oldCapacity >> 1);
-
-        int newCapacity = oldCapacity + Math.max(minGrowth, prefGrowth);
-        queue = Arrays.copyOf(queue, newCapacity);
+    private void initFromPriorityQueue(PriorityQueue<? extends E> c) {
+        if (c.getClass() == PriorityQueue.class) {
+            this.queue = ensureNonEmpty(c.toArray());
+            this.size = c.size();
+        } else {
+            initFromCollection(c);
+        }
+    }
+    private static boolean isClear(long[] bits, int i) {
+        return (bits[i >> 6] & (1L << i)) == 0;
     }
 
     /**
-     * Inserts the specified element into this priority queue.
+     * Returns an iterator over the elements in this queue. The iterator
+     * does not return the elements in any particular order.
      *
-     * @return {@code true} (as specified by {@link Collection#add})
-     * @throws ClassCastException if the specified element cannot be
-     *         compared with elements currently in this priority queue
-     *         according to the priority queue's ordering
-     * @throws NullPointerException if the specified element is null
+     * @return an iterator over the elements in this queue
      */
-    public boolean add(E e) {
-        return offer(e);
+    public Iterator<E> iterator() {
+        return null;
+    }
+
+    private static long[] nBits(int n) {
+        return new long[((n - 1) >> 6) + 1];
     }
 
     /**
@@ -297,14 +468,32 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         // assert this.size()==0 => \result==null;
     }
 
-    private int indexOf(Object o) {
-        if (o != null) {
-            final Object[] es = queue;
-            for (int i = 0, n = size; i < n; i++)
-                if (o.equals(es[i]))
-                    return i;
+    public E poll() {
+        final Object[] es;
+        final E result;
+
+        if ((result = (E) ((es = queue)[0])) != null) {
+            modCount++;
+            final int n;
+            final E x = (E) es[(n = --size)];
+            es[n] = null;
+            if (n > 0) {
+                final Comparator<? super E> cmp;
+                if ((cmp = comparator) == null)
+                    siftDownComparable(0, x, es, n);
+                else
+                    siftDownUsingComparator(0, x, es, n, cmp);
+            }
         }
-        return -1;
+        return result;
+        // @@@ natural language assertion here
+        // assert \result==\old(this.peek());
+        // @@@ natural language assertion here
+        // assert \old(this.size())==0 => \result==null;
+        // @@@ natural language assertion here
+        // assert \old(this.size())>0 => this.size()==\old(this.size())-1;
+        // @@@ natural language assertion here
+        // assert this.size()>0 => this.peek().compareTo(\old(this.peek()))>=0;
     }
 
     /**
@@ -337,6 +526,48 @@ public class PriorityQueue<E> extends AbstractQueue<E>
     }
 
     /**
+     * @throws NullPointerException {@inheritDoc}
+     */
+    public boolean removeAll(Collection<?> c) {
+        Objects.requireNonNull(c);
+        return bulkRemove(e -> c.contains(e));
+        // @@@ natural language assertion here
+        // assert c!=null => \forall int i; 0<=i && i<this.size(); !c.contains(this.get(i));
+    }
+
+    /**
+     * Removes the ith element from queue.
+     *
+     * Normally this method leaves the elements at up to i-1,
+     * inclusive, untouched.  Under these circumstances, it returns
+     * null.  Occasionally, in order to maintain the heap invariant,
+     * it must swap a later element of the list with one earlier than
+     * i.  Under these circumstances, this method returns the element
+     * that was previously at the end of the list and is now at some
+     * position before i. This fact is used by iterator.remove so as to
+     * avoid missing traversing elements.
+     */
+    E removeAt(int i) {
+        // assert i >= 0 && i < size;
+        final Object[] es = queue;
+        modCount++;
+        int s = --size;
+        if (s == i) // removed last element
+            es[i] = null;
+        else {
+            E moved = (E) es[s];
+            es[s] = null;
+            siftDown(i, moved);
+            if (es[i] == moved) {
+                siftUp(i, moved);
+                if (es[i] != moved)
+                    return moved;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Identity-based version for use in Itr.remove.
      *
      * @param o element to be removed from this queue, if present
@@ -352,15 +583,127 @@ public class PriorityQueue<E> extends AbstractQueue<E>
     }
 
     /**
-     * Returns {@code true} if this queue contains the specified element.
-     * More formally, returns {@code true} if and only if this queue contains
-     * at least one element {@code e} such that {@code o.equals(e)}.
-     *
-     * @param o object to be checked for containment in this queue
-     * @return {@code true} if this queue contains the specified element
+     * @throws NullPointerException {@inheritDoc}
      */
-    public boolean contains(Object o) {
-        return indexOf(o) >= 0;
+    public boolean removeIf(Predicate<? super E> filter) {
+        Objects.requireNonNull(filter);
+        return bulkRemove(filter);
+    }
+
+    /**
+     * @throws NullPointerException {@inheritDoc}
+     */
+    public boolean retainAll(Collection<?> c) {
+        Objects.requireNonNull(c);
+        return bulkRemove(e -> !c.contains(e));
+        // @@@ natural language assertion here
+        // assert c!=null => \forall int i; 0<=i && i<this.size(); c.contains(this.get(i));
+    }
+    private static void setBit(long[] bits, int i) {
+        bits[i >> 6] |= 1L << i;
+    }
+
+    /**
+     * Inserts item x at position k, maintaining heap invariant by
+     * demoting x down the tree repeatedly until it is less than or
+     * equal to its children or is a leaf.
+     *
+     * @param k the position to fill
+     * @param x the item to insert
+     */
+    private void siftDown(int k, E x) {
+        if (comparator != null)
+            siftDownUsingComparator(k, x, queue, size, comparator);
+        else
+            siftDownComparable(k, x, queue, size);
+    }
+
+    private static <T> void siftDownComparable(int k, T x, Object[] es, int n) {
+        // assert n > 0;
+        Comparable<? super T> key = (Comparable<? super T>)x;
+        int half = n >>> 1;           // loop while a non-leaf
+        while (k < half) {
+            int child = (k << 1) + 1; // assume left child is least
+            Object c = es[child];
+            int right = child + 1;
+            if (right < n &&
+                ((Comparable<? super T>) c).compareTo((T) es[right]) > 0)
+                c = es[child = right];
+            if (key.compareTo((T) c) <= 0)
+                break;
+            es[k] = c;
+            k = child;
+        }
+        es[k] = key;
+    }
+
+    private static <T> void siftDownUsingComparator(
+        int k, T x, Object[] es, int n, Comparator<? super T> cmp) {
+        // assert n > 0;
+        int half = n >>> 1;
+        while (k < half) {
+            int child = (k << 1) + 1;
+            Object c = es[child];
+            int right = child + 1;
+            if (right < n && cmp.compare((T) c, (T) es[right]) > 0)
+                c = es[child = right];
+            if (cmp.compare(x, (T) c) <= 0)
+                break;
+            es[k] = c;
+            k = child;
+        }
+        es[k] = x;
+    }
+
+    /**
+     * Inserts item x at position k, maintaining heap invariant by
+     * promoting x up the tree until it is greater than or equal to
+     * its parent, or is the root.
+     *
+     * To simplify and speed up coercions and comparisons, the
+     * Comparable and Comparator versions are separated into different
+     * methods that are otherwise identical. (Similarly for siftDown.)
+     *
+     * @param k the position to fill
+     * @param x the item to insert
+     */
+    private void siftUp(int k, E x) {
+        if (comparator != null)
+            siftUpUsingComparator(k, x, queue, comparator);
+        else
+            siftUpComparable(k, x, queue);
+    }
+
+    private static <T> void siftUpComparable(int k, T x, Object[] es) {
+        Comparable<? super T> key = (Comparable<? super T>) x;
+        while (k > 0) {
+            int parent = (k - 1) >>> 1;
+            Object e = es[parent];
+            if (key.compareTo((T) e) >= 0)
+                break;
+            es[k] = e;
+            k = parent;
+        }
+        es[k] = key;
+    }
+
+    private static <T> void siftUpUsingComparator(
+        int k, T x, Object[] es, Comparator<? super T> cmp) {
+        while (k > 0) {
+            int parent = (k - 1) >>> 1;
+            Object e = es[parent];
+            if (cmp.compare(x, (T) e) >= 0)
+                break;
+            es[k] = e;
+            k = parent;
+        }
+        es[k] = x;
+    }
+
+    public int size() {
+        return size;
+        // @@@ natural language assertion here
+        // assert \result>=0;
     }
 
     /**
@@ -433,310 +776,4 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         return a;
         // @@@ natural language assertion here
         // assert a!=null => \result!=null;
-    }
-
-    /**
-     * Returns an iterator over the elements in this queue. The iterator
-     * does not return the elements in any particular order.
-     *
-     * @return an iterator over the elements in this queue
-     */
-    public Iterator<E> iterator() {
-        return null;
-    }
-
-    public int size() {
-        return size;
-        // @@@ natural language assertion here
-        // assert \result>=0;
-    }
-
-    /**
-     * Removes all of the elements from this priority queue.
-     * The queue will be empty after this call returns.
-     */
-    public void clear() {
-        modCount++;
-        final Object[] es = queue;
-        for (int i = 0, n = size; i < n; i++)
-            es[i] = null;
-        size = 0;
-        // @@@ natural language assertion here
-        // assert this.size()==0;
-    }
-
-    public E poll() {
-        final Object[] es;
-        final E result;
-
-        if ((result = (E) ((es = queue)[0])) != null) {
-            modCount++;
-            final int n;
-            final E x = (E) es[(n = --size)];
-            es[n] = null;
-            if (n > 0) {
-                final Comparator<? super E> cmp;
-                if ((cmp = comparator) == null)
-                    siftDownComparable(0, x, es, n);
-                else
-                    siftDownUsingComparator(0, x, es, n, cmp);
-            }
-        }
-        return result;
-        // @@@ natural language assertion here
-        // assert \result==\old(this.peek());
-        // @@@ natural language assertion here
-        // assert \old(this.size())==0 => \result==null;
-        // @@@ natural language assertion here
-        // assert \old(this.size())>0 => this.size()==\old(this.size())-1;
-        // @@@ natural language assertion here
-        // assert this.size()>0 => this.peek().compareTo(\old(this.peek()))>=0;
-    }
-
-    /**
-     * Removes the ith element from queue.
-     *
-     * Normally this method leaves the elements at up to i-1,
-     * inclusive, untouched.  Under these circumstances, it returns
-     * null.  Occasionally, in order to maintain the heap invariant,
-     * it must swap a later element of the list with one earlier than
-     * i.  Under these circumstances, this method returns the element
-     * that was previously at the end of the list and is now at some
-     * position before i. This fact is used by iterator.remove so as to
-     * avoid missing traversing elements.
-     */
-    E removeAt(int i) {
-        // assert i >= 0 && i < size;
-        final Object[] es = queue;
-        modCount++;
-        int s = --size;
-        if (s == i) // removed last element
-            es[i] = null;
-        else {
-            E moved = (E) es[s];
-            es[s] = null;
-            siftDown(i, moved);
-            if (es[i] == moved) {
-                siftUp(i, moved);
-                if (es[i] != moved)
-                    return moved;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Inserts item x at position k, maintaining heap invariant by
-     * promoting x up the tree until it is greater than or equal to
-     * its parent, or is the root.
-     *
-     * To simplify and speed up coercions and comparisons, the
-     * Comparable and Comparator versions are separated into different
-     * methods that are otherwise identical. (Similarly for siftDown.)
-     *
-     * @param k the position to fill
-     * @param x the item to insert
-     */
-    private void siftUp(int k, E x) {
-        if (comparator != null)
-            siftUpUsingComparator(k, x, queue, comparator);
-        else
-            siftUpComparable(k, x, queue);
-    }
-
-    private static <T> void siftUpComparable(int k, T x, Object[] es) {
-        Comparable<? super T> key = (Comparable<? super T>) x;
-        while (k > 0) {
-            int parent = (k - 1) >>> 1;
-            Object e = es[parent];
-            if (key.compareTo((T) e) >= 0)
-                break;
-            es[k] = e;
-            k = parent;
-        }
-        es[k] = key;
-    }
-
-    private static <T> void siftUpUsingComparator(
-        int k, T x, Object[] es, Comparator<? super T> cmp) {
-        while (k > 0) {
-            int parent = (k - 1) >>> 1;
-            Object e = es[parent];
-            if (cmp.compare(x, (T) e) >= 0)
-                break;
-            es[k] = e;
-            k = parent;
-        }
-        es[k] = x;
-    }
-
-    /**
-     * Inserts item x at position k, maintaining heap invariant by
-     * demoting x down the tree repeatedly until it is less than or
-     * equal to its children or is a leaf.
-     *
-     * @param k the position to fill
-     * @param x the item to insert
-     */
-    private void siftDown(int k, E x) {
-        if (comparator != null)
-            siftDownUsingComparator(k, x, queue, size, comparator);
-        else
-            siftDownComparable(k, x, queue, size);
-    }
-
-    private static <T> void siftDownComparable(int k, T x, Object[] es, int n) {
-        // assert n > 0;
-        Comparable<? super T> key = (Comparable<? super T>)x;
-        int half = n >>> 1;           // loop while a non-leaf
-        while (k < half) {
-            int child = (k << 1) + 1; // assume left child is least
-            Object c = es[child];
-            int right = child + 1;
-            if (right < n &&
-                ((Comparable<? super T>) c).compareTo((T) es[right]) > 0)
-                c = es[child = right];
-            if (key.compareTo((T) c) <= 0)
-                break;
-            es[k] = c;
-            k = child;
-        }
-        es[k] = key;
-    }
-
-    private static <T> void siftDownUsingComparator(
-        int k, T x, Object[] es, int n, Comparator<? super T> cmp) {
-        // assert n > 0;
-        int half = n >>> 1;
-        while (k < half) {
-            int child = (k << 1) + 1;
-            Object c = es[child];
-            int right = child + 1;
-            if (right < n && cmp.compare((T) c, (T) es[right]) > 0)
-                c = es[child = right];
-            if (cmp.compare(x, (T) c) <= 0)
-                break;
-            es[k] = c;
-            k = child;
-        }
-        es[k] = x;
-    }
-
-    /**
-     * Establishes the heap invariant (described above) in the entire tree,
-     * assuming nothing about the order of the elements prior to the call.
-     * This classic algorithm due to Floyd (1964) is known to be O(size).
-     */
-    private void heapify() {
-        final Object[] es = queue;
-        int n = size, i = (n >>> 1) - 1;
-        final Comparator<? super E> cmp;
-        if ((cmp = comparator) == null)
-            for (; i >= 0; i--)
-                siftDownComparable(i, (E) es[i], es, n);
-        else
-            for (; i >= 0; i--)
-                siftDownUsingComparator(i, (E) es[i], es, n, cmp);
-    }
-
-    /**
-     * Returns the comparator used to order the elements in this
-     * queue, or {@code null} if this queue is sorted according to
-     * the {@linkplain Comparable natural ordering} of its elements.
-     *
-     * @return the comparator used to order this queue, or
-     *         {@code null} if this queue is sorted according to the
-     *         natural ordering of its elements
-     */
-    public Comparator<? super E> comparator() {
-        return comparator;
-    }
-
-    /**
-     * @throws NullPointerException {@inheritDoc}
-     */
-    public boolean removeIf(Predicate<? super E> filter) {
-        Objects.requireNonNull(filter);
-        return bulkRemove(filter);
-    }
-
-    /**
-     * @throws NullPointerException {@inheritDoc}
-     */
-    public boolean removeAll(Collection<?> c) {
-        Objects.requireNonNull(c);
-        return bulkRemove(e -> c.contains(e));
-        // @@@ natural language assertion here
-        // assert c!=null => \forall int i; 0<=i && i<this.size(); !c.contains(this.get(i));
-    }
-
-    /**
-     * @throws NullPointerException {@inheritDoc}
-     */
-    public boolean retainAll(Collection<?> c) {
-        Objects.requireNonNull(c);
-        return bulkRemove(e -> !c.contains(e));
-        // @@@ natural language assertion here
-        // assert c!=null => \forall int i; 0<=i && i<this.size(); c.contains(this.get(i));
-    }
-
-    // A tiny bit set implementation
-
-    private static long[] nBits(int n) {
-        return new long[((n - 1) >> 6) + 1];
-    }
-    private static void setBit(long[] bits, int i) {
-        bits[i >> 6] |= 1L << i;
-    }
-    private static boolean isClear(long[] bits, int i) {
-        return (bits[i >> 6] & (1L << i)) == 0;
-    }
-
-    /** Implementation of bulk remove methods. */
-    private boolean bulkRemove(Predicate<? super E> filter) {
-        final int expectedModCount = ++modCount;
-        final Object[] es = queue;
-        final int end = size;
-        int i;
-        // Optimize for initial run of survivors
-        for (i = 0; i < end && !filter.test((E) es[i]); i++)
-            ;
-        if (i >= end) {
-            if (modCount != expectedModCount)
-                throw new ConcurrentModificationException();
-            return false;
-        }
-        // Tolerate predicates that reentrantly access the collection for
-        // read (but writers still get CME), so traverse once to find
-        // elements to delete, a second pass to physically expunge.
-        final int beg = i;
-        final long[] deathRow = nBits(end - beg);
-        deathRow[0] = 1L;   // set bit 0
-        for (i = beg + 1; i < end; i++)
-            if (filter.test((E) es[i]))
-                setBit(deathRow, i - beg);
-        if (modCount != expectedModCount)
-            throw new ConcurrentModificationException();
-        int w = beg;
-        for (i = beg; i < end; i++)
-            if (isClear(deathRow, i - beg))
-                es[w++] = es[i];
-        for (i = size = w; i < end; i++)
-            es[i] = null;
-        heapify();
-        return true;
-    }
-
-    /**
-     * @throws NullPointerException {@inheritDoc}
-     */
-    public void forEach(Consumer<? super E> action) {
-        Objects.requireNonNull(action);
-        final int expectedModCount = modCount;
-        final Object[] es = queue;
-        for (int i = 0, n = size; i < n; i++)
-            action.accept((E) es[i]);
-        if (expectedModCount != modCount)
-            throw new ConcurrentModificationException();
-    }
-}
+    }}

@@ -9,7 +9,7 @@ def get_lines(term, lines):
             ret.append(i)
     return ret
 
-def get_funcs(lines, langid="cs"):
+def get_funcs(lines, langid="java"):
     if langid == "cs":
         return get_lines("public virtual", lines)
     elif langid == "java":
@@ -23,8 +23,9 @@ def get_funcs(lines, langid="cs"):
                 pattern = r"""^(public|protected|private\s+)?
                               (static\s+)?
                               (final\s+)?
+                              (synchronized\s+)?
                               (?!if|else|for|while|switch|catch|throw|return)\b
-                              (\w+[\w\<\>\[\],\s\?]*)\s+
+                              (\w+[\w\<\>\[\],\s\?]*)\s+        # could be public in case of constructors
                               (\w+)\s*
                               \(([\w\<\>\[\],\s\?]*)\)\s*
                               ({|;)?.*
@@ -84,7 +85,7 @@ def onedown(args):
         clp = closing_paren(code, s)
         start = f-1
         if "{" in code[s]:
-            while code[start].strip().startswith(tuple(["//", "/*", "*", "*/"])):
+            while code[start].strip().startswith(tuple(["//", "/*", "*", "*/", "@"])):
                 start -= 1
             content = code[:start+1] + code[clp:] + ["\n"] + code[start+1:clp]
             break

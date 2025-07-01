@@ -23,24 +23,6 @@ public class ArrayList<E> extends AbstractList<E>
     private int size;
 
     /**
-     * Constructs an empty list with the specified initial capacity.
-     *
-     * @param  initialCapacity  the initial capacity of the list
-     * @throws IllegalArgumentException if the specified initial capacity
-     *         is negative
-     */
-    public ArrayList(int initialCapacity) {
-        if (initialCapacity > 0) {
-            this.elementData = new Object[initialCapacity];
-        } else if (initialCapacity == 0) {
-            this.elementData = EMPTY_ELEMENTDATA;
-        } else {
-            throw new IllegalArgumentException("Illegal Capacity: "+
-                                               initialCapacity);
-        }
-    }
-
-    /**
      * Constructs an empty list with an initial capacity of ten.
      */
     public ArrayList() {
@@ -79,49 +61,22 @@ public class ArrayList<E> extends AbstractList<E>
         // assert c!=null => this.equals(c);
     }
 
-     /**
-     * Increases the capacity to ensure that it can hold at least the
-     * number of elements specified by the minimum capacity argument.
+    /**
+     * Constructs an empty list with the specified initial capacity.
      *
-     * @param minCapacity the desired minimum capacity
-     * @throws OutOfMemoryError if minCapacity is less than zero
+     * @param  initialCapacity  the initial capacity of the list
+     * @throws IllegalArgumentException if the specified initial capacity
+     *         is negative
      */
-    private Object[] grow(int minCapacity) {
-        int oldCapacity = elementData.length;
-        if (oldCapacity > 0 || elementData != DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
-            int newCapacity = oldCapacity >> 1;
-            return elementData = Arrays.copyOf(elementData, newCapacity);
+    public ArrayList(int initialCapacity) {
+        if (initialCapacity > 0) {
+            this.elementData = new Object[initialCapacity];
+        } else if (initialCapacity == 0) {
+            this.elementData = EMPTY_ELEMENTDATA;
         } else {
-            return elementData = new Object[Math.max(DEFAULT_CAPACITY, minCapacity)];
+            throw new IllegalArgumentException("Illegal Capacity: "+
+                                               initialCapacity);
         }
-    }
-
-    private Object[] grow() {
-        return grow(size + 1);
-    }
-
-    /**
-     * Constructs an IndexOutOfBoundsException detail message.
-     * Of the many possible refactorings of the error handling code,
-     * this "outlining" performs best with both server and client VMs.
-     */
-    private String outOfBoundsMsg(int index) {
-        return "Index: "+index+", Size: "+size;
-    }
-
-    /**
-     * A version used in checking (fromIndex > toIndex) condition
-     */
-    private static String outOfBoundsMsg(int fromIndex, int toIndex) {
-        return "From Index: " + fromIndex + " > To Index: " + toIndex;
-    }
-
-    /**
-     * A version of rangeCheck used by add and addAll.
-     */
-    private void rangeCheckForAdd(int index) {
-        if (index > size || index < 0)
-            throw new IndexOutOfBoundsException(outOfBoundsMsg(index));
     }
 
     /**
@@ -251,6 +206,97 @@ public class ArrayList<E> extends AbstractList<E>
         return true;
     }
 
+    boolean batchRemove(Collection<?> c, boolean complement,
+                        final int from, final int end) {
+        Objects.requireNonNull(c);
+        final Object[] es = elementData;
+        int r;
+        // Optimize for initial run of survivors
+        for (r = from;; r++) {
+            if (r == end)
+                return false;
+            if (c.contains(es[r]) != complement)
+                break;
+        }
+        int w = r++;
+        try {
+            for (Object e; r < end; r++)
+                if (c.contains(e = es[r]) == complement)
+                    es[w++] = e;
+        } catch (Throwable ex) {
+            // Preserve behavioral compatibility with AbstractCollection,
+            // even if c.contains() throws.
+            System.arraycopy(es, r, es, w, end - r);
+            w += end - r;
+            throw ex;
+        } finally {
+            modCount += end - w;
+            shiftTailOverGap(es, w, end);
+        }
+        return true;
+    }
+
+    /**
+     * Removes all of the elements from this list.  The list will
+     * be empty after this call returns.
+     */
+    public void clear() {
+        modCount++;
+        final Object[] es = elementData;
+        for (int to = size, i = size = 0; i < to; i++)
+            es[i] = null;
+        // @@@ natural language assertion here
+        // assert this.isEmpty();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
+    }
+
+    /**
+     * Returns a shallow copy of this {@code ArrayList} instance.  (The
+     * elements themselves are not copied.)
+     *
+     * @return a clone of this {@code ArrayList} instance
+     */
+    public Object clone() {
+        try {
+            ArrayList<?> v = (ArrayList<?>) super.clone();
+            v.elementData = Arrays.copyOf(elementData, size);
+            v.modCount = 0;
+            return v;
+        } catch (CloneNotSupportedException e) {
+            // this shouldn't happen, since we are Cloneable
+            throw new InternalError(e);
+        }
+        // @@@ natural language assertion here
+        // assert \result!=this;
+        // @@@ natural language assertion here
+        // assert \result.equals(this);
+        // @@@ natural language assertion here
+        // assert \result.size()==this.size();
+        // @@@ natural language assertion here
+        // assert \forall int i; 0<=i && i<this.size(); result.get(i)==this.get(i);
+        // @@@ natural language assertion here
+        // assert \result!=null;
+    }
+
+    /**
+     * Returns {@code true} if this list contains the specified element.
+     * More formally, returns {@code true} if and only if this list contains
+     * at least one element {@code e} such that
+     * {@code Objects.equals(o, e)}.
+     *
+     * @param o element whose presence in this list is to be tested
+     * @return {@code true} if this list contains the specified element
+     */
+    public boolean contains(Object o) {
+        return indexOf(o) >= 0;
+    }
+
+    @SuppressWarnings("unchecked")
+    E elementData(int index) {
+        return (E) elementData[index];
+    }
+
     /**
      * Private remove method that skips bounds checking and does not
      * return the value removed.
@@ -261,6 +307,144 @@ public class ArrayList<E> extends AbstractList<E>
         if ((newSize = size - 1) > i)
             System.arraycopy(es, i + 1, es, i, newSize - i);
         es[size = newSize] = null;
+    }
+
+    /**
+     * Returns the element at the specified position in this list.
+     *
+     * @param  index index of the element to return
+     * @return the element at the specified position in this list
+     * @throws IndexOutOfBoundsException {@inheritDoc}
+     */
+    public E get(int index) {
+        Objects.checkIndex(index, size);
+        return elementData(index);
+    }
+
+     /**
+     * Increases the capacity to ensure that it can hold at least the
+     * number of elements specified by the minimum capacity argument.
+     *
+     * @param minCapacity the desired minimum capacity
+     * @throws OutOfMemoryError if minCapacity is less than zero
+     */
+    private Object[] grow(int minCapacity) {
+        int oldCapacity = elementData.length;
+        if (oldCapacity > 0 || elementData != DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+            int newCapacity = oldCapacity >> 1;
+            return elementData = Arrays.copyOf(elementData, newCapacity);
+        } else {
+            return elementData = new Object[Math.max(DEFAULT_CAPACITY, minCapacity)];
+        }
+    }
+
+    private Object[] grow() {
+        return grow(size + 1);
+    }
+    
+    /**
+     * Returns the index of the first occurrence of the specified element
+     * in this list, or -1 if this list does not contain the element.
+     * More formally, returns the lowest index {@code i} such that
+     * {@code Objects.equals(o, get(i))},
+     * or -1 if there is no such index.
+     */
+    public int indexOf(Object o) {
+        return indexOfRange(o, 0, size);
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)==null ==> o==null;
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
+        // @@@ natural language assertion here
+        // assert \result!=-1 => \forall int i; 0<=i && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
+    }
+
+    int indexOfRange(Object o, int start, int end) {
+        Object[] es = elementData;
+        if (o == null) {
+            for (int i = start; i < end; i++) {
+                if (es[i] == null) {
+                    return i;
+                }
+            }
+        } else {
+            for (int i = start; i < end; i++) {
+                if (o.equals(es[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Returns {@code true} if this list contains no elements.
+     *
+     * @return {@code true} if this list contains no elements
+     */
+    public boolean isEmpty() {
+        return size == 0;
+        // @@@ natural language assertion here
+        // assert \result==(this.size()==0);
+    }
+
+    /**
+     * Returns the index of the last occurrence of the specified element
+     * in this list, or -1 if this list does not contain the element.
+     * More formally, returns the highest index {@code i} such that
+     * {@code Objects.equals(o, get(i))},
+     * or -1 if there is no such index.
+     */
+    public int lastIndexOf(Object o) {
+        return lastIndexOfRange(o, 0, size);
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)==null ==> o==null;
+        // @@@ natural language assertion here
+        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
+        // @@@ natural language assertion here
+        // assert \result!=-1 => \forall int i; \result<i && i<this.size(); this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
+    }
+
+    int lastIndexOfRange(Object o, int start, int end) {
+        Object[] es = elementData;
+        if (o == null) {
+            for (int i = end - 1; i >= start; i--) {
+                if (es[i] == null) {
+                    return i;
+                }
+            }
+        } else {
+            for (int i = end - 1; i >= start; i--) {
+                if (o.equals(es[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Constructs an IndexOutOfBoundsException detail message.
+     * Of the many possible refactorings of the error handling code,
+     * this "outlining" performs best with both server and client VMs.
+     */
+    private String outOfBoundsMsg(int index) {
+        return "Index: "+index+", Size: "+size;
+    }
+
+    /**
+     * A version used in checking (fromIndex > toIndex) condition
+     */
+    private static String outOfBoundsMsg(int fromIndex, int toIndex) {
+        return "From Index: " + fromIndex + " > To Index: " + toIndex;
+    }
+
+    /**
+     * A version of rangeCheck used by add and addAll.
+     */
+    private void rangeCheckForAdd(int index) {
+        if (index > size || index < 0)
+            throw new IndexOutOfBoundsException(outOfBoundsMsg(index));
     }
 
     /**
@@ -321,43 +505,6 @@ public class ArrayList<E> extends AbstractList<E>
         return true;
         // @@@ natural langauge assertion here
         // assert \old(this.contains(o)) => \result==true;
-    }
-
-    /** Erases the gap from lo to hi, by sliding down following elements. */
-    private void shiftTailOverGap(Object[] es, int lo, int hi) {
-        System.arraycopy(es, hi, es, lo, size - hi);
-        for (int to = size, i = (size -= hi - lo); i < to; i++)
-            es[i] = null;
-    }
-
-    boolean batchRemove(Collection<?> c, boolean complement,
-                        final int from, final int end) {
-        Objects.requireNonNull(c);
-        final Object[] es = elementData;
-        int r;
-        // Optimize for initial run of survivors
-        for (r = from;; r++) {
-            if (r == end)
-                return false;
-            if (c.contains(es[r]) != complement)
-                break;
-        }
-        int w = r++;
-        try {
-            for (Object e; r < end; r++)
-                if (c.contains(e = es[r]) == complement)
-                    es[w++] = e;
-        } catch (Throwable ex) {
-            // Preserve behavioral compatibility with AbstractCollection,
-            // even if c.contains() throws.
-            System.arraycopy(es, r, es, w, end - r);
-            w += end - r;
-            throw ex;
-        } finally {
-            modCount += end - w;
-            shiftTailOverGap(es, w, end);
-        }
-        return true;
     }
 
     /**
@@ -443,47 +590,22 @@ public class ArrayList<E> extends AbstractList<E>
         // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
-    /**
-     * Removes all of the elements from this list.  The list will
-     * be empty after this call returns.
-     */
-    public void clear() {
-        modCount++;
-        final Object[] es = elementData;
-        for (int to = size, i = size = 0; i < to; i++)
+    /** Erases the gap from lo to hi, by sliding down following elements. */
+    private void shiftTailOverGap(Object[] es, int lo, int hi) {
+        System.arraycopy(es, hi, es, lo, size - hi);
+        for (int to = size, i = (size -= hi - lo); i < to; i++)
             es[i] = null;
-        // @@@ natural language assertion here
-        // assert this.isEmpty();
-        // @@@ natural language assertion here
-        // assert this.size()==0;
     }
 
     /**
-     * Returns a shallow copy of this {@code ArrayList} instance.  (The
-     * elements themselves are not copied.)
+     * Returns the number of elements in this list.
      *
-     * @return a clone of this {@code ArrayList} instance
+     * @return the number of elements in this list
      */
-    public Object clone() {
-        try {
-            ArrayList<?> v = (ArrayList<?>) super.clone();
-            v.elementData = Arrays.copyOf(elementData, size);
-            v.modCount = 0;
-            return v;
-        } catch (CloneNotSupportedException e) {
-            // this shouldn't happen, since we are Cloneable
-            throw new InternalError(e);
-        }
+    public int size() {
+        return size;
         // @@@ natural language assertion here
-        // assert \result!=this;
-        // @@@ natural language assertion here
-        // assert \result.equals(this);
-        // @@@ natural language assertion here
-        // assert \result.size()==this.size();
-        // @@@ natural language assertion here
-        // assert \forall int i; 0<=i && i<this.size(); result.get(i)==this.get(i);
-        // @@@ natural language assertion here
-        // assert \result!=null;
+        // assert \result>=0;
     }
 
     /**
@@ -545,129 +667,5 @@ public class ArrayList<E> extends AbstractList<E>
         return a;
         // @@@ natural language assertion here
         // assert a!=null => \result!=null;
-    }
-
-    // The followings are observation methods.
-
-    /**
-     * Returns {@code true} if this list contains no elements.
-     *
-     * @return {@code true} if this list contains no elements
-     */
-    public boolean isEmpty() {
-        return size == 0;
-        // @@@ natural language assertion here
-        // assert \result==(this.size()==0);
-    }
-
-    /**
-     * Returns the number of elements in this list.
-     *
-     * @return the number of elements in this list
-     */
-    public int size() {
-        return size;
-        // @@@ natural language assertion here
-        // assert \result>=0;
-    }
-
-    @SuppressWarnings("unchecked")
-    E elementData(int index) {
-        return (E) elementData[index];
-    }
-
-    /**
-     * Returns the element at the specified position in this list.
-     *
-     * @param  index index of the element to return
-     * @return the element at the specified position in this list
-     * @throws IndexOutOfBoundsException {@inheritDoc}
-     */
-    public E get(int index) {
-        Objects.checkIndex(index, size);
-        return elementData(index);
-    }
-
-    /**
-     * Returns the index of the first occurrence of the specified element
-     * in this list, or -1 if this list does not contain the element.
-     * More formally, returns the lowest index {@code i} such that
-     * {@code Objects.equals(o, get(i))},
-     * or -1 if there is no such index.
-     */
-    public int indexOf(Object o) {
-        return indexOfRange(o, 0, size);
-        // @@@ natural language assertion here
-        // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ natural language assertion here
-        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ natural language assertion here
-        // assert \result!=-1 => \forall int i; 0<=i && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
-    }
-
-    int indexOfRange(Object o, int start, int end) {
-        Object[] es = elementData;
-        if (o == null) {
-            for (int i = start; i < end; i++) {
-                if (es[i] == null) {
-                    return i;
-                }
-            }
-        } else {
-            for (int i = start; i < end; i++) {
-                if (o.equals(es[i])) {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * Returns the index of the last occurrence of the specified element
-     * in this list, or -1 if this list does not contain the element.
-     * More formally, returns the highest index {@code i} such that
-     * {@code Objects.equals(o, get(i))},
-     * or -1 if there is no such index.
-     */
-    public int lastIndexOf(Object o) {
-        return lastIndexOfRange(o, 0, size);
-        // @@@ natural language assertion here
-        // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ natural language assertion here
-        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ natural language assertion here
-        // assert \result!=-1 => \forall int i; \result<i && i<this.size(); this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
-    }
-
-    int lastIndexOfRange(Object o, int start, int end) {
-        Object[] es = elementData;
-        if (o == null) {
-            for (int i = end - 1; i >= start; i--) {
-                if (es[i] == null) {
-                    return i;
-                }
-            }
-        } else {
-            for (int i = end - 1; i >= start; i--) {
-                if (o.equals(es[i])) {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * Returns {@code true} if this list contains the specified element.
-     * More formally, returns {@code true} if and only if this list contains
-     * at least one element {@code e} such that
-     * {@code Objects.equals(o, e)}.
-     *
-     * @param o element whose presence in this list is to be tested
-     * @return {@code true} if this list contains the specified element
-     */
-    public boolean contains(Object o) {
-        return indexOf(o) >= 0;
     }
 }

@@ -64,6 +64,40 @@ public class Path implements Structure {
 
 	// ------------- CONSTRUCTORS ------------
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	/**
+	 * Looks at the edge at the top of the stack without removing it from the stack.
+	 * 
+	 * @return The edge at the top of the stack.
+	 */
+
+
+
+
+
+	// ------------ UTILITY METHODS ------------
+
+
+
+
+
+
+
 	/**
 	 * New empty path.
 	 */
@@ -74,106 +108,6 @@ public class Path implements Structure {
         // assert this.empty();
         // @@@ natural language assertion here
         // assert this.size()==0;
-	}
-
-	/**
-	 * Get the root (the first node) of the path.
-	 * 
-	 * @return the root of the path.
-	 */
-	public Node getRoot() {
-		return this.root;
-	}
-
-	/**
-	 * Set the root (first node) of the path.
-	 * 
-	 * @param root
-	 *            The root of the path.
-	 */
-	public void setRoot(Node root) {
-		if (this.root == null) {
-			this.root = root;
-			nodePath.push(root);
-		} else {
-			logger.warning("Root node is not null - first use the clear method.");
-		}
-	}
-
-	/**
-	 * Says whether the path contains this node or not.
-	 * 
-	 * @param node
-	 *            The node tested for existence in the path.
-	 * @return <code>true</code> if the path contains the node.
-	 */
-	public boolean contains(Node node) {
-		return nodePath.contains(node);
-	}
-
-	/**
-	 * Says whether the path contains this edge or not.
-	 * 
-	 * @param edge
-	 *            The edge tested for existence in the path.
-	 * @return <code>true</code> if the path contains the edge.
-	 */
-	public boolean contains(Edge edge) {
-		return edgePath.contains(edge);
-	}
-
-	/**
-	 * Returns true if the path is empty.
-	 * 
-	 * @return <code>true</code> if the path is empty.
-	 */
-	public boolean empty() {
-		return nodePath.empty();
-        // @@@ natural language assertion here
-        // assert \result==(this.size()==0);
-	}
-
-	/**
-	 * Returns the size of the path
-	 */
-	public int size() {
-		return nodePath.size();
-        // @@@ natural language assertion here
-        // assert \result>=0;
-	}
-
-	/**
-	 * It returns the sum of the <code>characteristic</code> given value in the
-	 * Edges of the path.
-	 * 
-	 * @param characteristic
-	 *            The characteristic.
-	 * @return Sum of the characteristics.
-	 */
-	public Double getPathWeight(String characteristic) {
-		double d = 0;
-		for (Edge l : edgePath) {
-			d += (Double) l.getAttribute(characteristic, Number.class);
-		}
-		return d;
-	}
-
-	/**
-	 * Returns the list of edges representing the path.
-	 * 
-	 * @return The list of edges representing the path.
-	 */
-	public List<Edge> getEdgePath() {
-		return edgePath;
-	}
-
-	/**
-	 * Construct an return a list of nodes that represents the path.
-	 * 
-	 * @return A list of nodes representing the path.
-	 */
-	public List<Node> getNodePath() {
-		return nodePath;
 	}
 
 
@@ -231,17 +165,202 @@ public class Path implements Structure {
 	}
 
 	/**
-	 * A synonym for {@link #add(Edge)}.
+	 * Clears the path;
 	 */
-	public void push(Node from, Edge edge) {
-		add(from, edge);
+	public void clear() {
+		nodePath.clear();
+		edgePath.clear();
+		// Runtime.getRuntime().gc();
+		root = null;
+        // @@@ natural language assertion here
+        // assert this.emtpy();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
 	}
 
 	/**
-	 * A synonym for {@link #add(Edge)}.
+	 * Says whether the path contains this node or not.
+	 * 
+	 * @param node
+	 *            The node tested for existence in the path.
+	 * @return <code>true</code> if the path contains the node.
 	 */
-	public void push(Edge edge) {
-		add(edge);
+	public boolean contains(Node node) {
+		return nodePath.contains(node);
+	}
+
+	/**
+	 * Says whether the path contains this edge or not.
+	 * 
+	 * @param edge
+	 *            The edge tested for existence in the path.
+	 * @return <code>true</code> if the path contains the edge.
+	 */
+	public boolean contains(Edge edge) {
+		return edgePath.contains(edge);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see org.graphstream.graph.Structure#edges()
+	 */
+	@Override
+	public Stream<Edge> edges() {
+		return edgePath.stream();
+	}
+
+	/**
+	 * Returns true if the path is empty.
+	 * 
+	 * @return <code>true</code> if the path is empty.
+	 */
+	public boolean empty() {
+		return nodePath.empty();
+        // @@@ natural language assertion here
+        // assert \result==(this.size()==0);
+	}
+
+	/**
+	 * Compare the content of the current path and the specified path to decide
+	 * weather they are equal or not.
+	 * 
+	 * @param p
+	 *            A path to compare to the curent one.
+	 * @return True if both paths are equal.
+	 */
+	public boolean equals(Path p) {
+		if (nodePath.size() != p.nodePath.size()) {
+			return false;
+		} else {
+			for (int i = 0; i < nodePath.size(); i++) {
+				if (nodePath.get(i) != p.nodePath.get(i)) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Get a copy of this path
+	 * 
+	 * @return A copy of this path.
+	 */
+	@SuppressWarnings("unchecked")
+	public Path getACopy() {
+		Path newPath = new Path();
+		newPath.root = this.root;
+		newPath.edgePath = (Stack<Edge>) edgePath.clone();
+		newPath.nodePath = (Stack<Node>) nodePath.clone();
+
+		return newPath;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.graphstream.graph.Structure#getEdgeCount()
+	 */
+	@Override
+	public int getEdgeCount() {
+		return edgePath.size();
+	}
+
+	/**
+	 * Returns the list of edges representing the path.
+	 * 
+	 * @return The list of edges representing the path.
+	 */
+	public List<Edge> getEdgePath() {
+		return edgePath;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.graphstream.graph.Structure#getEdgeSet()
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends Edge> Collection<T> getEdgeSet() {
+		return (Collection<T>) edgePath;
+	}
+
+	/**
+	 * Returns the size of the path. Identical to {@link #size()}.
+	 * 
+	 * @return The size of the path.
+	 */
+	@Override
+	public int getNodeCount() {
+		return nodePath.size();
+	}
+
+	/**
+	 * Construct an return a list of nodes that represents the path.
+	 * 
+	 * @return A list of nodes representing the path.
+	 */
+	public List<Node> getNodePath() {
+		return nodePath;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see org.graphstream.graph.Structure#getNodeSet()
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends Node> Collection<T> getNodeSet() {
+		return (Collection<T>) nodePath;
+	}
+
+	/**
+	 * It returns the sum of the <code>characteristic</code> given value in the
+	 * Edges of the path.
+	 * 
+	 * @param characteristic
+	 *            The characteristic.
+	 * @return Sum of the characteristics.
+	 */
+	public Double getPathWeight(String characteristic) {
+		double d = 0;
+		for (Edge l : edgePath) {
+			d += (Double) l.getAttribute(characteristic, Number.class);
+		}
+		return d;
+	}
+
+	/**
+	 * Get the root (the first node) of the path.
+	 * 
+	 * @return the root of the path.
+	 */
+	public Node getRoot() {
+		return this.root;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see org.graphstream.graph.Structure#nodes()
+	 */
+	@Override
+	public Stream<Node> nodes() {
+		return nodePath.stream();
+	}
+
+	public Edge peekEdge() {
+		return edgePath.peek();
+	}
+
+	/**
+	 * Looks at the node at the top of the stack without removing it from the stack.
+	 * 
+	 * @return The node at the top of the stack.
+	 */
+	public Node peekNode() {
+		return nodePath.peek();
 	}
 
 	/**
@@ -267,51 +386,17 @@ public class Path implements Structure {
 	}
 
 	/**
-	 * Looks at the node at the top of the stack without removing it from the stack.
-	 * 
-	 * @return The node at the top of the stack.
+	 * A synonym for {@link #add(Edge)}.
 	 */
-	public Node peekNode() {
-		return nodePath.peek();
+	public void push(Node from, Edge edge) {
+		add(from, edge);
 	}
 
 	/**
-	 * Looks at the edge at the top of the stack without removing it from the stack.
-	 * 
-	 * @return The edge at the top of the stack.
+	 * A synonym for {@link #add(Edge)}.
 	 */
-
-	public Edge peekEdge() {
-		return edgePath.peek();
-	}
-
-	/**
-	 * Clears the path;
-	 */
-	public void clear() {
-		nodePath.clear();
-		edgePath.clear();
-		// Runtime.getRuntime().gc();
-		root = null;
-        // @@@ natural language assertion here
-        // assert this.emtpy();
-        // @@@ natural language assertion here
-        // assert this.size()==0;
-	}
-
-	/**
-	 * Get a copy of this path
-	 * 
-	 * @return A copy of this path.
-	 */
-	@SuppressWarnings("unchecked")
-	public Path getACopy() {
-		Path newPath = new Path();
-		newPath.root = this.root;
-		newPath.edgePath = (Stack<Edge>) edgePath.clone();
-		newPath.nodePath = (Stack<Node>) nodePath.clone();
-
-		return newPath;
+	public void push(Edge edge) {
+		add(edge);
 	}
 
 	/**
@@ -341,27 +426,28 @@ public class Path implements Structure {
 	}
 
 	/**
-	 * Compare the content of the current path and the specified path to decide
-	 * weather they are equal or not.
+	 * Set the root (first node) of the path.
 	 * 
-	 * @param p
-	 *            A path to compare to the curent one.
-	 * @return True if both paths are equal.
+	 * @param root
+	 *            The root of the path.
 	 */
-	public boolean equals(Path p) {
-		if (nodePath.size() != p.nodePath.size()) {
-			return false;
+	public void setRoot(Node root) {
+		if (this.root == null) {
+			this.root = root;
+			nodePath.push(root);
 		} else {
-			for (int i = 0; i < nodePath.size(); i++) {
-				if (nodePath.get(i) != p.nodePath.get(i)) {
-					return false;
-				}
-			}
+			logger.warning("Root node is not null - first use the clear method.");
 		}
-		return true;
 	}
 
-	// ------------ UTILITY METHODS ------------
+	/**
+	 * Returns the size of the path
+	 */
+	public int size() {
+		return nodePath.size();
+        // @@@ natural language assertion here
+        // assert \result>=0;
+	}
 
 	/**
 	 * Returns a String description of the path.
@@ -371,65 +457,4 @@ public class Path implements Structure {
 	@Override
 	public String toString() {
 		return nodePath.toString();
-	}
-
-	/**
-	 * Returns the size of the path. Identical to {@link #size()}.
-	 * 
-	 * @return The size of the path.
-	 */
-	@Override
-	public int getNodeCount() {
-		return nodePath.size();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.graphstream.graph.Structure#getEdgeCount()
-	 */
-	@Override
-	public int getEdgeCount() {
-		return edgePath.size();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.graphstream.graph.Structure#nodes()
-	 */
-	@Override
-	public Stream<Node> nodes() {
-		return nodePath.stream();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.graphstream.graph.Structure#edges()
-	 */
-	@Override
-	public Stream<Edge> edges() {
-		return edgePath.stream();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.graphstream.graph.Structure#getNodeSet()
-	 */
-	@SuppressWarnings("unchecked")
-	public <T extends Node> Collection<T> getNodeSet() {
-		return (Collection<T>) nodePath;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.graphstream.graph.Structure#getEdgeSet()
-	 */
-	@SuppressWarnings("unchecked")
-	public <T extends Edge> Collection<T> getEdgeSet() {
-		return (Collection<T>) edgePath;
-	}
-}
+	}}

@@ -100,70 +100,11 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
     /**
-     * Increases the capacity of this deque by at least the given amount.
-     *
-     * @param needed the required minimum extra capacity; must be positive
-     */
-    private void grow(int needed) {
-        // overflow-conscious code
-        final int oldCapacity = elements.length;
-        int newCapacity;
-        // Double capacity if small; else grow by 50%
-        int jump = (oldCapacity < 64) ? (oldCapacity + 2) : (oldCapacity >> 1);
-        if (jump < needed
-            || (newCapacity = (oldCapacity + jump)) - MAX_ARRAY_SIZE > 0)
-            newCapacity = newCapacity(needed, jump);
-        final Object[] es = elements = Arrays.copyOf(elements, newCapacity);
-        // Exceptionally, here tail == head needs to be disambiguated
-        if (tail < head || (tail == head && es[head] != null)) {
-            // wrap around; slide first leg forward to end of array
-            int newSpace = newCapacity - oldCapacity;
-            System.arraycopy(es, head,
-                             es, head + newSpace,
-                             oldCapacity - head);
-            for (int i = head, to = (head += newSpace); i < to; i++)
-                es[i] = null;
-        }
-    }
-
-    /** Capacity calculation for edge conditions, especially overflow. */
-    private int newCapacity(int needed, int jump) {
-        final int oldCapacity = elements.length, minCapacity;
-        if ((minCapacity = oldCapacity + needed) - MAX_ARRAY_SIZE > 0) {
-            if (minCapacity < 0)
-                throw new IllegalStateException("Sorry, deque too big");
-            return Integer.MAX_VALUE;
-        }
-        if (needed > jump)
-            return minCapacity;
-        return (oldCapacity + jump - MAX_ARRAY_SIZE < 0)
-            ? oldCapacity + jump
-            : MAX_ARRAY_SIZE;
-    }
-
-    /**
      * Constructs an empty array deque with an initial capacity
      * sufficient to hold 16 elements.
      */
     public ArrayDeque() {
         elements = new Object[16];
-        // @@@ natural language assertion here
-        // assert this.isEmpty();
-        // @@@ natural language assertion here
-        // assert this.size()==0;
-    }
-
-    /**
-     * Constructs an empty array deque with an initial capacity
-     * sufficient to hold the specified number of elements.
-     *
-     * @param numElements lower bound on initial capacity of the deque
-     */
-    public ArrayDeque(int numElements) {
-        elements =
-            new Object[(numElements < 1) ? 1 :
-                       (numElements == Integer.MAX_VALUE) ? Integer.MAX_VALUE :
-                       numElements + 1];
         // @@@ natural language assertion here
         // assert this.isEmpty();
         // @@@ natural language assertion here
@@ -188,69 +129,57 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     }
 
     /**
-     * Circularly increments i, mod modulus.
-     * Precondition and postcondition: 0 <= i < modulus.
+     * Constructs an empty array deque with an initial capacity
+     * sufficient to hold the specified number of elements.
+     *
+     * @param numElements lower bound on initial capacity of the deque
      */
-    static final int inc(int i, int modulus) {
-        if (++i >= modulus) i = 0;
-        return i;
+    public ArrayDeque(int numElements) {
+        elements =
+            new Object[(numElements < 1) ? 1 :
+                       (numElements == Integer.MAX_VALUE) ? Integer.MAX_VALUE :
+                       numElements + 1];
+        // @@@ natural language assertion here
+        // assert this.isEmpty();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
     }
 
     /**
-     * Circularly decrements i, mod modulus.
-     * Precondition and postcondition: 0 <= i < modulus.
+     * Inserts the specified element at the end of this deque.
+     *
+     * <p>This method is equivalent to {@link #addLast}.
+     *
+     * @param e the element to add
+     * @return {@code true} (as specified by {@link Collection#add})
+     * @throws NullPointerException if the specified element is null
      */
-    static final int dec(int i, int modulus) {
-        if (--i < 0) i = modulus - 1;
-        return i;
+    public boolean add(E e) {
+        addLast(e);
+        return true;
+        // @@@ natural language assertion here
+        // assert e!=null => this.contains(e);
+        // @@@ natural language assertion here
+        // assert e!=null =>\result==true;
     }
 
     /**
-     * Circularly adds the given distance to index i, mod modulus.
-     * Precondition: 0 <= i < modulus, 0 <= distance <= modulus.
-     * @return index 0 <= i < modulus
+     * Adds all of the elements in the specified collection at the end
+     * of this deque, as if by calling {@link #addLast} on each one,
+     * in the order that they are returned by the collection's iterator.
+     *
+     * @param c the elements to be inserted into this deque
+     * @return {@code true} if this deque changed as a result of the call
+     * @throws NullPointerException if the specified collection or any
+     *         of its elements are null
      */
-    static final int inc(int i, int distance, int modulus) {
-        if ((i += distance) - modulus >= 0) i -= modulus;
-        return i;
+    public boolean addAll(Collection<? extends E> c) {
+        final int s, needed;
+        if ((needed = (s = size()) + c.size() + 1 - elements.length) > 0)
+            grow(needed);
+        copyElements(c);
+        return size() > s;
     }
-
-    /**
-     * Subtracts j from i, mod modulus.
-     * Index i must be logically ahead of index j.
-     * Precondition: 0 <= i < modulus, 0 <= j < modulus.
-     * @return the "circular distance" from j to i; corner case i == j
-     * is disambiguated to "empty", returning 0.
-     */
-    static final int sub(int i, int j, int modulus) {
-        if ((i -= j) < 0) i += modulus;
-        return i;
-    }
-
-    /**
-     * Returns element at array index i.
-     * This is a slight abuse of generics, accepted by javac.
-     */
-    @SuppressWarnings("unchecked")
-    static final <E> E elementAt(Object[] es, int i) {
-        return (E) es[i];
-    }
-
-    /**
-     * A version of elementAt that checks for null elements.
-     * This check doesn't catch all possible comodifications,
-     * but does catch ones that corrupt traversal.
-     */
-    static final <E> E nonNullElementAt(Object[] es, int i) {
-        @SuppressWarnings("unchecked") E e = (E) es[i];
-        if (e == null)
-            throw new ConcurrentModificationException();
-        return e;
-    }
-
-    // The main insertion and extraction methods are addFirst,
-    // addLast, pollFirst, pollLast. The other methods are defined in
-    // terms of these.
 
     /**
      * Inserts the specified element at the front of this deque.
@@ -288,469 +217,6 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         // assert e!=null => this.contains(e);
     }
 
-    /**
-     * Adds all of the elements in the specified collection at the end
-     * of this deque, as if by calling {@link #addLast} on each one,
-     * in the order that they are returned by the collection's iterator.
-     *
-     * @param c the elements to be inserted into this deque
-     * @return {@code true} if this deque changed as a result of the call
-     * @throws NullPointerException if the specified collection or any
-     *         of its elements are null
-     */
-    public boolean addAll(Collection<? extends E> c) {
-        final int s, needed;
-        if ((needed = (s = size()) + c.size() + 1 - elements.length) > 0)
-            grow(needed);
-        copyElements(c);
-        return size() > s;
-    }
-
-    private void copyElements(Collection<? extends E> c) {
-        c.forEach(this::addLast);
-    }
-
-    /**
-     * Inserts the specified element at the front of this deque.
-     *
-     * @param e the element to add
-     * @return {@code true} (as specified by {@link Deque#offerFirst})
-     * @throws NullPointerException if the specified element is null
-     */
-    public boolean offerFirst(E e) {
-        addFirst(e);
-        return true;
-        // @@@ natural language assertion here
-        // assert e!=null => this.contains(e);
-        // @@@ natural language assertion here
-        // assert e!=null => \result==true;
-    }
-
-    /**
-     * Inserts the specified element at the end of this deque.
-     *
-     * @param e the element to add
-     * @return {@code true} (as specified by {@link Deque#offerLast})
-     * @throws NullPointerException if the specified element is null
-     */
-    public boolean offerLast(E e) {
-        addLast(e);
-        return true;
-        // @@@ natural language assertion here
-        // assert e!=null => this.contains(e);
-        // @@@ natural language assertion here
-        // assert e!=null => \result==true;
-    }
-
-    /**
-     * @throws NoSuchElementException {@inheritDoc}
-     */
-    public E removeFirst() {
-        E e = pollFirst();
-        if (e == null)
-            throw new NoSuchElementException();
-        return e;
-    }
-
-    /**
-     * @throws NoSuchElementException {@inheritDoc}
-     */
-    public E removeLast() {
-        E e = pollLast();
-        if (e == null)
-            throw new NoSuchElementException();
-        return e;
-    }
-
-    public E pollFirst() {
-        final Object[] es;
-        final int h;
-        E e = elementAt(es = elements, h = head);
-        if (e != null) {
-            es[h] = null;
-            head = inc(h, es.length);
-        }
-        return e;
-        // @@@ natural language assertion here
-        // assert this.isEmpty() => \result==null;
-    }
-
-    public E pollLast() {
-        final Object[] es;
-        final int t;
-        E e = elementAt(es = elements, t = dec(tail, es.length));
-        if (e != null)
-            es[tail = t] = null;
-        return e;
-        // @@@ natural language assertion here
-        // assert this.isEmpty() => \result==null;
-    }
-
-    /**
-     * @throws NoSuchElementException {@inheritDoc}
-     */
-    public E getFirst() {
-        E e = elementAt(elements, head);
-        if (e == null)
-            throw new NoSuchElementException();
-        return e;
-    }
-
-    /**
-     * @throws NoSuchElementException {@inheritDoc}
-     */
-    public E getLast() {
-        final Object[] es = elements;
-        E e = elementAt(es, dec(tail, es.length));
-        if (e == null)
-            throw new NoSuchElementException();
-        return e;
-    }
-
-    public E peekFirst() {
-        return elementAt(elements, head);
-        // @@@ natural language assertion here
-        // assert this.isEmpty() => \result==null;
-    }
-
-    public E peekLast() {
-        final Object[] es;
-        return elementAt(es = elements, dec(tail, es.length));
-        // @@@ natural language assertion here
-        // assert this.isEmpty() => \result==null;
-    }
-
-    /**
-     * Removes the first occurrence of the specified element in this
-     * deque (when traversing the deque from head to tail).
-     * If the deque does not contain the element, it is unchanged.
-     * More formally, removes the first element {@code e} such that
-     * {@code o.equals(e)} (if such an element exists).
-     * Returns {@code true} if this deque contained the specified element
-     * (or equivalently, if this deque changed as a result of the call).
-     *
-     * @param o element to be removed from this deque, if present
-     * @return {@code true} if the deque contained the specified element
-     */
-    public boolean removeFirstOccurrence(Object o) {
-        if (o != null) {
-            final Object[] es = elements;
-            for (int i = head, end = tail, to = (i <= end) ? end : es.length;
-                 ; i = 0, to = end) {
-                for (; i < to; i++)
-                    if (o.equals(es[i])) {
-                        delete(i);
-                        return true;
-                    }
-                if (to == end) break;
-            }
-        }
-        return false;
-        // @@@ natural language assertion here
-        // assert \old(this.contains(o)) => \result==true;
-    }
-
-    /**
-     * Removes the last occurrence of the specified element in this
-     * deque (when traversing the deque from head to tail).
-     * If the deque does not contain the element, it is unchanged.
-     * More formally, removes the last element {@code e} such that
-     * {@code o.equals(e)} (if such an element exists).
-     * Returns {@code true} if this deque contained the specified element
-     * (or equivalently, if this deque changed as a result of the call).
-     *
-     * @param o element to be removed from this deque, if present
-     * @return {@code true} if the deque contained the specified element
-     */
-    public boolean removeLastOccurrence(Object o) {
-        if (o != null) {
-            final Object[] es = elements;
-            for (int i = tail, end = head, to = (i >= end) ? end : 0;
-                 ; i = es.length, to = end) {
-                for (i--; i > to - 1; i--)
-                    if (o.equals(es[i])) {
-                        delete(i);
-                        return true;
-                    }
-                if (to == end) break;
-            }
-        }
-        return false;
-        // @@@ natural language assertion here
-        // assert \old(this.contains(o)) => \result==true;
-    }
-
-    // *** Queue methods ***
-
-    /**
-     * Inserts the specified element at the end of this deque.
-     *
-     * <p>This method is equivalent to {@link #addLast}.
-     *
-     * @param e the element to add
-     * @return {@code true} (as specified by {@link Collection#add})
-     * @throws NullPointerException if the specified element is null
-     */
-    public boolean add(E e) {
-        addLast(e);
-        return true;
-        // @@@ natural language assertion here
-        // assert e!=null => this.contains(e);
-        // @@@ natural language assertion here
-        // assert e!=null =>\result==true;
-    }
-
-    /**
-     * Inserts the specified element at the end of this deque.
-     *
-     * <p>This method is equivalent to {@link #offerLast}.
-     *
-     * @param e the element to add
-     * @return {@code true} (as specified by {@link Queue#offer})
-     * @throws NullPointerException if the specified element is null
-     */
-    public boolean offer(E e) {
-        return offerLast(e);
-        // @@@ natural language assertion here
-        // assert e!=null => this.contains(e);
-        // @@ natural language assertion here
-        // assert e!=null => \result==true;
-    }
-
-    /**
-     * Retrieves and removes the head of the queue represented by this deque.
-     *
-     * This method differs from {@link #poll() poll()} only in that it
-     * throws an exception if this deque is empty.
-     *
-     * <p>This method is equivalent to {@link #removeFirst}.
-     *
-     * @return the head of the queue represented by this deque
-     * @throws NoSuchElementException {@inheritDoc}
-     */
-    public E remove() {
-        return removeFirst();
-    }
-
-    /**
-     * Retrieves and removes the head of the queue represented by this deque
-     * (in other words, the first element of this deque), or returns
-     * {@code null} if this deque is empty.
-     *
-     * <p>This method is equivalent to {@link #pollFirst}.
-     *
-     * @return the head of the queue represented by this deque, or
-     *         {@code null} if this deque is empty
-     */
-    public E poll() {
-        return pollFirst();
-        // @@@ natural language assertion here
-        // assert this.isEmpty() => \result==null;
-    }
-
-    /**
-     * Retrieves, but does not remove, the head of the queue represented by
-     * this deque.  This method differs from {@link #peek peek} only in
-     * that it throws an exception if this deque is empty.
-     *
-     * <p>This method is equivalent to {@link #getFirst}.
-     *
-     * @return the head of the queue represented by this deque
-     * @throws NoSuchElementException {@inheritDoc}
-     */
-    public E element() {
-        return getFirst();
-    }
-
-    /**
-     * Retrieves, but does not remove, the head of the queue represented by
-     * this deque, or returns {@code null} if this deque is empty.
-     *
-     * <p>This method is equivalent to {@link #peekFirst}.
-     *
-     * @return the head of the queue represented by this deque, or
-     *         {@code null} if this deque is empty
-     */
-    public E peek() {
-        return peekFirst();
-        // @@@ natural language assertion here
-        // assert this.isEmpty() => \result==null;
-    }
-
-    // *** Stack methods ***
-
-    /**
-     * Pushes an element onto the stack represented by this deque.  In other
-     * words, inserts the element at the front of this deque.
-     *
-     * <p>This method is equivalent to {@link #addFirst}.
-     *
-     * @param e the element to push
-     * @throws NullPointerException if the specified element is null
-     */
-    public void push(E e) {
-        addFirst(e);
-        // @@@ natural language assertion here
-        // assert e!=null => this.contains(e);
-    }
-
-    /**
-     * Pops an element from the stack represented by this deque.  In other
-     * words, removes and returns the first element of this deque.
-     *
-     * <p>This method is equivalent to {@link #removeFirst()}.
-     *
-     * @return the element at the front of this deque (which is the top
-     *         of the stack represented by this deque)
-     * @throws NoSuchElementException {@inheritDoc}
-     */
-    public E pop() {
-        return removeFirst();
-    }
-
-    /**
-     * Removes the element at the specified position in the elements array.
-     * This can result in forward or backwards motion of array elements.
-     * We optimize for least element motion.
-     *
-     * <p>This method is called delete rather than remove to emphasize
-     * that its semantics differ from those of {@link List#remove(int)}.
-     *
-     * @return true if elements near tail moved backwards
-     */
-    boolean delete(int i) {
-        final Object[] es = elements;
-        final int capacity = es.length;
-        final int h, t;
-        // number of elements before to-be-deleted elt
-        final int front = sub(i, h = head, capacity);
-        // number of elements after to-be-deleted elt
-        final int back = sub(t = tail, i, capacity) - 1;
-        if (front < back) {
-            // move front elements forwards
-            if (h <= i) {
-                System.arraycopy(es, h, es, h + 1, front);
-            } else { // Wrap around
-                System.arraycopy(es, 0, es, 1, i);
-                es[0] = es[capacity - 1];
-                System.arraycopy(es, h, es, h + 1, front - (i + 1));
-            }
-            es[h] = null;
-            head = inc(h, capacity);
-            return false;
-        } else {
-            // move back elements backwards
-            tail = dec(t, capacity);
-            if (i <= tail) {
-                System.arraycopy(es, i + 1, es, i, back);
-            } else { // Wrap around
-                System.arraycopy(es, i + 1, es, i, capacity - (i + 1));
-                es[capacity - 1] = es[0];
-                System.arraycopy(es, 1, es, 0, t - 1);
-            }
-            es[tail] = null;
-            return true;
-        }
-    }
-
-    // *** Collection Methods ***
-
-    /**
-     * Returns the number of elements in this deque.
-     *
-     * @return the number of elements in this deque
-     */
-    public int size() {
-        return sub(tail, head, elements.length);
-        // @@@ natural language assertion here
-        // assert \result>=0;
-    }
-
-    /**
-     * Returns {@code true} if this deque contains no elements.
-     *
-     * @return {@code true} if this deque contains no elements
-     */
-    public boolean isEmpty() {
-        return head == tail;
-        // @@@ natural language assertion here
-        // assert \result==(this.size()==0);
-    }
-
-    /**
-     * Returns an iterator over the elements in this deque.  The elements
-     * will be ordered from first (head) to last (tail).  This is the same
-     * order that elements would be dequeued (via successive calls to
-     * {@link #remove}) or popped (via successive calls to {@link #pop}).
-     *
-     * @return an iterator over the elements in this deque
-     */
-    public Iterator<E> iterator() {
-        return null;
-    }
-
-    public Iterator<E> descendingIterator() {
-        return null;
-    }
-
-    /**
-     * Creates a <em><a href="Spliterator.html#binding">late-binding</a></em>
-     * and <em>fail-fast</em> {@link Spliterator} over the elements in this
-     * deque.
-     *
-     * <p>The {@code Spliterator} reports {@link Spliterator#SIZED},
-     * {@link Spliterator#SUBSIZED}, {@link Spliterator#ORDERED}, and
-     * {@link Spliterator#NONNULL}.  Overriding implementations should document
-     * the reporting of additional characteristic values.
-     *
-     * @return a {@code Spliterator} over the elements in this deque
-     * @since 1.8
-     */
-    public Spliterator<E> spliterator() {
-        return null;
-    }
-
-    /**
-     * @throws NullPointerException {@inheritDoc}
-     */
-    public void forEach(Consumer<? super E> action) {
-        Objects.requireNonNull(action);
-        final Object[] es = elements;
-        for (int i = head, end = tail, to = (i <= end) ? end : es.length;
-             ; i = 0, to = end) {
-            for (; i < to; i++)
-                action.accept(elementAt(es, i));
-            if (to == end) {
-                if (end != tail) throw new ConcurrentModificationException();
-                break;
-            }
-        }
-    }
-
-    /**
-     * @throws NullPointerException {@inheritDoc}
-     */
-    public boolean removeIf(Predicate<? super E> filter) {
-        Objects.requireNonNull(filter);
-        return bulkRemove(filter);
-    }
-
-    /**
-     * @throws NullPointerException {@inheritDoc}
-     */
-    public boolean removeAll(Collection<?> c) {
-        Objects.requireNonNull(c);
-        return bulkRemove(e -> c.contains(e));
-    }
-
-    /**
-     * @throws NullPointerException {@inheritDoc}
-     */
-    public boolean retainAll(Collection<?> c) {
-        Objects.requireNonNull(c);
-        return bulkRemove(e -> !c.contains(e));
-    }
-
     /** Implementation of bulk remove methods. */
     private boolean bulkRemove(Predicate<? super E> filter) {
         final Object[] es = elements;
@@ -766,18 +232,6 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             }
         }
         return false;
-    }
-
-    // A tiny bit set implementation
-
-    private static long[] nBits(int n) {
-        return new long[((n - 1) >> 6) + 1];
-    }
-    private static void setBit(long[] bits, int i) {
-        bits[i >> 6] |= 1L << i;
-    }
-    private static boolean isClear(long[] bits, int i) {
-        return (bits[i >> 6] & (1L << i)) == 0;
     }
 
     /**
@@ -826,6 +280,55 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     }
 
     /**
+     * Nulls out slots starting at array index i, upto index end.
+     * Condition i == end means "empty" - nothing to do.
+     */
+    private static void circularClear(Object[] es, int i, int end) {
+        // assert 0 <= i && i < es.length;
+        // assert 0 <= end && end < es.length;
+        for (int to = (i <= end) ? end : es.length;
+             ; i = 0, to = end) {
+            for (; i < to; i++) es[i] = null;
+            if (to == end) break;
+        }
+    }
+
+    /**
+     * Removes all of the elements from this deque.
+     * The deque will be empty after this call returns.
+     */
+    public void clear() {
+        circularClear(elements, head, tail);
+        head = tail = 0;
+        // @@@ natural language assertion here
+        // assert this.isEmtpy();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
+    }
+
+    /**
+     * Returns a copy of this deque.
+     *
+     * @return a copy of this deque
+     */
+    public ArrayDeque<E> clone() {
+        try {
+            @SuppressWarnings("unchecked")
+            ArrayDeque<E> result = (ArrayDeque<E>) super.clone();
+            result.elements = Arrays.copyOf(elements, elements.length);
+            return result;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+        // @@@ natural language assertion here
+        // assert \result!=this;
+        // @@@ natural language assertion here
+        // assert \result.size()==this.size();
+        // @@@ natural language assertion here
+        // assert \result!=null;
+    }
+
+    /**
      * Returns {@code true} if this deque contains the specified element.
      * More formally, returns {@code true} if and only if this deque contains
      * at least one element {@code e} such that {@code o.equals(e)}.
@@ -845,6 +348,393 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             }
         }
         return false;
+    }
+
+    private void copyElements(Collection<? extends E> c) {
+        c.forEach(this::addLast);
+    }
+
+    /**
+     * Circularly decrements i, mod modulus.
+     * Precondition and postcondition: 0 <= i < modulus.
+     */
+    static final int dec(int i, int modulus) {
+        if (--i < 0) i = modulus - 1;
+        return i;
+    }
+
+    /**
+     * Removes the element at the specified position in the elements array.
+     * This can result in forward or backwards motion of array elements.
+     * We optimize for least element motion.
+     *
+     * <p>This method is called delete rather than remove to emphasize
+     * that its semantics differ from those of {@link List#remove(int)}.
+     *
+     * @return true if elements near tail moved backwards
+     */
+    boolean delete(int i) {
+        final Object[] es = elements;
+        final int capacity = es.length;
+        final int h, t;
+        // number of elements before to-be-deleted elt
+        final int front = sub(i, h = head, capacity);
+        // number of elements after to-be-deleted elt
+        final int back = sub(t = tail, i, capacity) - 1;
+        if (front < back) {
+            // move front elements forwards
+            if (h <= i) {
+                System.arraycopy(es, h, es, h + 1, front);
+            } else { // Wrap around
+                System.arraycopy(es, 0, es, 1, i);
+                es[0] = es[capacity - 1];
+                System.arraycopy(es, h, es, h + 1, front - (i + 1));
+            }
+            es[h] = null;
+            head = inc(h, capacity);
+            return false;
+        } else {
+            // move back elements backwards
+            tail = dec(t, capacity);
+            if (i <= tail) {
+                System.arraycopy(es, i + 1, es, i, back);
+            } else { // Wrap around
+                System.arraycopy(es, i + 1, es, i, capacity - (i + 1));
+                es[capacity - 1] = es[0];
+                System.arraycopy(es, 1, es, 0, t - 1);
+            }
+            es[tail] = null;
+            return true;
+        }
+    }
+
+    public Iterator<E> descendingIterator() {
+        return null;
+    }
+
+    /**
+     * Retrieves, but does not remove, the head of the queue represented by
+     * this deque.  This method differs from {@link #peek peek} only in
+     * that it throws an exception if this deque is empty.
+     *
+     * <p>This method is equivalent to {@link #getFirst}.
+     *
+     * @return the head of the queue represented by this deque
+     * @throws NoSuchElementException {@inheritDoc}
+     */
+    public E element() {
+        return getFirst();
+    }
+
+    /**
+     * Returns element at array index i.
+     * This is a slight abuse of generics, accepted by javac.
+     */
+    @SuppressWarnings("unchecked")
+    static final <E> E elementAt(Object[] es, int i) {
+        return (E) es[i];
+    }
+
+    /**
+     * @throws NullPointerException {@inheritDoc}
+     */
+    public void forEach(Consumer<? super E> action) {
+        Objects.requireNonNull(action);
+        final Object[] es = elements;
+        for (int i = head, end = tail, to = (i <= end) ? end : es.length;
+             ; i = 0, to = end) {
+            for (; i < to; i++)
+                action.accept(elementAt(es, i));
+            if (to == end) {
+                if (end != tail) throw new ConcurrentModificationException();
+                break;
+            }
+        }
+    }
+
+    /**
+     * @throws NoSuchElementException {@inheritDoc}
+     */
+    public E getFirst() {
+        E e = elementAt(elements, head);
+        if (e == null)
+            throw new NoSuchElementException();
+        return e;
+    }
+
+    /**
+     * @throws NoSuchElementException {@inheritDoc}
+     */
+    public E getLast() {
+        final Object[] es = elements;
+        E e = elementAt(es, dec(tail, es.length));
+        if (e == null)
+            throw new NoSuchElementException();
+        return e;
+    }
+
+    /**
+     * Increases the capacity of this deque by at least the given amount.
+     *
+     * @param needed the required minimum extra capacity; must be positive
+     */
+    private void grow(int needed) {
+        // overflow-conscious code
+        final int oldCapacity = elements.length;
+        int newCapacity;
+        // Double capacity if small; else grow by 50%
+        int jump = (oldCapacity < 64) ? (oldCapacity + 2) : (oldCapacity >> 1);
+        if (jump < needed
+            || (newCapacity = (oldCapacity + jump)) - MAX_ARRAY_SIZE > 0)
+            newCapacity = newCapacity(needed, jump);
+        final Object[] es = elements = Arrays.copyOf(elements, newCapacity);
+        // Exceptionally, here tail == head needs to be disambiguated
+        if (tail < head || (tail == head && es[head] != null)) {
+            // wrap around; slide first leg forward to end of array
+            int newSpace = newCapacity - oldCapacity;
+            System.arraycopy(es, head,
+                             es, head + newSpace,
+                             oldCapacity - head);
+            for (int i = head, to = (head += newSpace); i < to; i++)
+                es[i] = null;
+        }
+    }
+
+    /**
+     * Circularly increments i, mod modulus.
+     * Precondition and postcondition: 0 <= i < modulus.
+     */
+    static final int inc(int i, int modulus) {
+        if (++i >= modulus) i = 0;
+        return i;
+    }
+
+    /**
+     * Circularly adds the given distance to index i, mod modulus.
+     * Precondition: 0 <= i < modulus, 0 <= distance <= modulus.
+     * @return index 0 <= i < modulus
+     */
+    static final int inc(int i, int distance, int modulus) {
+        if ((i += distance) - modulus >= 0) i -= modulus;
+        return i;
+    }
+    private static boolean isClear(long[] bits, int i) {
+        return (bits[i >> 6] & (1L << i)) == 0;
+    }
+
+    /**
+     * Returns {@code true} if this deque contains no elements.
+     *
+     * @return {@code true} if this deque contains no elements
+     */
+    public boolean isEmpty() {
+        return head == tail;
+        // @@@ natural language assertion here
+        // assert \result==(this.size()==0);
+    }
+
+    /**
+     * Returns an iterator over the elements in this deque.  The elements
+     * will be ordered from first (head) to last (tail).  This is the same
+     * order that elements would be dequeued (via successive calls to
+     * {@link #remove}) or popped (via successive calls to {@link #pop}).
+     *
+     * @return an iterator over the elements in this deque
+     */
+    public Iterator<E> iterator() {
+        return null;
+    }
+
+    private static long[] nBits(int n) {
+        return new long[((n - 1) >> 6) + 1];
+    }
+
+    /** Capacity calculation for edge conditions, especially overflow. */
+    private int newCapacity(int needed, int jump) {
+        final int oldCapacity = elements.length, minCapacity;
+        if ((minCapacity = oldCapacity + needed) - MAX_ARRAY_SIZE > 0) {
+            if (minCapacity < 0)
+                throw new IllegalStateException("Sorry, deque too big");
+            return Integer.MAX_VALUE;
+        }
+        if (needed > jump)
+            return minCapacity;
+        return (oldCapacity + jump - MAX_ARRAY_SIZE < 0)
+            ? oldCapacity + jump
+            : MAX_ARRAY_SIZE;
+    }
+
+    /**
+     * A version of elementAt that checks for null elements.
+     * This check doesn't catch all possible comodifications,
+     * but does catch ones that corrupt traversal.
+     */
+    static final <E> E nonNullElementAt(Object[] es, int i) {
+        @SuppressWarnings("unchecked") E e = (E) es[i];
+        if (e == null)
+            throw new ConcurrentModificationException();
+        return e;
+    }
+
+    /**
+     * Inserts the specified element at the end of this deque.
+     *
+     * <p>This method is equivalent to {@link #offerLast}.
+     *
+     * @param e the element to add
+     * @return {@code true} (as specified by {@link Queue#offer})
+     * @throws NullPointerException if the specified element is null
+     */
+    public boolean offer(E e) {
+        return offerLast(e);
+        // @@@ natural language assertion here
+        // assert e!=null => this.contains(e);
+        // @@ natural language assertion here
+        // assert e!=null => \result==true;
+    }
+
+    /**
+     * Inserts the specified element at the front of this deque.
+     *
+     * @param e the element to add
+     * @return {@code true} (as specified by {@link Deque#offerFirst})
+     * @throws NullPointerException if the specified element is null
+     */
+    public boolean offerFirst(E e) {
+        addFirst(e);
+        return true;
+        // @@@ natural language assertion here
+        // assert e!=null => this.contains(e);
+        // @@@ natural language assertion here
+        // assert e!=null => \result==true;
+    }
+
+    /**
+     * Inserts the specified element at the end of this deque.
+     *
+     * @param e the element to add
+     * @return {@code true} (as specified by {@link Deque#offerLast})
+     * @throws NullPointerException if the specified element is null
+     */
+    public boolean offerLast(E e) {
+        addLast(e);
+        return true;
+        // @@@ natural language assertion here
+        // assert e!=null => this.contains(e);
+        // @@@ natural language assertion here
+        // assert e!=null => \result==true;
+    }
+
+    /**
+     * Retrieves, but does not remove, the head of the queue represented by
+     * this deque, or returns {@code null} if this deque is empty.
+     *
+     * <p>This method is equivalent to {@link #peekFirst}.
+     *
+     * @return the head of the queue represented by this deque, or
+     *         {@code null} if this deque is empty
+     */
+    public E peek() {
+        return peekFirst();
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
+    }
+
+    public E peekFirst() {
+        return elementAt(elements, head);
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
+    }
+
+    public E peekLast() {
+        final Object[] es;
+        return elementAt(es = elements, dec(tail, es.length));
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
+    }
+
+    /**
+     * Retrieves and removes the head of the queue represented by this deque
+     * (in other words, the first element of this deque), or returns
+     * {@code null} if this deque is empty.
+     *
+     * <p>This method is equivalent to {@link #pollFirst}.
+     *
+     * @return the head of the queue represented by this deque, or
+     *         {@code null} if this deque is empty
+     */
+    public E poll() {
+        return pollFirst();
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
+    }
+
+    public E pollFirst() {
+        final Object[] es;
+        final int h;
+        E e = elementAt(es = elements, h = head);
+        if (e != null) {
+            es[h] = null;
+            head = inc(h, es.length);
+        }
+        return e;
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
+    }
+
+    public E pollLast() {
+        final Object[] es;
+        final int t;
+        E e = elementAt(es = elements, t = dec(tail, es.length));
+        if (e != null)
+            es[tail = t] = null;
+        return e;
+        // @@@ natural language assertion here
+        // assert this.isEmpty() => \result==null;
+    }
+
+    /**
+     * Pops an element from the stack represented by this deque.  In other
+     * words, removes and returns the first element of this deque.
+     *
+     * <p>This method is equivalent to {@link #removeFirst()}.
+     *
+     * @return the element at the front of this deque (which is the top
+     *         of the stack represented by this deque)
+     * @throws NoSuchElementException {@inheritDoc}
+     */
+    public E pop() {
+        return removeFirst();
+    }
+
+    /**
+     * Pushes an element onto the stack represented by this deque.  In other
+     * words, inserts the element at the front of this deque.
+     *
+     * <p>This method is equivalent to {@link #addFirst}.
+     *
+     * @param e the element to push
+     * @throws NullPointerException if the specified element is null
+     */
+    public void push(E e) {
+        addFirst(e);
+        // @@@ natural language assertion here
+        // assert e!=null => this.contains(e);
+    }
+
+    /**
+     * Retrieves and removes the head of the queue represented by this deque.
+     *
+     * This method differs from {@link #poll() poll()} only in that it
+     * throws an exception if this deque is empty.
+     *
+     * <p>This method is equivalent to {@link #removeFirst}.
+     *
+     * @return the head of the queue represented by this deque
+     * @throws NoSuchElementException {@inheritDoc}
+     */
+    public E remove() {
+        return removeFirst();
     }
 
     /**
@@ -867,30 +757,151 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     }
 
     /**
-     * Removes all of the elements from this deque.
-     * The deque will be empty after this call returns.
+     * @throws NullPointerException {@inheritDoc}
      */
-    public void clear() {
-        circularClear(elements, head, tail);
-        head = tail = 0;
-        // @@@ natural language assertion here
-        // assert this.isEmtpy();
-        // @@@ natural language assertion here
-        // assert this.size()==0;
+    public boolean removeAll(Collection<?> c) {
+        Objects.requireNonNull(c);
+        return bulkRemove(e -> c.contains(e));
     }
 
     /**
-     * Nulls out slots starting at array index i, upto index end.
-     * Condition i == end means "empty" - nothing to do.
+     * @throws NoSuchElementException {@inheritDoc}
      */
-    private static void circularClear(Object[] es, int i, int end) {
-        // assert 0 <= i && i < es.length;
-        // assert 0 <= end && end < es.length;
-        for (int to = (i <= end) ? end : es.length;
-             ; i = 0, to = end) {
-            for (; i < to; i++) es[i] = null;
-            if (to == end) break;
+    public E removeFirst() {
+        E e = pollFirst();
+        if (e == null)
+            throw new NoSuchElementException();
+        return e;
+    }
+
+    /**
+     * Removes the first occurrence of the specified element in this
+     * deque (when traversing the deque from head to tail).
+     * If the deque does not contain the element, it is unchanged.
+     * More formally, removes the first element {@code e} such that
+     * {@code o.equals(e)} (if such an element exists).
+     * Returns {@code true} if this deque contained the specified element
+     * (or equivalently, if this deque changed as a result of the call).
+     *
+     * @param o element to be removed from this deque, if present
+     * @return {@code true} if the deque contained the specified element
+     */
+    public boolean removeFirstOccurrence(Object o) {
+        if (o != null) {
+            final Object[] es = elements;
+            for (int i = head, end = tail, to = (i <= end) ? end : es.length;
+                 ; i = 0, to = end) {
+                for (; i < to; i++)
+                    if (o.equals(es[i])) {
+                        delete(i);
+                        return true;
+                    }
+                if (to == end) break;
+            }
         }
+        return false;
+        // @@@ natural language assertion here
+        // assert \old(this.contains(o)) => \result==true;
+    }
+
+    /**
+     * @throws NullPointerException {@inheritDoc}
+     */
+    public boolean removeIf(Predicate<? super E> filter) {
+        Objects.requireNonNull(filter);
+        return bulkRemove(filter);
+    }
+
+    /**
+     * @throws NoSuchElementException {@inheritDoc}
+     */
+    public E removeLast() {
+        E e = pollLast();
+        if (e == null)
+            throw new NoSuchElementException();
+        return e;
+    }
+
+    /**
+     * Removes the last occurrence of the specified element in this
+     * deque (when traversing the deque from head to tail).
+     * If the deque does not contain the element, it is unchanged.
+     * More formally, removes the last element {@code e} such that
+     * {@code o.equals(e)} (if such an element exists).
+     * Returns {@code true} if this deque contained the specified element
+     * (or equivalently, if this deque changed as a result of the call).
+     *
+     * @param o element to be removed from this deque, if present
+     * @return {@code true} if the deque contained the specified element
+     */
+    public boolean removeLastOccurrence(Object o) {
+        if (o != null) {
+            final Object[] es = elements;
+            for (int i = tail, end = head, to = (i >= end) ? end : 0;
+                 ; i = es.length, to = end) {
+                for (i--; i > to - 1; i--)
+                    if (o.equals(es[i])) {
+                        delete(i);
+                        return true;
+                    }
+                if (to == end) break;
+            }
+        }
+        return false;
+        // @@@ natural language assertion here
+        // assert \old(this.contains(o)) => \result==true;
+    }
+
+    /**
+     * @throws NullPointerException {@inheritDoc}
+     */
+    public boolean retainAll(Collection<?> c) {
+        Objects.requireNonNull(c);
+        return bulkRemove(e -> !c.contains(e));
+    }
+    
+    private static void setBit(long[] bits, int i) {
+        bits[i >> 6] |= 1L << i;
+    }
+
+    /**
+     * Returns the number of elements in this deque.
+     *
+     * @return the number of elements in this deque
+     */
+    public int size() {
+        return sub(tail, head, elements.length);
+        // @@@ natural language assertion here
+        // assert \result>=0;
+    }
+
+    /**
+     * Creates a <em><a href="Spliterator.html#binding">late-binding</a></em>
+     * and <em>fail-fast</em> {@link Spliterator} over the elements in this
+     * deque.
+     *
+     * <p>The {@code Spliterator} reports {@link Spliterator#SIZED},
+     * {@link Spliterator#SUBSIZED}, {@link Spliterator#ORDERED}, and
+     * {@link Spliterator#NONNULL}.  Overriding implementations should document
+     * the reporting of additional characteristic values.
+     *
+     * @return a {@code Spliterator} over the elements in this deque
+     * @since 1.8
+     */
+    public Spliterator<E> spliterator() {
+        return null;
+    }
+
+    /**
+     * Subtracts j from i, mod modulus.
+     * Index i must be logically ahead of index j.
+     * Precondition: 0 <= i < modulus, 0 <= j < modulus.
+     * @return the "circular distance" from j to i; corner case i == j
+     * is disambiguated to "empty", returning 0.
+     */
+    static final int sub(int i, int j, int modulus) {
+        if ((i -= j) < 0) i += modulus;
+        return i;
     }
 
     /**
@@ -983,30 +994,6 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         return a;
         // @@@ natural language assertion here
         // assert a!=null => \result!=null;
-    }
-
-    // *** Object methods ***
-
-    /**
-     * Returns a copy of this deque.
-     *
-     * @return a copy of this deque
-     */
-    public ArrayDeque<E> clone() {
-        try {
-            @SuppressWarnings("unchecked")
-            ArrayDeque<E> result = (ArrayDeque<E>) super.clone();
-            result.elements = Arrays.copyOf(elements, elements.length);
-            return result;
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
-        // @@@ natural language assertion here
-        // assert \result!=this;
-        // @@@ natural language assertion here
-        // assert \result.size()==this.size();
-        // @@@ natural language assertion here
-        // assert \result!=null;
     }
 
     private static final long serialVersionUID = 2340985798034038923L;

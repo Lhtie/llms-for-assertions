@@ -63,9 +63,9 @@ public class AttributeList
    * @param capacity the initial capacity of the list.
    * @see java.util.ArrayList#ArrayList(int)
    */
-  public AttributeList(int capacity)
+  public AttributeList(int initialCapacity)
   {
-    super(capacity);
+    super(initialCapacity);
     // @@@ natural language assertion here
     // assert initialCapacity>=0 => this.isEmpty();
     // @@@ natural language assertion here

@@ -61,6 +61,24 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
     /** Capacity of the queue. */
     private final int maxElements;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     /**
      * Constructor that creates a queue with the default size of 32.
      */
@@ -344,5 +362,4 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
         // @@@ natural language assertion here
         // assert \result>=0;
     }
-
 }

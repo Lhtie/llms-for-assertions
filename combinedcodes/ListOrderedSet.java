@@ -48,71 +48,30 @@ public class ListOrderedSet<E>
     /** Serialization version */
     private static final long serialVersionUID = -228664372470420141L;
 
-    /**
-     * Factory method to create an ordered set using the supplied list to retain order.
-     * <p>
-     * A {@code HashSet} is used for the set behavior.
-     * </p>
-     * <p>
-     * NOTE: If the list contains duplicates, the duplicates are removed,
-     * altering the specified list.
-     * </p>
-     *
-     * @param <E> the element type
-     * @param list the list to decorate, must not be null
-     * @return a new ordered set
-     * @throws NullPointerException if list is null
-     * @since 4.0
-     */
-    public static <E> ListOrderedSet<E> listOrderedSet(final List<E> list) {
-        Objects.requireNonNull(list, "list");
-        CollectionUtils.filter(list, UniquePredicate.uniquePredicate());
-        final Set<E> set = new HashSet<>(list);
 
-        return new ListOrderedSet<>(set, list);
-    }
-
-    /**
-     * Factory method to create an ordered set.
-     * <p>
-     * An {@code ArrayList} is used to retain order.
-     * </p>
-     *
-     * @param <E> the element type
-     * @param set the set to decorate, must not be null
-     * @return a new ordered set
-     * @throws NullPointerException if set is null
-     * @since 4.0
-     */
-    public static <E> ListOrderedSet<E> listOrderedSet(final Set<E> set) {
-        return new ListOrderedSet<>(set);
-    }
-
-    /**
-     * Factory method to create an ordered set specifying the list and set to use.
-     * <p>
-     * The list and set must both be empty.
-     * </p>
-     *
-     * @param <E> the element type
-     * @param set the set to decorate, must be empty and not null
-     * @param list the list to decorate, must be empty and not null
-     * @return a new ordered set
-     * @throws NullPointerException if set or list is null
-     * @throws IllegalArgumentException if either the set or list is not empty
-     * @since 4.0
-     */
-    public static <E> ListOrderedSet<E> listOrderedSet(final Set<E> set, final List<E> list) {
-        Objects.requireNonNull(set, "set");
-        Objects.requireNonNull(list, "list");
-        if (!set.isEmpty() || !list.isEmpty()) {
-            throw new IllegalArgumentException("Set and List must be empty");
-        }
-        return new ListOrderedSet<>(set, list);
-    }
 
     /** Internal list to hold the sequence of objects */
     private final List<E> setOrder;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * Constructs a new empty {@code ListOrderedSet} using a
@@ -279,11 +238,67 @@ public class ListOrderedSet<E>
         return null;
     }
 
-    @Override
-    public int size() {
-        return decorated().size();
-        // @@@ natural language assertion here
-        // assert \result>=0；
+    /**
+     * Factory method to create an ordered set using the supplied list to retain order.
+     * <p>
+     * A {@code HashSet} is used for the set behavior.
+     * </p>
+     * <p>
+     * NOTE: If the list contains duplicates, the duplicates are removed,
+     * altering the specified list.
+     * </p>
+     *
+     * @param <E> the element type
+     * @param list the list to decorate, must not be null
+     * @return a new ordered set
+     * @throws NullPointerException if list is null
+     * @since 4.0
+     */
+    public static <E> ListOrderedSet<E> listOrderedSet(final List<E> list) {
+        Objects.requireNonNull(list, "list");
+        CollectionUtils.filter(list, UniquePredicate.uniquePredicate());
+        final Set<E> set = new HashSet<>(list);
+
+        return new ListOrderedSet<>(set, list);
+    }
+
+    /**
+     * Factory method to create an ordered set.
+     * <p>
+     * An {@code ArrayList} is used to retain order.
+     * </p>
+     *
+     * @param <E> the element type
+     * @param set the set to decorate, must not be null
+     * @return a new ordered set
+     * @throws NullPointerException if set is null
+     * @since 4.0
+     */
+    public static <E> ListOrderedSet<E> listOrderedSet(final Set<E> set) {
+        return new ListOrderedSet<>(set);
+    }
+
+    /**
+     * Factory method to create an ordered set specifying the list and set to use.
+     * <p>
+     * The list and set must both be empty.
+     * </p>
+     *
+     * @param <E> the element type
+     * @param set the set to decorate, must be empty and not null
+     * @param list the list to decorate, must be empty and not null
+     * @return a new ordered set
+     * @throws NullPointerException if set or list is null
+     * @throws IllegalArgumentException if either the set or list is not empty
+     * @since 4.0
+     */
+    public static <E> ListOrderedSet<E> listOrderedSet(final Set<E> set, final List<E> list) {
+        Objects.requireNonNull(set, "set");
+        Objects.requireNonNull(list, "list");
+        if (!set.isEmpty() || !list.isEmpty()) {
+            throw new IllegalArgumentException("Set and List must be empty");
+        }
+        return new ListOrderedSet<>(set, list);
     }
 
     /**
@@ -364,6 +379,13 @@ public class ListOrderedSet<E>
     }
 
     @Override
+    public int size() {
+        return decorated().size();
+        // @@@ natural language assertion here
+        // assert \result>=0；
+    }
+
+    @Override
     public Object[] toArray() {
         return setOrder.toArray();
     }
@@ -385,5 +407,4 @@ public class ListOrderedSet<E>
     public String toString() {
         return setOrder.toString();
     }
-
 }

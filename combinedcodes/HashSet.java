@@ -74,6 +74,23 @@ public class HashSet<E>
     private static final Object PRESENT = new Object();
 
     /**
+     * Constructs a new, empty linked hash set.  (This package private
+     * constructor is only used by LinkedHashSet.) The backing
+     * HashMap instance is a LinkedHashMap with the specified initial
+     * capacity and the specified load factor.
+     *
+     * @param      initialCapacity   the initial capacity of the hash map
+     * @param      loadFactor        the load factor of the hash map
+     * @param      dummy             ignored (distinguishes this
+     *             constructor from other int, float constructor.)
+     * @throws     IllegalArgumentException if the initial capacity is less
+     *             than zero, or if the load factor is nonpositive
+     */
+    HashSet(int initialCapacity, float loadFactor, boolean dummy) {
+        map = new LinkedHashMap<>(initialCapacity, loadFactor);
+    }
+
+    /**
      * Constructs a new, empty set; the backing {@code HashMap} instance has
      * default initial capacity (16) and load factor (0.75).
      */
@@ -103,23 +120,6 @@ public class HashSet<E>
 
     /**
      * Constructs a new, empty set; the backing {@code HashMap} instance has
-     * the specified initial capacity and the specified load factor.
-     *
-     * @param      initialCapacity   the initial capacity of the hash map
-     * @param      loadFactor        the load factor of the hash map
-     * @throws     IllegalArgumentException if the initial capacity is less
-     *             than zero, or if the load factor is nonpositive
-     */
-    public HashSet(int initialCapacity, float loadFactor) {
-        map = new HashMap<>(initialCapacity, loadFactor);
-        // @@@ natural language assertion here
-        // assert initialCapacity>=0 && loadFactor>0 => this.isEmpty();
-        // @@@ natural language assertion here
-        // assert initialCapacity>=0 && loadFactor>0 => this.size()==0;
-    }
-
-    /**
-     * Constructs a new, empty set; the backing {@code HashMap} instance has
      * the specified initial capacity and default load factor (0.75).
      *
      * @param      initialCapacity   the initial capacity of the hash table
@@ -135,66 +135,20 @@ public class HashSet<E>
     }
 
     /**
-     * Constructs a new, empty linked hash set.  (This package private
-     * constructor is only used by LinkedHashSet.) The backing
-     * HashMap instance is a LinkedHashMap with the specified initial
-     * capacity and the specified load factor.
+     * Constructs a new, empty set; the backing {@code HashMap} instance has
+     * the specified initial capacity and the specified load factor.
      *
      * @param      initialCapacity   the initial capacity of the hash map
      * @param      loadFactor        the load factor of the hash map
-     * @param      dummy             ignored (distinguishes this
-     *             constructor from other int, float constructor.)
      * @throws     IllegalArgumentException if the initial capacity is less
      *             than zero, or if the load factor is nonpositive
      */
-    HashSet(int initialCapacity, float loadFactor, boolean dummy) {
-        map = new LinkedHashMap<>(initialCapacity, loadFactor);
-    }
-
-    /**
-     * Returns an iterator over the elements in this set.  The elements
-     * are returned in no particular order.
-     *
-     * @return an Iterator over the elements in this set
-     * @see ConcurrentModificationException
-     */
-    public Iterator<E> iterator() {
-        return map.keySet().iterator();
-    }
-
-    /**
-     * Returns the number of elements in this set (its cardinality).
-     *
-     * @return the number of elements in this set (its cardinality)
-     */
-    public int size() {
-        return map.size();
+    public HashSet(int initialCapacity, float loadFactor) {
+        map = new HashMap<>(initialCapacity, loadFactor);
         // @@@ natural language assertion here
-        // assert \result==map.size();
-    }
-
-    /**
-     * Returns {@code true} if this set contains no elements.
-     *
-     * @return {@code true} if this set contains no elements
-     */
-    public boolean isEmpty() {
-        return map.isEmpty();
+        // assert initialCapacity>=0 && loadFactor>0 => this.isEmpty();
         // @@@ natural language assertion here
-        // assert \result==(this.size()==0);
-    }
-
-    /**
-     * Returns {@code true} if this set contains the specified element.
-     * More formally, returns {@code true} if and only if this set
-     * contains an element {@code e} such that
-     * {@code Objects.equals(o, e)}.
-     *
-     * @param o element whose presence in this set is to be tested
-     * @return {@code true} if this set contains the specified element
-     */
-    public boolean contains(Object o) {
-        return map.containsKey(o);
+        // assert initialCapacity>=0 && loadFactor>0 => this.size()==0;
     }
 
     /**
@@ -213,26 +167,6 @@ public class HashSet<E>
         return map.put(e, PRESENT)==null;
         // @@@ natural language assertion here
         // assert this.contains(e);
-    }
-
-    /**
-     * Removes the specified element from this set if it is present.
-     * More formally, removes an element {@code e} such that
-     * {@code Objects.equals(o, e)},
-     * if this set contains such an element.  Returns {@code true} if
-     * this set contained the element (or equivalently, if this set
-     * changed as a result of the call).  (This set will not contain the
-     * element once the call returns.)
-     *
-     * @param o object to be removed from this set, if present
-     * @return {@code true} if the set contained the specified element
-     */
-    public boolean remove(Object o) {
-        return map.remove(o)==PRESENT;
-        // @@@ natural language assertion here
-        // assert \old(this.contains(o)) => \result==true;
-        // @@@ natural language assertion here
-        // assert !this.contains(o);
     }
 
     /**
@@ -270,6 +204,72 @@ public class HashSet<E>
         // assert \result.size()==this.size();
         // @@@ natural language assertion here
         // assert \result!=null;
+    }
+
+    /**
+     * Returns {@code true} if this set contains the specified element.
+     * More formally, returns {@code true} if and only if this set
+     * contains an element {@code e} such that
+     * {@code Objects.equals(o, e)}.
+     *
+     * @param o element whose presence in this set is to be tested
+     * @return {@code true} if this set contains the specified element
+     */
+    public boolean contains(Object o) {
+        return map.containsKey(o);
+    }
+
+    /**
+     * Returns {@code true} if this set contains no elements.
+     *
+     * @return {@code true} if this set contains no elements
+     */
+    public boolean isEmpty() {
+        return map.isEmpty();
+        // @@@ natural language assertion here
+        // assert \result==(this.size()==0);
+    }
+
+    /**
+     * Returns an iterator over the elements in this set.  The elements
+     * are returned in no particular order.
+     *
+     * @return an Iterator over the elements in this set
+     * @see ConcurrentModificationException
+     */
+    public Iterator<E> iterator() {
+        return map.keySet().iterator();
+    }
+
+    /**
+     * Removes the specified element from this set if it is present.
+     * More formally, removes an element {@code e} such that
+     * {@code Objects.equals(o, e)},
+     * if this set contains such an element.  Returns {@code true} if
+     * this set contained the element (or equivalently, if this set
+     * changed as a result of the call).  (This set will not contain the
+     * element once the call returns.)
+     *
+     * @param o object to be removed from this set, if present
+     * @return {@code true} if the set contained the specified element
+     */
+    public boolean remove(Object o) {
+        return map.remove(o)==PRESENT;
+        // @@@ natural language assertion here
+        // assert \old(this.contains(o)) => \result==true;
+        // @@@ natural language assertion here
+        // assert !this.contains(o);
+    }
+
+    /**
+     * Returns the number of elements in this set (its cardinality).
+     *
+     * @return the number of elements in this set (its cardinality)
+     */
+    public int size() {
+        return map.size();
+        // @@@ natural language assertion here
+        // assert \result==map.size();
     }
 
     /**

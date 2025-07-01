@@ -48,6 +48,34 @@ public class FixedArrayList<E>
 
 // Construction
 
+
+// Access
+
+
+
+
+
+
+
+
+
+	public java.util.Iterator<E> iterator() {
+		return null;
+	}
+
+
+
+
+// Commands
+
+
+
+
+
+
+
+
+
 	public FixedArrayList() {
 		elements = new ArrayList<E>();
 		freeIndices = new ArrayList<Integer>(16);
@@ -57,174 +85,6 @@ public class FixedArrayList<E>
 		elements = new ArrayList<E>(capacity);
 		freeIndices = new ArrayList<Integer>(16);
 	}
-
-// Access
-
-	/**
-	 * Number of elements in the array.
-	 * @return The number of elements in the array.
-	 */
-	public int size() {
-		return elements.size() - freeIndices.size();
-        // @@@ natural language assertion here
-        // assert \result>=0;
-	}
-
-	/**
-	 * Real size of the array, counting elements that have been erased.
-	 * @see #unsafeGet(int)
-	 */
-	public int realSize() {
-		return elements.size();
-	}
-
-	public boolean isEmpty() {
-		return size() == 0;
-	}
-	
-	/**
-	 * True if the given index i references a value.
-	 * @param i The index to test.
-	 * @return True if a value exists at the given index.
-	 */
-	public boolean hasIndex(int i) {
-		if(i>0 && i<elements.size()) {
-			return elements.get(i) != null;
-		}
-		
-		return false;
-	}
-
-	/**
-	 * I-th element.
-	 * @param i The element index.
-	 * @return The element at index <code>i</code>.
-	 */
-	public E get(int i) {
-		E e = elements.get(i);
-
-		if(e == null)
-			throw new NoSuchElementException( "no element at index " + i );
-
-		return e;
-	}
-
-	/**
-	 * I-th element. Like the {@link #get(int)} method but it does not check
-	 * the element does not exists at the given index.
-	 * @param i The element index.
-	 * @return The element at index <code>i</code>.
-	 */
-	public E unsafeGet(int i) {
-		return elements.get( i );
-	}
-
-	public boolean contains(Object o) {
-		int n = elements.size();
-
-		for(int i=0; i<n; ++i) {
-			E e = elements.get(i);
-	
-			if(e != null) {
-				if(e == o)
-					return true;
-
-				if(elements.equals(o))
-					return true;
-			}
-		}
-
-		return false;
-	}
-
-	public boolean containsAll(Collection<?> c) {
-		for(Object o: c) {
-			if(! contains(o))
-				return false;
-		}
-
-		return true;
-	}
-
-	@Override
-    @SuppressWarnings("unchecked")
-	public boolean equals(Object o) {
-		if(o instanceof FixedArrayList) {
-			FixedArrayList<? extends E> other = (FixedArrayList<? extends E>) o;
-
-			int n = size();
-
-			if(other.size() == n) {
-				for(int i=0; i<n; ++i) {
-					E e0 = elements.get(i);
-					E e1 = other.elements.get(i);
-
-					if(e0 != e1) {
-						if(e0 == null && e1 != null)
-							return false;
-
-						if(e0 != null && e1 == null)
-							return false;
-
-						if(! e0.equals(e1))
-							return false;
-					}
-				}
-
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	public java.util.Iterator<E> iterator() {
-		return null;
-	}
-
-	/**
-	 * Last index used by the {@link #add(Object)} method.
-	 * @return The last insertion index.
-	 */
-	public int getLastIndex() {
-		return lastIndex;
-	}
-	
-	/**
-	 * The index that will be used in case of a next insertion in this array.
-	 * @return next add index
-	 */
-	public int getNextAddIndex() {
-		int n = freeIndices.size();
-		
-		if(n > 0)
-		     return freeIndices.get(n - 1);
-		else return elements.size();
-	}
-
-	public Object[] toArray() {
-		int n = size();
-		int m = elements.size();
-		int j = 0;
-		Object a[] = new Object[n];
-
-		for(int i=0; i<m; ++i) {
-			E e = elements.get(i);
-
-			if(e != null)
-				a[j++] = e;
-		}
-
-		assert(j == n);
-		return a;
-	}
-
-	public <T> T[] toArray(T[] a) {
-		// TODO
-		throw new RuntimeException( "not implemented yet" );
-	}
-
-// Commands
 
 	/**
 	 * Add one <code>element</code> in the array. The index used for inserting
@@ -318,6 +178,129 @@ public class FixedArrayList<E>
 		return true;
 	}
 
+	public void clear() {
+		elements.clear();
+		freeIndices.clear();
+	}
+
+	public boolean contains(Object o) {
+		int n = elements.size();
+
+		for(int i=0; i<n; ++i) {
+			E e = elements.get(i);
+	
+			if(e != null) {
+				if(e == o)
+					return true;
+
+				if(elements.equals(o))
+					return true;
+			}
+		}
+
+		return false;
+	}
+
+	public boolean containsAll(Collection<?> c) {
+		for(Object o: c) {
+			if(! contains(o))
+				return false;
+		}
+
+		return true;
+	}
+
+	@Override
+    @SuppressWarnings("unchecked")
+	public boolean equals(Object o) {
+		if(o instanceof FixedArrayList) {
+			FixedArrayList<? extends E> other = (FixedArrayList<? extends E>) o;
+
+			int n = size();
+
+			if(other.size() == n) {
+				for(int i=0; i<n; ++i) {
+					E e0 = elements.get(i);
+					E e1 = other.elements.get(i);
+
+					if(e0 != e1) {
+						if(e0 == null && e1 != null)
+							return false;
+
+						if(e0 != null && e1 == null)
+							return false;
+
+						if(! e0.equals(e1))
+							return false;
+					}
+				}
+
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * I-th element.
+	 * @param i The element index.
+	 * @return The element at index <code>i</code>.
+	 */
+	public E get(int i) {
+		E e = elements.get(i);
+
+		if(e == null)
+			throw new NoSuchElementException( "no element at index " + i );
+
+		return e;
+	}
+
+	/**
+	 * Last index used by the {@link #add(Object)} method.
+	 * @return The last insertion index.
+	 */
+	public int getLastIndex() {
+		return lastIndex;
+	}
+	
+	/**
+	 * The index that will be used in case of a next insertion in this array.
+	 * @return next add index
+	 */
+	public int getNextAddIndex() {
+		int n = freeIndices.size();
+		
+		if(n > 0)
+		     return freeIndices.get(n - 1);
+		else return elements.size();
+	}
+	
+	/**
+	 * True if the given index i references a value.
+	 * @param i The index to test.
+	 * @return True if a value exists at the given index.
+	 */
+	public boolean hasIndex(int i) {
+		if(i>0 && i<elements.size()) {
+			return elements.get(i) != null;
+		}
+		
+		return false;
+	}
+
+	public boolean isEmpty() {
+		return size() == 0;
+	}
+
+	/**
+	 * Real size of the array, counting elements that have been erased.
+	 * @see #unsafeGet(int)
+	 */
+	public int realSize() {
+		return elements.size();
+	}
+
 	/**
 	 * Remove the element at index <code>i</code>. This method complexity
 	 * is O(1).
@@ -353,10 +336,6 @@ public class FixedArrayList<E>
         // assert i>=0 && i<this.size() => \forall int j; index<j && j<\old(this.size()-1); this.get(j)==null && \old(this.get(j+1))==null || this.get(j).equals(\old(this.get(j+1)));
 	}
 
-	protected void removeIt(int i) {
-		remove(i);
-	}
-
 	/**
 	 * Remove the element <code>e</code>. At worse the complexity is
 	 * O(n).
@@ -380,13 +359,53 @@ public class FixedArrayList<E>
 		throw new UnsupportedOperationException( "not implemented yet" );
 	}
 
+	protected void removeIt(int i) {
+		remove(i);
+	}
+
 	public boolean retainAll(Collection<?> c) {
 		throw new UnsupportedOperationException( "not implemented yet" );
 	}
 
-	public void clear() {
-		elements.clear();
-		freeIndices.clear();
+	/**
+	 * Number of elements in the array.
+	 * @return The number of elements in the array.
+	 */
+	public int size() {
+		return elements.size() - freeIndices.size();
+        // @@@ natural language assertion here
+        // assert \result>=0;
 	}
 
+	public Object[] toArray() {
+		int n = size();
+		int m = elements.size();
+		int j = 0;
+		Object a[] = new Object[n];
+
+		for(int i=0; i<m; ++i) {
+			E e = elements.get(i);
+
+			if(e != null)
+				a[j++] = e;
+		}
+
+		assert(j == n);
+		return a;
+	}
+
+	public <T> T[] toArray(T[] a) {
+		// TODO
+		throw new RuntimeException( "not implemented yet" );
+	}
+
+	/**
+	 * I-th element. Like the {@link #get(int)} method but it does not check
+	 * the element does not exists at the given index.
+	 * @param i The element index.
+	 * @return The element at index <code>i</code>.
+	 */
+	public E unsafeGet(int i) {
+		return elements.get( i );
+	}
 }
