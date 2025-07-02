@@ -53,26 +53,6 @@ public class ListOrderedSet<E>
     /** Internal list to hold the sequence of objects */
     private final List<E> setOrder;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /**
      * Constructs a new empty {@code ListOrderedSet} using a
      * {@code HashSet} and an {@code ArrayList} internally.

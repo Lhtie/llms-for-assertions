@@ -337,13 +337,6 @@ public class LinkedList<E>
         return indexOf(o) >= 0;
     }
 
-    /*
-    void dataStructureInvariants() {
-        assert (size == 0)
-            ? (first == null && last == null)
-            : (first.prev == null && last.next == null);
-    }
-
     /**
      * @since 1.6
      */

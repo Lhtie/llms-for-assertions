@@ -46,36 +46,6 @@ public class FixedArrayList<E>
 	 */
 	protected int lastIndex = -1;
 
-// Construction
-
-
-// Access
-
-
-
-
-
-
-
-
-
-	public java.util.Iterator<E> iterator() {
-		return null;
-	}
-
-
-
-
-// Commands
-
-
-
-
-
-
-
-
-
 	public FixedArrayList() {
 		elements = new ArrayList<E>();
 		freeIndices = new ArrayList<Integer>(16);
@@ -291,6 +261,10 @@ public class FixedArrayList<E>
 
 	public boolean isEmpty() {
 		return size() == 0;
+	}
+
+	public java.util.Iterator<E> iterator() {
+		return null;
 	}
 
 	/**

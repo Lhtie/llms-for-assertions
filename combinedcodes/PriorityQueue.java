@@ -94,46 +94,6 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      */
     transient int modCount;     // non-private to simplify nested class access
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // A tiny bit set implementation
-
-
-
-
-
     /**
      * Creates a {@code PriorityQueue} with the default initial
      * capacity (11) that orders its elements according to their
@@ -334,6 +294,18 @@ public class PriorityQueue<E> extends AbstractQueue<E>
             action.accept((E) es[i]);
         if (expectedModCount != modCount)
             throw new ConcurrentModificationException();
+    }
+
+    /**
+     * Returns the element at the specified position in the priority queue.
+     *
+     * @param  index index of the element to return
+     * @return the element at the specified position in this priority queue
+     * @throws IndexOutOfBoundsException {@inheritDoc}
+     */
+    public E get(int index) {
+        Objects.checkIndex(index, size);
+        return (E) queue[index];
     }
 
     /**
@@ -776,4 +748,5 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         return a;
         // @@@ natural language assertion here
         // assert a!=null => \result!=null;
-    }}
+    }
+}

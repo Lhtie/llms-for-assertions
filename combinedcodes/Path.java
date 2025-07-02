@@ -45,8 +45,6 @@ public class Path implements Structure {
 	 */
 	private static final Logger logger = Logger.getLogger(Path.class.getSimpleName());
 
-	// ------------- ATTRIBUTES ------------
-
 	/**
 	 * The root of the path;
 	 */
@@ -62,42 +60,6 @@ public class Path implements Structure {
 	 */
 	Stack<Node> nodePath;
 
-	// ------------- CONSTRUCTORS ------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	/**
-	 * Looks at the edge at the top of the stack without removing it from the stack.
-	 * 
-	 * @return The edge at the top of the stack.
-	 */
-
-
-
-
-
-	// ------------ UTILITY METHODS ------------
-
-
-
-
-
-
-
 	/**
 	 * New empty path.
 	 */
@@ -109,8 +71,7 @@ public class Path implements Structure {
         // @@@ natural language assertion here
         // assert this.size()==0;
 	}
-
-
+	
 	/**
 	 * Adds a node and an edge to the path. If root is not set, the node will be
 	 * set as root. Otherwise from node must be the same as the head node of the
@@ -350,6 +311,11 @@ public class Path implements Structure {
 		return nodePath.stream();
 	}
 
+	/**
+	 * Looks at the edge at the top of the stack without removing it from the stack.
+	 * 
+	 * @return The edge at the top of the stack.
+	 */
 	public Edge peekEdge() {
 		return edgePath.peek();
 	}
@@ -457,4 +423,5 @@ public class Path implements Structure {
 	@Override
 	public String toString() {
 		return nodePath.toString();
-	}}
+	}
+}

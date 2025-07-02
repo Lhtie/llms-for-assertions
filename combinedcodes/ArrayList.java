@@ -77,6 +77,10 @@ public class ArrayList<E> extends AbstractList<E>
             throw new IllegalArgumentException("Illegal Capacity: "+
                                                initialCapacity);
         }
+        // @@@ natural language assertion here
+        // assert initialCapacity>=0 => this.isEmpty();
+        // @@@ natural language assertion here
+        // assert initialCapacity>=0 => this.size()==0;
     }
 
     /**

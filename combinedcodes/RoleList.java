@@ -105,25 +105,21 @@ public class RoleList extends ArrayList<Object> {
         // assert list!=null => this.equals(list);
     }
 
-    /**
-     * Adds the Role specified as the last element of the list.
-     *
-     * @param role  the role to be added.
-     *
-     * @exception IllegalArgumentException  if the role is null.
-     */
-    public void add(Role role)
-        throws IllegalArgumentException {
-
-        if (role == null) {
-            String excMsg = "Invalid parameter";
-            throw new IllegalArgumentException(excMsg);
-        }
-        super.add(role);
+    @Override
+    public void add(int index, Object element) {
+        if (!tainted)
+            tainted = isTainted(element);
+        if (typeSafe)
+            checkTypeSafe(element);
+        super.add(index, element);
         // @@@ natural language assertion here
-        // assert this.contains(role);
+        // assert index>=0 && index<=this.size() => this.contains(element);
         // @@@ natural language assertion here
-        // assert role==null && this.get(this.size()-1)==null || role!=null && role.equals(this.get(this.size()-1));
+        // assert index>=0 && index<=this.size() => element==null&&this.get(index)==null||this.get(index).equals(element);
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion here
+        // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this)size(); this.get(i+1) == null&&\old(this).get(i) == null||this.get(i+1).equals(\old(this).get(i));
     }
 
     /**
@@ -151,13 +147,13 @@ public class RoleList extends ArrayList<Object> {
 
         super.add(index, role);
         // @@@ natural language assertion here
-        // assert index>=0 && index<=this.size() => this.contains(role);
+        // assert index>=0 && index<=this.size() && role!=null => this.contains(role);
         // @@@ natural language assertion here
-        // assert index>=0 && index<=this.size() => role==null&&this.get(index)==null||this.get(index).equals(role);
+        // assert index>=0 && index<=this.size() && role!=null => this.get(index).equals(role);
         // @@@ natural language assertion here
-        // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // assert index>=0 && index<=this.size() && role!=null => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
         // @@@ natural language assertion here
-        // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this)size(); this.get(i+1) == null&&\old(this).get(i) == null||this.get(i+1).equals(\old(this).get(i));
+        // assert index>=0 && index<=this.size() && role!=null => \forall int i; index <= i&&i <\old(this)size(); this.get(i+1) == null&&\old(this).get(i) == null||this.get(i+1).equals(\old(this).get(i));
     }
 
     @Override
@@ -167,15 +163,33 @@ public class RoleList extends ArrayList<Object> {
         if (typeSafe)
             checkTypeSafe(o);
         return super.add(o);
+        // @@@ natural language assertion here
+        // assert this.contains(o);
+        // @@@ natural language assertion here
+        // assert o==null && this.get(this.size()-1)==null || o!=null && o.equals(this.get(this.size()-1));
+        // @@@ natural language assertion here
+        // assert \result==true;
     }
 
-    @Override
-    public void add(int index, Object element) {
-        if (!tainted)
-            tainted = isTainted(element);
-        if (typeSafe)
-            checkTypeSafe(element);
-        super.add(index, element);
+    /**
+     * Adds the Role specified as the last element of the list.
+     *
+     * @param role  the role to be added.
+     *
+     * @exception IllegalArgumentException  if the role is null.
+     */
+    public void add(Role role)
+        throws IllegalArgumentException {
+
+        if (role == null) {
+            String excMsg = "Invalid parameter";
+            throw new IllegalArgumentException(excMsg);
+        }
+        super.add(role);
+        // @@@ natural language assertion here
+        // assert role!=null => this.contains(role);
+        // @@@ natural language assertion here
+        // assert role!=null => role.equals(this.get(this.size()-1));
     }
 
     /**
@@ -299,6 +313,21 @@ public class RoleList extends ArrayList<Object> {
         return false;
     }
 
+    @Override
+    public Object set(int index, Object element) {
+        if (!tainted)
+            tainted = isTainted(element);
+        if (typeSafe)
+            checkTypeSafe(element);
+        return super.set(index, element);
+        // @@@ natural language assertion
+        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+        // @@@ natural language assertion
+        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ natural language assertion
+        // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this).get(i)==null || this.get(i).equals(\old(this).get(i));
+    }
+
     /**
      * Sets the element at the position specified to be the role
      * specified.
@@ -324,19 +353,10 @@ public class RoleList extends ArrayList<Object> {
 
         super.set(index, role);
         // @@@ natural language assertion here
-        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
+        // assert index>=0 && index<this.size() && role!=null => \result==\old(this.get(index));
         // @@@ natural language assertion here
-        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this).get(i)==null || this.get(i).equals(\old(this).get(i));
+        // assert index>=0 && index<size() && role!=null => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this).get(i)==null || this.get(i).equals(\old(this).get(i));
         // @@@ natural language assertion here
-        // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // assert index>=0 && index<this.size() && role!=null => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
      }
-
-    @Override
-    public Object set(int index, Object element) {
-        if (!tainted)
-            tainted = isTainted(element);
-        if (typeSafe)
-            checkTypeSafe(element);
-        return super.set(index, element);
-    }
 }

@@ -79,50 +79,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
     /* use serialVersionUID from JDK 1.0.2 for interoperability */
     private static final long serialVersionUID = 7997698588986878753L;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /**
      * Creates a new bit set. All bits are initially {@code false}.
      */
@@ -369,9 +325,11 @@ public class BitSet implements Cloneable, java.io.Serializable {
             throw new InternalError();
         }
         // @@@ natural language assertion here
+        // assert \result!=this;
+        // @@@ natural language assertion here
         // assert this.size()==result.size();
         // @@@ natural language assertion here
-        // assert \result!=this;
+        // assert \result!=null;
     }
 
     /**
@@ -1019,6 +977,8 @@ public class BitSet implements Cloneable, java.io.Serializable {
      */
     public int size() {
         return words.length * BITS_PER_WORD;
+        // natural language assertion here
+        // assert /result>=0;
     }
 
     /**
