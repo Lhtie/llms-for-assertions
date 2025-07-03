@@ -977,7 +977,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      */
     public int size() {
         return words.length * BITS_PER_WORD;
-        // natural language assertion here
+        // @@@ natural language assertion here
         // assert /result>=0;
     }
 

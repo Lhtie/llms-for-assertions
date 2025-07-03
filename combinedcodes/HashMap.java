@@ -154,6 +154,21 @@ public class HashMap<K,V>
     transient int modCount;
 
     /**
+     * Constructs an empty <tt>HashMap</tt> with the default initial capacity
+     * (16) and the default load factor (0.75).
+     */
+    public HashMap() {
+        this.loadFactor = DEFAULT_LOAD_FACTOR;
+        threshold = (int)(DEFAULT_INITIAL_CAPACITY * DEFAULT_LOAD_FACTOR);
+        table = new Entry[DEFAULT_INITIAL_CAPACITY];
+        init();
+        // @@@ natural language assertion here
+        // assert this.isEmpty();
+        // @@@ natural language assertion here
+        // assert this.size()==0;
+    }
+
+    /**
      * Constructs an empty <tt>HashMap</tt> with the specified initial
      * capacity and load factor.
      *
@@ -196,21 +211,6 @@ public class HashMap<K,V>
      */
     public HashMap(int initialCapacity) {
         this(initialCapacity, DEFAULT_LOAD_FACTOR);
-    }
-
-    /**
-     * Constructs an empty <tt>HashMap</tt> with the default initial capacity
-     * (16) and the default load factor (0.75).
-     */
-    public HashMap() {
-        this.loadFactor = DEFAULT_LOAD_FACTOR;
-        threshold = (int)(DEFAULT_INITIAL_CAPACITY * DEFAULT_LOAD_FACTOR);
-        table = new Entry[DEFAULT_INITIAL_CAPACITY];
-        init();
-        // @@@ natural language assertion here
-        // assert this.isEmpty();
-        // @@@ natural language assertion here
-        // assert this.size()==0;
     }
 
     /**
