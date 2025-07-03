@@ -24,6 +24,6 @@ python nlasrtgen.py \
     --codedir javacodes \
     --modellist qw32 \
     --temp 0.3 --nsamples 10 \
-    --codelist {1..463} \
+    --codelist {1..487} \
     --resultdir results_nl \
     --write

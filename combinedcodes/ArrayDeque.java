@@ -589,7 +589,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         return offerLast(e);
         // @@@ natural language assertion here
         // assert e!=null => this.contains(e);
-        // @@ natural language assertion here
+        // @@@ natural language assertion here
         // assert e!=null => \result==true;
     }
 
