@@ -29,9 +29,9 @@ class Stack<E> extends Vector<E> {
      * Creates an empty Stack.
      */
     public Stack() {
-        // @@@ natural language assertion here
+        // @@@ the stack is empty when it is created
         // assert this.empty();
-        // @@@ natural language assertion here
+        // @@@ The size of the stack is 0 when it is created.
         // assert this.size()==0;
     }
 
@@ -43,7 +43,7 @@ class Stack<E> extends Vector<E> {
      */
     public boolean empty() {
         return size() == 0;
-        // @@@ natural language assertion here
+        // @@@ The result is true if and only if the size of the stack is 0
         // assert \result==(this.size()==0);
     }
 
@@ -61,7 +61,7 @@ class Stack<E> extends Vector<E> {
         if (len == 0)
             throw new EmptyStackException();
         return elementAt(len - 1);
-        // @@@ natural language assertion here
+        // @@@ if the stack is not empty, then the result is either null and the last element is null, or the result equals the last element of the stack
         // assert !this.isEmpty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
@@ -81,7 +81,7 @@ class Stack<E> extends Vector<E> {
         removeElementAt(len - 1);
 
         return obj;
-        // @@@ natural language assertion here
+        // @@@ if the stack is not empty, then the popped result is equal to the element that was at the top of the stack before popping
         // assert !this.isEmpty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
@@ -99,9 +99,9 @@ class Stack<E> extends Vector<E> {
         addElement(item);
 
         return item;
-        // @@@ natural language assertion here
+        // @@@ stack contains the pushed item after the operation
         // assert this.contains(e);
-        // @@@ natural language assertion here
+        // @@@ The item pushed onto the stack is either null and the last element of the stack is also null, or the item is not null and is equal to the last element of the stack.
         // assert item==null && this.get(this.size()-1)==null || item!=null && item.equals(this.get(this.size()-1));
     }
 

@@ -62,9 +62,9 @@ public class ListOrderedSet<E>
     public ListOrderedSet() {
         super(new HashSet<>());
         setOrder = new ArrayList<>();
-        // @@@ natural language assertion here
+        // @@@ the newly created ListOrderedSet is empty
         // assert this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ the size of the list ordered set is 0 after initialization
         // assert this.size()==0;
     }
 
@@ -102,13 +102,13 @@ public class ListOrderedSet<E>
             return true;
         }
         return false;
-        // @@@ natural language assertion here
+        // @@@ If the index is between 0 and the size of the set, then the set contains the object at that index
         // assert index>=0 && index<=this.size() => this.contains(object);
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then either the object is null and the element at the index is null, or the element at the index is equal to the object.
         // assert index>=0 && index<=this.size() => object==null&&this.get(index)==null||this.get(index).equals(object);
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for each index i less than the given index, the element at i is either null and was null before or it remains unchanged.
         // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ If the index is between 0 and the size of the set, then for every index i from the given index to the old size minus one, the element at position i+1 is either null and the element at position i was null, or the element at position i+1 is equal to the element at position i in the old set.
         // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
@@ -205,11 +205,11 @@ public class ListOrderedSet<E>
      */
     public int indexOf(final Object object) {
         return setOrder.indexOf(object);
-        // @@@ natural language assertion here
+        // @@@ If the result is not -1 and the element at the result index is null, then the object being searched for is null.
         // assert \result!=-1 && this.get(\result)==null ==> object==null;
-        // @@@ natural language assertion here
+        // @@@ If the index of the object is not -1 and the element at that index is not null, then the element at that index is equal to the object.
         // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(object);
-        // @@@ natural language assertion here
+        // @@@ If the object is found in the set, then for every index before its first occurrence, the element at that index is either null (if the object is not null) or not equal to the object.
         // assert \result!=-1 => \forall int i; 0<=I && i<\result; this.get(i)==null && object!=null || this.get(i)!=null && !this.get(i).equals(object);
     }
 
@@ -293,11 +293,11 @@ public class ListOrderedSet<E>
         final E obj = setOrder.remove(index);
         remove(obj);
         return obj;
-        // @@@ natural language assertion here
+        // @@@ if the index is within the bounds of the set, then the removed element is the same as the element at that index before removal
         // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for each index less than the given index, the element at that index remains unchanged.
         // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for each subsequent index, the element at the current index is either null and the next old element is null, or it is equal to the next old element.
         // assert index>=0 && index<this.size() => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
@@ -361,7 +361,7 @@ public class ListOrderedSet<E>
     @Override
     public int size() {
         return decorated().size();
-        // @@@ natural language assertion here
+        // @@@ size of the set is always greater than or equal to 0
         // assert \result>=0；
     }
 

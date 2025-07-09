@@ -94,6 +94,7 @@ if __name__ == "__main__":
 
             allrspnse, allasrts  = "", ""
             for _ in range(args.nsamples):
+                # print(inputs[0]["content"])
                 response = run(mkey, model, tokenizer, inputs, args.temp)
                 asrt = extract(args.prompt, response, langid)
                 allrspnse += response + "-"*20

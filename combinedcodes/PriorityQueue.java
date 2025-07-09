@@ -101,7 +101,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      */
     public PriorityQueue() {
         this(DEFAULT_INITIAL_CAPACITY, null);
-        // @@@ natural language assertion here
+        // @@@ the size of the priority queue is 0 after initialization
         // assert this.size()==0;
     }
 
@@ -150,7 +150,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
             throw new IllegalArgumentException();
         this.queue = new Object[initialCapacity];
         this.comparator = comparator;
-        // @@@ natural language assertion here
+        // @@@ if the initial capacity is greater than or equal to 1, then the size of the priority queue is 0
         // assert initialCapacity>=1 => this.size()==0;
     }
 
@@ -185,9 +185,9 @@ public class PriorityQueue<E> extends AbstractQueue<E>
             this.comparator = null;
             initFromCollection(c);
         }
-        // @@@ natural language assertion here
+        // @@@ if the collection is not null, then the size of the priority queue is equal to the size of the collection
         // assert c!=null => this.size()==c.size();
-        // @@@ natural language assertion here
+        // @@@ if the collection is not null, then for each element in the collection, this priority queue contains that element after initialization.
         // assert c!=null => \forall int i; 0<=i && i<c.size(); this.contains(c.get(i));
     }
 
@@ -249,7 +249,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         for (int i = 0, n = size; i < n; i++)
             es[i] = null;
         size = 0;
-        // @@@ natural language assertion here
+        // @@@ the size of the priority queue is 0 after clearing
         // assert this.size()==0;
     }
 
@@ -418,25 +418,25 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         siftUp(i, e);
         size = i + 1;
         return true;
-        // @@@ natural language assertion here
+        // @@@ if the element is not null, then the size of the priority queue increases by 1
         // assert e!=null => this.size()==\old(this.size())+1;
-        // @@@ natural language assertion here
+        // @@@ If the element is not null, then the result is true
         // assert e!=null => \result==true;
-        // @@@ natural language assertion here
+        // @@@ if the element is not null, then the priority queue contains the element after the operation
         // assert e!=null => this.contains(e);
-        // @@@ natural language assertion here
+        // @@@ if the element is not null, then for each valid index before adding the element, the priority queue contains the element at that index
         // assert e!=null => \forall int i; 0<=i && i<\old(this.size()); this.contains(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ If the element is not null, then the element at the head of the queue after adding is less than or equal to the element that was at the head before adding.
         // assert e!=null => this.peek().compareTo(\old(this.peek()))<=0;
     }
 
     public E peek() {
         return (E) queue[0];
-        // @@@ natural language assertion here
+        // @@@ if the size of the queue is greater than 0, then the result is not null
         // assert this.size()>0 => \result!=null;
-        // @@@ natural language assertion here
+        // @@@ if the size of the queue is greater than 0, then the element at the head of the queue is less than or equal to every other element in the queue
         // assert this.size()>0 => \forall int i; 0<=i && i<this.size(); \result.compareTo(this.get(i))<=0;
-        // @@@ natural language assertion here
+        // @@@ If the size of the queue is 0, then the result is null
         // assert this.size()==0 => \result==null;
     }
 
@@ -458,13 +458,13 @@ public class PriorityQueue<E> extends AbstractQueue<E>
             }
         }
         return result;
-        // @@@ natural language assertion here
+        // @@@ The result of poll is the same as the element that was at the head of the queue before the operation.
         // assert \result==\old(this.peek());
-        // @@@ natural language assertion here
+        // @@@ If the size of the priority queue was 0 before the operation, then the result is null
         // assert \old(this.size())==0 => \result==null;
-        // @@@ natural language assertion here
+        // @@@ If the size of the priority queue was greater than 0 before the operation, then the size of the priority queue is now one less than it was before the operation.
         // assert \old(this.size())>0 => this.size()==\old(this.size())-1;
-        // @@@ natural language assertion here
+        // @@@ If the size of the queue is greater than 0 after polling, the new head element is greater than or equal to the old head element.
         // assert this.size()>0 => this.peek().compareTo(\old(this.peek()))>=0;
     }
 
@@ -487,13 +487,13 @@ public class PriorityQueue<E> extends AbstractQueue<E>
             removeAt(i);
             return true;
         }
-        // @@@ natural language assertion here
+        // @@@ if the element was not in the queue before removal, then the result is false
         // assert !\old(this.contains(o)) => \result==false;
-        // @@@ natural language assertion here
+        // @@@ If the element was in the queue before the removal, then the result is true
         // assert \old(this.contains(o)) => \result=true;
-        // @@@ natural language assertion here
+        // @@@ If the element was in the queue, the size of the queue is reduced by 1 after removal.
         // assert\old(this.contains(o)) => this.size()==\old(this.size())-1;
-        // @@@ natural language assertion here
+        // @@@ If the size of the queue is greater than 0, then the element at the head of the queue after removal is greater than or equal to the element at the head of the queue before removal.
         // assert this.size()>0 => this.peek().compareTo(\old(this.peek()))>=0;
     }
 
@@ -503,7 +503,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
     public boolean removeAll(Collection<?> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
-        // @@@ natural language assertion here
+        // @@@ If the collection c is not null, then for each index i between 0 and the size of this queue, the element at index i is not contained in c.
         // assert c!=null => \forall int i; 0<=i && i<this.size(); !c.contains(this.get(i));
     }
 
@@ -568,7 +568,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
     public boolean retainAll(Collection<?> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
-        // @@@ natural language assertion here
+        // @@@ if c is not null, then for each index i between 0 and the size of this queue, the element at index i is contained in c
         // assert c!=null => \forall int i; 0<=i && i<this.size(); c.contains(this.get(i));
     }
     private static void setBit(long[] bits, int i) {
@@ -674,7 +674,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
 
     public int size() {
         return size;
-        // @@@ natural language assertion here
+        // @@@ the size of the priority queue is always greater than or equal to 0
         // assert \result>=0;
     }
 
@@ -693,11 +693,11 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      */
     public Object[] toArray() {
         return Arrays.copyOf(queue, size);
-        // @@@ natural language assertion here
+        // @@@ the returned array is not null
         // assert \result!=null;
-        // @@@ natural language assertion here
+        // @@@ the length of the returned array is equal to the size of the queue
         // assert \result.length==this.size();
-        // @@@ natural language assertion here
+        // @@@ For each index i between 0 and the size of the queue, the element at index i in the queue is either null and the corresponding element in the result array is also null, or the element at index i in the queue is equal to the corresponding element in the result array.
         // assert \forall int i; 0<=i && i<this.size(); this.get(i)==null && \result[i]==null || this.get(i).equals(\result[i]);
     }
 
@@ -746,7 +746,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         if (a.length > size)
             a[size] = null;
         return a;
-        // @@@ natural language assertion here
+        // @@@ if the input array is not null, then the result is not null
         // assert a!=null => \result!=null;
     }
 }

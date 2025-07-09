@@ -85,11 +85,11 @@ public class BitSet implements Cloneable, java.io.Serializable {
     public BitSet() {
         initWords(BITS_PER_WORD);
         sizeIsSticky = false;
-        // @@@ natural language assertion here
+        // @@@ the length of the bit set is 0 after initialization
         // assert this.length()==0;
-        // @@@ natural language assertion here
+        // @@@ The cardinality of the newly created BitSet is 0
         // assert this.cardinality()==0;
-        // @@@ natural language assertion here
+        // @@@ the bit set is initially empty
         // assert this.isEmpty();
     }
 
@@ -109,11 +109,11 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         initWords(nbits);
         sizeIsSticky = true;
-        // @@@ natural language assertion here
+        // @@@ If the number of bits is non-negative, then the length of the bit set is 0.
         // assert nbits>=0 => this.length()==0;
-        // @@@ natural language assertion here
+        // @@@ If the number of bits is greater than or equal to 0, then the cardinality of the bit set is 0.
         // assert nbits>=0 => this.cardinality()==0;
-        // @@@ natural language assertion here
+        // @@@ If the number of bits is greater than or equal to 0, then the bit set is empty.
         // assert nbits>=0 => this.isEmpty();
     }
 
@@ -149,7 +149,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         recalculateWordsInUse();
         checkInvariants();
-        // @@@ natural language assertion here
+        // @@@ For each index i between 0 and the length of this BitSet, the bit at index i is set to true if and only if it was true in this BitSet and true in the set BitSet before the operation.
         // assert \forall int i; 0<=i && i<this.length(); this.get(i)==(\old(this.get(i))==true && set.get(i)==true);
     }
 
@@ -168,7 +168,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         recalculateWordsInUse();
         checkInvariants();
-        // @@@ natural language assertion here
+        // @@@ For each index i between 0 and the length of this BitSet, the bit at index i is set to the result of the logical AND operation between the old value of the bit at index i and the negation of the bit at index i in the specified BitSet.
         // assert \forall int i; 0<=i && i<this.length(); this.get(i)==(\old(this.get(i)) & (~set.get(i)));
     }
 
@@ -183,7 +183,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
         for (int i = 0; i < wordsInUse; i++)
             sum += Long.bitCount(words[i]);
         return sum;
-        // @@@ natural language assertion here
+        // @@@ the number of bits set to true in this BitSet is always greater than or equal to 0
         // assert \result>=0;
     }
 
@@ -228,9 +228,9 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         recalculateWordsInUse();
         checkInvariants();
-        // @@@ natural language assertion here
+        // @@@ if the bit index is greater than or equal to 0, then the bit at that index is set to false
         // assert bitIndex>=0 => this.get(bitIndex)==false;
-        // @@@ natural language assertion here
+        // @@@ If the bit index is greater than or equal to 0, then for every index i between 0 and the length of the bit set (exclusive), except for the bitIndex, the value of the bit at index i remains unchanged.
         // assert bitIndex>=0 => \forall int i; 0<=i && i<this.length() && i!=bitIndex; this.get(i)==\old(this.get(i));
     }
 
@@ -281,9 +281,9 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         recalculateWordsInUse();
         checkInvariants();
-        // @@@ natural language assertion here
+        // @@@ If fromIndex is greater than or equal to 0 and toIndex is greater than or equal to fromIndex, then for every index i from fromIndex to toIndex (exclusive), the bit at index i is false.
         // assert fromIndex>=0 && toIndex>=fromIndex => \forall int i; fromIndex<=i && i<toIndex; this.get(i)==false;
-        // @@@ natural language assertion here
+        // @@@ if fromIndex is greater than or equal to 0 and toIndex is greater than or equal to fromIndex, then for every index i between 0 and the length of the bit set, if i is less than fromIndex or i is greater than or equal to toIndex, the value of the bit at index i remains unchanged.
         // assert fromIndex>=0 && toIndex>=fromIndex => \forall int i; 0<=i && i<this.length() && (i<fromIndex || i>=toIndex); this.get(i)==\old(this.get(i));
     }
 
@@ -295,11 +295,11 @@ public class BitSet implements Cloneable, java.io.Serializable {
     public void clear() {
         while (wordsInUse > 0)
             words[--wordsInUse] = 0;
-        // @@@ natural language assertion here
+        // @@@ The length of the bit set is 0 after clearing all bits.
         // assert this.length()==0;
-        // @@@ natural language assertion here
+        // @@@ The cardinality of the bit set is 0 after clearing all bits.
         // assert this.cardinality()==0;
-        // @@@ natural language assertion here
+        // @@@ The bit set is empty after clearing all bits.
         // assert this.isEmpty();
     }
 
@@ -324,11 +324,11 @@ public class BitSet implements Cloneable, java.io.Serializable {
         } catch (CloneNotSupportedException e) {
             throw new InternalError();
         }
-        // @@@ natural language assertion here
+        // @@@ the cloned BitSet is not the same object as the original BitSet
         // assert \result!=this;
-        // @@@ natural language assertion here
+        // @@@ the size of the original BitSet is equal to the size of the cloned BitSet
         // assert this.size()==result.size();
-        // @@@ natural language assertion here
+        // @@@ the result of cloning is not null
         // assert \result!=null;
     }
 
@@ -415,9 +415,9 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         recalculateWordsInUse();
         checkInvariants();
-        // @@@ natural language assertion here
+        // @@@ If the bit index is non-negative, then the value of the bit at the specified index is different after flipping.
         // assert bitIndex>=0 => this.get(bitIndex)!=\old(this.get(bitIndex));
-        // @@@ natural language assertion here
+        // @@@ If the bit index is non-negative, then for each index i between 0 and the length of the bit set (exclusive), except for the bit at bitIndex, the value of the bit remains unchanged.
         // assert bitIndex>=0 => \forall int i; 0<=i && i<this.length() && i!=bitIndex; this.get(i)==\old(this.get(i));
     }
 
@@ -463,9 +463,9 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         recalculateWordsInUse();
         checkInvariants();
-        // @@@ natural language assertion here
+        // @@@ If fromIndex is non-negative and toIndex is not less than fromIndex, then for every index i from fromIndex to toIndex-1, the value of the bit at index i in the BitSet is the opposite of its value before the operation.
         // assert fromIndex>=0 && toIndex>=fromIndex => \forall int i; fromIndex<=i && i<toIndex; this.get(i)!=\old(this.get(i));
-        // @@@ natural language assertion here
+        // @@@ If fromIndex is greater than or equal to 0 and toIndex is greater than or equal to fromIndex, then for every index i between 0 and the length of the bit set, if i is less than fromIndex or greater than or equal to toIndex, the value of the bit at index i remains unchanged.
         // assert fromIndex>=0 && toIndex>=fromIndex => \forall int i; 0<=i && i<this.length() && (i<fromIndex || i>=toIndex); this.get(i)==\old(this.get(i));
     }
 
@@ -601,9 +601,9 @@ public class BitSet implements Cloneable, java.io.Serializable {
      */
     public boolean isEmpty() {
         return wordsInUse == 0;
-        // @@@ natural language assertion here
+        // @@@ The result is true if and only if the cardinality of the BitSet is 0
         // assert \result==(this.cardinality()==0);
-        // @@@ natural language assertion here
+        // @@@ The result is true if and only if the length of the bit set is 0
         // assert \result==(this.length()==0);
     }
 
@@ -621,7 +621,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         return BITS_PER_WORD * (wordsInUse - 1) +
             (BITS_PER_WORD - Long.numberOfLeadingZeros(words[wordsInUse - 1]));
-        // @@@ natural language assertion here
+        // @@@ the logical size of the BitSet is always greater than or equal to 0
         // assert \result>=0;
     }
 
@@ -655,11 +655,11 @@ public class BitSet implements Cloneable, java.io.Serializable {
                 return wordsInUse * BITS_PER_WORD;
             word = ~words[u];
         }
-        // @@@ natural language assertion here
+        // @@@ if fromIndex is greater than or equal to 0, then the result is greater than or equal to fromIndex
         // assert fromIndex>=0 => \result>=fromIndex;
-        // @@@ natural language assertion here
+        // @@@ if fromIndex is greater than or equal to 0, then the bit at the returned index is false
         // assert fromIndex>=0 => this.get(\result)==false;
-        // @@@ natural language assertion here
+        // @@@ if fromIndex is greater than or equal to 0, then for every index i from fromIndex up to but not including the result, the bit at index i is set to true
         // assert fromIndex>=0 => \forall int i; i>=fromIndex && i<\result; this.get(i)==true;
     }
 
@@ -701,11 +701,11 @@ public class BitSet implements Cloneable, java.io.Serializable {
                 return -1;
             word = words[u];
         }
-        // @@@ natural language assertion here
+        // @@@ if fromIndex is greater than or equal to 0, then the result is either -1 or greater than or equal to fromIndex
         // assert fromIndex>=0 => \result==-1 || \result>=fromIndex;
-        // @@@ natural language assertion here
+        // @@@ if fromIndex is non-negative and the result is not -1, then the bit at the result index is true
         // assert fromIndex>=0 && \result!=-1 => this.get(\result)==true;
-        // @@@ natural language assertion here
+        // @@@ If fromIndex is non-negative and a set bit is found, then all bits from fromIndex up to but not including the found set bit index are false.
         // assert fromIndex>=0 && \result!=-1 => \forall int i; i>=fromIndex && i<\result; this.get(i)==false;
     }
 
@@ -741,7 +741,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         // recalculateWordsInUse() is unnecessary
         checkInvariants();
-        // @@@ natural language assertion here
+        // @@@ For each index i between 0 and the length of this BitSet, the bit at index i is set to true if it was originally true or if the corresponding bit in the set parameter is true.
         // assert \forall int i; 0<=i && i<this.length(); this.get(i)==(\old(this.get(i))==true || set.get(i)==true);
     }
 
@@ -781,11 +781,11 @@ public class BitSet implements Cloneable, java.io.Serializable {
                 return -1;
             word = ~words[u];
         }
-        // @@@ natural language assertion here
+        // @@@ if fromIndex is greater than or equal to -1, then the result is less than or equal to fromIndex
         // assert fromIndex>=-1 => \result<=fromIndex;
-        // @@@ natural language assertion here
+        // @@@ if fromIndex is greater than or equal to -1 and the result is not -1, then the bit at the result index is false
         // assert fromIndex>=-1 && \result!=-1 => this.get(\result)==false;
-        // @@@ natural language assertion here
+        // @@@ if fromIndex is greater than or equal to -1, then for every index i greater than the result and less than or equal to fromIndex, the bit at index i is set to true
         // assert fromIndex>=-1 => \forall int i; i>\result && i<=fromIndex; this.get(i)==true;
     }
 
@@ -833,11 +833,11 @@ public class BitSet implements Cloneable, java.io.Serializable {
                 return -1;
             word = words[u];
         }
-        // @@@ natural language assertion here
+        // @@@ if fromIndex is greater than or equal to -1, then the result is less than or equal to fromIndex
         // assert fromIndex>=-1 => \result<=fromIndex;
-        // @@@ natural language assertion here
+        // @@@ if fromIndex is greater than or equal to -1 and the result is not -1, then the bit at the result index is true
         // assert fromIndex>=-1 && \result!=-1 => this.get(\result)==true;
-        // @@@ natural language assertion here
+        // @@@ if fromIndex is greater than or equal to -1, then for every index i greater than the result and less than or equal to fromIndex, the bit at index i is false
         // assert fromIndex>=-1 => \forall int i; i>\result && i<=fromIndex; this.get(i)==false;
     }
 
@@ -873,9 +873,9 @@ public class BitSet implements Cloneable, java.io.Serializable {
         words[wordIndex] |= (1L << bitIndex); // Restores invariants
 
         checkInvariants();
-        // @@@ natural language assertion here
+        // @@@ if the bit index is greater than or equal to 0, then the bit at that index is set to true
         // assert bitIndex>=0 => this.get(bitIndex)==true;
-        // @@@ natural language assertion here
+        // @@@ if the bit index is greater than or equal to 0, then for each index i between 0 and the length of the bit set (exclusive), if i is not equal to the bit index, the value of the bit at index i remains unchanged.
         // assert bitIndex>=0 => \forall int i; 0<=i && i<this.length() && i!=bitIndex; this.get(i)==\old(this.get(i));
     }
 
@@ -892,9 +892,9 @@ public class BitSet implements Cloneable, java.io.Serializable {
             set(bitIndex);
         else
             clear(bitIndex);
-        // @@@ natural language assertion here
+        // @@@ if the bit index is greater than or equal to 0, then the bit at that index is set to the specified value
         // assert bitIndex>=0 => this.get(bitIndex)==value;
-        // @@@ natural language assertion here
+        // @@@ if the bit index is greater than or equal to 0, then for each index i between 0 and the length of the bit set (exclusive), if i is not equal to bitIndex, the value of the bit at index i remains unchanged.
         // assert bitIndex>=0 => \forall int i; 0<=i && i<this.length() && i!=bitIndex; this.get(i)==\old(this.get(i));
     }
 
@@ -939,9 +939,9 @@ public class BitSet implements Cloneable, java.io.Serializable {
         }
 
         checkInvariants();
-        // @@@ natural language assertion here
+        // @@@ if fromIndex is greater than or equal to 0 and toIndex is greater than or equal to fromIndex, then for each index i from fromIndex to toIndex (exclusive), the bit at index i is set to true
         // assert fromIndex>=0 && toIndex>=fromIndex => \forall int i; fromIndex<=i && i<toIndex; this.get(i)==true;
-        // @@@ natural language assertion here
+        // @@@ If fromIndex is greater than or equal to 0 and toIndex is greater than or equal to fromIndex, then for every index i between 0 and the length of the bit set, if i is less than fromIndex or greater than or equal to toIndex, the value of the bit at index i remains unchanged.
         // assert fromIndex>=0 && toIndex>=fromIndex => \forall int i; 0<=i && i<this.length() && (i<fromIndex || i>=toIndex); this.get(i)==\old(this.get(i));
     }
 
@@ -962,9 +962,9 @@ public class BitSet implements Cloneable, java.io.Serializable {
             set(fromIndex, toIndex);
         else
             clear(fromIndex, toIndex);
-        // @@@ natural language assertion here
+        // @@@ If fromIndex is non-negative and toIndex is greater than or equal to fromIndex, then for every index i from fromIndex to toIndex (exclusive), the bit at index i is set to the specified value.
         // assert fromIndex>=0 && toIndex>=fromIndex => \forall int i; fromIndex<=i && i<toIndex; this.get(i)==value;
-        // @@@ natural language assertion here
+        // @@@ if fromIndex is greater than or equal to 0 and toIndex is greater than or equal to fromIndex, then for each index i between 0 and the length of the bit set, if i is less than fromIndex or greater than or equal to toIndex, the value of the bit at index i remains unchanged.
         // assert fromIndex>=0 && toIndex>=fromIndex => \forall int i; 0<=i && i<this.length() && (i<fromIndex || i>=toIndex); this.get(i)==\old(this.get(i));
     }
 
@@ -977,7 +977,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      */
     public int size() {
         return words.length * BITS_PER_WORD;
-        // @@@ natural language assertion here
+        // @@@ the size of the bit set is always greater than or equal to 0
         // assert /result>=0;
     }
 
@@ -1104,7 +1104,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
         for (n = longs.length; n > 0 && longs[n - 1] == 0; n--)
             ;
         return new BitSet(Arrays.copyOf(longs, n));
-        // @@@ natural language assertion here
+        // @@@ the result is not null and its long array representation is equal to the input long array
         // assert \result!=null && \result.toLongArray().equals(longs);
     }
 
@@ -1132,7 +1132,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
         long[] words = new long[n];
         lb.get(words);
         return new BitSet(words);
-        // @@@ natural language assertion here
+        // @@@ The result is not null and for each index i between 0 and the size of the result's long array, the element at index i in the result's long array is equal to the element at index i in the long buffer lb.
         // assert \result!=null && \forall int i; 0<=i && i<\result.toLongArray().size(); \result.toLongArray()[i].equals(lb.get(i));
     }
 
@@ -1153,7 +1153,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
      */
     public static BitSet valueOf(byte[] bytes) {
         return BitSet.valueOf(ByteBuffer.wrap(bytes));
-        // @@@ natural language assertion here
+        // @@@ The result is not null and its byte array representation is equal to the input bytes.
         // assert \result!=null && \result.toByteArray().equals(bytes);
     }
 
@@ -1186,7 +1186,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
         for (int remaining = bb.remaining(), j = 0; j < remaining; j++)
             words[i] |= (bb.get() & 0xffL) << (8 * j);
         return new BitSet(words);
-        // @@@ natural language assertion here
+        // @@@ The result is not null and for each index i between 0 and the size of the result's byte array, the byte at index i in the result's byte array is equal to the byte at index i in the input byte buffer.
         // assert \result!=null && \forall int i; 0<=i && i<\result.toByteArray().size(); \result.toByteArray()[i].equals(bb.get(i))
     }
 
@@ -1231,6 +1231,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         recalculateWordsInUse();
         checkInvariants();
-        // @@@ natural language assertion here
+        // @@@ For each index i between 0 and the length of this BitSet, the bit at index i is the result of the XOR operation between the old bit at index i and the bit at index i in the provided BitSet.
         // assert \forall int i; 0<=i && i<this.length(); this.get(i)==(\old(this.get(i)) ^ set.get(i));
     }}

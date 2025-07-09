@@ -6,11 +6,7 @@ def instance(code, lnos, inst):
     l = list(filter(f, code))
     return "\n".join([x[1] for x in l])
 
-def splitter(args):
-    f = open(args.infile, "r")
-    code = list(enumerate(f.read().split("\n")))
-    f.close()
-
+def splitter(args, code):
     lnos = []
     for lno, l in code:
         if("@@@" in l):

@@ -115,9 +115,9 @@ public class Vector<E>
      */
     public Vector() {
         this(10);
-        // @@@ natural language assertion here
+        // @@@ the vector is empty after construction
         // assert this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ the size of the vector is 0 after initialization
         // assert this.size()==0;
     }
 
@@ -138,11 +138,11 @@ public class Vector<E>
         // (see e.g. https://bugs.openjdk.java.net/browse/JDK-6260652)
         if (elementData.getClass() != Object[].class)
             elementData = Arrays.copyOf(elementData, elementCount, Object[].class);
-        // @@@ natural language assertion here
+        // @@@ if the collection is not null, then the size of the vector is equal to the size of the collection
         // assert c!=null => this.size()==c.size();
-        // @@@ natural language assertion here
+        // @@@ if the collection is not null, then for each valid index i in the vector, the element at index i in the vector is the same as the element at index i in the collection
         // assert c!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==c.get(i);
-        // @@@ natural language assertion here
+        // @@@ if the collection is not null, then this vector is equal to the collection
         // assert c!=null => this.equals(c);
     }
 
@@ -156,9 +156,9 @@ public class Vector<E>
      */
     public Vector(int initialCapacity) {
         this(initialCapacity, 0);
-        // @@@ natural language assertion here
+        // @@@ If the initial capacity is greater than or equal to 0, then the vector is empty.
         // assert initialCapacity>=0 => this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ if the initial capacity is greater than or equal to 0, then the size of the vector is 0
         // assert initialCapacity>=0 => this.size()==0;
     }
 
@@ -179,9 +179,9 @@ public class Vector<E>
                                                initialCapacity);
         this.elementData = new Object[initialCapacity];
         this.capacityIncrement = capacityIncrement;
-        // @@@ natural language assertion here
+        // @@@ If the initial capacity and capacity increment are both non-negative, then the vector is empty.
         // assert initialCapacity>=0 && capacityIncrement>=0 => this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ If the initial capacity and capacity increment are both non-negative, then the size of the vector is 0.
         // assert initialCapacity>=0 && capacityIncrement>=0 => this.size()==0;
     }
 
@@ -196,11 +196,11 @@ public class Vector<E>
         modCount++;
         add(e, elementData, elementCount);
         return true;
-        // @@@ natural language assertion here
+        // @@@ The vector contains the added element after the operation
         // assert this.contains(e);
-        // @@@ natural language assertion here
+        // @@@ the method always returns true
         // assert \result==true;
-        // @@@ natural language assertion here
+        // @@@ The last element added to the vector is either null and the last element in the vector is null, or the last element added is not null and is equal to the last element in the vector.
         // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
     }
 
@@ -217,13 +217,13 @@ public class Vector<E>
      */
     public void add(int index, E element) {
         insertElementAt(element, index);
-        // @@@ natural language assertion here
+        // @@@ if the index is between 0 and the size of the vector, then the vector contains the element after insertion
         // assert index>=0 && index<=this.size() => this.contains(element);
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then either the element is null and the element at the index is null, or the element at the index is equal to the inserted element.
         // assert index>=0 && index<=this.size() => element==null&&this.get(index)==null||this.get(index).equals(element);
-        // @@@ natural language assertion here
+        // @@@ if the index is within the valid range, then for every index i less than the specified index, the element at i remains unchanged if it was not null before the operation
         // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ if the index is between 0 and the size of the vector, then for every valid index i from the insertion point to the old size, the element at i+1 is either null or equal to the element at i before the insertion.
         // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
@@ -324,7 +324,7 @@ public class Vector<E>
     public synchronized void addElement(E obj) {
         modCount++;
         add(obj, elementData, elementCount);
-        // @@@ natural language assertion here
+        // @@@ The vector contains the added element after the operation
         // assert this.contains(obj);
     }
 
@@ -382,9 +382,9 @@ public class Vector<E>
      */
     public void clear() {
         removeAllElements();
-        // @@@ natural language assertion here
+        // @@@ the vector is empty after all elements are removed
         // assert this.isEmtpy();
-        // @@@ natural language assertion here
+        // @@@ the size of the vector is 0 after clearing all elements
         // assert this.size()==0;
     }
 
@@ -406,15 +406,15 @@ public class Vector<E>
             // this shouldn't happen, since we are Cloneable
             throw new InternalError(e);
         }
-        // @@@ natural language assertion here
+        // @@@ the cloned vector is not the same object as the original vector
         // assert \result!=this;
-        // @@@ natural language assertion here
+        // @@@ the cloned vector is equal to the original vector
         // assert \result.equals(this);
-        // @@@ natural language assertion here
+        // @@@ the size of the cloned vector is the same as the original vector
         // assert \result.size()==this.size();
-        // @@@ natural language assertion here
+        // @@@ For each valid index i in the cloned vector, the element at index i in the cloned vector is the same as the element at index i in the original vector.
         // assert \forall int i; 0<=i && i<this.size(); result.get(i)==this.get(i);
-        // @@@ natural language assertion here
+        // @@@ the result of cloning the vector is not null
         // assert \result!=null;
     }
 
@@ -479,7 +479,7 @@ public class Vector<E>
         }
 
         return elementData(index);
-        // @@@ natural language assertion here
+        // @@@ if the index is greater than or equal to 0 and less than the size of the vector, then the result is equal to the element at that index
         // assert index>=0 && index<this.size() => \result==this.get(index);
     }
 
@@ -546,7 +546,7 @@ public class Vector<E>
             throw new NoSuchElementException();
         }
         return elementData(0);
-        // @@@ natural language assertion here
+        // @@@ if the size of the vector is not zero, then the result is the first element of the vector
         // assert this.size()!=0 => \result==this.get(0);
     }
 
@@ -625,11 +625,11 @@ public class Vector<E>
      */
     public int indexOf(Object o) {
         return indexOf(o, 0);
-        // @@@ natural language assertion here
+        // @@@ If the result is not -1 and the element at the result index is null, then the object being searched for is null.
         // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ natural language assertion here
+        // @@@ If the result is not -1 and the element at the result index is not null, then the element at the result index is equal to the specified element.
         // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ natural language assertion here
+        // @@@ If the result is not -1, then for every index i from 0 to result-1, either the element at index i is null and o is not null, or the element at index i is not null and does not equal o.
         // assert \result!=-1 => \forall int i; 0<=I && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
@@ -660,9 +660,9 @@ public class Vector<E>
                     return i;
         }
         return -1;
-        // @@@ natural language assertion here
+        // @@@ If the result is not -1 and the element at the result index is null, then the input object is null.
         // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ natural language assertion here
+        // @@@ If the result is not -1 and the element at the result index is not null, then the element at the result index equals the specified object.
         // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
     }
 
@@ -704,13 +704,13 @@ public class Vector<E>
                          s - index);
         elementData[index] = obj;
         elementCount = s + 1;
-        // @@@ natural language assertion here
+        // @@@ If the index is between 0 and the size of the vector, then the vector contains the inserted object.
         // assert index>=0 && index<=this.size() => this.contains(obj);
-        // @@@ natural language assertion here
+        // @@@ If the index is between 0 and the size of the vector, then either the object is null and the element at the index is null, or the element at the index is equal to the object.
         // assert index>=0 && index<=this.size() => obj==null&&this.get(index)==null||this.get(index).equals(obj);
-        // @@@ natural language assertion here
+        // @@@ If the index is between 0 and the size of the vector, then for every index i less than the given index, the element at i is either null and was null before the operation, or it remains unchanged.
         // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ If the index is between 0 and the size of the vector, then for every index i from the given index to the old size minus one, either both the element at i+1 and the old element at i are null, or the element at i+1 is equal to the old element at i.
         // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
     private static boolean isClear(long[] bits, int i) {
@@ -726,7 +726,7 @@ public class Vector<E>
      */
     public synchronized boolean isEmpty() {
         return elementCount == 0;
-        // @@@ natural language assertion here
+        // @@@ The result is true if and only if the size of the vector is 0
         // assert \result==(this.size()==0);
     }
 
@@ -753,7 +753,7 @@ public class Vector<E>
             throw new NoSuchElementException();
         }
         return elementData(elementCount - 1);
-        // @@@ natural language assertion here
+        // @@@ if the size of the vector is not zero, then the result is the last element of the vector
         // assert this.size()!=0 => \result==this.get(this.size()-1);
     }
 
@@ -770,11 +770,11 @@ public class Vector<E>
      */
     public synchronized int lastIndexOf(Object o) {
         return lastIndexOf(o, elementCount-1);
-        // @@@ natural language assertion here
+        // @@@ If the last index of the element is not -1 and the element at the last index is null, then the element being searched for is null.
         // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ natural language assertion here
+        // @@@ If the last index of the element is not -1 and the element at the last index is not null, then the element at the last index is equal to the specified element.
         // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ natural language assertion here
+        // @@@ If the last index of the element is not -1, then for every index greater than the last index and less than the size of the vector, either the element at that index is null and the search element is not null, or the element at that index is not null and does not equal the search element.
         // assert \result!=-1 => \forall int i; \result<i && i<this.size(); this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
@@ -808,9 +808,9 @@ public class Vector<E>
                     return i;
         }
         return -1;
-        // @@@ natural language assertion here
+        // @@@ If the result is not -1 and the element at the result index is null, then the input object is null.
         // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ natural language assertion here
+        // @@@ If the result is not -1 and the element at the result index is not null, then the element at the result index equals the specified object.
         // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
     }
 
@@ -895,11 +895,11 @@ public class Vector<E>
         elementData[--elementCount] = null; // Let gc do its work
 
         return oldValue;
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, the removed element is the same as the element at that index before removal.
         // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ natural language assertion here
+        // @@@ if the index is within the valid range, then for every index i less than the given index, the element at i remains unchanged and is either null or equal to its previous value
         // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for every index i greater than the removed index and less than the old size minus one, either the element at i is null and the old element at i+1 is null, or the element at i is equal to the old element at i+1.
         // assert index>=0 && index<this.size() => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
@@ -916,7 +916,7 @@ public class Vector<E>
      */
     public boolean remove(Object o) {
         return removeElement(o);
-        // @@@ natural language assertion here
+        // @@@ If the vector contained the specified element before removal, then the result is true.
         // assert \old(this.contains(o)) => \result==true;
     }
 
@@ -953,9 +953,9 @@ public class Vector<E>
         for (int to = elementCount, i = elementCount = 0; i < to; i++)
             es[i] = null;
         modCount++;
-        // @@@ natural language assertion here
+        // @@@ the vector is empty after all elements are removed
         // assert this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ size of the vector is 0 after all elements are removed
         // assert this.size()==0;
     }
 
@@ -982,7 +982,7 @@ public class Vector<E>
             return true;
         }
         return false;
-        // @@@ natural language assertion here
+        // @@@ If the vector contained the element before the removal, then the result is true
         // assert \old(this.contains(o)) => \result==true;
     }
 
@@ -1020,11 +1020,11 @@ public class Vector<E>
         modCount++;
         elementCount--;
         elementData[elementCount] = null; /* to let gc do its work */
-        // @@@ natural language assertion here
+        // @@@ if the index is greater than or equal to 0 and less than the size of the vector, then the result is the same as the element at that index before the removal
         // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for every index i less than the given index, the element at i remains unchanged if it was not null before the removal.
         // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for each index i greater than the removed index and less than the old size minus one, either both the current and old elements at index i are null, or the current element at index i is equal to the old element at index i+1.
         // assert index>=0 && index<this.size() => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
@@ -1107,11 +1107,11 @@ public class Vector<E>
         E oldValue = elementData(index);
         elementData[index] = element;
         return oldValue;
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, the result is the element that was previously at the specified index.
         // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for every index i less than the given index, the element at i either remains null or is unchanged.
         // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for every index i greater than the given index and less than the size of the vector, either both the current and old values at index i are null, or the current value at index i is equal to its old value.
         // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
     private static void setBit(long[] bits, int i) {
@@ -1144,11 +1144,11 @@ public class Vector<E>
                                                      elementCount);
         }
         elementData[index] = obj;
-        // @@@ natural language assertion here
+        // @@@ if the index is within the valid range, the result is the same as the element at that index before the operation
         // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ natural language assertion here
+        // @@@ if the index is within the valid range, then for every index i less than the given index, the element at i remains unchanged if it was not null before and after the operation.
         // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ if the index is within the bounds of the vector, then for every index i greater than the given index and less than the size of the vector, either both the current and old values at index i are null, or the current value at index i is equal to the old value at index i.
         // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
@@ -1185,7 +1185,7 @@ public class Vector<E>
      */
     public synchronized int size() {
         return elementCount;
-        // @@@ natural language assertion here
+        // @@@ size of the vector is always greater than or equal to 0
         // assert \result>=0;
     }
 
@@ -1245,11 +1245,11 @@ public class Vector<E>
      */
     public synchronized Object[] toArray() {
         return Arrays.copyOf(elementData, elementCount);
-        // @@@ natural language assertion here
+        // @@@ the result array is not null
         // assert \result!=null;
-        // @@@ natural language assertion here
+        // @@@ The length of the resulting array is equal to the size of the vector.
         // assert \result.length==this.size();
-        // @@@ natural language assertion here
+        // @@@ For each valid index i in the vector, the element at index i in the vector is either null and the corresponding element in the result array is also null, or the element at index i in the vector is equal to the corresponding element in the result array.
         // assert \forall int i; 0<=i && i<this.size(); this.get(i)==null && \result[i]==null || this.get(i).equals(\result[i]);
     }
 
@@ -1290,7 +1290,7 @@ public class Vector<E>
             a[elementCount] = null;
 
         return a;
-        // @@@ natural language assertion here
+        // @@@ if the provided array is not null, then the result is not null
         // assert a!=null => \result!=null;
     }
 

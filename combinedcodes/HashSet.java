@@ -96,9 +96,9 @@ public class HashSet<E>
      */
     public HashSet() {
         map = new HashMap<>();
-        // @@@ natural language assertion here
+        // @@@ the set is empty after initialization
         // assert this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ the size of the set is 0 after initialization
         // assert this.size()==0;
     }
 
@@ -114,7 +114,7 @@ public class HashSet<E>
     public HashSet(Collection<? extends E> c) {
         map = new HashMap<>(Math.max((int) (c.size()/.75f) + 1, 16));
         addAll(c);
-        // @@@ natural language assertion here
+        // @@@ if the collection is not null, then the size of this set is equal to the size of the collection
         // assert c!=null => this.size()==c.size();
     }
 
@@ -128,9 +128,9 @@ public class HashSet<E>
      */
     public HashSet(int initialCapacity) {
         map = new HashMap<>(initialCapacity);
-        // @@@ natural language assertion here
+        // @@@ If the initial capacity is greater than or equal to 0, then the set is empty.
         // assert initialCapacity>=0 => this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ if the initial capacity is greater than or equal to 0, then the size of the set is 0
         // assert initialCapacity>=0 => this.size()==0;
     }
 
@@ -145,9 +145,9 @@ public class HashSet<E>
      */
     public HashSet(int initialCapacity, float loadFactor) {
         map = new HashMap<>(initialCapacity, loadFactor);
-        // @@@ natural language assertion here
+        // @@@ If the initial capacity is greater than or equal to 0 and the load factor is greater than 0, then the set is empty.
         // assert initialCapacity>=0 && loadFactor>0 => this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ If the initial capacity is greater than or equal to 0 and the load factor is greater than 0, then the size of the set is 0.
         // assert initialCapacity>=0 && loadFactor>0 => this.size()==0;
     }
 
@@ -165,7 +165,7 @@ public class HashSet<E>
      */
     public boolean add(E e) {
         return map.put(e, PRESENT)==null;
-        // @@@ natural language assertion here
+        // @@@ the set contains the added element after the operation
         // assert this.contains(e);
     }
 
@@ -175,9 +175,9 @@ public class HashSet<E>
      */
     public void clear() {
         map.clear();
-        // @@@ natural language assertion here
+        // @@@ the set is empty after the clear operation
         // assert this.isEmtpy();
-        // @@@ natural language assertion here
+        // @@@ The size of the set is 0 after clearing all elements.
         // assert this.size()==0;
     }
 
@@ -196,13 +196,13 @@ public class HashSet<E>
         } catch (CloneNotSupportedException e) {
             throw new InternalError(e);
         }
-        // @@@ natural language assertion here
+        // @@@ the cloned set is not the same object as the original set
         // assert \result!=this;
-        // @@@ natural language assertion here
+        // @@@ the cloned set is equal to the original set
         // assert \result.equals(this);
-        // @@@ natural language assertion here
+        // @@@ the size of the cloned set is the same as the original set
         // assert \result.size()==this.size();
-        // @@@ natural language assertion here
+        // @@@ the result of cloning is not null
         // assert \result!=null;
     }
 
@@ -226,7 +226,7 @@ public class HashSet<E>
      */
     public boolean isEmpty() {
         return map.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ The result is true if and only if the size of the set is 0
         // assert \result==(this.size()==0);
     }
 
@@ -255,9 +255,9 @@ public class HashSet<E>
      */
     public boolean remove(Object o) {
         return map.remove(o)==PRESENT;
-        // @@@ natural language assertion here
+        // @@@ If the set contained the element before removal, then the result is true
         // assert \old(this.contains(o)) => \result==true;
-        // @@@ natural language assertion here
+        // @@@ the set does not contain the removed object after the operation
         // assert !this.contains(o);
     }
 
@@ -268,7 +268,7 @@ public class HashSet<E>
      */
     public int size() {
         return map.size();
-        // @@@ natural language assertion here
+        // @@@ The result is equal to the size of the map.
         // assert \result==map.size();
     }
 

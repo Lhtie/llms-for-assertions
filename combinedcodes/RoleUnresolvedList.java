@@ -48,9 +48,9 @@ public class RoleUnresolvedList extends ArrayList<Object> {
      */
     public RoleUnresolvedList() {
         super();
-        // @@@ natural language assertion here
+        // @@@ The newly created RoleUnresolvedList is empty.
         // assert this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ The size of the newly created RoleUnresolvedList is 0
         // assert this.size()==0;
     }
 
@@ -62,9 +62,9 @@ public class RoleUnresolvedList extends ArrayList<Object> {
      */
     public RoleUnresolvedList(int initialCapacity) {
         super(initialCapacity);
-        // @@@ natural language assertion here
+        // @@@ If the initial capacity is greater than or equal to 0, then the list is empty.
         // assert initialCapacity>=0 => this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ If the initial capacity is greater than or equal to 0, then the size of the list is 0
         // assert initialCapacity>=0 => this.size()==0;
     }
 
@@ -98,11 +98,11 @@ public class RoleUnresolvedList extends ArrayList<Object> {
         // Build the List<RoleUnresolved>
         //
         super.addAll(list);
-        // @@@ natural language assertion here
+        // @@@ If the provided list is not null, then the size of the constructed RoleUnresolvedList is equal to the size of the provided list.
         // assert list!=null => this.size()==list.size();
-        // @@@ natural language assertion here
+        // @@@ If the list is not null, then for each index i between 0 and the size of this list, the element at index i in this list is the same as the element at index i in the provided list.
         // assert list!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==list.get(i);
-        // @@@ natural language assertion here
+        // @@@ if the list is not null, then this RoleUnresolvedList equals the list
         // assert list!=null => this.equals(list);
     }
 
@@ -113,13 +113,13 @@ public class RoleUnresolvedList extends ArrayList<Object> {
         if (typeSafe)
             checkTypeSafe(element);
         super.add(index, element);
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range (from 0 to the size of the list), then the list contains the added element.
         // assert index>=0 && index<=this.size() => this.contains(element);
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then either the element is null and the element at the index is null, or the element at the index equals the added element.
         // assert index>=0 && index<=this.size() => element==null&&this.get(index)==null||this.get(index).equals(element);
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for each element before the index, the element is either null and was null before or it remains unchanged.
         // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for each element from the index to the old size minus one, the element at the next position is either null and the current element is null, or the element at the next position is equal to the current element.
         // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
@@ -148,13 +148,13 @@ public class RoleUnresolvedList extends ArrayList<Object> {
         }
 
         super.add(index, role);
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range and the role is not null, then the role is contained in the list after adding.
         // assert index>=0 && index<=this.size() && role!=null => this.contains(role);
-        // @@@ natural language assertion here
+        // @@@ If the index is within bounds and the role is not null, then the element at the specified index is equal to the role added.
         // assert index>=0 && index<=this.size() && role!=null => this.get(index).equals(role);
-        // @@@ natural language assertion here
+        // @@@ If the index is within bounds and the role is not null, then for each index i less than the given index, the element at i remains unchanged if it was not null before the operation.
         // assert index>=0 && index<=this.size() && role!=null => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ If the index is within bounds and the role is not null, then for each index i from the given index to the old size minus one, the element at i+1 is either null and the element at i was null, or the element at i+1 is equal to the element at i before the addition.
         // assert index>=0 && index<=this.size() && role!=null => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
@@ -165,11 +165,11 @@ public class RoleUnresolvedList extends ArrayList<Object> {
         if (typeSafe)
             checkTypeSafe(o);
         return super.add(o);
-        // @@@ natural language assertion here
+        // @@@ The list contains the added object after the operation
         // assert this.contains(o);
-        // @@@ natural language assertion here
+        // @@@ The last element added to the list is either null or equal to the provided object o
         // assert o==null && this.get(this.size()-1)==null || o!=null && o.equals(this.get(this.size()-1));
-        // @@@ natural language assertion here
+        // @@@ The result of adding an object to the list is always true
         // assert \result==true;
     }
 
@@ -188,9 +188,9 @@ public class RoleUnresolvedList extends ArrayList<Object> {
             throw new IllegalArgumentException(excMsg);
         }
         super.add(role);
-        // @@@ natural language assertion here
+        // @@@ if the role is not null, then the role is contained in the list after adding it
         // assert role!=null => this.contains(role);
-        // @@@ natural language assertion here
+        // @@@ If the role is not null, it equals the last element in the list after adding.
         // assert role!=null => role.equals(this.get(this.size()-1));
     }
 
@@ -318,11 +318,11 @@ public class RoleUnresolvedList extends ArrayList<Object> {
         if (typeSafe)
             checkTypeSafe(element);
         return super.set(index, element);
-        // @@@ natural language assertion here
+        // @@@ If the index is within the bounds of the list, then the result of setting an element at that index is equal to the element that was previously at that index.
         // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for each index i less than the given index, the element at i is either both null before and after the operation or remains unchanged.
         // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the bounds of the list, then for every index i greater than the given index and less than the size of the list, either both the current and old elements at index i are null, or they are equal.
         // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
@@ -350,11 +350,11 @@ public class RoleUnresolvedList extends ArrayList<Object> {
         }
 
         super.set(index, role);
-        // @@@ natural language assertion here
+        // @@@ If the index is within bounds and the role is not null, then the result of setting the element is equal to the element that was previously at that index.
         // assert index>=0 && index<this.size() && role!=null => \result==\old(this.get(index));
-        // @@@ natural language assertion here
+        // @@@ If the index is within bounds and the role is not null, then for each index i less than the given index, the element at i remains unchanged if it was not null before the operation.
         // assert index>=0 && index<size() && role!=null => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ If the index is within bounds and the role is not null, then for each index i greater than the given index and less than the size of the list, the element at i is either null and was null before, or it remains unchanged.
         // assert index>=0 && index<this.size() && role!=null => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
      }
 }

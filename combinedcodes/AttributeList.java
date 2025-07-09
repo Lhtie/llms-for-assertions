@@ -32,9 +32,9 @@ public class AttributeList
   public AttributeList()
   {
     super();
-    // @@@ natural language assertion here
+    // @@@ The newly created list is empty.
     // assert this.isEmpty();
-    // @@@ natural language assertion here
+    // @@@ The size of the newly created list is 0
     // assert this.size()==0;
   }
 
@@ -49,11 +49,11 @@ public class AttributeList
   public AttributeList(AttributeList list)
   {
     super(list);
-    // @@@ natural language assertion here
+    // @@@ if the provided list is not null, then the size of this list is equal to the size of the provided list
     // assert list!=null => this.size()==list.size();
-    // @@@ natural language assertion here
+    // @@@ if the provided list is not null, then for each valid index i in the new list, the element at index i is the same as the element at index i in the provided list.
     // assert list!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==list.get(i);
-    // @@@ natural language assertion here
+    // @@@ if the provided list is not null, then this list equals the provided list after construction
     // assert list!=null => this.equals(list);
   }
 
@@ -66,9 +66,9 @@ public class AttributeList
   public AttributeList(int initialCapacity)
   {
     super(initialCapacity);
-    // @@@ natural language assertion here
+    // @@@ If the initial capacity is greater than or equal to 0, then the list is empty.
     // assert initialCapacity>=0 => this.isEmpty();
-    // @@@ natural language assertion here
+    // @@@ if the initial capacity is greater than or equal to 0, then the size of the list is 0
     // assert initialCapacity>=0 => this.size()==0;
   }
 
@@ -81,9 +81,9 @@ public class AttributeList
   public void add(Attribute attribute)
   {
     super.add(attribute);
-    // @@@ natural language assertion here
+    // @@@ The attribute list contains the added attribute after the operation
     // assert this.contains(attribute);
-    // @@@ natural language assertion here
+    // @@@ The last element in the list is either null if the added attribute is null, or it equals the added attribute if the added attribute is not null.
     // assert attribute==null && this.get(this.size()-1)==null || attribute!=null && attribute.equals(this.get(this.size()-1));
   }
 
@@ -121,13 +121,13 @@ public class AttributeList
       {
     throw new RuntimeOperationsException(e, "Invalid index.");
       }
-    // @@@ natural language assertion here
+    // @@@ If the index is between 0 and the size of the list, then the list contains the added attribute.
     // assert index>=0 && index<=this.size() => this.contains(attribute);
-    // @@@ natural language assertion here
+    // @@@ If the index is within the valid range, then either the attribute is null and the element at the index is null, or the element at the index equals the attribute.
     // assert index>=0 && index<=this.size() => attribute==null&&this.get(index)==null||this.get(index).equals(attribute);
-    // @@@ natural language assertion here
+    // @@@ If the index is within the valid range, then for each index i less than the given index, the element at i either remains unchanged or both the old and new elements at i are null.
     // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-    // @@@ natural language assertion here
+    // @@@ If the index is between 0 and the current size of the list, then for every index i from the given index to the old size minus one, the element at position i+1 is either null if both the old and new elements at position i were null, or it equals the old element at position i.
     // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
   }
 
@@ -208,11 +208,11 @@ public class AttributeList
       {
     throw new RuntimeOperationsException(e, "Invalid index.");
       }
-    // @@@ natural language assertion here
+    // @@@ If the index is within the valid range, the result of setting the attribute at the index is equal to the attribute that was previously at that index.
     // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-    // @@@ natural language assertion here
+    // @@@ if the index is valid, then for each index i less than the given index, the element at i remains unchanged if it was not null before and after the operation
     // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-    // @@@ natural language assertion here
+    // @@@ if the index is valid, then for every index i greater than the given index and less than the size of the list, the element at i is either both null before and after the operation or remains unchanged.
     // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i))); 
   }
 

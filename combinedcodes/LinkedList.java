@@ -90,9 +90,9 @@ public class LinkedList<E>
      * Constructs an empty list.
      */
     public LinkedList() {
-        // @@@ natural language assertion here
+        // @@@ the list is empty after construction
         // assert this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ The size of the list is 0 after construction.
         // assert this.size()==0;
     }
 
@@ -107,11 +107,11 @@ public class LinkedList<E>
     public LinkedList(Collection<? extends E> c) {
         this();
         addAll(c);
-        // @@@ natural language assertion here
+        // @@@ If the collection is not null, then the size of the list after adding all elements from the collection is equal to the size of the collection.
         // assert c!=null => this.size()==c.size();
-        // @@@ natural language assertion here
+        // @@@ If the collection is not null, then for each valid index i in the list, the element at index i in the list is the same as the element at index i in the collection.
         // assert c!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==c.get(i);
-        // @@@ natural language assertion here
+        // @@@ if the collection is not null, then the list equals the collection after adding all elements
         // assert c!=null => this.equals(c);
     }
 
@@ -126,11 +126,11 @@ public class LinkedList<E>
     public boolean add(E e) {
         linkLast(e);
         return true;
-        // @@@ natural language assertion here
+        // @@@ the list contains the added element after the operation
         // assert this.contains(e);
-        // @@@ natural language assertion here
+        // @@@ The last element of the list is equal to the element added, considering null values appropriately
         // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
-        // @@@ natural language assertion here
+        // @@@ the result of adding an element is always true
         // assert \result==true;
     }
 
@@ -150,13 +150,13 @@ public class LinkedList<E>
             linkLast(element);
         else
             linkBefore(element, node(index));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range (from 0 to the size of the list), then the list contains the element after insertion.
         // assert index>=0 && index<=this.size() => this.contains(element);
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then either the element is null and the element at the index is null, or the element at the index equals the inserted element.
         // assert index>=0 && index<=this.size() => element==null&&this.get(index)==null||this.get(index).equals(element);
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for each index i less than the given index, the element at position i in the list either remains null or is unchanged.
         // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for each index i from the given index to the old size minus one, either both the current and old elements at i+1 are null, or the current element at i+1 equals the old element at i.
         // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
@@ -237,9 +237,9 @@ public class LinkedList<E>
      */
     public void addFirst(E e) {
         linkFirst(e);
-        // @@@ natural language assertion here
+        // @@@ the list contains the added element after the operation
         // assert this.contains(e);
-        // @@@ natural language assertion here
+        // @@@ The first element of the list is either null if the added element is null, or it equals the added element if the added element is not null.
         // assert e==null && this.get(0)==null || e!=null && e.equals(this.get(0));
     }
 
@@ -252,9 +252,9 @@ public class LinkedList<E>
      */
     public void addLast(E e) {
         linkLast(e);
-        // @@@ natural language assertion here
+        // @@@ the list contains the added element after the operation
         // assert this.contains(e);
-        // @@@ natural language assertion here
+        // @@@ The last element in the list is either null if the added element is null, or it equals the added element if the added element is not null.
         // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
     }
 
@@ -287,9 +287,9 @@ public class LinkedList<E>
         first = last = null;
         size = 0;
         modCount++;
-        // @@@ natural language assertion here
+        // @@@ the list is empty after the clear operation
         // assert this.isEmtpy();
-        // @@@ natural language assertion here
+        // @@@ The size of the list is 0 after clearing all elements.
         // assert this.size()==0;
     }
 
@@ -312,15 +312,15 @@ public class LinkedList<E>
             clone.add(x.item);
 
         return clone;
-        // @@@ natural language assertion here
+        // @@@ the cloned list is a different object from the original list
         // assert \result!=this;
-        // @@@ natural language assertion here
+        // @@@ the cloned list is equal to the original list
         // assert \result.equals(this);
-        // @@@ natural language assertion here
+        // @@@ the size of the cloned list is the same as the size of the original list
         // assert \result.size()==this.size();
-        // @@@ natural language assertion here
+        // @@@ For each valid index i in the original list, the element at index i in the cloned list is the same as the element at index i in the original list.
         // assert \forall int i; 0<=i && i<this.size(); result.get(i)==this.get(i);
-        // @@@ natural language assertion here
+        // @@@ the result of cloning is not null
         // assert \result!=null;
     }
 
@@ -353,7 +353,7 @@ public class LinkedList<E>
      */
     public E element() {
         return getFirst();
-        // @@@ natural language assertion here
+        // @@@ If the list is not empty, then the result is not null and equals the first element of the list
         // assert !this.isEmpty() => \result==null && this.get(0)==null|| \result.equals(this.get(0));
     }
 
@@ -380,7 +380,7 @@ public class LinkedList<E>
         if (f == null)
             throw new NoSuchElementException();
         return f.item;
-        // @@@ natural language assertion here
+        // @@@ If the list is not empty, then the result is not null and equals the first element of the list
         // assert !this.isEmpty() => \result==null && this.get(0)==null|| \result.equals(this.get(0));
     }
 
@@ -395,7 +395,7 @@ public class LinkedList<E>
         if (l == null)
             throw new NoSuchElementException();
         return l.item;
-        // @@@ natural language assertion here
+        // @@@ if the list is not empty, then the result is either null or equals the last element of the list
         // assert !this.isEmpty() => \result==null || \result.equals(this.get(this.size()-1));
     }
 
@@ -426,11 +426,11 @@ public class LinkedList<E>
             }
         }
         return -1;
-        // @@@ natural language assertion here
+        // @@@ If the result is not -1 and the element at the result index is null, then the input object is null.
         // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ natural language assertion here
+        // @@@ If the result is not -1 and the element at the result index is not null, then the element at the result index equals the given object o.
         // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ natural language assertion here
+        // @@@ If the result is not -1, then for every index i from 0 to result-1, either the element at index i is null and o is not null, or the element at index i is not null and does not equal o.
         // assert \result!=-1 => \forall int i; 0<=I && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
@@ -476,11 +476,11 @@ public class LinkedList<E>
             }
         }
         return -1;
-        // @@@ natural language assertion here
+        // @@@ If the result is not -1 and the element at the result index is null, then the input object is null.
         // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ natural language assertion here
+        // @@@ If the result is not -1 and the element at the result index is not null, then the element at the result index equals the specified object.
         // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ natural language assertion here
+        // @@@ If the result is not -1, then for every index i greater than the result and less than the size of the list, either the element at index i is null and o is not null, or the element at index i is not null and does not equal o.
         // assert \result!=-1 => \forall int i; \result<i && i<this.size(); this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
@@ -584,11 +584,11 @@ public class LinkedList<E>
      */
     public boolean offer(E e) {
         return add(e);
-        // @@@ natural language assertion here
+        // @@@ the list contains the added element after the operation
         // asssert this.contains(e);
-        // @@@ natural language assertion here
+        // @@@ The last element in the list is equal to the element added, considering null values appropriately
         // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
-        // @@@ natural language assertion here
+        // @@@ the method always returns true when adding an element
         // assert \result==true;
     }
 
@@ -603,11 +603,11 @@ public class LinkedList<E>
     public boolean offerFirst(E e) {
         addFirst(e);
         return true;
-        // @@@ natural language assertion here
+        // @@@ the list contains the element e after adding it to the front
         // assert this.contains(e);
-        // @@@ natural language assertion here
+        // @@@ The first element of the list is either null if the added element is null, or equals the added element if it is not null.
         // assert e==null && this.get(0)==null || e!=null && e.equals(this.get(0));
-        // @@@ natural language assertion here
+        // @@@ the result of adding the element at the front of the list is always true
         // assert \result==true;
     }
 
@@ -621,11 +621,11 @@ public class LinkedList<E>
     public boolean offerLast(E e) {
         addLast(e);
         return true;
-        // @@@ natural language assertion here
+        // @@@ the list contains the element that was just added to the end
         // assert this.contains(e);
-        // @@@ natural language assertion here
+        // @@@ The last element in the list is equal to the element added, considering null values appropriately.
         // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
-        // @@@ natural language assertion here
+        // @@@ the result of adding the element to the end of the list is true
         // assert \result==true;
     }
 
@@ -647,9 +647,9 @@ public class LinkedList<E>
     public E peek() {
         final Node<E> f = first;
         return (f == null) ? null : f.item;
-        // @@@ natural language assertion here
+        // @@@ If the list is not empty, then the result is either null and the first element is null, or the result equals the first element of the list.
         // assert !this.isEmpty() => \result==null && this.get(0)==null|| \result.equals(this.get(0));
-        // @@@ natural language assertion here
+        // @@@ If the list is empty, then the result is null
         // assert this.isEmpty() => \result==null;
     }
 
@@ -664,9 +664,9 @@ public class LinkedList<E>
     public E peekFirst() {
         final Node<E> f = first;
         return (f == null) ? null : f.item;
-        // @@@ natural language assertion here
+        // @@@ If the list is not empty, then the result is either null and the first element is null, or the result equals the first element of the list.
         // assert !this.isEmpty() => \result==null && this.get(0)==null|| \result.equals(this.get(0));
-        // @@@ natural language assertion here
+        // @@@ If the list is empty, then the result is null
         // assert this.isEmpty() => \result==null;
      }
 
@@ -681,9 +681,9 @@ public class LinkedList<E>
     public E peekLast() {
         final Node<E> l = last;
         return (l == null) ? null : l.item;
-        // @@@ natural language assertion here
+        // @@@ If the list is not empty, then the result is either null or equals the last element of the list.
         // assert !this.isEmpty() => \result==null || \result.equals(this.get(this.size()-1));
-        // @@@ natural language assertion here
+        // @@@ If the list is empty, then the result is null
         // assert this.isEmpty() => \result==null;
     }
 
@@ -696,9 +696,9 @@ public class LinkedList<E>
     public E poll() {
         final Node<E> f = first;
         return (f == null) ? null : unlinkFirst(f);
-        // @@@ natural language assertion here
+        // @@@ If the list is not empty, then the result is equal to the first element of the list before the operation.
         // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
-        // @@@ natural language assertion here
+        // @@@ If the list is empty, the result is null.
         // assert this.isEmpty() => \result==null;
     }
 
@@ -713,9 +713,9 @@ public class LinkedList<E>
     public E pollFirst() {
         final Node<E> f = first;
         return (f == null) ? null : unlinkFirst(f);
-        // @@@ natural language assertion here
+        // @@@ If the list is not empty, then the result is either null and the first element before the operation was null, or the result equals the first element before the operation.
         // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
-        // @@@ natural language assertion here
+        // @@@ If the list is empty, then the result is null
         // assert this.isEmpty() => \result==null;
     }
 
@@ -730,9 +730,9 @@ public class LinkedList<E>
     public E pollLast() {
         final Node<E> l = last;
         return (l == null) ? null : unlinkLast(l);
-        // @@@ natural language assertion here
+        // @@@ If the list is not empty, then the result is either null and the last element before the operation was null, or the result equals the last element before the operation.
         // assert !this.isEmpty() => \result==null && \old(this.get(\old(this.size()-1)))==null|| \result.equals(\old(this.get(\old(this.size()-1))));
-        // @@@ natural language assertion here
+        // @@@ If the list is empty, then the result is null
         // assert this.isEmpty() => \result==null;
     }
 
@@ -749,7 +749,7 @@ public class LinkedList<E>
      */
     public E pop() {
         return removeFirst();
-        // @@@ natural language assertion here
+        // @@@ If the list is not empty, then the result is equal to the first element of the list before the operation.
         // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
     }
 
@@ -764,9 +764,9 @@ public class LinkedList<E>
      */
     public void push(E e) {
         addFirst(e);
-        // @@@ natural language assertion here
+        // @@@ the list contains the pushed element after the operation
         // assert this.contains(e);
-        // @@@ natural language assertion here
+        // @@@ The first element of the list is either null if the pushed element is null, or equals the pushed element if it is not null.
         // assert e==null && this.get(0)==null || e!=null && e.equals(this.get(0));
     }
 
@@ -779,7 +779,7 @@ public class LinkedList<E>
      */
     public E remove() {
         return removeFirst();
-        // @@@ natural language assertion here
+        // @@@ If the list is not empty, the result is equal to the first element of the list before the removal.
         // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
     }
 
@@ -795,11 +795,11 @@ public class LinkedList<E>
     public E remove(int index) {
         checkElementIndex(index);
         return unlink(node(index));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, the result is the element that was at that index before removal.
         // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for each index i less than the given index, the element at i remains unchanged if it is not null.
         // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the bounds of the list, then for each valid index i greater than the given index and less than the old size minus one, either the current element at index i is null and the old element at index i+1 is null, or the current element at index i is equal to the old element at index i+1.
         // assert index>=0 && index<this.size() => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
@@ -833,7 +833,7 @@ public class LinkedList<E>
             }
         }
         return false;
-        // @@@ natural language assertion here
+        // @@@ If the list contained the element before removal, then the result is true
         // assert \old(this.contains(o)) => \result==true;
     }
 
@@ -848,11 +848,11 @@ public class LinkedList<E>
         if (f == null)
             throw new NoSuchElementException();
         return unlinkFirst(f);
-        // @@@ natural language assertion here
+        // @@@ If the list is not empty, the result is equal to the first element of the list before the operation.
         // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
-        // @@@ natural language assertion here
+        // @@@ The result of removing the first element is the same as the first element before removal.
         // assert \result==\old(this.get(0));
-        // @@@ natural language assertion here
+        // @@@ For each valid index i before the removal, either both the element at index i and the element at index i+1 are null, or the element at index i is equal to the element at index i+1 after the removal.
         // assert \forall int i; 0<=i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
@@ -867,7 +867,7 @@ public class LinkedList<E>
      */
     public boolean removeFirstOccurrence(Object o) {
         return remove(o);
-        // @@@ natural language assertion here
+        // @@@ if the list contained the specified element before the operation, then the result is true
         // assert \old(this.contains(o)) => \result==true;
     }
 
@@ -882,11 +882,11 @@ public class LinkedList<E>
         if (l == null)
             throw new NoSuchElementException();
         return unlinkLast(l);
-        // @@@ natural language assertion here
+        // @@@ If the list is not empty, the result is either null and the last element was null, or the result equals the last element before removal.
         // assert !this.isEmpty() => \result==null && \old(this.get(\old(this.size()-1)))==null|| \result.equals(\old(this.get(\old(this.size()-1))));
-        // @@@ natural language assertion here
+        // @@@ The result is the last element of the list before the removal.
         // assert \result==\old(this.get(this.size()-1))
-        // @@@ natural language assertion here
+        // @@@ For each valid index i (between 0 and old size minus 1), the element at index i in the list is either null and was null before the operation, or it remains the same as before the operation.
         // assert \forall int i; 0<=i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
@@ -916,7 +916,7 @@ public class LinkedList<E>
             }
         }
         return false;
-        // @@@ natural language assertion here
+        // @@@ If the list contained the specified element before the operation, then the result is true
         // assert \old(this.contains(o)) => \result==true;
     }
     
@@ -935,11 +935,11 @@ public class LinkedList<E>
         E oldVal = x.item;
         x.item = element;
         return oldVal;
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, the result of set is the element that was previously at the specified index.
         // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the valid range, then for each index i less than the given index, the element at position i remains unchanged.
         // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ natural language assertion here
+        // @@@ If the index is within the bounds of the list, then for every index i greater than the given index and less than the size of the list, the element at index i is either null and was null before or it remains unchanged.
         // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
@@ -950,7 +950,7 @@ public class LinkedList<E>
      */
     public int size() {
         return size;
-        // @@@ natural language assertion here
+        // @@@ the number of elements in the list is always greater than or equal to 0
         // assert \result>=0;
     }
 
@@ -1004,11 +1004,11 @@ public class LinkedList<E>
         for (Node<E> x = first; x != null; x = x.next)
             result[i++] = x.item;
         return result;
-        // @@@ natural language assertion here
+        // @@@ the result array is not null
         // assert \result!=null;
-        // @@@ natural language assertion here
+        // @@@ the length of the resulting array is equal to the size of the list
         // assert \result.length==this.size();
-        // @@@ natural language assertion here
+        // @@@ For each valid index i in the list, the element at index i in the list is either null and the corresponding element in the result array is also null, or the element at index i in the list is equal to the corresponding element in the result array.
         // assert \forall int i; 0<=i && i<this.size(); this.get(i)==null && \result[i]==null || this.get(i).equals(\result[i]);
     }
 
@@ -1064,7 +1064,7 @@ public class LinkedList<E>
             a[size] = null;
 
         return a;
-        // @@@ natural language assertion here
+        // @@@ If the input array is not null, then the result array is not null
         // assert a!=null => \result!=null;
     }
 

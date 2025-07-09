@@ -66,9 +66,9 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
      */
     public CircularFifoQueue() {
         this(32);
-        // @@@ natural language assertion here
+        // @@@ the queue is empty after initialization
         // assert this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ The size of the queue is 0 after initialization with the default size.
         // assert this.size()==0;
     }
 
@@ -82,11 +82,11 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
     public CircularFifoQueue(final Collection<? extends E> coll) {
         this(coll.size());
         addAll(coll);
-        // @@@ natural language assertion here
+        // @@@ if the collection is not null, then the size of the queue after construction is equal to the size of the collection
         // assert coll!=null => this.size()==coll.size();
-        // @@@ natural language assertion here
+        // @@@ If the collection is not null, then for each index i between 0 and the size of this queue, the element at index i in this queue is the same as the element at index i in the collection.
         // assert coll!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==coll.get(i);
-        // @@@ natural language assertion here
+        // @@@ if the collection is not null, then this queue becomes equal to the collection after construction
         // assert coll!=null => this.equals(coll);
     }
 
@@ -103,9 +103,9 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
         }
         elements = (E[]) new Object[size];
         maxElements = elements.length;
-        // @@@ natural language assertion here
+        // @@@ If the size is greater than or equal to 1, then the queue is initially empty.
         // assert size>=1 => this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ if the size is greater than or equal to 1, then the initial size of the queue is 0
         // assert size>=1 => this.size()==0;
     }
 
@@ -136,11 +136,11 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
         }
 
         return true;
-        // @@@ natural language assertion here
+        // @@@ If the element is not null, then the queue contains the element after adding it.
         // assert element!=null => this.contains(element);
-        // @@@ natural language assertion here
+        // @@@ If the element is not null, then the result is true
         // assert element!=null => \result==true;
-        // @@@ natural language assertion here
+        // @@@ If the element is not null, then it equals the last element in the queue after adding.
         // assert element!=null => element.equals(this.get(this.size()-1));
     }
 
@@ -153,9 +153,9 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
         start = 0;
         end = 0;
         Arrays.fill(elements, null);
-        // @@@ natural language assertion here
+        // @@@ The queue is empty after the clear operation.
         // assert this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ the size of the queue is 0 after clearing
         // assert this.size()==0;
     }
 
@@ -233,7 +233,7 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
     @Override
     public boolean isEmpty() {
         return size() == 0;
-        // @@@ natural language assertion here
+        // @@@ The result is true if and only if the size of the queue is 0
         // assert \result==(this.size()==0);
     }
 
@@ -281,11 +281,11 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
     @Override
     public boolean offer(final E element) {
         return add(element);
-        // @@@ natural language assertion here
+        // @@@ if the element is not null, then the queue contains the element after the operation
         // assert element!=null => this.contains(element);
-        // @@@ natural language assertion here
+        // @@@ If the element is not null, then the result is true
         // assert element!=null => \result==true;
-        // @@@ natural language assertion here
+        // @@@ if the element is not null, it equals the last element in the queue after the operation
         // assert element!=null => element.equals(this.get(this.size()-1));
     }
 
@@ -341,7 +341,7 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
         }
 
         return size;
-        // @@@ natural language assertion here
+        // @@@ The size of the queue is always greater than or equal to 0
         // assert \result>=0;
     }
 }

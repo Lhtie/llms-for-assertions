@@ -64,12 +64,6 @@ def onedown(args):
         if comment < clp and comment >= f:
             content.append("\n".join(code[f:clp]))
         else:
-            # start, balance = f, 0
-            # while start < len(code):
-            #     balance += code[start].count("(") - code[start].count(")")
-            #     start += 1
-            #     if balance == 0:
-            #         break
             content.append("\n".join(code[f:start+1]).split("{", 1)[0] + ";")
     end_part = "\n".join(code[idx:]) # imp in movedown
     content = "\n".join(content)
@@ -90,6 +84,32 @@ def onedown(args):
             content = code[:start+1] + code[clp:] + ["\n"] + code[start+1:clp]
             break
     content = "\n".join(content) + "\n" + end_part
+
+    if args.obsonly:
+        assert args.obs is not None, "Observer methods are not provided."
+        code = content.split("\n")
+        func_starts = get_funcs(code, args.langid)
+        idx, content = 0, []
+        for f in func_starts:
+            s = f
+            while s < len(code) and "{" not in code[s] and ";" not in code[s]:
+                s += 1
+            header = " ".join([c.strip() for c in code[f:s+1]])
+            fname = re.search(r"\b(\w+\s*\(.*?\))", header).group(1)
+
+            clp = closing_paren(code, s)
+            start = f-1
+            while code[start].strip().startswith(tuple(["//", "/*", "*", "*/", "@"])) or \
+                    code[start].strip() == "":
+                start -= 1
+
+            if idx < start + 1:
+                content.append("\n".join(code[idx:start+1]))
+            if fname in args.obs or "{" in code[s]:
+                content.append("\n".join(code[start+1:clp]))
+            idx = clp
+        end_part = "\n".join(code[idx:])
+        content = "\n".join(content) + "\n" + end_part
 
     start = -1
     for f in os.listdir(args.outdir):

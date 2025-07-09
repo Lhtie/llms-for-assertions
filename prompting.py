@@ -145,7 +145,183 @@ void TestFunction(Object obj)
 ]
 
 eg_java = [
+#0
+("""public class Array<T> {
+    /**
+     * Returns true if the array contains the specified element.
+     *
+     * @param o element who is to be tested
+     * @return true if this array contains the specified element
+     */
+    public boolean contains(Object o) ;
+ 
+    /**
+     * Returns the element at the specified position in the array.
+     *
+     * @param  index index of the element to return
+     * @return the element at the specified position in the array
+     */
+    public E query(int index) ;
+ 
+    /**
+     * Returns the index of the first occurrence of the specified element
+     * in the array, or -1 if this array does not contain the element.
+     */
+    public int index_of(Object x) ;
     
+    /**
+     * Returns the number of elements in this array.
+     *
+     * @return the number of elements in this array
+     */
+    public int getCount() {
+        return _sz;
+        // @@@ size of the array is always greater than or equal to 0
+    }
+}""",
+"<code>assert \\result >= 0;</code>"
+),
+#1
+("""public class Array<T> {
+    /**
+     * Returns true if the array contains the specified element.
+     *
+     * @param o element who is to be tested
+     * @return true if this array contains the specified element
+     */
+    public boolean contains(Object o) ;
+ 
+    /**
+     * Returns the element at the specified position in the array.
+     *
+     * @param  index index of the element to return
+     * @return the element at the specified position in the array
+     */
+    public E query(int index) ;
+ 
+    /**
+     * Returns the index of the first occurrence of the specified element
+     * in the array, or -1 if this array does not contain the element.
+     */
+    public int index_of(Object x) ;
+ 
+    /**
+     * Returns the number of elements in this array.
+     *
+     * @return the number of elements in this array
+     */
+    public int getCount() ;
+    
+    /**
+     * Appends the specified element to the end of this array.
+     *
+     * @param value element to be appended to this array
+     * @return sz the number of elements in the result array
+     */
+    public int add(Object value) {
+        if (_sz == _items.length) ensureCapacity(_sz + 1);
+        _items[_sz] = value;
+        _version++;
+        return _sz++;
+        // @@@ array contains the added value after the operation
+    }
+}""", 
+"<code>assert this.contains(value);</code>"
+),
+#2
+("""public class Array<T> {
+    /**
+     * Returns true if the array contains the specified element.
+     *
+     * @param o element who is to be tested
+     * @return true if this array contains the specified element
+     */
+    public boolean contains(Object o) ;
+ 
+    /**
+     * Returns the element at the specified position in the array.
+     *
+     * @param  index index of the element to return
+     * @return the element at the specified position in the array
+     */
+    public E query(int index) ;
+ 
+    /**
+     * Returns the index of the first occurrence of the specified element
+     * in the array, or -1 if this array does not contain the element.
+     */
+    public int index_of(Object x) ;
+ 
+    /**
+     * Returns the number of elements in this array.
+     *
+     * @return the number of elements in this array
+     */
+    public int getCount() ;
+    
+    /**
+     * Appends the specified element to the end of this array.
+     *
+     * @param value element to be appended to this array
+     * @return sz the number of elements in the result array
+     */
+    public int add(Object value) {
+        if (_sz == _items.length) ensureCapacity(_sz + 1);
+        _items[_sz] = value;
+        _version++;
+        return _sz++;
+        // @@@ first index of value in the array remains the same if value was already in the list
+    }
+}""", 
+"<code>assert \\old(this.contains(value)) => this.index_of(value) == \\old(this.index_of(value));</code>"
+),
+#3
+("""public class Array<T> {
+    /**
+     * Returns true if the array contains the specified element.
+     *
+     * @param o element who is to be tested
+     * @return true if this array contains the specified element
+     */
+    public boolean contains(Object o) ;
+ 
+    /**
+     * Returns the element at the specified position in the array.
+     *
+     * @param  index index of the element to return
+     * @return the element at the specified position in the array
+     */
+    public E query(int index) ;
+ 
+    /**
+     * Returns the index of the first occurrence of the specified element
+     * in the array, or -1 if this array does not contain the element.
+     */
+    public int index_of(Object x) ;
+ 
+    /**
+     * Returns the number of elements in this array.
+     *
+     * @return the number of elements in this array
+     */
+    public int getCount() ;
+    
+    /**
+     * Appends the specified element to the end of this array.
+     *
+     * @param value element to be appended to this array
+     * @return sz the number of elements in the result array
+     */
+    public int add(Object value) {
+        if (_sz == _items.length) ensureCapacity(_sz + 1);
+        _items[_sz] = value;
+        _version++;
+        return _sz++;
+        // @@@ All the valid indices (between 0 and old size) in the array before add have the same element after add
+    }
+}""",
+"<code>assert \\forall int i; 0<=i && i<\\old(this.getCount()-1); this.query(i)==\\old(this.query(i));</code>"
+)
 ]
 
 langmap = {
@@ -154,7 +330,7 @@ langmap = {
         "java": ("java",    "//",   eg_java, r"Assert .*?;"),
 }
 
-default = """Your task is to read {0} code and output an assert statement (specification) corresponding to the comment that starts with "@@@". Please output the {0} code of the assert statement in a <code></code> block."""
+default = """Your task is to read {0} code and output an assert statement (specification) corresponding to the comment that starts with "@@@". Please output the {0} code of the assert statement in a <code></code> block.\n"""
 
 def apply_chat_template(mkey, tokenizer, inst, langid, onemsg):
     if onemsg:
@@ -198,11 +374,11 @@ def transform(mkey, tid, tokenizer, code, langid, onemsg):
 
         if langid == "java":
             header += f"Here are some rules and tips:\n"
-            header += f"1. If the assert statement needs to access the value of a variable at the beginning of the function, you can use the `\\old(variable_name)` syntax.\n"
-            header += f"2. To refer to the return value of the function in the assert statement, you can use `\\result` variable.\n"
+            header += f"1. If the assert statement needs to access the value of an expression at the beginning of the function, you can use the `\\old(expression)` syntax.\n"
+            header += f"2. To refer to the return value of the method in the assert statement, you can use `\\result` variable.\n"
             header += f"3. To write A implies B, you may use the `A => B` syntax."
-            header += f"4. If the assert statment needs to express that for all the variable `i` that `cond` holds, the `spec` should jointly hold, you may use `\\forall var i; cond; spec` syntax.\n"
-            header += f"5. Use only publicly accessible methods in the test function. All function calls in the test function should be of the format `this.func_name(args_list)`."
+            header += f"4. If the assert statment needs to express that the `spec` should hold for each variable `i` where `cond` holds, you may use `\\forall var i; cond; spec` syntax.\n"
+            header += f"5. Use only publicly accessible observer methods provided in the test function. All function calls in the test function should be of the format `this.func_name(args_list)`."
         else: raise NotImplementedError
         
         inst = [header] + eg_java + [code]

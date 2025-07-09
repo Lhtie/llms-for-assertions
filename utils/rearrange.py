@@ -34,7 +34,8 @@ if __name__ == "__main__":
                     start -= 1
                 funcs.append((fname, code[start+1:clp]))
                 
-                content.append("\n".join(code[idx:start+1]))
+                if idx < start + 1:
+                    content.append("\n".join(code[idx:start+1]))
                 idx = clp
             
             end_part = "\n".join(code[idx:])

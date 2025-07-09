@@ -105,9 +105,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public ArrayDeque() {
         elements = new Object[16];
-        // @@@ natural language assertion here
+        // @@@ the deque is empty after construction
         // assert this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ the size of the deque is 0 after initialization
         // assert this.size()==0;
     }
 
@@ -124,7 +124,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public ArrayDeque(Collection<? extends E> c) {
         this(c.size());
         copyElements(c);
-        // @@@ natural language assertion here
+        // @@@ if the collection is not null, then the size of the deque is equal to the size of the collection
         // assert c!=null => this.size()==c.size();
     }
 
@@ -139,9 +139,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             new Object[(numElements < 1) ? 1 :
                        (numElements == Integer.MAX_VALUE) ? Integer.MAX_VALUE :
                        numElements + 1];
-        // @@@ natural language assertion here
+        // @@@ the deque is empty after construction
         // assert this.isEmpty();
-        // @@@ natural language assertion here
+        // @@@ the size of the deque is 0 after initialization
         // assert this.size()==0;
     }
 
@@ -157,9 +157,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public boolean add(E e) {
         addLast(e);
         return true;
-        // @@@ natural language assertion here
+        // @@@ if the element is not null, then the array deque contains the added element after the operation
         // assert e!=null => this.contains(e);
-        // @@@ natural language assertion here
+        // @@@ If the element is not null, then the result is true
         // assert e!=null =>\result==true;
     }
 
@@ -194,7 +194,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         es[head = dec(head, es.length)] = e;
         if (head == tail)
             grow(1);
-        // @@@ natural language assertion here
+        // @@@ if the element is not null, then the deque contains the added element
         // assert e!=null => this.contains(e);
     }
 
@@ -213,7 +213,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         es[tail] = e;
         if (head == (tail = inc(tail, es.length)))
             grow(1);
-        // @@@ natural language assertion here
+        // @@@ If the added element is not null, then the array deque contains the added element.
         // assert e!=null => this.contains(e);
     }
 
@@ -300,9 +300,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public void clear() {
         circularClear(elements, head, tail);
         head = tail = 0;
-        // @@@ natural language assertion here
+        // @@@ the deque is empty after the clear operation
         // assert this.isEmtpy();
-        // @@@ natural language assertion here
+        // @@@ the size of the deque is 0 after clearing
         // assert this.size()==0;
     }
 
@@ -320,11 +320,11 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         } catch (CloneNotSupportedException e) {
             throw new AssertionError();
         }
-        // @@@ natural language assertion here
+        // @@@ the cloned deque is not the same object as the original deque
         // assert \result!=this;
-        // @@@ natural language assertion here
+        // @@@ size of the cloned deque is the same as the original deque
         // assert \result.size()==this.size();
-        // @@@ natural language assertion here
+        // @@@ the result of cloning the deque is not null
         // assert \result!=null;
     }
 
@@ -529,7 +529,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public boolean isEmpty() {
         return head == tail;
-        // @@@ natural language assertion here
+        // @@@ The result is true if and only if the size of the deque is 0
         // assert \result==(this.size()==0);
     }
 
@@ -587,9 +587,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public boolean offer(E e) {
         return offerLast(e);
-        // @@@ natural language assertion here
+        // @@@ if the element is not null, then the deque contains the element after the operation
         // assert e!=null => this.contains(e);
-        // @@@ natural language assertion here
+        // @@@ If the element is not null, then the result is true
         // assert e!=null => \result==true;
     }
 
@@ -603,9 +603,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public boolean offerFirst(E e) {
         addFirst(e);
         return true;
-        // @@@ natural language assertion here
+        // @@@ If the element is not null, then the deque contains the element after adding it to the front.
         // assert e!=null => this.contains(e);
-        // @@@ natural language assertion here
+        // @@@ If the element is not null, then the result is true
         // assert e!=null => \result==true;
     }
 
@@ -619,9 +619,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public boolean offerLast(E e) {
         addLast(e);
         return true;
-        // @@@ natural language assertion here
+        // @@@ if the element is not null, then the array deque contains the added element after the operation
         // assert e!=null => this.contains(e);
-        // @@@ natural language assertion here
+        // @@@ if the element is not null, then the result is true
         // assert e!=null => \result==true;
     }
 
@@ -636,20 +636,20 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public E peek() {
         return peekFirst();
-        // @@@ natural language assertion here
+        // @@@ if the deque is empty, then the result is null
         // assert this.isEmpty() => \result==null;
     }
 
     public E peekFirst() {
         return elementAt(elements, head);
-        // @@@ natural language assertion here
+        // @@@ If the deque is empty, then the result is null
         // assert this.isEmpty() => \result==null;
     }
 
     public E peekLast() {
         final Object[] es;
         return elementAt(es = elements, dec(tail, es.length));
-        // @@@ natural language assertion here
+        // @@@ If the deque is empty, then the result is null
         // assert this.isEmpty() => \result==null;
     }
 
@@ -665,7 +665,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public E poll() {
         return pollFirst();
-        // @@@ natural language assertion here
+        // @@@ If the deque is empty, then the result is null
         // assert this.isEmpty() => \result==null;
     }
 
@@ -678,7 +678,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             head = inc(h, es.length);
         }
         return e;
-        // @@@ natural language assertion here
+        // @@@ If the deque is empty, then the result is null
         // assert this.isEmpty() => \result==null;
     }
 
@@ -689,7 +689,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         if (e != null)
             es[tail = t] = null;
         return e;
-        // @@@ natural language assertion here
+        // @@@ If the deque is empty, then the result is null
         // assert this.isEmpty() => \result==null;
     }
 
@@ -718,7 +718,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public void push(E e) {
         addFirst(e);
-        // @@@ natural language assertion here
+        // @@@ if the element is not null, then the deque contains the element after pushing
         // assert e!=null => this.contains(e);
     }
 
@@ -752,7 +752,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public boolean remove(Object o) {
         return removeFirstOccurrence(o);
-        // @@@ natural language assertion here
+        // @@@ If the deque contained the element before the removal, then the result is true
         // assert \old(this.contains(o)) => \result==true;
     }
 
@@ -800,7 +800,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             }
         }
         return false;
-        // @@@ natural language assertion here
+        // @@@ If the deque contained the element before the operation, then the result is true
         // assert \old(this.contains(o)) => \result==true;
     }
 
@@ -848,7 +848,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             }
         }
         return false;
-        // @@@ natural language assertion here
+        // @@@ If the deque contained the element before the operation, then the result is true
         // assert \old(this.contains(o)) => \result==true;
     }
 
@@ -871,7 +871,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public int size() {
         return sub(tail, head, elements.length);
-        // @@@ natural language assertion here
+        // @@@ the number of elements in the deque is always greater than or equal to 0
         // assert \result>=0;
     }
 
@@ -919,9 +919,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public Object[] toArray() {
         return toArray(Object[].class);
-        // @@@ natural language assertion here
+        // @@@ the returned array is not null
         // assert \result!=null;
-        // @@@ natural language assertion here
+        // @@@ The length of the returned array is equal to the size of the deque
         // assert \result.length==this.size();
     }
 
@@ -992,7 +992,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         if (size < a.length)
             a[size] = null;
         return a;
-        // @@@ natural language assertion here
+        // @@@ if the input array is not null, then the result array is not null
         // assert a!=null => \result!=null;
     }
 
