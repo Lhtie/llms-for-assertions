@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
                 langid = f.split('.')[-2]
 
-                cmnt_tkn = langmap[langid]
+                cmnt_tkn = langmap[langid][0]
 
                 lines = code.split("\n")
                 cmnt_idx = [i if "@@@" in l and l.strip().startswith(cmnt_tkn) else -1 for (i,l) in enumerate(lines)]

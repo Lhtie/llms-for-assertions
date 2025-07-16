@@ -82,23 +82,37 @@ namespace {0}.Test
 javacode = """
 package fuzztests;
 
+import java.lang.reflect.Array;
+import java.util.function.Supplier;
 {0}
 
 import combinedcodes.{1};
 
 public class FuzzTest{2}{{
-    public void FuzzTest_{3}({4}, {5}, {6}){{
+    public static <T> T exec(Supplier<T> supplier){{
+		try {{
+			return supplier.get();
+		}} catch (Exception fuzzexception) {{
+			return null;
+		}}
+	}}
 
+    public void FuzzTest_{3}({4}, {5}{6}){{
 {7}
 
 {8}
 
         // normal post condition
-        if (!({9}))
-            throw new RuntimeException("Postcondition Violated");
-        // exception post condition
-        if (!({10}))
-            throw new RuntimeException("Exception Postcondition Violated");
+{9}
+        Boolean normalpost = exec(() -> {10});
+        if (normalpost == null || !normalpost)
+            throw new RuntimeException("Normal Postcondition Violated");
+
+        // exceptional post condition
+{11}
+        Boolean exceptionalpost = exec(() -> {12});
+        if (exceptionalpost == null || !exceptionalpost)
+            throw new RuntimeException("Exceptional Postcondition Violated");
     }}
 }}
 """
@@ -198,7 +212,7 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     asrt = jh.extract_formula(asrt)
     grnd_truth = jh.extract_formula(grnd_truth)
     spec = f"({asrt}) == ({grnd_truth})"
-    spec, old_addns, forall_addns = jh.trans_formula(spec)
+    spec, old_addns, forall_addns, split_addns = jh.trans_formula(spec)
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
     generic = jh.classname[jh.classname.find("<"):]
@@ -206,15 +220,16 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     objarg_old = jh.classname + ' ' + jh.fuzz_objname.replace("_new", "_old")
     rettyp = jh.funcs[jh.funcname]["rtyp"]
     funcargs = jh.funcs[jh.funcname]["args"]
-    funcargs = ", ".join([f"{typ} {var}" for var, typ in funcargs.items()]) \
-                + f", {rettyp} {jh.fuzz_retvar}" if rettyp != "void" else ""
-    old_addns = "\n".join(["\t\t" + l.strip().replace("_new", "_old") for l in old_addns])
-    forall_addns = "\n".join(["\t\t" + l.strip() for l in forall_addns])
+    funcargs = "".join([f", {typ} {var}" for var, typ in funcargs.items()]) \
+                + (f", {rettyp} {jh.fuzz_retvar}" if rettyp != "void" else "")
+    old_addns = "\n".join(["\t\t" + l.replace("_new", "_old") for l in old_addns])
+    forall_addns = "\n".join(["\t\t" + l for l in forall_addns])
+    split_addns = "\n".join(["\t\t" + l for l in split_addns])
 
     code = javacode.format(
         imports, jh.namespace, generic, jh.funcname,
         objarg_old, objarg_new, funcargs, old_addns, forall_addns,
-        spec, "true"
+        split_addns, spec, "", "true"
     )
 
     if os.path.exists(tmp_dir):

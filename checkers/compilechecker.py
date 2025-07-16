@@ -82,13 +82,21 @@ javacode = """
 package fuzztests;
 
 import java.lang.reflect.Array;
+import java.util.function.Supplier;
 {0}
 
 import combinedcodes.{1};
 
 public class FuzzTest{2}{{
-    public void FuzzTest_{3}({4}, {5}){{
+    public static <T> T exec(Supplier<T> supplier){{
+		try {{
+			return supplier.get();
+		}} catch (Exception fuzzexception) {{
+			return null;
+		}}
+	}}
 
+    public void FuzzTest_{3}({4}, {5}){{
 {6}
 
         String exceptionType = null;
@@ -101,10 +109,15 @@ public class FuzzTest{2}{{
 {8}
 
         // normal post condition
-        if (!({9}))
-            throw new RuntimeException("Postcondition Violated");
+{9}
+        Boolean normalpost = exec(() -> {10});
+        if (normalpost == null || !normalpost)
+            throw new RuntimeException("Normal Postcondition Violated");
+
         // exceptional post condition
-        if (!({10}))
+{11}
+        Boolean exceptionalpost = exec(() -> {12});
+        if (exceptionalpost == null || !exceptionalpost)
             throw new RuntimeException("Exceptional Postcondition Violated");
     }}
 }}
@@ -248,21 +261,22 @@ def py_cmplecheck(pfx, sfx, grnd_truth, asrt):
 def java_cmplecheck(pfx, sfx, grnd_truth, asrt):
     jh = javahelper(pfx + '\n' + sfx)
     asrt = jh.extract_formula(asrt)
-    asrt, old_addns, forall_addns = jh.trans_formula(asrt)
+    asrt, old_addns, forall_addns, split_addns = jh.trans_formula(asrt)
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
     generic = jh.classname[jh.classname.find("<"):]
     objarg = jh.classname + ' ' + jh.fuzz_objname
     funcargs = jh.funcs[jh.funcname]["args"]
     funcargs = ", ".join([f"{typ} {var}" for var, typ in funcargs.items()])
-    old_addns = "\n".join(["\t\t" + l.strip() for l in old_addns])
-    forall_addns = "\n".join(["\t\t" + l.strip() for l in forall_addns])
+    old_addns = "\n".join(["\t\t" + l for l in old_addns])
+    forall_addns = "\n".join(["\t\t" + l for l in forall_addns])
+    split_addns = "\n".join(["\t\t" + l for l in split_addns])
     func_call = jh.func_call(jh.funcname, jh.funcs[jh.funcname]["args"].keys())
 
     code = javacode.format(
         imports, jh.namespace, generic, jh.funcname,
         objarg, funcargs, old_addns, func_call, forall_addns,
-        asrt, "true"
+        split_addns, asrt, "", "true"
     )
 
     if os.path.exists(tmp_dir):

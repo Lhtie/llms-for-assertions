@@ -52,7 +52,7 @@ def find_bounds(cond_expr, var_name):
     for cond in cond_expr.split("&&"):
         cond = cond.strip()
         if ">" in cond or ">=" in cond:
-            lhs, rhs = cond.split(">") if ">" in cond else cond.split(">=")
+            lhs, rhs = cond.split(">=") if ">=" in cond else cond.split(">")
             lhs = lhs.strip()
             rhs = rhs.strip()
             if lhs == var_name and not contains_var(rhs, var_name):
@@ -60,7 +60,7 @@ def find_bounds(cond_expr, var_name):
             elif rhs == var_name and not contains_var(lhs, var_name):
                 hi = lhs if ">=" in cond else f"{lhs} - 1"
         elif "<" in cond or "<=" in cond:
-            lhs, rhs = cond.split("<") if "<" in cond else cond.split("<=")
+            lhs, rhs = cond.split("<=") if "<=" in cond else cond.split("<")
             lhs = lhs.strip()
             rhs = rhs.strip()
             if lhs == var_name and not contains_var(rhs, var_name):
@@ -88,6 +88,7 @@ class javahelper(codehelper):
         self.anlyz_class()
         self.old_exprs = {}             # map raw \old exprs: tuple(var name, replaced exprs)
         self.old_vars = {}              # map var names: raw \old exprs
+        self.asrt_exprs = {}            # map asrt expr names: asrt exprs
     
     def anlyz_class(self):
         self.funcs = {}
@@ -163,7 +164,7 @@ class javahelper(codehelper):
             for child in node.children:
                 old_addns += traverse_tree(child)
             if node != tr.root:
-                old_addns += [f"var {self.old_exprs[node.value][0]} = {self.old_exprs[node.value][1]};"]
+                old_addns += [f"var {self.old_exprs[node.value][0]} = exec(() -> {self.old_exprs[node.value][1]});"]
             return old_addns
         
         old_addns = traverse_tree(tr.root)
@@ -209,26 +210,20 @@ class javahelper(codehelper):
                     old_addns_arr.append((f"{old_var_name}_forallidx{forall_idx}", old_expr))
 
             if old_addns_arr != []:
-                old_addns += [
-                    f"int capacity = ({hi}) - ({lo}) + 1;"
-                ]
                 for old_var_name, old_expr in old_addns_arr:
                     old_addns += [
-                        f"Object ex = {old_expr.replace(var_name, lo)};",
-                        f"var {old_var_name} = Array.newInstance(ex.getClass(), capacity);"
+                        f"var {old_var_name} = exec(() -> {{",
+                        f"\tint capacity = ({hi}) - ({lo}) + 1;",
+                        f"\tObject ex = {old_expr.replace(var_name, lo)[11:-1]};",
+                        f"\tvar ret = Array.newInstance(ex.getClass(), capacity);",
+                        f"\tint cur_idx = 0;",
+                        f"\tfor ({var_type} {var_name} = {lo}; {var_name} <= {hi}; {var_name} += 1) {{",
+                        f"\t\tArray.set(ret, cur_idx, {old_expr[11:-1]});",
+                        f"\t\tcur_idx += 1;",
+                        f"\t}}",
+                        f"\treturn ret;",
+                        f"}});",
                     ]
-                old_addns += [
-                    f"int cur_idx = 0;",
-                    f"for ({var_type} {var_name} = {lo}; {var_name} <= {hi}; {var_name} += 1) {{",
-                ]
-                for old_var_name, old_expr in old_addns_arr:
-                    old_addns += [
-                        f"\tArray.set({old_var_name}, cur_idx, {old_expr});",
-                    ]
-                old_addns += [
-                    f"\tcur_idx += 1;",
-                    f"}}",
-                ]
                 for old_var_name, old_expr in old_addns_arr:
                     cond_expr = cond_expr.replace(
                         old_var_name.split("_forallidx")[0], f"Array.get({old_var_name}, cur_idx)")
@@ -236,14 +231,17 @@ class javahelper(codehelper):
                         old_var_name.split("_forallidx")[0], f"Array.get({old_var_name}, cur_idx)")
 
             forall_addns += [
-                f"boolean forall_holds_forallidx{forall_idx} = true;",
-                f"int cur_idx = 0;",
-                f"for ({var_type} {var_name} = {lo}; {var_name} <= {hi}; {var_name} += 1) {{",
-                f"\tif ({cond_expr}) {{",
-                f"\t\tforall_holds_forallidx{forall_idx} &= {spec_expr}",
+                f"Boolean forall_holds_forallidx{forall_idx} = exec(() -> {{",
+                f"\tboolean ret = true;",
+                f"\tint cur_idx = 0;",
+                f"\tfor ({var_type} {var_name} = {lo}; {var_name} <= {hi}; {var_name} += 1) {{",
+                f"\t\tif ({cond_expr}) {{",
+                f"\t\t\tret &= {spec_expr};",
+                f"\t\t}}",
+                f"\t\tcur_idx += 1;",
                 f"\t}}",
-                f"\tcur_idx += 1;",
-                f"}}",
+                f"\treturn ret;",
+                f"}});",
             ]
             asrt = asrt[:start] + f"forall_holds_forallidx{forall_idx}" + asrt[start + len(forall_expr):]
             forall_idx += 1
@@ -290,14 +288,82 @@ class javahelper(codehelper):
 
         return asrt.strip()
     
+    def split_formula(self, asrt):
+        tr = parseTree()
+        self.asrt_exprs = {}
+
+        def split_top_level(asrt, delimiter):
+            while asrt[0] == "(" and asrt[-1] == ")":
+                balance = 0
+                for i, c in enumerate(asrt[1:-1]):
+                    balance += (c == "(") - (c == ")")
+                    if balance < 0:
+                        break
+                if balance == 0:
+                    asrt = asrt[1:-1]
+                else:
+                    break
+
+            stack, ret = [], []
+            buff = ""
+            idx = 0
+            while idx < len(asrt):
+                if len(stack) == 0 and asrt[idx:idx+len(delimiter)] == delimiter:
+                    if buff.strip():
+                        ret.append(buff.strip())
+                    buff = ""
+                    idx += len(delimiter)
+                    continue
+                if asrt[idx] == "(":
+                    stack.append(idx)
+                if asrt[idx] == ")":
+                    stack.pop()
+                buff += asrt[idx]
+                idx += 1
+            if buff.strip():
+                ret.append(buff.strip())
+            return ret
+                
+        def recursive_split(asrt, par):
+            cur = tr.add_node((asrt, None), par)
+            for delimiter in ["||", "&&", "==", "!="]:
+                cur.value = (cur.value[0], ' ' + delimiter + ' ')
+                parts = split_top_level(asrt, delimiter)
+                if len(parts) > 1:
+                    for part in parts:
+                        recursive_split(part, cur)
+                    break
+        
+        def traverse_tree(node):
+            if len(node.children) == 0:
+                self.asrt_exprs[f"fuzzexpr{self.asrt_exprs.__len__()}"] = node.value[0]
+                return f"fuzzexpr{self.asrt_exprs.__len__() - 1}"
+            child_asrts = []
+            for child in node.children:
+                child_asrt = traverse_tree(child)
+                child_asrts.append(child_asrt)
+            if node != tr.root:
+                self.asrt_exprs[f"fuzzexpr{self.asrt_exprs.__len__()}"] = node.value[1].join(child_asrts)
+                return f"fuzzexpr{self.asrt_exprs.__len__() - 1}"
+            else:
+                return node.value[1].join(child_asrts)
+
+        recursive_split(asrt, None)
+        asrt = traverse_tree(tr.root)
+        split_addns = []
+        for k, v in self.asrt_exprs.items():
+            split_addns.append(f"Boolean {k} = exec(() -> {v});")
+        return split_addns, asrt
+    
     def trans_formula(self, asrt):
         asrt = asrt.replace("this", self.fuzz_objname)
         asrt = asrt.replace("\\result", self.fuzz_retvar)
 
         forall_addns, old_addns_0, asrt = self.handle_forall(asrt)
         old_addns_1, asrt = self.handle_old(asrt)
+        split_addns, asrt = self.split_formula(asrt)
 
-        return asrt, old_addns_0 + old_addns_1, forall_addns
+        return asrt, old_addns_0 + old_addns_1, forall_addns, split_addns
 
     def func_call(self, funcname, args):
         assert funcname in self.funcs, f"Function {funcname} not found"
