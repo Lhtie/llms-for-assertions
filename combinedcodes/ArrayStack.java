@@ -50,9 +50,9 @@ public class ArrayStack<E> extends ArrayList<E> {
      */
     public ArrayStack(final int initialSize) {
         super(initialSize);
-        // @@@ if the initial size is greater than or equal to 0, then the stack is empty
+        // @@@ If the initial size is greater than or equal to 0, then the stack is empty.
         // assert initialSize>=0 => this.empty();
-        // @@@ if the initial size is greater than or equal to 0, then the size of the stack is 0
+        // @@@ If the initial size is greater than or equal to 0, then the size of the stack is 0.
         // assert initialSize>=0 => this.size()==0;
     }
 
@@ -67,7 +67,7 @@ public class ArrayStack<E> extends ArrayList<E> {
      */
     public boolean empty() {
         return isEmpty();
-        // @@@ The result is true if and only if the size of the stack is 0
+        // @@@ The result is true if and only if the size of the stack is zero.
         // assert \result==(this.size()==0);
     }
 
@@ -83,7 +83,7 @@ public class ArrayStack<E> extends ArrayList<E> {
             throw new EmptyStackException();
         }
         return get(n - 1);
-        // @@@ If the stack is not empty, then the result is either null and the last element is null, or the result is equal to the last element of the stack.
+        // @@@ If the stack is not empty, then the result is either null and the last item in the stack is null, or the result is equal to the last item in the stack.
         // assert !this.isEmpty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
@@ -116,7 +116,7 @@ public class ArrayStack<E> extends ArrayList<E> {
             throw new EmptyStackException();
         }
         return remove(n - 1);
-        // @@@ If the stack is not empty, then the popped result is either null and the last element of the stack is null, or the popped result equals the last element of the stack.
+        // @@@ If the stack is not empty, then the result is either null and the last item in the stack is null, or the result is equal to the last item in the stack.
         // assert !this.isEmpty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
@@ -130,9 +130,9 @@ public class ArrayStack<E> extends ArrayList<E> {
     public E push(final E item) {
         add(item);
         return item;
-        // @@@ the stack contains the pushed item after the operation
+        // @@@ The stack contains the pushed item after the operation.
         // assert this.contains(e);
-        // @@@ The last item in the stack is the same as the item just pushed, whether the item is null or not
+        // @@@ If the pushed item is null, then the last item in the stack is also null; otherwise, the last item in the stack is equal to the pushed item.
         // assert item==null && this.get(this.size()-1)==null || item!=null && item.equals(this.get(this.size()-1));
     }
 

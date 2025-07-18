@@ -96,9 +96,9 @@ public class HashSet<E>
      */
     public HashSet() {
         map = new HashMap<>();
-        // @@@ the set is empty after initialization
+        // @@@ the set is empty after creation
         // assert this.isEmpty();
-        // @@@ the size of the set is 0 after initialization
+        // @@@ The set is empty immediately after initialization.
         // assert this.size()==0;
     }
 
@@ -114,7 +114,7 @@ public class HashSet<E>
     public HashSet(Collection<? extends E> c) {
         map = new HashMap<>(Math.max((int) (c.size()/.75f) + 1, 16));
         addAll(c);
-        // @@@ if the collection is not null, then the size of this set is equal to the size of the collection
+        // @@@ If the collection 'c' is not null, then the size of this set equals the size of the collection 'c'.
         // assert c!=null => this.size()==c.size();
     }
 
@@ -130,7 +130,7 @@ public class HashSet<E>
         map = new HashMap<>(initialCapacity);
         // @@@ If the initial capacity is greater than or equal to 0, then the set is empty.
         // assert initialCapacity>=0 => this.isEmpty();
-        // @@@ if the initial capacity is greater than or equal to 0, then the size of the set is 0
+        // @@@ If the initial capacity is greater than or equal to zero, then the size of the set is zero.
         // assert initialCapacity>=0 => this.size()==0;
     }
 
@@ -165,7 +165,7 @@ public class HashSet<E>
      */
     public boolean add(E e) {
         return map.put(e, PRESENT)==null;
-        // @@@ the set contains the added element after the operation
+        // @@@ The set contains the added element after the operation.
         // assert this.contains(e);
     }
 
@@ -177,7 +177,7 @@ public class HashSet<E>
         map.clear();
         // @@@ the set is empty after the clear operation
         // assert this.isEmtpy();
-        // @@@ The size of the set is 0 after clearing all elements.
+        // @@@ The set is empty after this method is called.
         // assert this.size()==0;
     }
 
@@ -196,13 +196,13 @@ public class HashSet<E>
         } catch (CloneNotSupportedException e) {
             throw new InternalError(e);
         }
-        // @@@ the cloned set is not the same object as the original set
+        // @@@ The result of the clone method is not the same object as the original set.
         // assert \result!=this;
-        // @@@ the cloned set is equal to the original set
+        // @@@ The result of cloning is equal to the original set.
         // assert \result.equals(this);
-        // @@@ the size of the cloned set is the same as the original set
+        // @@@ The size of the cloned set is the same as the size of the original set.
         // assert \result.size()==this.size();
-        // @@@ the result of cloning is not null
+        // @@@ The result of cloning the HashSet is never null.
         // assert \result!=null;
     }
 
@@ -226,7 +226,7 @@ public class HashSet<E>
      */
     public boolean isEmpty() {
         return map.isEmpty();
-        // @@@ The result is true if and only if the size of the set is 0
+        // @@@ The result is true if and only if the size of the set is zero.
         // assert \result==(this.size()==0);
     }
 
@@ -255,9 +255,9 @@ public class HashSet<E>
      */
     public boolean remove(Object o) {
         return map.remove(o)==PRESENT;
-        // @@@ If the set contained the element before removal, then the result is true
+        // @@@ If the set originally contained the specified element, then the result of the removal operation is true.
         // assert \old(this.contains(o)) => \result==true;
-        // @@@ the set does not contain the removed object after the operation
+        // @@@ the set does not contain the specified element after the removal operation.
         // assert !this.contains(o);
     }
 

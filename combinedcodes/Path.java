@@ -66,9 +66,9 @@ public class Path implements Structure {
 	public Path() {
 		edgePath = new Stack<Edge>();
 		nodePath = new Stack<Node>();
-        // @@@ the path is empty when it is newly created
+        // @@@ the path is empty immediately after it is created
         // assert this.empty();
-        // @@@ the size of the path is 0 when a new path is created
+        // @@@ The size of the path is zero when a new path is created.
         // assert this.size()==0;
 	}
 	
@@ -119,9 +119,9 @@ public class Path implements Structure {
 		} else {
 			add(nodePath.peek(), edge);
 		}
-        // @@@ the path contains the added edge after the operation
+        // @@@ The path contains the added edge after the operation.
         // assert this.contains(edge);
-        // @@@ If edge is null, the last element in the path is null; otherwise, the last element in the path is the added edge.
+        // @@@ If the edge is null, then the last element in the path is null; if the edge is not null, then the last element in the path is the added edge.
         // assert edge==null && this.get(this.size()-1)==null || edge!=null && edge.equals(this.get(this.size()-1));
 	}
 
@@ -133,9 +133,9 @@ public class Path implements Structure {
 		edgePath.clear();
 		// Runtime.getRuntime().gc();
 		root = null;
-        // @@@ the path is empty after clearing
+        // @@@ The path is empty after clearing it.
         // assert this.emtpy();
-        // @@@ size of the path is 0 after clearing
+        // @@@ The size of the path is zero after clearing it.
         // assert this.size()==0;
 	}
 
@@ -178,7 +178,7 @@ public class Path implements Structure {
 	 */
 	public boolean empty() {
 		return nodePath.empty();
-        // @@@ The result is true if and only if the size of the path is 0
+        // @@@ The result is true if and only if the size of the path is zero.
         // assert \result==(this.size()==0);
 	}
 
@@ -411,7 +411,7 @@ public class Path implements Structure {
 	 */
 	public int size() {
 		return nodePath.size();
-        // @@@ size of the path is always greater than or equal to 0
+        // @@@ The size of the path is always greater than or equal to 0.
         // assert \result>=0;
 	}
 

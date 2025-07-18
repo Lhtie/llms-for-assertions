@@ -709,11 +709,11 @@ public class TreeList<E> extends AbstractList<E> {
             root = new AVLNode<>(coll);
             size = coll.size();
         }
-        // @@@ if the collection is not null, then the size of the list is equal to the size of the collection
+        // @@@ If the collection is not null, then the size of the TreeList equals the size of the collection.
         // assert coll!=null => this.size()==coll.size();
-        // @@@ if the collection is not null, then for each index i between 0 and the size of this list, the element at index i in this list is the same as the element at index i in the collection
+        // @@@ If the collection is not null, then for every valid index from 0 to the size of this list, the element at that index in this list is the same as the element at that index in the collection.
         // assert coll!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==coll.get(i);
-        // @@@ if the collection is not null, then this list equals the collection
+        // @@@ If the collection is not null, then this list is equal to the collection.
         // assert coll!=null => this.equals(coll);
     }
 
@@ -733,13 +733,13 @@ public class TreeList<E> extends AbstractList<E> {
             root = root.insert(index, obj);
         }
         size++;
-        // @@@ if the index is between 0 and the size of the list, then the list contains the added object
+        // @@@ If the index is between 0 and the size of the list inclusive, then the list contains the added object.
         // assert index>=0 && index<=this.size() => this.contains(obj);
-        // @@@ if the index is between 0 and the size of the list, then either the object is null and the element at the index is null, or the element at the index equals the object
+        // @@@ If the index is between 0 and the size of the list inclusive, then if the object is null, the element at that index is also null, or the element at that index equals the object.
         // assert index>=0 && index<=this.size() => obj==null&&this.get(index)==null||this.get(index).equals(obj);
-        // @@@ if the index is between 0 and the size of the list, then for each index i from 0 to index-1, the element at i is either null and was null before or it remains unchanged
+        // @@@ If the index is between 0 and the size of the list inclusive, then for every index i from 0 to index-1, the element at i either remains unchanged or continues to be null if it was null before.
         // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ if the index is between 0 and the size of the list, then for every index i from the insertion index to the old size minus one, either the element at i+1 and the old element at i are both null, or the element at i+1 equals the old element at i
+        // @@@ If the index is between 0 and the size of the list inclusive, then for every valid index from this index to the old size of the list, the element at the next position is either null and the old element at this index is null, or the element at the next position equals the old element at this index.
         // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
@@ -790,9 +790,9 @@ public class TreeList<E> extends AbstractList<E> {
         modCount++;
         root = null;
         size = 0;
-        // @@@ the list is empty after clear
+        // @@@ The list is empty.
         // assert this.isEmtpy();
-        // @@@ size of the list is 0 after clearing
+        // @@@ The size of the list is zero after clearing it.
         // assert this.size()==0;
     }
 
@@ -884,11 +884,11 @@ public class TreeList<E> extends AbstractList<E> {
         root = root.remove(index);
         size--;
         return result;
-        // @@@ if the index is within the valid range, then the result is the same as the element at that index before removal
+        // @@@ If the index is greater than or equal to 0 and less than the size of the list, then the returned value is the same as the value at that index before the removal operation.
         // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ if the index is valid, then for each valid index i less than the given index, the element at i remains unchanged and is not null
+        // @@@ If the index is valid (greater than or equal to 0 and less than the size of the list), then for every valid index less than the specified index, the element at that position remains unchanged or continues to be null if it was initially null.
         // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ if the index is within the bounds of the list, then for each index i greater than the removed index and less than the old size minus one, either the current element at i is null and the old element at i+1 is null, or the current element at i is equal to the old element at i+1
+        // @@@ If the index is valid (greater than or equal to 0 and less than the size of the list), then for every position i greater than the index and less than the old size of the list minus one, either both the current and the old value at position i+1 are null, or the current value at position i equals the old value at position i+1.
         // assert index>=0 && index<this.size() => \forall int i; index<i && i<\old(this).size()-1; this.get(i)==null && \old(this).get(i+1)==null || this.get(i).equals(\old(this).get(i+1));
     }
 
@@ -907,11 +907,11 @@ public class TreeList<E> extends AbstractList<E> {
         final E result = node.value;
         node.setValue(obj);
         return result;
-        // @@@ if the index is within the valid range, then the result is the same as the old value at that index
+        // @@@ If the index is non-negative and less than the size of the list, then the returned value is the same as the value at that index before the set operation.
         // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ if the index is within the valid range, then for each index i less than the given index, the element at i is either null in both the old and new list, or it remains unchanged.
+        // @@@ If the index is valid (greater than or equal to 0 and less than the size of the list), then for every index from 0 up to, but not including, the specified index, the element at that position remains unchanged from its previous state, unless it was initially null.
         // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this).get(i)==null || this.get(i).equals(\old(this).get(i));
-        // @@@ if the index is within the valid range, then for every index greater than the given index and less than the size of the list, the element at that index is either null and was null before, or it remains unchanged.
+        // @@@ If the index is valid (non-negative and less than the size of the list), then for every index greater than the specified index and less than the size of the list, the element at that index remains unchanged unless it was initially null.
         // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
@@ -923,7 +923,7 @@ public class TreeList<E> extends AbstractList<E> {
     @Override
     public int size() {
         return size;
-        // @@@ the size of the list is always greater than or equal to 0
+        // @@@ The size of the list is always greater than or equal to 0.
         // assert \result>=0;
     }
 
@@ -940,11 +940,11 @@ public class TreeList<E> extends AbstractList<E> {
             root.toArray(array, root.relativePosition);
         }
         return array;
-        // @@@ the result array is not null
+        // @@@ The result array is never null.
         // assert \result!=null;
-        // @@@ the length of the resulting array is equal to the size of the list
+        // @@@ The length of the resulting array is equal to the size of the list.
         // assert \result.length==this.size();
-        // @@@ For each index i between 0 and the size of the list, the element at index i in the list is either null and the element at index i in the result array is null, or the element at index i in the list is equal to the element at index i in the result array.
+        // @@@ For every valid index i (from 0 up to the size of the list), if the element at index i in the list is null, then the corresponding element in the resulting array is also null; otherwise, the element in the resulting array is equal to the element in the list at index i.
         // assert \forall int i; 0<=i && i<this.size(); this.get(i)==null && \result[i]==null || this.get(i).equals(\result[i]);
     }
 

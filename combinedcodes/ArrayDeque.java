@@ -105,9 +105,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public ArrayDeque() {
         elements = new Object[16];
-        // @@@ the deque is empty after construction
+        // @@@ The deque is empty after initialization.
         // assert this.isEmpty();
-        // @@@ the size of the deque is 0 after initialization
+        // @@@ The size of the deque is zero when it is initially created.
         // assert this.size()==0;
     }
 
@@ -124,7 +124,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public ArrayDeque(Collection<? extends E> c) {
         this(c.size());
         copyElements(c);
-        // @@@ if the collection is not null, then the size of the deque is equal to the size of the collection
+        // @@@ If the collection 'c' is not null, then the size of this deque is equal to the size of the collection 'c'.
         // assert c!=null => this.size()==c.size();
     }
 
@@ -139,9 +139,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             new Object[(numElements < 1) ? 1 :
                        (numElements == Integer.MAX_VALUE) ? Integer.MAX_VALUE :
                        numElements + 1];
-        // @@@ the deque is empty after construction
+        // @@@ the deque is empty after initialization.
         // assert this.isEmpty();
-        // @@@ the size of the deque is 0 after initialization
+        // @@@ The deque is empty initially.
         // assert this.size()==0;
     }
 
@@ -157,9 +157,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public boolean add(E e) {
         addLast(e);
         return true;
-        // @@@ if the element is not null, then the array deque contains the added element after the operation
+        // @@@ If the element is not null, then it is contained in the deque after the operation.
         // assert e!=null => this.contains(e);
-        // @@@ If the element is not null, then the result is true
+        // @@@ If the element to be added is not null, then the result is true.
         // assert e!=null =>\result==true;
     }
 
@@ -194,7 +194,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         es[head = dec(head, es.length)] = e;
         if (head == tail)
             grow(1);
-        // @@@ if the element is not null, then the deque contains the added element
+        // @@@ If the element is not null, then it is contained in the deque after the operation.
         // assert e!=null => this.contains(e);
     }
 
@@ -213,7 +213,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         es[tail] = e;
         if (head == (tail = inc(tail, es.length)))
             grow(1);
-        // @@@ If the added element is not null, then the array deque contains the added element.
+        // @@@ If the element is not null, then it is contained in the deque after the operation.
         // assert e!=null => this.contains(e);
     }
 
@@ -300,9 +300,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public void clear() {
         circularClear(elements, head, tail);
         head = tail = 0;
-        // @@@ the deque is empty after the clear operation
+        // @@@ the deque is empty after this operation
         // assert this.isEmtpy();
-        // @@@ the size of the deque is 0 after clearing
+        // @@@ The deque is empty after this operation.
         // assert this.size()==0;
     }
 
@@ -320,11 +320,11 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         } catch (CloneNotSupportedException e) {
             throw new AssertionError();
         }
-        // @@@ the cloned deque is not the same object as the original deque
+        // @@@ The result of the clone method is not the same object as the original instance.
         // assert \result!=this;
-        // @@@ size of the cloned deque is the same as the original deque
+        // @@@ The size of the cloned deque is equal to the size of the original deque.
         // assert \result.size()==this.size();
-        // @@@ the result of cloning the deque is not null
+        // @@@ The result of cloning the deque is never null.
         // assert \result!=null;
     }
 
@@ -529,7 +529,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public boolean isEmpty() {
         return head == tail;
-        // @@@ The result is true if and only if the size of the deque is 0
+        // @@@ The result is true if and only if the size of the deque is zero.
         // assert \result==(this.size()==0);
     }
 
@@ -587,9 +587,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public boolean offer(E e) {
         return offerLast(e);
-        // @@@ if the element is not null, then the deque contains the element after the operation
+        // @@@ If the element is not null, then it is contained in the deque after the operation.
         // assert e!=null => this.contains(e);
-        // @@@ If the element is not null, then the result is true
+        // @@@ If the element is not null, then the result is true.
         // assert e!=null => \result==true;
     }
 
@@ -603,9 +603,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public boolean offerFirst(E e) {
         addFirst(e);
         return true;
-        // @@@ If the element is not null, then the deque contains the element after adding it to the front.
+        // @@@ If the element is not null, then it is contained in the deque.
         // assert e!=null => this.contains(e);
-        // @@@ If the element is not null, then the result is true
+        // @@@ If the element is not null, then the result is true.
         // assert e!=null => \result==true;
     }
 
@@ -619,9 +619,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     public boolean offerLast(E e) {
         addLast(e);
         return true;
-        // @@@ if the element is not null, then the array deque contains the added element after the operation
+        // @@@ If the element is not null, then it is contained in the deque after the operation.
         // assert e!=null => this.contains(e);
-        // @@@ if the element is not null, then the result is true
+        // @@@ If the element is not null, then the result is true.
         // assert e!=null => \result==true;
     }
 
@@ -636,20 +636,20 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public E peek() {
         return peekFirst();
-        // @@@ if the deque is empty, then the result is null
+        // @@@ If the deque is empty, then the result is null.
         // assert this.isEmpty() => \result==null;
     }
 
     public E peekFirst() {
         return elementAt(elements, head);
-        // @@@ If the deque is empty, then the result is null
+        // @@@ If the deque is empty, then the result is null.
         // assert this.isEmpty() => \result==null;
     }
 
     public E peekLast() {
         final Object[] es;
         return elementAt(es = elements, dec(tail, es.length));
-        // @@@ If the deque is empty, then the result is null
+        // @@@ If the deque is empty, then the result is null.
         // assert this.isEmpty() => \result==null;
     }
 
@@ -665,7 +665,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public E poll() {
         return pollFirst();
-        // @@@ If the deque is empty, then the result is null
+        // @@@ If the deque is empty, then the result is null.
         // assert this.isEmpty() => \result==null;
     }
 
@@ -678,7 +678,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             head = inc(h, es.length);
         }
         return e;
-        // @@@ If the deque is empty, then the result is null
+        // @@@ If the deque is empty, then the result is null.
         // assert this.isEmpty() => \result==null;
     }
 
@@ -689,7 +689,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         if (e != null)
             es[tail = t] = null;
         return e;
-        // @@@ If the deque is empty, then the result is null
+        // @@@ If the deque is empty, then the result is null.
         // assert this.isEmpty() => \result==null;
     }
 
@@ -718,7 +718,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public void push(E e) {
         addFirst(e);
-        // @@@ if the element is not null, then the deque contains the element after pushing
+        // @@@ If the element is not null, then it is contained in the deque.
         // assert e!=null => this.contains(e);
     }
 
@@ -752,7 +752,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public boolean remove(Object o) {
         return removeFirstOccurrence(o);
-        // @@@ If the deque contained the element before the removal, then the result is true
+        // @@@ If the deque originally contained the element, then the result of the removal is true.
         // assert \old(this.contains(o)) => \result==true;
     }
 
@@ -800,7 +800,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             }
         }
         return false;
-        // @@@ If the deque contained the element before the operation, then the result is true
+        // @@@ If the deque originally contained the specified element, then the result is true.
         // assert \old(this.contains(o)) => \result==true;
     }
 
@@ -848,7 +848,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             }
         }
         return false;
-        // @@@ If the deque contained the element before the operation, then the result is true
+        // @@@ If the element was in the deque before the operation, then the result is true.
         // assert \old(this.contains(o)) => \result==true;
     }
 
@@ -871,7 +871,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public int size() {
         return sub(tail, head, elements.length);
-        // @@@ the number of elements in the deque is always greater than or equal to 0
+        // @@@ The number of elements in the deque is always greater than or equal to zero.
         // assert \result>=0;
     }
 
@@ -919,9 +919,9 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public Object[] toArray() {
         return toArray(Object[].class);
-        // @@@ the returned array is not null
+        // @@@ The returned array is never null.
         // assert \result!=null;
-        // @@@ The length of the returned array is equal to the size of the deque
+        // @@@ The length of the returned array is equal to the number of elements in the deque.
         // assert \result.length==this.size();
     }
 
@@ -992,7 +992,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         if (size < a.length)
             a[size] = null;
         return a;
-        // @@@ if the input array is not null, then the result array is not null
+        // @@@ If the input array 'a' is not null, then the result array will also not be null.
         // assert a!=null => \result!=null;
     }
 

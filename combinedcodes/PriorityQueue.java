@@ -101,7 +101,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      */
     public PriorityQueue() {
         this(DEFAULT_INITIAL_CAPACITY, null);
-        // @@@ the size of the priority queue is 0 after initialization
+        // @@@ The size of the priority queue is zero immediately after its creation.
         // assert this.size()==0;
     }
 
@@ -150,7 +150,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
             throw new IllegalArgumentException();
         this.queue = new Object[initialCapacity];
         this.comparator = comparator;
-        // @@@ if the initial capacity is greater than or equal to 1, then the size of the priority queue is 0
+        // @@@ If the initial capacity is greater than or equal to 1, then the size of the priority queue is 0.
         // assert initialCapacity>=1 => this.size()==0;
     }
 
@@ -185,9 +185,9 @@ public class PriorityQueue<E> extends AbstractQueue<E>
             this.comparator = null;
             initFromCollection(c);
         }
-        // @@@ if the collection is not null, then the size of the priority queue is equal to the size of the collection
+        // @@@ If the collection 'c' is not null, then the size of this priority queue is equal to the size of 'c'.
         // assert c!=null => this.size()==c.size();
-        // @@@ if the collection is not null, then for each element in the collection, this priority queue contains that element after initialization.
+        // @@@ If the collection is not null, then every element in the collection is contained in this priority queue after initialization.
         // assert c!=null => \forall int i; 0<=i && i<c.size(); this.contains(c.get(i));
     }
 
@@ -249,7 +249,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         for (int i = 0, n = size; i < n; i++)
             es[i] = null;
         size = 0;
-        // @@@ the size of the priority queue is 0 after clearing
+        // @@@ The size of the priority queue is 0 after clearing.
         // assert this.size()==0;
     }
 
@@ -418,13 +418,13 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         siftUp(i, e);
         size = i + 1;
         return true;
-        // @@@ if the element is not null, then the size of the priority queue increases by 1
+        // @@@ If the element is not null, then the size of the queue increases by one from its previous size.
         // assert e!=null => this.size()==\old(this.size())+1;
-        // @@@ If the element is not null, then the result is true
+        // @@@ If the element is not null, then the result is true.
         // assert e!=null => \result==true;
-        // @@@ if the element is not null, then the priority queue contains the element after the operation
+        // @@@ If the element is not null, then it is contained in the priority queue after the operation.
         // assert e!=null => this.contains(e);
-        // @@@ if the element is not null, then for each valid index before adding the element, the priority queue contains the element at that index
+        // @@@ If the element is not null, then for every valid index before adding the element, the priority queue contains the element at that index.
         // assert e!=null => \forall int i; 0<=i && i<\old(this.size()); this.contains(\old(this.get(i)));
         // @@@ If the element is not null, then the element at the head of the queue after adding is less than or equal to the element that was at the head before adding.
         // assert e!=null => this.peek().compareTo(\old(this.peek()))<=0;
@@ -432,11 +432,11 @@ public class PriorityQueue<E> extends AbstractQueue<E>
 
     public E peek() {
         return (E) queue[0];
-        // @@@ if the size of the queue is greater than 0, then the result is not null
+        // @@@ If the size of the queue is greater than 0, then the result is not null.
         // assert this.size()>0 => \result!=null;
-        // @@@ if the size of the queue is greater than 0, then the element at the head of the queue is less than or equal to every other element in the queue
+        // @@@ If the queue is not empty, then the element returned by peek is less than or equal to every other element in the queue.
         // assert this.size()>0 => \forall int i; 0<=i && i<this.size(); \result.compareTo(this.get(i))<=0;
-        // @@@ If the size of the queue is 0, then the result is null
+        // @@@ If the size of the queue is zero, then the result is null.
         // assert this.size()==0 => \result==null;
     }
 
@@ -458,13 +458,13 @@ public class PriorityQueue<E> extends AbstractQueue<E>
             }
         }
         return result;
-        // @@@ The result of poll is the same as the element that was at the head of the queue before the operation.
+        // @@@ The result of the method is equal to the value at the head of the queue before the method execution.
         // assert \result==\old(this.peek());
-        // @@@ If the size of the priority queue was 0 before the operation, then the result is null
+        // @@@ If the priority queue was empty before the operation, then the result is null.
         // assert \old(this.size())==0 => \result==null;
-        // @@@ If the size of the priority queue was greater than 0 before the operation, then the size of the priority queue is now one less than it was before the operation.
+        // @@@ If the queue size was greater than 0 before the operation, then the size of the queue after the operation is one less than before.
         // assert \old(this.size())>0 => this.size()==\old(this.size())-1;
-        // @@@ If the size of the queue is greater than 0 after polling, the new head element is greater than or equal to the old head element.
+        // @@@ If the queue is not empty, the element at the head of the queue after the operation is greater than or equal to the element that was at the head before the operation.
         // assert this.size()>0 => this.peek().compareTo(\old(this.peek()))>=0;
     }
 
@@ -487,13 +487,13 @@ public class PriorityQueue<E> extends AbstractQueue<E>
             removeAt(i);
             return true;
         }
-        // @@@ if the element was not in the queue before removal, then the result is false
+        // @@@ If the element was not in the queue before the operation, then the result is false.
         // assert !\old(this.contains(o)) => \result==false;
-        // @@@ If the element was in the queue before the removal, then the result is true
+        // @@@ If the element was originally in the queue, then the result of the removal is true.
         // assert \old(this.contains(o)) => \result=true;
-        // @@@ If the element was in the queue, the size of the queue is reduced by 1 after removal.
+        // @@@ If the queue initially contains the specified element, then the size of the queue after removal is one less than the initial size.
         // assert\old(this.contains(o)) => this.size()==\old(this.size())-1;
-        // @@@ If the size of the queue is greater than 0, then the element at the head of the queue after removal is greater than or equal to the element at the head of the queue before removal.
+        // @@@ If the queue is not empty, the element at the head of the queue after removal is greater than or equal to the element that was at the head before removal.
         // assert this.size()>0 => this.peek().compareTo(\old(this.peek()))>=0;
     }
 
@@ -503,7 +503,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
     public boolean removeAll(Collection<?> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> c.contains(e));
-        // @@@ If the collection c is not null, then for each index i between 0 and the size of this queue, the element at index i is not contained in c.
+        // @@@ If the collection c is not null, then for every valid index i in the priority queue, the element at index i is not contained in c.
         // assert c!=null => \forall int i; 0<=i && i<this.size(); !c.contains(this.get(i));
     }
 
@@ -568,7 +568,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
     public boolean retainAll(Collection<?> c) {
         Objects.requireNonNull(c);
         return bulkRemove(e -> !c.contains(e));
-        // @@@ if c is not null, then for each index i between 0 and the size of this queue, the element at index i is contained in c
+        // @@@ If the collection c is not null, then every element in the priority queue is contained in the collection c.
         // assert c!=null => \forall int i; 0<=i && i<this.size(); c.contains(this.get(i));
     }
     private static void setBit(long[] bits, int i) {
@@ -674,7 +674,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
 
     public int size() {
         return size;
-        // @@@ the size of the priority queue is always greater than or equal to 0
+        // @@@ The size of the priority queue is always greater than or equal to 0.
         // assert \result>=0;
     }
 
@@ -693,11 +693,11 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      */
     public Object[] toArray() {
         return Arrays.copyOf(queue, size);
-        // @@@ the returned array is not null
+        // @@@ The returned array is never null.
         // assert \result!=null;
-        // @@@ the length of the returned array is equal to the size of the queue
+        // @@@ The length of the returned array is equal to the size of the queue.
         // assert \result.length==this.size();
-        // @@@ For each index i between 0 and the size of the queue, the element at index i in the queue is either null and the corresponding element in the result array is also null, or the element at index i in the queue is equal to the corresponding element in the result array.
+        // @@@ For every valid index i (from 0 to the size of the queue), if the element at index i in the queue is null, then the element at index i in the returned array is also null; otherwise, the element in the queue at index i is equal to the element at index i in the returned array.
         // assert \forall int i; 0<=i && i<this.size(); this.get(i)==null && \result[i]==null || this.get(i).equals(\result[i]);
     }
 
@@ -746,7 +746,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         if (a.length > size)
             a[size] = null;
         return a;
-        // @@@ if the input array is not null, then the result is not null
+        // @@@ If the array 'a' is not null, then the result is also not null.
         // assert a!=null => \result!=null;
     }
 }

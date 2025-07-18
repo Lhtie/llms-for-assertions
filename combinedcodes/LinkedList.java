@@ -90,7 +90,7 @@ public class LinkedList<E>
      * Constructs an empty list.
      */
     public LinkedList() {
-        // @@@ the list is empty after construction
+        // @@@ The list is empty after it is created.
         // assert this.isEmpty();
         // @@@ The size of the list is 0 after construction.
         // assert this.size()==0;
@@ -107,11 +107,11 @@ public class LinkedList<E>
     public LinkedList(Collection<? extends E> c) {
         this();
         addAll(c);
-        // @@@ If the collection is not null, then the size of the list after adding all elements from the collection is equal to the size of the collection.
+        // @@@ If the collection 'c' is not null, then the size of the list is equal to the size of the collection 'c'.
         // assert c!=null => this.size()==c.size();
-        // @@@ If the collection is not null, then for each valid index i in the list, the element at index i in the list is the same as the element at index i in the collection.
+        // @@@ If the collection 'c' is not null, then for every valid index 'i' in this list, the element at index 'i' in this list is equal to the element at index 'i' in the collection 'c'.
         // assert c!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==c.get(i);
-        // @@@ if the collection is not null, then the list equals the collection after adding all elements
+        // @@@ If the collection is not null, then the list is equal to the collection after all its elements have been added.
         // assert c!=null => this.equals(c);
     }
 
@@ -126,11 +126,11 @@ public class LinkedList<E>
     public boolean add(E e) {
         linkLast(e);
         return true;
-        // @@@ the list contains the added element after the operation
+        // @@@ The list contains the specified element after it has been added.
         // assert this.contains(e);
-        // @@@ The last element of the list is equal to the element added, considering null values appropriately
+        // @@@ If the added element is null, then the last element of the list is also null; if the added element is not null, then the last element of the list is equal to the added element.
         // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
-        // @@@ the result of adding an element is always true
+        // @@@ The result of adding an element to the list is always true.
         // assert \result==true;
     }
 
@@ -150,13 +150,13 @@ public class LinkedList<E>
             linkLast(element);
         else
             linkBefore(element, node(index));
-        // @@@ If the index is within the valid range (from 0 to the size of the list), then the list contains the element after insertion.
+        // @@@ If the index is greater than or equal to 0 and less than or equal to the size of the list, then the list contains the inserted element.
         // assert index>=0 && index<=this.size() => this.contains(element);
-        // @@@ If the index is within the valid range, then either the element is null and the element at the index is null, or the element at the index equals the inserted element.
+        // @@@ If the index is valid (between 0 and the size of the list, inclusive), then if the element is null, the element at that index in the list is also null, or the element at that index equals the specified element.
         // assert index>=0 && index<=this.size() => element==null&&this.get(index)==null||this.get(index).equals(element);
-        // @@@ If the index is within the valid range, then for each index i less than the given index, the element at position i in the list either remains null or is unchanged.
+        // @@@ If the index is between 0 and the size of the list inclusive, then for every valid index i less than the specified index, the element at position i in the list after the operation is either null if it was null before the operation, or remains unchanged.
         // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is within the valid range, then for each index i from the given index to the old size minus one, either both the current and old elements at i+1 are null, or the current element at i+1 equals the old element at i.
+        // @@@ If the index is between 0 and the size of the list inclusive, then for every valid index from the specified index to the old size of the list, the element at the next position is either null if the old element at this position was null, or it equals the old element at this position.
         // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
@@ -237,9 +237,9 @@ public class LinkedList<E>
      */
     public void addFirst(E e) {
         linkFirst(e);
-        // @@@ the list contains the added element after the operation
+        // @@@ The list contains the added element after the operation.
         // assert this.contains(e);
-        // @@@ The first element of the list is either null if the added element is null, or it equals the added element if the added element is not null.
+        // @@@ If the added element is null, then the first element of the list is also null; otherwise, the first element of the list is equal to the added element.
         // assert e==null && this.get(0)==null || e!=null && e.equals(this.get(0));
     }
 
@@ -252,9 +252,9 @@ public class LinkedList<E>
      */
     public void addLast(E e) {
         linkLast(e);
-        // @@@ the list contains the added element after the operation
+        // @@@ The list contains the specified element after it has been added.
         // assert this.contains(e);
-        // @@@ The last element in the list is either null if the added element is null, or it equals the added element if the added element is not null.
+        // @@@ If the element added is null, then the last element in the list is null; otherwise, the last element in the list equals the element added.
         // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
     }
 
@@ -287,9 +287,9 @@ public class LinkedList<E>
         first = last = null;
         size = 0;
         modCount++;
-        // @@@ the list is empty after the clear operation
+        // @@@ The list is empty after the operation.
         // assert this.isEmtpy();
-        // @@@ The size of the list is 0 after clearing all elements.
+        // @@@ The size of the list is zero after clearing it.
         // assert this.size()==0;
     }
 
@@ -312,15 +312,15 @@ public class LinkedList<E>
             clone.add(x.item);
 
         return clone;
-        // @@@ the cloned list is a different object from the original list
+        // @@@ The result of the clone method is a different object from the original list.
         // assert \result!=this;
-        // @@@ the cloned list is equal to the original list
+        // @@@ The returned object from the method is equal to the current instance of the list.
         // assert \result.equals(this);
-        // @@@ the size of the cloned list is the same as the size of the original list
+        // @@@ The size of the cloned list is equal to the size of the original list.
         // assert \result.size()==this.size();
-        // @@@ For each valid index i in the original list, the element at index i in the cloned list is the same as the element at index i in the original list.
+        // @@@ For every valid index in the original list, the element at that index in the cloned list is the same as the element at that index in the original list.
         // assert \forall int i; 0<=i && i<this.size(); result.get(i)==this.get(i);
-        // @@@ the result of cloning is not null
+        // @@@ The result of cloning the list is never null.
         // assert \result!=null;
     }
 
@@ -353,7 +353,7 @@ public class LinkedList<E>
      */
     public E element() {
         return getFirst();
-        // @@@ If the list is not empty, then the result is not null and equals the first element of the list
+        // @@@ If the list is not empty, then the result is either null and the first element is null, or the result equals the first element of the list.
         // assert !this.isEmpty() => \result==null && this.get(0)==null|| \result.equals(this.get(0));
     }
 
@@ -380,7 +380,7 @@ public class LinkedList<E>
         if (f == null)
             throw new NoSuchElementException();
         return f.item;
-        // @@@ If the list is not empty, then the result is not null and equals the first element of the list
+        // @@@ If the list is not empty, then the result is either null and the first element of the list is also null, or the result equals the first element of the list.
         // assert !this.isEmpty() => \result==null && this.get(0)==null|| \result.equals(this.get(0));
     }
 
@@ -395,7 +395,7 @@ public class LinkedList<E>
         if (l == null)
             throw new NoSuchElementException();
         return l.item;
-        // @@@ if the list is not empty, then the result is either null or equals the last element of the list
+        // @@@ If the list is not empty, then the result is either null or equals the last element of the list.
         // assert !this.isEmpty() => \result==null || \result.equals(this.get(this.size()-1));
     }
 
@@ -426,11 +426,11 @@ public class LinkedList<E>
             }
         }
         return -1;
-        // @@@ If the result is not -1 and the element at the result index is null, then the input object is null.
+        // @@@ If the index of the first occurrence of the specified element is not -1 and the element at that index is null, then the specified element is null.
         // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ If the result is not -1 and the element at the result index is not null, then the element at the result index equals the given object o.
+        // @@@ If the result is not -1 and the element at the resulting index is not null, then the element at that index is equal to the specified element.
         // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ If the result is not -1, then for every index i from 0 to result-1, either the element at index i is null and o is not null, or the element at index i is not null and does not equal o.
+        // @@@ If the result is not -1, then for every index i from 0 to the result minus one, either the element at index i is null and o is not null, or the element at index i is not null and does not equal o.
         // assert \result!=-1 => \forall int i; 0<=I && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
@@ -476,11 +476,11 @@ public class LinkedList<E>
             }
         }
         return -1;
-        // @@@ If the result is not -1 and the element at the result index is null, then the input object is null.
+        // @@@ If the method returns a non-negative index and the element at that index is null, then the searched object must also be null.
         // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ If the result is not -1 and the element at the result index is not null, then the element at the result index equals the specified object.
+        // @@@ If the method returns a non-negative index and the element at that index is not null, then the element at that index is equal to the specified element 'o'.
         // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ If the result is not -1, then for every index i greater than the result and less than the size of the list, either the element at index i is null and o is not null, or the element at index i is not null and does not equal o.
+        // @@@ If the result is not -1, then for every index greater than the result and less than the size of the list, if the searched object is not null, the element at that index is null, or if the searched object is not null, the element at that index is not equal to the searched object.
         // assert \result!=-1 => \forall int i; \result<i && i<this.size(); this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
@@ -584,11 +584,11 @@ public class LinkedList<E>
      */
     public boolean offer(E e) {
         return add(e);
-        // @@@ the list contains the added element after the operation
+        // @@@ The list contains the specified element after it is added.
         // asssert this.contains(e);
-        // @@@ The last element in the list is equal to the element added, considering null values appropriately
+        // @@@ If the added element is null, then the last element in the list is also null; if the added element is not null, then it equals the last element in the list.
         // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
-        // @@@ the method always returns true when adding an element
+        // @@@ The result of adding an element to the list is always true.
         // assert \result==true;
     }
 
@@ -603,11 +603,11 @@ public class LinkedList<E>
     public boolean offerFirst(E e) {
         addFirst(e);
         return true;
-        // @@@ the list contains the element e after adding it to the front
+        // @@@ The list contains the specified element after it has been inserted at the front.
         // assert this.contains(e);
-        // @@@ The first element of the list is either null if the added element is null, or equals the added element if it is not null.
+        // @@@ If the element 'e' is null, then the first element of the list is also null; if 'e' is not null, then it equals the first element of the list.
         // assert e==null && this.get(0)==null || e!=null && e.equals(this.get(0));
-        // @@@ the result of adding the element at the front of the list is always true
+        // @@@ The result of the operation is always true.
         // assert \result==true;
     }
 
@@ -621,11 +621,11 @@ public class LinkedList<E>
     public boolean offerLast(E e) {
         addLast(e);
         return true;
-        // @@@ the list contains the element that was just added to the end
+        // @@@ The list contains the specified element after it has been inserted at the end.
         // assert this.contains(e);
-        // @@@ The last element in the list is equal to the element added, considering null values appropriately.
+        // @@@ If the inserted element is null, then the last element of the list is also null; otherwise, the last element of the list is equal to the inserted element.
         // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
-        // @@@ the result of adding the element to the end of the list is true
+        // @@@ The result of the operation is always true.
         // assert \result==true;
     }
 
@@ -647,9 +647,9 @@ public class LinkedList<E>
     public E peek() {
         final Node<E> f = first;
         return (f == null) ? null : f.item;
-        // @@@ If the list is not empty, then the result is either null and the first element is null, or the result equals the first element of the list.
+        // @@@ If the list is not empty, then the result is either null and the first element is null, or the result is equal to the first element of the list.
         // assert !this.isEmpty() => \result==null && this.get(0)==null|| \result.equals(this.get(0));
-        // @@@ If the list is empty, then the result is null
+        // @@@ If the list is empty, then the result is null.
         // assert this.isEmpty() => \result==null;
     }
 
@@ -664,9 +664,9 @@ public class LinkedList<E>
     public E peekFirst() {
         final Node<E> f = first;
         return (f == null) ? null : f.item;
-        // @@@ If the list is not empty, then the result is either null and the first element is null, or the result equals the first element of the list.
+        // @@@ If the list is not empty, then the result is either null and the first element is null, or the result is equal to the first element of the list.
         // assert !this.isEmpty() => \result==null && this.get(0)==null|| \result.equals(this.get(0));
-        // @@@ If the list is empty, then the result is null
+        // @@@ If the list is empty, then the result is null.
         // assert this.isEmpty() => \result==null;
      }
 
@@ -683,7 +683,7 @@ public class LinkedList<E>
         return (l == null) ? null : l.item;
         // @@@ If the list is not empty, then the result is either null or equals the last element of the list.
         // assert !this.isEmpty() => \result==null || \result.equals(this.get(this.size()-1));
-        // @@@ If the list is empty, then the result is null
+        // @@@ If the list is empty, then the result is null.
         // assert this.isEmpty() => \result==null;
     }
 
@@ -696,9 +696,9 @@ public class LinkedList<E>
     public E poll() {
         final Node<E> f = first;
         return (f == null) ? null : unlinkFirst(f);
-        // @@@ If the list is not empty, then the result is equal to the first element of the list before the operation.
+        // @@@ If the list is not empty, then the result is either null and the first element was initially null, or the result equals the initial first element of the list.
         // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
-        // @@@ If the list is empty, the result is null.
+        // @@@ If the list is empty, then the result is null.
         // assert this.isEmpty() => \result==null;
     }
 
@@ -713,9 +713,9 @@ public class LinkedList<E>
     public E pollFirst() {
         final Node<E> f = first;
         return (f == null) ? null : unlinkFirst(f);
-        // @@@ If the list is not empty, then the result is either null and the first element before the operation was null, or the result equals the first element before the operation.
+        // @@@ If the list is not empty, then the result is either null and the first element was originally null, or the result is equal to the original first element of the list.
         // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
-        // @@@ If the list is empty, then the result is null
+        // @@@ If the list is empty, then the result is null.
         // assert this.isEmpty() => \result==null;
     }
 
@@ -730,9 +730,9 @@ public class LinkedList<E>
     public E pollLast() {
         final Node<E> l = last;
         return (l == null) ? null : unlinkLast(l);
-        // @@@ If the list is not empty, then the result is either null and the last element before the operation was null, or the result equals the last element before the operation.
+        // @@@ If the list is not empty, then the result is either null and the last element was null, or the result equals the last element of the list before the operation.
         // assert !this.isEmpty() => \result==null && \old(this.get(\old(this.size()-1)))==null|| \result.equals(\old(this.get(\old(this.size()-1))));
-        // @@@ If the list is empty, then the result is null
+        // @@@ If the list is empty, then the result is null.
         // assert this.isEmpty() => \result==null;
     }
 
@@ -749,7 +749,7 @@ public class LinkedList<E>
      */
     public E pop() {
         return removeFirst();
-        // @@@ If the list is not empty, then the result is equal to the first element of the list before the operation.
+        // @@@ If the list is not empty, then the result is either null and the first element was null before the operation, or the result is equal to the first element before the operation.
         // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
     }
 
@@ -764,9 +764,9 @@ public class LinkedList<E>
      */
     public void push(E e) {
         addFirst(e);
-        // @@@ the list contains the pushed element after the operation
+        // @@@ The list contains the element after it has been pushed onto the stack.
         // assert this.contains(e);
-        // @@@ The first element of the list is either null if the pushed element is null, or equals the pushed element if it is not null.
+        // @@@ If the pushed element is null, the first element of the list is also null; if the pushed element is not null, it equals the first element of the list.
         // assert e==null && this.get(0)==null || e!=null && e.equals(this.get(0));
     }
 
@@ -779,7 +779,7 @@ public class LinkedList<E>
      */
     public E remove() {
         return removeFirst();
-        // @@@ If the list is not empty, the result is equal to the first element of the list before the removal.
+        // @@@ If the list is not empty, then the returned element is either null and was null before removal, or is equal to the first element of the list before the removal.
         // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
     }
 
@@ -795,11 +795,11 @@ public class LinkedList<E>
     public E remove(int index) {
         checkElementIndex(index);
         return unlink(node(index));
-        // @@@ If the index is within the valid range, the result is the element that was at that index before removal.
+        // @@@ If the index is valid (greater than or equal to 0 and less than the size of the list), then the result is equal to the element at that index before the removal.
         // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ If the index is within the valid range, then for each index i less than the given index, the element at i remains unchanged if it is not null.
+        // @@@ If the index is valid (greater than or equal to 0 and less than the size of the list), then for every element before the index, if the element was null before the operation, it remains null, or if it was not null, it remains equal to its previous value.
         // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is within the bounds of the list, then for each valid index i greater than the given index and less than the old size minus one, either the current element at index i is null and the old element at index i+1 is null, or the current element at index i is equal to the old element at index i+1.
+        // @@@ If the index is valid (greater than or equal to 0 and less than the size of the list), then for every index greater than the specified index and less than the previous size of the list minus one, the element at that index in the list after removal is either null if the old element at the next index was null, or it equals the old element at the next index.
         // assert index>=0 && index<this.size() => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
@@ -833,7 +833,7 @@ public class LinkedList<E>
             }
         }
         return false;
-        // @@@ If the list contained the element before removal, then the result is true
+        // @@@ If the list initially contains the element 'o', then the result of the removal operation is true.
         // assert \old(this.contains(o)) => \result==true;
     }
 
@@ -848,11 +848,11 @@ public class LinkedList<E>
         if (f == null)
             throw new NoSuchElementException();
         return unlinkFirst(f);
-        // @@@ If the list is not empty, the result is equal to the first element of the list before the operation.
+        // @@@ If the list is not empty, then the result is either null and the first element was null, or the result is equal to the first element before the operation.
         // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
-        // @@@ The result of removing the first element is the same as the first element before removal.
+        // @@@ The returned element is the same as the first element of the list before the method execution.
         // assert \result==\old(this.get(0));
-        // @@@ For each valid index i before the removal, either both the element at index i and the element at index i+1 are null, or the element at index i is equal to the element at index i+1 after the removal.
+        // @@@ For every valid index from 0 to the old size minus one, if the element at that index in the list is null, then the next element in the old list was also null; otherwise, the element at that index is equal to the next element in the old list.
         // assert \forall int i; 0<=i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
@@ -867,7 +867,7 @@ public class LinkedList<E>
      */
     public boolean removeFirstOccurrence(Object o) {
         return remove(o);
-        // @@@ if the list contained the specified element before the operation, then the result is true
+        // @@@ If the list initially contains the specified element, then the result of the removal operation is true.
         // assert \old(this.contains(o)) => \result==true;
     }
 
@@ -882,11 +882,11 @@ public class LinkedList<E>
         if (l == null)
             throw new NoSuchElementException();
         return unlinkLast(l);
-        // @@@ If the list is not empty, the result is either null and the last element was null, or the result equals the last element before removal.
+        // @@@ If the list is not empty, then the result is either null and the previously last element was null, or the result is equal to the previously last element.
         // assert !this.isEmpty() => \result==null && \old(this.get(\old(this.size()-1)))==null|| \result.equals(\old(this.get(\old(this.size()-1))));
-        // @@@ The result is the last element of the list before the removal.
+        // @@@ the returned element is the last element of the list before the modification
         // assert \result==\old(this.get(this.size()-1))
-        // @@@ For each valid index i (between 0 and old size minus 1), the element at index i in the list is either null and was null before the operation, or it remains the same as before the operation.
+        // @@@ For every valid index from 0 up to one less than the previous size of the list, if the element at that index was null before, it remains null, or if it was not null, it remains equal to its previous value.
         // assert \forall int i; 0<=i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
@@ -916,7 +916,7 @@ public class LinkedList<E>
             }
         }
         return false;
-        // @@@ If the list contained the specified element before the operation, then the result is true
+        // @@@ If the list originally contained the element 'o', then the result of the operation is true.
         // assert \old(this.contains(o)) => \result==true;
     }
     
@@ -935,11 +935,11 @@ public class LinkedList<E>
         E oldVal = x.item;
         x.item = element;
         return oldVal;
-        // @@@ If the index is within the valid range, the result of set is the element that was previously at the specified index.
+        // @@@ If the index is non-negative and less than the size of the list, then the returned value is the element that was previously at that position.
         // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ If the index is within the valid range, then for each index i less than the given index, the element at position i remains unchanged.
+        // @@@ If the index is valid (greater than or equal to 0 and less than the size of the list), then for every index from 0 up to but not including the specified index, either both the current and the old value at that index are null, or the current value at that index is equal to the old value at that index.
         // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is within the bounds of the list, then for every index i greater than the given index and less than the size of the list, the element at index i is either null and was null before or it remains unchanged.
+        // @@@ If the index is valid (non-negative and less than the size of the list), then for every position greater than the index and within the list size, the element at that position remains unchanged or remains null if it was initially null.
         // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
@@ -950,7 +950,7 @@ public class LinkedList<E>
      */
     public int size() {
         return size;
-        // @@@ the number of elements in the list is always greater than or equal to 0
+        // @@@ The number of elements in the list is always greater than or equal to 0.
         // assert \result>=0;
     }
 
@@ -1004,11 +1004,11 @@ public class LinkedList<E>
         for (Node<E> x = first; x != null; x = x.next)
             result[i++] = x.item;
         return result;
-        // @@@ the result array is not null
+        // @@@ The returned array is never null.
         // assert \result!=null;
-        // @@@ the length of the resulting array is equal to the size of the list
+        // @@@ The length of the resulting array is equal to the size of the list.
         // assert \result.length==this.size();
-        // @@@ For each valid index i in the list, the element at index i in the list is either null and the corresponding element in the result array is also null, or the element at index i in the list is equal to the corresponding element in the result array.
+        // @@@ For every valid index i (from 0 up to the size of the list minus one), if the element at index i in the list is null, then the corresponding element in the resulting array is also null; otherwise, the element in the resulting array is equal to the element in the list at index i.
         // assert \forall int i; 0<=i && i<this.size(); this.get(i)==null && \result[i]==null || this.get(i).equals(\result[i]);
     }
 
@@ -1064,7 +1064,7 @@ public class LinkedList<E>
             a[size] = null;
 
         return a;
-        // @@@ If the input array is not null, then the result array is not null
+        // @@@ If the input array is not null, then the resulting array is also not null.
         // assert a!=null => \result!=null;
     }
 

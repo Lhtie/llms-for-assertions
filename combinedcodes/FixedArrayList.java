@@ -83,9 +83,9 @@ public class FixedArrayList<E>
 		return true;
         // @@@ the array contains the added element after the operation
         // assert this.contains(element);
-        // @@@ The method always returns true when adding an element to the array.
+        // @@@ The method always returns true.
         // assert \result==true;
-        // @@@ If the element is null, the last element in the array is null; otherwise, the last element in the array is equal to the added element.
+        // @@@ If the element is null, then the last element in the array is null; if the element is not null, then the last element in the array is equal to the added element.
         // assert element==null && this.get(this.size()-1)==null || e!=null && element.equals(this.get(this.size()-1));
 	}
 
@@ -302,11 +302,11 @@ public class FixedArrayList<E>
 		}
 
 		throw new ArrayIndexOutOfBoundsException("index "+i+" does not exist");
-        // @@@ If the index is within the bounds of the array, the result of removing the element is the same as the element at that index before removal.
+        // @@@ If the index is non-negative and less than the size of the array, then the result is equal to the element at that index before the method was executed.
         // assert i>=0 && i<this.size() => \result==\old(this.get(i));
-        // @@@ If the index i is within bounds, then for each index j less than i, the element at j is either null and was null before or it remains unchanged.
+        // @@@ If the index i is within valid bounds, then for each index j less than i, the element at j either remains null if it was null before, or remains unchanged.
         // assert i>=0 && i<size() => \forall int j; 0<=j && j<i; this.get(j)==null && \old(this.get(j))==null || this.get(j).equals(\old(this.get(j)));
-        // @@@ If the index is valid, then for each index j between the removed index and the old size minus one, either both the current and previous elements at j are null, or the current element at j is equal to the previous element at j+1.
+        // @@@ If the index is valid (between 0 and the size of the array), then for every index greater than the specified index and less than the previous size minus one, the element at that index should either be null and the next element should also be null, or it should be equal to the next element.
         // assert i>=0 && i<this.size() => \forall int j; index<j && j<\old(this.size()-1); this.get(j)==null && \old(this.get(j+1))==null || this.get(j).equals(\old(this.get(j+1)));
 	}
 
@@ -347,7 +347,7 @@ public class FixedArrayList<E>
 	 */
 	public int size() {
 		return elements.size() - freeIndices.size();
-        // @@@ The number of elements in the array is always greater than or equal to 0
+        // @@@ The number of elements in the array is always greater than or equal to zero.
         // assert \result>=0;
 	}
 

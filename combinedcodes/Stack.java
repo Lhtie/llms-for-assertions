@@ -29,9 +29,9 @@ class Stack<E> extends Vector<E> {
      * Creates an empty Stack.
      */
     public Stack() {
-        // @@@ the stack is empty when it is created
+        // @@@ The stack is empty when it is created.
         // assert this.empty();
-        // @@@ The size of the stack is 0 when it is created.
+        // @@@ The stack is empty upon creation.
         // assert this.size()==0;
     }
 
@@ -43,7 +43,7 @@ class Stack<E> extends Vector<E> {
      */
     public boolean empty() {
         return size() == 0;
-        // @@@ The result is true if and only if the size of the stack is 0
+        // @@@ The result is true if and only if the stack is empty.
         // assert \result==(this.size()==0);
     }
 
@@ -61,7 +61,7 @@ class Stack<E> extends Vector<E> {
         if (len == 0)
             throw new EmptyStackException();
         return elementAt(len - 1);
-        // @@@ if the stack is not empty, then the result is either null and the last element is null, or the result equals the last element of the stack
+        // @@@ If the stack is not empty, then the result is either null and the last element of the stack is null, or the result is equal to the last element of the stack.
         // assert !this.isEmpty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
@@ -81,7 +81,7 @@ class Stack<E> extends Vector<E> {
         removeElementAt(len - 1);
 
         return obj;
-        // @@@ if the stack is not empty, then the popped result is equal to the element that was at the top of the stack before popping
+        // @@@ If the stack is not empty, then the result is either null and the last element of the stack is null, or the result is equal to the last element of the stack.
         // assert !this.isEmpty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
@@ -99,9 +99,9 @@ class Stack<E> extends Vector<E> {
         addElement(item);
 
         return item;
-        // @@@ stack contains the pushed item after the operation
+        // @@@ The stack contains the pushed item after the operation.
         // assert this.contains(e);
-        // @@@ The item pushed onto the stack is either null and the last element of the stack is also null, or the item is not null and is equal to the last element of the stack.
+        // @@@ If the pushed item is null, the last element in the stack is also null; otherwise, the last element in the stack is equal to the pushed item.
         // assert item==null && this.get(this.size()-1)==null || item!=null && item.equals(this.get(this.size()-1));
     }
 

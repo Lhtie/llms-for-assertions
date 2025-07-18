@@ -50,7 +50,7 @@ public class RoleList extends ArrayList<Object> {
         super();
         // @@@ The RoleList is empty upon construction.
         // assert this.isEmpty();
-        // @@@ The size of the RoleList is 0 after construction.
+        // @@@ The size of the RoleList is zero immediately after it is constructed.
         // assert this.size()==0;
     }
 
@@ -64,7 +64,7 @@ public class RoleList extends ArrayList<Object> {
         super(initialCapacity);
         // @@@ If the initial capacity is greater than or equal to 0, then the RoleList is empty.
         // assert initialCapacity>=0 => this.isEmpty();
-        // @@@ If the initial capacity is greater than or equal to 0, then the size of the RoleList is 0
+        // @@@ If the initial capacity is greater than or equal to 0, then the size of the list is 0.
         // assert initialCapacity>=0 => this.size()==0;
     }
 
@@ -97,11 +97,11 @@ public class RoleList extends ArrayList<Object> {
         // Build the List<Role>
         //
         super.addAll(list);
-        // @@@ If the provided list is not null, then the size of this RoleList is equal to the size of the provided list.
+        // @@@ If the list is not null, then the size of this RoleList is equal to the size of the list.
         // assert list!=null => this.size()==list.size();
-        // @@@ If the list is not null, then for each index i between 0 and the size of this RoleList, the element at index i in this RoleList is the same as the element at index i in the provided list.
+        // @@@ if the list is not null, then for every valid index i in this RoleList, the element at index i in this RoleList is the same as the element at index i in the list provided.
         // assert list!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==list.get(i);
-        // @@@ If the provided list is not null, then the constructed RoleList is equal to the provided list.
+        // @@@ If the list is not null, then this RoleList is equal to the list provided.
         // assert list!=null => this.equals(list);
     }
 
@@ -112,13 +112,13 @@ public class RoleList extends ArrayList<Object> {
         if (typeSafe)
             checkTypeSafe(element);
         super.add(index, element);
-        // @@@ If the index is within the valid range, then the element is contained in the list after the addition.
+        // @@@ If the index is between 0 and the size of the list, inclusive, then the list contains the element after the operation.
         // assert index>=0 && index<=this.size() => this.contains(element);
-        // @@@ if the index is within the bounds of the list, then the element at the index is either null and the newly added element is null, or the element at the index equals the newly added element
+        // @@@ If the index is valid (between 0 and the size of the list inclusive), then if the element is null, the element at that index in the list is also null, or the element at that index equals the inserted element.
         // assert index>=0 && index<=this.size() => element==null&&this.get(index)==null||this.get(index).equals(element);
-        // @@@ If the index is within the valid range, then for each element before the index, the element is either null and was null before, or it remains unchanged.
+        // @@@ If the index is within the valid range (from 0 up to the size of the list), then for every element before the index, it either remains unchanged or continues to be null if it was null before.
         // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is within the bounds of the list, then for every element from the index to the old size minus one, the element at the next position is either null and the current element was null, or the element at the next position is equal to the current element in the old list.
+        // @@@ If the index is between 0 and the size of the list inclusive, then for every valid index from the specified index to the old size of the list, the element at the next position is either null if the old element at this index was null, or equal to the old element at this index.
         // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this)size(); this.get(i+1) == null&&\old(this).get(i) == null||this.get(i+1).equals(\old(this).get(i));
     }
 
@@ -146,13 +146,13 @@ public class RoleList extends ArrayList<Object> {
         }
 
         super.add(index, role);
-        // @@@ If the index is within bounds and the role is not null, then the role is contained in the list after the operation.
+        // @@@ If the index is non-negative, less than or equal to the size of the list, and the role is not null, then the list contains the role.
         // assert index>=0 && index<=this.size() && role!=null => this.contains(role);
-        // @@@ If the index is between 0 and the size of the list, and the role is not null, then the element at the index in the list equals the role after adding.
+        // @@@ If the index is between 0 and the size of the list inclusive, and the role is not null, then the role at the specified index must be equal to the inserted role.
         // assert index>=0 && index<=this.size() && role!=null => this.get(index).equals(role);
-        // @@@ If the index is within bounds and the role is not null, then for each element before the index, the element remains unchanged if it was not null before the operation.
+        // @@@ If the index is valid, non-negative, and not greater than the size of the list, and the role is not null, then for every position from 0 up to, but not including, the index, the element at that position remains unchanged or continues to be null after the insertion.
         // assert index>=0 && index<=this.size() && role!=null => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is within bounds and the role is not null, then for each index i from the given index to the old size minus one, the element at position i+1 is either null or equal to the element at position i in the old list.
+        // @@@ If the index is between 0 and the size of the list inclusive, and the role is not null, then for every valid index from the insertion point to the old size of the list, the element at the next position is either null if the old element was null or equals the old element at that position.
         // assert index>=0 && index<=this.size() && role!=null => \forall int i; index <= i&&i <\old(this)size(); this.get(i+1) == null&&\old(this).get(i) == null||this.get(i+1).equals(\old(this).get(i));
     }
 
@@ -163,11 +163,11 @@ public class RoleList extends ArrayList<Object> {
         if (typeSafe)
             checkTypeSafe(o);
         return super.add(o);
-        // @@@ The added object is contained in the RoleList after the operation.
+        // @@@ The list contains the object 'o' after it has been added.
         // assert this.contains(o);
-        // @@@ The last element added to the list is either null if the added object is null, or it equals the added object if the added object is not null.
+        // @@@ if the object is null, the last element of the list is also null; otherwise, the object equals the last element of the list.
         // assert o==null && this.get(this.size()-1)==null || o!=null && o.equals(this.get(this.size()-1));
-        // @@@ The result of adding an element to the list is always true
+        // @@@ the result of the add operation is always true
         // assert \result==true;
     }
 
@@ -188,7 +188,7 @@ public class RoleList extends ArrayList<Object> {
         super.add(role);
         // @@@ If the role is not null, then the role is contained in the list after adding it.
         // assert role!=null => this.contains(role);
-        // @@@ If the role is not null, then it equals the last element in the list after adding.
+        // @@@ If the role is not null, then it is equal to the last element in the list.
         // assert role!=null => role.equals(this.get(this.size()-1));
     }
 
@@ -320,9 +320,9 @@ public class RoleList extends ArrayList<Object> {
         if (typeSafe)
             checkTypeSafe(element);
         return super.set(index, element);
-        // @@@ If the index is within the bounds of the list, then the result of setting an element at that index is the element that was previously at that index.
+        // @@@ If the index is non-negative and less than the size of the list, then the result is equal to the element at that index before the operation.
         // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ If the index is within the bounds of the list, then for every index i less than the given index, the element at i is either both null before and after the operation or remains unchanged.
+        // @@@ If the index is within the valid range of the list, then for every index i less than the specified index, the element at i remains unchanged or continues to be null after the operation.
         // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
         // @@@ If the index is within the bounds of the list, then for every index i greater than the given index and less than the size of the list, either both the current and old elements at index i are null, or they are equal.
         // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this).get(i)==null || this.get(i).equals(\old(this).get(i));
@@ -352,11 +352,11 @@ public class RoleList extends ArrayList<Object> {
         }
 
         super.set(index, role);
-        // @@@ If the index is within bounds and the role is not null, then the result of setting the role at the index is equal to the element that was previously at that index.
+        // @@@ If the index is valid, within the list's range, and the role is not null, then the result is the same as the old value at that index.
         // assert index>=0 && index<this.size() && role!=null => \result==\old(this.get(index));
-        // @@@ If the index is within bounds and the role is not null, then for each index i less than the given index, the element at i remains unchanged.
+        // @@@ If the index is within bounds and the role is not null, then for every index i less than the given index, if the element at i was null before, it remains null, otherwise it remains unchanged.
         // assert index>=0 && index<size() && role!=null => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this).get(i)==null || this.get(i).equals(\old(this).get(i));
-        // @@@ If the index is within bounds and the role is not null, then for every index i greater than the given index and less than the size of the list, the element at i is either both null before and after the operation or remains unchanged.
+        // @@@ If the index is valid, within the list's bounds, and the role is not null, then for every position greater than the index and within the list's bounds, either the element at that position is null and was null before, or it remains unchanged from its previous state.
         // assert index>=0 && index<this.size() && role!=null => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
      }
 }
