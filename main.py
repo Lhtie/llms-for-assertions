@@ -97,8 +97,8 @@ if __name__ == "__main__":
                 # print(inputs[0]["content"])
                 response = run(mkey, model, tokenizer, inputs, args.temp)
                 asrt = extract(args.prompt, response, langid)
-                allrspnse += response + "-"*20
-                allasrts += asrt + "-"*20
+                allrspnse += response + '\n' + "-"*20 + '\n'
+                allasrts += asrt + '\n' + "-"*20 + '\n'
 
             if(args.write):
                 os.makedirs(dirname, exist_ok=True)

@@ -231,17 +231,23 @@ class javahelper(codehelper):
                         old_var_name.split("_forallidx")[0], f"Array.get({old_var_name}, cur_idx)")
 
             forall_addns += [
-                f"Boolean forall_holds_forallidx{forall_idx} = exec(() -> {{",
+                f"Boolean forall_holds_forallidx{forall_idx} = Boolean.TRUE.equals(exec(() -> {{",
                 f"\tboolean ret = true;",
-                f"\tint cur_idx = 0;",
-                f"\tfor ({var_type} {var_name} = {lo}; {var_name} <= {hi}; {var_name} += 1) {{",
-                f"\t\tif ({cond_expr}) {{",
-                f"\t\t\tret &= {spec_expr};",
+                f"\tint _cur_idx = 0;",
+                f"\tfor ({var_type} _{var_name} = {lo}; _{var_name} <= {hi}; _{var_name} += 1) {{",
+                f"\t\tint cur_idx = _cur_idx;",
+                f"\t\tint {var_name} = _{var_name};",
+                f"\t\tif ({cond_expr}) {{"
+            ]
+            split_addns, spec_expr = self.split_formula(spec_expr)
+            forall_addns += ["\t\t\t" + addn for addn in split_addns]
+            forall_addns += [
+                f"\t\t\tret &= Boolean.TRUE.equals(exec(() -> {spec_expr}));",
                 f"\t\t}}",
-                f"\t\tcur_idx += 1;",
+                f"\t\t_cur_idx += 1;",
                 f"\t}}",
                 f"\treturn ret;",
-                f"}});",
+                f"}}));",
             ]
             asrt = asrt[:start] + f"forall_holds_forallidx{forall_idx}" + asrt[start + len(forall_expr):]
             forall_idx += 1
@@ -293,17 +299,6 @@ class javahelper(codehelper):
         self.asrt_exprs = {}
 
         def split_top_level(asrt, delimiter):
-            while asrt[0] == "(" and asrt[-1] == ")":
-                balance = 0
-                for i, c in enumerate(asrt[1:-1]):
-                    balance += (c == "(") - (c == ")")
-                    if balance < 0:
-                        break
-                if balance == 0:
-                    asrt = asrt[1:-1]
-                else:
-                    break
-
             stack, ret = [], []
             buff = ""
             idx = 0
@@ -325,6 +320,16 @@ class javahelper(codehelper):
             return ret
                 
         def recursive_split(asrt, par):
+            while asrt[0] == "(" and asrt[-1] == ")":
+                balance = 0
+                for i, c in enumerate(asrt[1:-1]):
+                    balance += (c == "(") - (c == ")")
+                    if balance < 0:
+                        break
+                if balance == 0:
+                    asrt = asrt[1:-1]
+                else:
+                    break
             cur = tr.add_node((asrt, None), par)
             for delimiter in ["||", "&&", "==", "!="]:
                 cur.value = (cur.value[0], ' ' + delimiter + ' ')
@@ -352,7 +357,7 @@ class javahelper(codehelper):
         asrt = traverse_tree(tr.root)
         split_addns = []
         for k, v in self.asrt_exprs.items():
-            split_addns.append(f"Boolean {k} = exec(() -> {v});")
+            split_addns.append(f"Boolean {k} = Boolean.TRUE.equals(exec(() -> {v}));")
         return split_addns, asrt
     
     def trans_formula(self, asrt):
