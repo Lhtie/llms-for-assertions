@@ -97,7 +97,9 @@ public class FuzzTest{2}{{
 		}}
 	}}
 
-    public void FuzzTest_{3}({4}, {5}{6}){{
+    public void FuzzTest_{3}({1}{2} {4}, {1}{2} {5}, {6}){{
+        if ({4} == null || {5} == null) return ;   //ignore null test objects
+        
 {7}
 
 {8}
@@ -216,11 +218,11 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
     generic = jh.classname[jh.classname.find("<"):]
-    objarg_new = jh.classname + ' ' + jh.fuzz_objname
-    objarg_old = jh.classname + ' ' + jh.fuzz_objname.replace("_new", "_old")
+    objarg_new = jh.fuzz_objname
+    objarg_old = jh.fuzz_objname.replace("_new", "_old")
     rettyp = jh.funcs[jh.funcname]["rtyp"]
     funcargs = jh.funcs[jh.funcname]["args"]
-    funcargs = "".join([f", {typ} {var}" for var, typ in funcargs.items()]) \
+    funcargs = ", ".join([f"{typ} {var}" for var, typ in funcargs.items()]) \
                 + (f", {rettyp} {jh.fuzz_retvar}" if rettyp != "void" else "")
     old_addns = "\n".join(["\t\t" + l.replace("_new", "_old") for l in old_addns])
     forall_addns = "\n".join(["\t\t" + l for l in forall_addns])
@@ -247,16 +249,15 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     with open(fname, "w") as fd:
         fd.write(code)
 
-    _ = subprocess.run([
-            "javac",
-            "-cp", f"{os.path.dirname(fname)}:{combinedcodes}",
-            fname,
-            f"{combinedcodes}/{jh.namespace}.java"
-        ], stderr=subprocess.DEVNULL)
-
     randoop_jar = os.path.join(tmp_dir, "randoop/randoop-all-4.3.3.jar")
     randoop_path = os.path.join(tmp_dir, "randoop")
     jar_files = ":".join(glob.glob(os.path.join(tmp_dir, "*.jar")))
+    _ = subprocess.run([
+            "javac",
+            "-cp", f"{os.path.dirname(fname)}:{combinedcodes}:{jar_files}",
+            fname,
+            f"{combinedcodes}/{jh.namespace}.java"
+        ], stderr=subprocess.DEVNULL)
     randoop_cmd = [
         "java", "-classpath", f"{randoop_jar}:{tmp_dir}:{os.path.dirname(combinedcodes)}:{jar_files}",
         "randoop.main.Main", "gentests",

@@ -98,7 +98,9 @@ public class FuzzTest{2}{{
 		}}
 	}}
 
-    public void FuzzTest_{3}({4}, {5}){{
+    public void FuzzTest_{3}({1}{2} {4}, {5}){{
+        if ({4} == null) return ;   //ignore null test objects
+        
 {6}
 
         String exceptionType = null;
@@ -294,7 +296,6 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
     generic = jh.classname[jh.classname.find("<"):]
-    objarg = jh.classname + ' ' + jh.fuzz_objname
     funcargs = jh.funcs[jh.funcname]["args"]
     funcargs = ", ".join([f"{typ} {var}" for var, typ in funcargs.items()])
     old_addns = "\n".join(["\t\t" + l for l in old_addns])
@@ -304,7 +305,7 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
 
     code = javacode.format(
         imports, jh.namespace, generic, jh.funcname,
-        objarg, funcargs, old_addns, func_call, forall_addns,
+        jh.fuzz_objname, funcargs, old_addns, func_call, forall_addns,
         split_addns, asrt, "", "true"
     )
 
@@ -322,17 +323,16 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     fname = os.path.join(tmp_dir, "fuzztests/FuzzTest.java")
     with open(fname, "w") as fd:
         fd.write(code)
-    
-    _ = subprocess.run([
-            "javac",
-            "-cp", f"{os.path.dirname(fname)}:{combinedcodes}",
-            fname,
-            f"{combinedcodes}/{jh.namespace}.java"
-        ], stderr=subprocess.DEVNULL)
 
     randoop_jar = os.path.join(tmp_dir, "randoop/randoop-all-4.3.3.jar")
     randoop_path = os.path.join(tmp_dir, "randoop")
-    jar_files = ":".join(glob.glob(os.path.join(tmp_dir, "*.jar")))
+    jar_files = ":".join(glob.glob(os.path.join(tmp_dir, "*.jar")))    
+    _ = subprocess.run([
+            "javac",
+            "-cp", f"{os.path.dirname(fname)}:{combinedcodes}:{jar_files}",
+            fname,
+            f"{combinedcodes}/{jh.namespace}.java"
+        ], stderr=subprocess.DEVNULL)
     randoop_cmd = [
         "java", "-classpath", f"{randoop_jar}:{tmp_dir}:{os.path.dirname(combinedcodes)}:{jar_files}",
         "randoop.main.Main", "gentests",

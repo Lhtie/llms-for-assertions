@@ -96,7 +96,9 @@ public class FuzzTest{2}{{
 		}}
 	}}
 
-    public void FuzzTest_{3}({4}, {5}){{
+    public void FuzzTest_{3}({1}{2} {4}, {5}){{
+        if ({4} == null) return ;   //ignore null test objects
+        
 {6}
 
         String exceptionType = null;
@@ -265,7 +267,6 @@ def java_cmplecheck(pfx, sfx, grnd_truth, asrt):
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
     generic = jh.classname[jh.classname.find("<"):]
-    objarg = jh.classname + ' ' + jh.fuzz_objname
     funcargs = jh.funcs[jh.funcname]["args"]
     funcargs = ", ".join([f"{typ} {var}" for var, typ in funcargs.items()])
     old_addns = "\n".join(["\t\t" + l for l in old_addns])
@@ -275,7 +276,7 @@ def java_cmplecheck(pfx, sfx, grnd_truth, asrt):
 
     code = javacode.format(
         imports, jh.namespace, generic, jh.funcname,
-        objarg, funcargs, old_addns, func_call, forall_addns,
+        jh.fuzz_objname, funcargs, old_addns, func_call, forall_addns,
         split_addns, asrt, "", "true"
     )
 
