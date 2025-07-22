@@ -21,7 +21,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Set HF Cache directory
-RUN mkdir -p /app/.cache/huggingface
+RUN mkdir -p /app/.cache/huggingface && \
+    chmod -R 777 /app/.cache/huggingface
 ENV HF_HOME=/app/.cache/huggingface
 
 # Copy project files
