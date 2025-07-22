@@ -20,5 +20,9 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Set HF Cache directory
+RUN mkdir -p /app/.cache/huggingface
+ENV HF_HOME=/app/.cache/huggingface
+
 # Copy project files
 COPY . .
