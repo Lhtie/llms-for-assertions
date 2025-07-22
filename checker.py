@@ -48,6 +48,8 @@ if __name__ == "__main__":
     parser.add_argument("--write", default=False, action="store_true")
     parser.add_argument("--outname", type=str, default="")
     parser.add_argument("--mask", nargs='+', default=[])
+    parser.add_argument("--checklist", nargs='+', default=
+        ["null_check", "compile_check", "fuzz_check", "equiv_check", "rdtp_check"])
     
     args = parser.parse_args()
 
@@ -96,7 +98,10 @@ if __name__ == "__main__":
 
                 pfx, sfx = "\n".join(lines[:asrtlno]), "\n".join(lines[asrtlno+1:])
 
-                checks = [null_check, compile_check, fuzz_check, equiv_check, rdtp_check]
+                checks = []
+                for check in args.checklist:
+                    assert check in globals(), f"Check {check} not defined"
+                    checks.append(globals()[check])
                 
                 toprint = f"{'#'*10} {rdir}/{f}.check {'#'*10}\n"
 
@@ -109,9 +114,9 @@ if __name__ == "__main__":
 
                 print("!"*10 + f" {rdir}/{f}", file=sys.stderr)
 
-                for chk in checks:
+                for chk_name, chk in zip(args.checklist, checks):
                     currmask = chk(langid, pfx, sfx, grnd_truth, gen_asrts, currmask)
-                    toprint += f"{str(currmask)} {sum(currmask)}/{len(currmask)}\n"
+                    toprint += f"{chk_name}: {str(currmask)} {sum(currmask)}/{len(currmask)}\n"
                 final = currmask
 
                 toprint += "#"*20 + "\n"
