@@ -340,9 +340,9 @@ public class RoleList extends ArrayList<Object> {
      * @exception IndexOutOfBoundsException  if accessing with an index
      * outside of the list.
      */
-     public void set(int index,
-                     Role role)
-         throws IllegalArgumentException,
+    public void set(int index,
+                    Role role)
+        throws IllegalArgumentException,
                 IndexOutOfBoundsException {
 
         if (role == null) {
@@ -358,5 +358,47 @@ public class RoleList extends ArrayList<Object> {
         // assert index>=0 && index<size() && role!=null => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this).get(i)==null || this.get(i).equals(\old(this).get(i));
         // @@@ If the index is valid, within the list's bounds, and the role is not null, then for every position greater than the index and within the list's bounds, either the element at that position is null and was null before, or it remains unchanged from its previous state.
         // assert index>=0 && index<this.size() && role!=null => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-     }
+    }
+
+    /**
+     * Returns {@code true} if this list contains the specified element.
+     * More formally, returns {@code true} if and only if this list contains
+     * at least one element {@code e} such that
+     * {@code Objects.equals(o, e)}.
+     *
+     * @param o element whose presence in this list is to be tested
+     * @return {@code true} if this list contains the specified element
+     */
+    public boolean contains(Role o) {
+        return super.contains(o);
+    }
+
+    /**
+     * Returns the element at the specified position in this list.
+     *
+     * @param  index index of the element to return
+     * @return the element at the specified position in this list
+     * @throws IndexOutOfBoundsException {@inheritDoc}
+     */
+    public Role get(int index) {
+        return (Role) super.get(index);
+    }
+
+    /**
+     * Returns {@code true} if this list contains no elements.
+     *
+     * @return {@code true} if this list contains no elements
+     */
+    public boolean isEmpty() {
+        return super.isEmpty();
+    }
+
+    /**
+     * Returns the number of elements in this list.
+     *
+     * @return the number of elements in this list
+     */
+    public int size() {
+        return super.size();
+    }
 }

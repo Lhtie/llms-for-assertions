@@ -15,7 +15,7 @@ from codehelper.javahelper import *
 from nlasrtgen import prompt_transform, run
 
 from sentence_transformers import SentenceTransformer, util
-model = SentenceTransformer('all-MiniLM-L6-V2')
+sentmodel = None
 
 modelpaths = {
         "ds7":      "deepseek-coder-6.7b-instructD",
@@ -28,20 +28,66 @@ modelpaths = {
 configs = {
     "java": {
         "mkey_backward": "qw32",
-        "num_backward": 10,
+        "num_backward": 8,
         "model_backward": None,
-        "threshold": 0.5,
+        "threshold": 0.8,
+        "use_nli": True
     }
 }
+nli_instr = """Your task is to determine the relationship between two given natural language sentences based on the following categories:
+1. Entailment: The second sentence logically follows from the first sentence.
+2. Contradiction: The second sentence contradicts with the first sentence.
+3. Neutral: The second sentence is neither entailed nor contradicted by the first sentence.
+
+For instances,
+The first sentence is \"A man inspects the uniform of a figure in some East Asian country.\".
+The second sentence is \"The man is sleeping\".
+The answer is: Contradiction.
+
+The first sentence is \"An older and younger man smiling.\".
+The second sentence is \"Two men are smiling and laughing at the cats playing on the floor.\".
+The answer is: Neutral.
+
+The first sentence is \"A soccer game with multiple males playing.\".
+The second sentence is \"Some men are playing a sport.\".
+The answer is: Entailment.
+
+Your output should be directly one of the three categories. (without any explanation or auxiliary information)
+The first sentence is: {0}
+The second sentence is: {1}
+Please provide the answer:
+"""
 
 def sim(x, y):
-    embx = model.encode(x, convert_to_tensor=True)
-    emby = model.encode(y, convert_to_tensor=True)
+    if sentmodel is None:
+        sentmodel = SentenceTransformer('all-MiniLM-L6-V2')
+    embx = sentmodel.encode(x, convert_to_tensor=True)
+    emby = sentmodel.encode(y, convert_to_tensor=True)
     
     similarity = util.cos_sim(embx, emby)
     return similarity.item()
 
-def rtc_calc(asrt, pfx, sfx, langid, config):
+def equiv(x, y, mkey, model, tokenizer, devices):
+    x2y = nli_instr.format(x, y)
+    y2x = nli_instr.format(y, x)
+
+    for prompt in [x2y, y2x]:
+        if devices is not None and len(devices) <= 1:
+            inputs = prompt.to(model.device)
+        else:
+            inputs = prompt
+
+        response = run(mkey, model, tokenizer, inputs, 0.3)     # temp set to be 0.3
+        e = response.find("Entailment") != -1
+        c = response.find("Contradiction") != -1
+        n = response.find("Neutral") != -1
+        assert int(e) + int(c) + int(n) == 1, "Answer should be direct and exact"
+        if c or n:
+            return 0
+    
+    return 1
+
+def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
     mkey = config["mkey_backward"]
     
     assert config["model_backward"] is not None, "No model configurations"
@@ -67,17 +113,28 @@ def rtc_calc(asrt, pfx, sfx, langid, config):
             response = run(mkey, model, tokenizer, inputs, 0.3)     # temp set to be 0.3
             # print(f"Response: {response}")
             assert "@@@" in response, "Generated NL not well formed"
-            tot += sim(
-                response.split("@@@")[-1].strip(), 
-                cmnt_line.split("@@@")[-1].strip()
-            )
+            if nli:
+                tot += equiv(
+                    response.split("@@@")[-1].strip(), 
+                    cmnt_line.split("@@@")[-1].strip(),
+                    mkey, model, tokenizer, devices
+                )
+            else:
+                tot += sim(
+                    response.split("@@@")[-1].strip(), 
+                    cmnt_line.split("@@@")[-1].strip()
+                )
         tot /= config["num_backward"]
         return tot
         
-    rtc = sampling(asrt)
-    forward_lift = sampling("NO CONTENT")
+    if nli:
+        return sampling(asrt)
+
+    else:
+        rtc = sampling(asrt)
+        forward_lift = sampling("NO CONTENT")
     
-    return rtc, forward_lift
+        return rtc, forward_lift
 
 def java_rdtpcheck(pfx, sfx, grnd_truth, asrt, check):
     config = configs["java"]
@@ -108,10 +165,13 @@ def java_rdtpcheck(pfx, sfx, grnd_truth, asrt, check):
         "devices": devices,
     }
     
-    rtc, fdlft = rtc_calc(asrt, pfx, sfx, "java", config)
-    gain = (rtc - fdlft) / fdlft
-    
-    return gain >= config["threshold"]
+    if configs["use_nli"]:
+        return rtc_calc(asrt, pfx, sfx, "java", config, nli=True) >= config["threshold"]
+    else:
+        rtc, fdlft = rtc_calc(asrt, pfx, sfx, "java", config, nli=False)
+        gain = (rtc - fdlft) / fdlft
+        
+        return gain >= config["threshold"]
 
 def rdtpcheck(langid, pfx, sfx, grnd_truth, asrt, check):
     if(langid == "java"):

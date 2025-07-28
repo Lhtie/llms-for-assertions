@@ -1134,4 +1134,11 @@ public class LinkedList<E>
         modCount++;
         return element;
     }
+
+    /**
+     * Returns {@code true} if this list contains no elements.
+     */
+    public boolean isEmpty() {
+        return size() == 0;
+    }
 }

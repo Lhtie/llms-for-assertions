@@ -12,4 +12,4 @@ fi
 
 # python main.py --codedir javacodes --modellist gpt4 --nsamples 3 --codelist {1..488} --resultdir ./results --write
 
-python checker.py --codedir ./results/java-pilot --codelist 2025 --resultlist ./results/java-pilot --write
+# python checker.py --codedir ./results/java-pilot --codelist 2025 --resultlist ./results/java-pilot --write

@@ -84,7 +84,7 @@ public class ArrayStack<E> extends ArrayList<E> {
         }
         return get(n - 1);
         // @@@ If the stack is not empty, then the result is either null and the last item in the stack is null, or the result is equal to the last item in the stack.
-        // assert !this.isEmpty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
+        // assert !this.empty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
     /**
@@ -117,7 +117,7 @@ public class ArrayStack<E> extends ArrayList<E> {
         }
         return remove(n - 1);
         // @@@ If the stack is not empty, then the result is either null and the last item in the stack is null, or the result is equal to the last item in the stack.
-        // assert !this.isEmpty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
+        // assert !this.empty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
     /**
@@ -160,5 +160,38 @@ public class ArrayStack<E> extends ArrayList<E> {
             n++;
         }
         return -1;
+    }
+
+    /**
+     * Returns {@code true} if this list contains the specified element.
+     * More formally, returns {@code true} if and only if this list contains
+     * at least one element {@code e} such that
+     * {@code Objects.equals(o, e)}.
+     *
+     * @param o element whose presence in this list is to be tested
+     * @return {@code true} if this list contains the specified element
+     */
+    public boolean contains(Object o) {
+        return super.contains(o);
+    }
+
+    /**
+     * Returns the element at the specified position in this list.
+     *
+     * @param  index index of the element to return
+     * @return the element at the specified position in this list
+     * @throws IndexOutOfBoundsException {@inheritDoc}
+     */
+    public E get(int index) {
+        return super.get(index);
+    }
+
+    /**
+     * Returns the number of elements in this list.
+     *
+     * @return the number of elements in this list
+     */
+    public int size() {
+        return super.size();
     }
 }

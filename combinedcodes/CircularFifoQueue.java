@@ -344,4 +344,27 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
         // @@@ The size of the queue is always greater than or equal to 0.
         // assert \result>=0;
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>This implementation iterates over the elements in the collection,
+     * checking each element in turn for equality with the specified element.
+     *
+     * @throws ClassCastException   {@inheritDoc}
+     * @throws NullPointerException {@inheritDoc}
+     */
+    public boolean contains(Object o) {
+        Iterator<E> it = iterator();
+        if (o==null) {
+            while (it.hasNext())
+                if (it.next()==null)
+                    return true;
+        } else {
+            while (it.hasNext())
+                if (o.equals(it.next()))
+                    return true;
+        }
+        return false;
+    }
 }

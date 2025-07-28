@@ -62,7 +62,7 @@ class Stack<E> extends Vector<E> {
             throw new EmptyStackException();
         return elementAt(len - 1);
         // @@@ If the stack is not empty, then the result is either null and the last element of the stack is null, or the result is equal to the last element of the stack.
-        // assert !this.isEmpty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
+        // assert !this.empty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
     /**
@@ -82,7 +82,7 @@ class Stack<E> extends Vector<E> {
 
         return obj;
         // @@@ If the stack is not empty, then the result is either null and the last element of the stack is null, or the result is equal to the last element of the stack.
-        // assert !this.isEmpty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
+        // assert !this.empty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
     /**
@@ -126,6 +126,15 @@ class Stack<E> extends Vector<E> {
             return size() - i;
         }
         return -1;
+    }
+
+    /**
+     * Returns the number of components in this stack.
+     *
+     * @return  the number of components in this stack
+     */
+    public int size() {
+        return super.size();
     }
     
     /** use serialVersionUID from JDK 1.0.2 for interoperability */

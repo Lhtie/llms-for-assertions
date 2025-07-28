@@ -473,4 +473,28 @@ public class DefaultListenableGraph<V, E>
         }
     }
 
+    /**
+     * Returns {@code true} if this graph contains the specified edge.
+     *
+     * @param e edge whose presence in this graph is to be tested
+     * @return {@code true} if this graph contains the specified edge
+     */
+    @Override
+    public boolean containsEdge(E e)
+    {
+        return super.containsEdge(e);
+    }
+
+    /**
+     * Returns {@code true} if this graph contains the specified vertex.
+     *
+     * @param v vertex whose presence in this graph is to be tested
+     * @return {@code true} if this graph contains the specified vertex
+     */
+    @Override
+    public boolean containsVertex(V v)
+    {
+        return super.containsVertex(v);
+    }
+
 }

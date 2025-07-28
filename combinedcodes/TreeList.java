@@ -948,4 +948,11 @@ public class TreeList<E> extends AbstractList<E> {
         // assert \forall int i; 0<=i && i<this.size(); this.get(i)==null && \result[i]==null || this.get(i).equals(\result[i]);
     }
 
+    /**
+     * Returns {@code true} if this list contains no elements.
+     */
+    public boolean isEmpty() {
+        return size() == 0;
+    }
+
 }

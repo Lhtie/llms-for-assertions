@@ -339,10 +339,10 @@ public class RoleUnresolvedList extends ArrayList<Object> {
      * @exception IndexOutOfBoundsException if index is out of range
      * (<code>index &lt; 0 || index &gt;= size()</code>).
      */
-     public void set(int index,
-                     RoleUnresolved role)
-         throws IllegalArgumentException,
-                IndexOutOfBoundsException {
+    public void set(int index,
+                    RoleUnresolved role)
+        throws IllegalArgumentException,
+            IndexOutOfBoundsException {
 
         if (role == null) {
             String excMsg = "Invalid parameter";
@@ -356,5 +356,47 @@ public class RoleUnresolvedList extends ArrayList<Object> {
         // assert index>=0 && index<size() && role!=null => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
         // @@@ If the index is within valid range (greater than or equal to 0 and less than the size of the list) and the role is not null, then for every position greater than the index and within the list size, the element at that position remains unchanged or continues to be null if it was originally null.
         // assert index>=0 && index<this.size() && role!=null => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-     }
+    }
+
+    /**
+     * Returns {@code true} if this list contains the specified element.
+     * More formally, returns {@code true} if and only if this list contains
+     * at least one element {@code e} such that
+     * {@code Objects.equals(o, e)}.
+     *
+     * @param o element whose presence in this list is to be tested
+     * @return {@code true} if this list contains the specified element
+     */
+    public boolean contains(RoleUnresolved o) {
+        return super.contains(o);
+    }
+
+    /**
+     * Returns the element at the specified position in this list.
+     *
+     * @param  index index of the element to return
+     * @return the element at the specified position in this list
+     * @throws IndexOutOfBoundsException {@inheritDoc}
+     */
+    public RoleUnresolved get(int index) {
+        return (RoleUnresolved) super.get(index);
+    }
+
+    /**
+     * Returns {@code true} if this list contains no elements.
+     *
+     * @return {@code true} if this list contains no elements
+     */
+    public boolean isEmpty() {
+        return super.isEmpty();
+    }
+
+    /**
+     * Returns the number of elements in this list.
+     *
+     * @return the number of elements in this list
+     */
+    public int size() {
+        return super.size();
+    }
 }

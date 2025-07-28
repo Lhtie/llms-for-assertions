@@ -8,6 +8,7 @@ import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.Iterator;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.OrderedIterator;
@@ -387,4 +388,35 @@ public class ListOrderedSet<E>
     public String toString() {
         return setOrder.toString();
     }
+
+    /**
+     * Returns {@code true} if this set contains no elements.
+     */
+    public boolean isEmpty() {
+        return size() == 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>This implementation iterates over the elements in the collection,
+     * checking each element in turn for equality with the specified element.
+     *
+     * @throws ClassCastException   {@inheritDoc}
+     * @throws NullPointerException {@inheritDoc}
+     */
+    public boolean contains(Object o) {
+        Iterator<E> it = iterator();
+        if (o==null) {
+            while (it.hasNext())
+                if (it.next()==null)
+                    return true;
+        } else {
+            while (it.hasNext())
+                if (o.equals(it.next()))
+                    return true;
+        }
+        return false;
+    }
+
 }

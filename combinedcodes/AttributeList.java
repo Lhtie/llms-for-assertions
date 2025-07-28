@@ -216,4 +216,46 @@ public class AttributeList
     // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i))); 
   }
 
+  /**
+   * Returns {@code true} if this list contains the specified element.
+   * More formally, returns {@code true} if and only if this list contains
+   * at least one element {@code e} such that
+   * {@code Objects.equals(o, e)}.
+   *
+   * @param o element whose presence in this list is to be tested
+   * @return {@code true} if this list contains the specified element
+   */
+  public boolean contains(Attribute o) {
+      return super.contains(o);
+  }
+
+  /**
+   * Returns the element at the specified position in this list.
+   *
+   * @param  index index of the element to return
+   * @return the element at the specified position in this list
+   * @throws IndexOutOfBoundsException {@inheritDoc}
+   */
+  public Attribute get(int index) {
+    return (Attribute) super.get(index);
+  }
+
+  /**
+   * Returns {@code true} if this list contains no elements.
+   *
+   * @return {@code true} if this list contains no elements
+   */
+  public boolean isEmpty() {
+      return super.isEmpty();
+  }
+
+  /**
+   * Returns the number of elements in this list.
+   *
+   * @return the number of elements in this list
+   */
+  public int size() {
+      return super.size();
+  }
+
 }
