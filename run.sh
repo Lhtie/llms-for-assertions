@@ -12,4 +12,6 @@ fi
 
 # python main.py --codedir javacodes --modellist gpt4 --nsamples 3 --codelist {1..488} --resultdir ./results --write
 
-# python checker.py --codedir ./results/java-pilot --codelist 2025 --resultlist ./results/java-pilot --write
+python checker.py --codedir javacodes --codelist {1..488} --resultlist ./results/Qwen2.5-Coder-32B-Instruct/* \
+    --checklist null_check compile_check fuzz_check equiv_check\
+    --write

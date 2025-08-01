@@ -84,24 +84,19 @@ package fuzztests;
 
 import java.lang.reflect.Array;
 import java.util.function.Supplier;
+import java.lang.Runnable;
 {0}
 
 import combinedcodes.{1};
 
 public class FuzzTest{2}{{
-    public static <T> T exec(Supplier<T> supplier){{
-		try {{
-			return supplier.get();
-		}} catch (Exception fuzzexception) {{
-			return null;
-		}}
-	}}
-
-    public void FuzzTest_{3}({1}{2} {4}, {1}{2} {5}, {6}){{
-        if ({4} == null || {5} == null) return ;   //ignore null test objects
+    public void FuzzTest_{3}({1}{2} {4}, {1}{2} {5}{6}){{
+        if ({4} == null || {5} == null) return ;   // ignore null test objects
         
+        // copy old values
 {7}
 
+        // compute forall
 {8}
 
         // normal post condition
@@ -116,6 +111,14 @@ public class FuzzTest{2}{{
         if (exceptionalpost == null || !exceptionalpost)
             throw new RuntimeException("Exceptional Postcondition Violated");
     }}
+    
+    public static <T> T exec(Supplier<T> supplier){{
+		try {{
+			return supplier.get();
+		}} catch (Exception fuzzexception) {{
+			return null;
+		}}
+	}}
 }}
 """
 
@@ -222,7 +225,7 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     objarg_old = jh.fuzz_objname.replace("_new", "_old")
     rettyp = jh.funcs[jh.funcname]["rtyp"]
     funcargs = jh.funcs[jh.funcname]["args"]
-    funcargs = ", ".join([f"{typ} {var}" for var, typ in funcargs.items()]) \
+    funcargs = ", ".join([f", {typ} {var}" for var, typ in funcargs.items()]) \
                 + (f", {rettyp} {jh.fuzz_retvar}" if rettyp != "void" else "")
     old_addns = "\n".join(["\t\t" + l.replace("_new", "_old") for l in old_addns])
     forall_addns = "\n".join(["\t\t" + l for l in forall_addns])

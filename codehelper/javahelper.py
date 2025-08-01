@@ -92,34 +92,51 @@ class javahelper(codehelper):
     
     def anlyz_class(self):
         self.funcs = {}
-        for l in self.code.split("\n"):
-            match1 = re.match(r".*public ([\w\[\]]+) (\w+)\((.*)\).*", l.strip())
-            match2 = re.match(r".*public (\w+)\((.*)\).*", l.strip())
-            if match1:
-                retType = dropext(match1.group(1).strip())
-                funcname = match1.group(2)
-                if match1.group(3) == "":
-                    args = []
-                else:
-                    args = [dropext(arg.strip()) # we remove extended types
-                        for arg in match1.group(3).split(",")]
-                iscstr = False
-            if match2:
-                retType = "void"
-                funcname = match2.group(1)
-                if match2.group(2) == "":
-                    args = []
-                else:
-                    args = [dropext(arg.strip()) # we remove extended types
-                        for arg in match2.group(2).split(",")]
-                iscstr = True
-            if match1 or match2:
-                self.funcs[funcname] = {
-                    "rtyp": retType, 
-                    "args": {arg.split()[1]: arg.split()[0] for arg in args},
-                    "isobs": funcname in obs_funcs,
-                    "iscstr": iscstr,
-                }
+        
+        ret, buff = [], []
+        balance = 0
+        for i, l in enumerate(self.code.split("\n")):
+            balance += l.count("(") - l.count(")")
+            buff.append((i, l))
+            if balance == 0:
+                line = "\n".join([x for _, x in buff])
+                pattern = r"""^(public|protected|private\s+)?
+                              (static\s+)?
+                              (final\s+)?
+                              (synchronized\s+)?
+                              (?!if|else|for|while|switch|catch|throw|return)\b
+                              (\w+[\w\<\>\[\],\s\?]*)\s+        # could be public in case of constructors
+                              (\w+)\s*
+                              \(([\w\<\>\[\],\s\?]*)\)\s*
+                              ({|;)?.*
+                            """
+                match = re.match(pattern, line.strip(), re.VERBOSE)
+                if match:
+                    if match.group(5) in ["public", "protected", "private"]:
+                        retType = "void"
+                        funcname = match.group(6)
+                        if match.group(7) == "":
+                            args = []
+                        else:
+                            args = [dropext(arg.strip()) # we remove extended types
+                                for arg in match.group(7).split(",")]
+                        iscstr = True
+                    else:
+                        retType = dropext(match.group(5).strip())
+                        funcname = match.group(6)
+                        if match.group(7) == "":
+                            args = []
+                        else:
+                            args = [dropext(arg.strip()) # we remove extended types
+                                for arg in match.group(7).split(",")]
+                        iscstr = False
+                    self.funcs[funcname] = {
+                        "rtyp": retType, 
+                        "args": {arg.split()[1]: arg.split()[0] for arg in args},
+                        "isobs": funcname in obs_funcs,
+                        "iscstr": iscstr,
+                    }
+                buff = []
                 
     def handle_implies(self, asrt):
         if "=>" in asrt:
@@ -257,31 +274,42 @@ class javahelper(codehelper):
     def guessimports(self):
         import_list = []
         for l in self.code.split("\n"):
-            match = re.match(r".*import (.*?);.*", l.strip())
+            match = re.match(r".*import\s+(.*?);.*", l.strip())
             if match:
                 import_list.append(match.group(1))
         return import_list
 
     def guessfuncname(self):
         for l in self.code.split("\n")[::-1]:
-            match = re.match(r".*public [\w\[\]]+ (\w+).*", l.strip())
+            pattern = r"""^public\s+(static\s+)?(final\s+)?(synchronized\s+)?
+                              (?!if|else|for|while|switch|catch|throw|return)\b
+                              (\w+[\w\<\>\[\],\s\?]*)\s+
+                              (\w+)\s*
+                              \(.*
+                            """
+            match = re.match(pattern, l.strip(), re.VERBOSE)
             if match:
-                return match.group(1)
-            match = re.match(r".*public (\w+).*", l.strip())
+                return match.group(5)
+            pattern = r"""^public\s+(static\s+)?(final\s+)?(synchronized\s+)?
+                              (?!if|else|for|while|switch|catch|throw|return)\b
+                              (\w+)\s*
+                              \(.*
+                            """
+            match = re.match(pattern, l.strip(), re.VERBOSE)
             if match:
-                return match.group(1)
+                return match.group(4)
         raise Exception("Function name not found")
 
     def guessnamespace(self):
-        for l in self.code.split("\n")[::-1]:
-            match = re.match(r".*public class (\w+).*", l.strip())
+        for l in self.code.split("\n"):
+            match = re.match(r".*public\s+class\s+(\w+).*", l.strip())
             if match:
                 return match.group(1)
         raise Exception("Namespace not found")
         
     def guessclassname(self):
-        for l in self.code.split("\n")[::-1]:
-            match = re.match(r".*public class ([\w<>]+).*", l.strip())
+        for l in self.code.split("\n"):
+            match = re.match(r".*public\s+class\s+([\w<>]+).*", l.strip())
             if match:
                 return match.group(1)
         raise Exception("Class name not found")
@@ -374,8 +402,18 @@ class javahelper(codehelper):
         assert funcname in self.funcs, f"Function {funcname} not found"
 
         if self.funcs[funcname]["iscstr"]:
-            return f"{self.fuzz_objname} = new {self.classname}({', '.join(args)});"
+            return [
+                f"var paired_ret = func_call_supplier(() -> new {self.classname}({', '.join(args)}));",
+                f"var {self.fuzz_objname}_final = paired_ret.first;",
+                f"String exceptionType = paired_ret.second;"
+            ]
         elif self.funcs[funcname]["rtyp"] == "void":
-            return f"{self.fuzz_objname}.{funcname}({', '.join(args)});"
+            return [
+                f"String exceptionType = func_call_runnable(() -> {self.fuzz_objname}.{funcname}({', '.join(args)}));"
+            ]
         else:
-            return f"var {self.fuzz_retvar} = {self.fuzz_objname}.{funcname}({', '.join(args)});"
+            return [
+                f"var paired_ret = func_call_supplier(() -> {self.fuzz_objname}.{funcname}({', '.join(args)}));",
+                f"var {self.fuzz_retvar} = paired_ret.first;",
+                f"String exceptionType = paired_ret.second;"
+            ]

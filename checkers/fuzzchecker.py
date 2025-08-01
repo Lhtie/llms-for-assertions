@@ -85,31 +85,22 @@ package fuzztests;
 
 import java.lang.reflect.Array;
 import java.util.function.Supplier;
+import java.lang.Runnable;
 {0}
 
 import combinedcodes.{1};
 
 public class FuzzTest{2}{{
-    public static <T> T exec(Supplier<T> supplier){{
-		try {{
-			return supplier.get();
-		}} catch (Exception fuzzexception) {{
-			return null;
-		}}
-	}}
-
-    public void FuzzTest_{3}({1}{2} {4}, {5}){{
-        if ({4} == null) return ;   //ignore null test objects
+    public void FuzzTest_{3}({1}{2} {4}{5}){{
+        if ({4} == null) return ;   // ignore null test objects
         
+        // copy old values
 {6}
 
-        String exceptionType = null;
-        try{{
-            {7}
-        }} catch (Exception fuzzexception){{
-            exceptionType = fuzzexception.getClass().getSimpleName();
-        }}
+        // function call
+{7}
 
+        // compute forall
 {8}
 
         // normal post condition
@@ -123,6 +114,42 @@ public class FuzzTest{2}{{
         Boolean exceptionalpost = exec(() -> {12});
         if (exceptionalpost == null || !exceptionalpost)
             throw new RuntimeException("Exceptional Postcondition Violated");
+    }}
+    
+    public static class Pair<A, B> {{
+        public final A first;
+        public final B second;
+
+        public Pair(A first, B second) {{
+            this.first = first;
+            this.second = second;
+        }}
+    }}
+    
+    public static <T> T exec(Supplier<T> supplier){{
+		try {{
+			return supplier.get();
+		}} catch (Exception fuzzexception) {{
+			return null;
+		}}
+	}}
+ 
+    public static <T> Pair<T, String> func_call_supplier(Supplier<T> supplier){{
+        try {{
+            return new Pair<>(supplier.get(), null);
+        }} catch (Exception fuzzexception){{
+            String exceptionType = fuzzexception.getClass().getSimpleName();
+            return new Pair<>(null, exceptionType);
+        }}
+    }}
+    
+    public static String func_call_runnable(Runnable runnable){{
+        try {{
+            runnable.run();
+            return null;
+        }} catch (Exception fuzzexception){{
+            return fuzzexception.getClass().getSimpleName();
+        }}
     }}
 }}
 """
@@ -297,16 +324,21 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     imports = "\n".join([f"import {x};" for x in jh.imports])
     generic = jh.classname[jh.classname.find("<"):]
     funcargs = jh.funcs[jh.funcname]["args"]
-    funcargs = ", ".join([f"{typ} {var}" for var, typ in funcargs.items()])
+    funcargs = "".join([f", {typ} {var}" for var, typ in funcargs.items()])
     old_addns = "\n".join(["\t\t" + l for l in old_addns])
     forall_addns = "\n".join(["\t\t" + l for l in forall_addns])
     split_addns = "\n".join(["\t\t" + l for l in split_addns])
     func_call = jh.func_call(jh.funcname, jh.funcs[jh.funcname]["args"].keys())
+    func_call = "\n".join(["\t\t" + l for l in func_call])
+    
+    if jh.funcs[jh.funcname]["iscstr"]:
+        forall_addns = forall_addns.replace(jh.fuzz_objname, jh.fuzz_objname + "_final")
+        split_addns = split_addns.replace(jh.fuzz_objname, jh.fuzz_objname + "_final");
+        asrt = asrt.replace(jh.fuzz_objname, jh.fuzz_objname + "_final");
 
     code = javacode.format(
-        imports, jh.namespace, generic, jh.funcname,
-        jh.fuzz_objname, funcargs, old_addns, func_call, forall_addns,
-        split_addns, asrt, "", "true"
+        imports, jh.namespace, generic, jh.funcname, jh.fuzz_objname, funcargs, 
+        old_addns, func_call, forall_addns, split_addns, asrt, "", "true"
     )
 
     if os.path.exists(tmp_dir):
