@@ -77,7 +77,7 @@ def equiv(x, y, mkey, model, tokenizer, devices):
             {'role': 'user', 'content': prompt}
         ]
 
-        if not mkey.startswith(("gpt3", "gpt4")):
+        if mkey.startswith(("gpt3", "gpt4")):
             inputs = msgdict
         else:
             inputs = tokenizer.apply_chat_template(
