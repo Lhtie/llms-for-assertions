@@ -72,10 +72,20 @@ def equiv(x, y, mkey, model, tokenizer, devices):
     y2x = nli_instr.format(y, x)
 
     for prompt in [x2y, y2x]:
-        if devices is not None and len(devices) <= 1:
-            inputs = prompt.to(model.device)
+        msgdict = [
+            {'role': 'system', 'content': f"You are a helpful assistant that excels at natural language inference."},
+            {'role': 'user', 'content': prompt}
+        ]
+
+        if not mkey.startswith(("gpt3", "gpt4")):
+            inputs = msgdict
         else:
-            inputs = prompt
+            inputs = tokenizer.apply_chat_template(
+                    msgdict,
+                    return_tensors="pt",
+                    add_generation_prompt=True)
+        if devices is not None and len(devices) <= 1:
+            inputs = inputs.to(model.device)
 
         response = run(mkey, model, tokenizer, inputs, 0.3)     # temp set to be 0.3
         e = response.find("Entailment") != -1
