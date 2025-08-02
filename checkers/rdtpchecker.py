@@ -165,7 +165,7 @@ def java_rdtpcheck(pfx, sfx, grnd_truth, asrt, check):
         "devices": devices,
     }
     
-    if configs["use_nli"]:
+    if config["use_nli"]:
         return rtc_calc(asrt, pfx, sfx, "java", config, nli=True) >= config["threshold"]
     else:
         rtc, fdlft = rtc_calc(asrt, pfx, sfx, "java", config, nli=False)
