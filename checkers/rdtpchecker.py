@@ -147,34 +147,35 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
         return rtc, forward_lift
 
 def java_rdtpcheck(pfx, sfx, grnd_truth, asrt, check):
-    config = configs["java"]
-    oai_client = OpenAI(api_key = oai_key)
-    
-    mkey = config["mkey_backward"]
+    mkey = configs["java"]["mkey_backward"]
     mpath = modelpaths[mkey]
-    if mkey.startswith(("gpt3", "gpt4")):
-        tokenizer = None
-        model = lambda msgdict, **k : oai_client.chat.completions.create(
-                messages = msgdict,
-                model = mpath,
-                **k
-        )
-        devices = None
-    else:
-        tokenizer = AutoTokenizer.from_pretrained(mpath)
-        model = AutoModelForCausalLM.from_pretrained(
-            mpath,
-            torch_dtype=torch.bfloat16,
-            device_map="auto",
-        )
-        model.eval()
-        devices = {p.device for p in model.parameters()}
-    config["model_backward"] = {
-        "tokenizer": tokenizer,
-        "model": model,
-        "devices": devices,
-    }
+
+    if configs["java"]["model_backward"] is None:
+        if mkey.startswith(("gpt3", "gpt4")):
+            oai_client = OpenAI(api_key = oai_key)
+            tokenizer = None
+            model = lambda msgdict, **k : oai_client.chat.completions.create(
+                    messages = msgdict,
+                    model = mpath,
+                    **k
+            )
+            devices = None
+        else:
+            tokenizer = AutoTokenizer.from_pretrained(mpath)
+            model = AutoModelForCausalLM.from_pretrained(
+                mpath,
+                torch_dtype=torch.bfloat16,
+                device_map="auto",
+            )
+            model.eval()
+            devices = {p.device for p in model.parameters()}
+        configs["java"]["model_backward"] = {
+            "tokenizer": tokenizer,
+            "model": model,
+            "devices": devices,
+        }
     
+    config = configs["java"]
     if config["use_nli"]:
         return rtc_calc(asrt, pfx, sfx, "java", config, nli=True) >= config["threshold"]
     else:
