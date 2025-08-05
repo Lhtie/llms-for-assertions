@@ -100,36 +100,43 @@ class javahelper(codehelper):
             buff.append((i, l))
             if balance == 0:
                 line = "\n".join([x for _, x in buff])
-                pattern = r"""^(public|protected|private\s+)?
-                              (static\s+)?
-                              (final\s+)?
-                              (synchronized\s+)?
-                              (?!if|else|for|while|switch|catch|throw|return)\b
-                              (\w+[\w\<\>\[\],\s\?]*)\s+        # could be public in case of constructors
-                              (\w+)\s*
-                              \(([\w\<\>\[\],\s\?]*)\)\s*
-                              ({|;)?.*
-                            """
-                match = re.match(pattern, line.strip(), re.VERBOSE)
-                if match:
-                    if match.group(5) in ["public", "protected", "private"]:
-                        retType = "void"
-                        funcname = match.group(6)
-                        if match.group(7) == "":
-                            args = []
-                        else:
-                            args = [dropext(arg.strip()) # we remove extended types
-                                for arg in match.group(7).split(",")]
-                        iscstr = True
+                pattern = r"""^(public|protected|private)?\s*
+                            (static\s+)?
+                            (final\s+)?
+                            (synchronized\s+)?
+                            (?!if|else|for|while|switch|catch|throw|return|
+                                public|protected|private|static|final|synchronized)\b
+                            (\w+[\w\<\>\[\],\s\?]*)\s+
+                            (\w+)\s*
+                            \(([\w\<\>\[\],\s\?]*)\)\s*
+                            ({|;)?.*
+                        """
+                match1 = re.match(pattern, line.strip(), re.VERBOSE)
+                if match1:
+                    retType = dropext(match1.group(5).strip())
+                    funcname = match1.group(6)
+                    if match1.group(7) == "":
+                        args = []
                     else:
-                        retType = dropext(match.group(5).strip())
-                        funcname = match.group(6)
-                        if match.group(7) == "":
-                            args = []
-                        else:
-                            args = [dropext(arg.strip()) # we remove extended types
-                                for arg in match.group(7).split(",")]
-                        iscstr = False
+                        args = [dropext(arg.strip()) # we remove extended types
+                            for arg in match1.group(7).split(",")]
+                    iscstr = False
+                pattern = r"""^(public|protected|private)?\s*
+                        """ + self.namespace + r"""\s*
+                            \(([\w\<\>\[\],\s\?]*)\)\s*
+                            ({|;)?.*
+                        """
+                match2 = re.match(pattern, line.strip(), re.VERBOSE)
+                if match2:
+                    retType = "void"
+                    funcname = self.namespace
+                    if match2.group(2) == "":
+                        args = []
+                    else:
+                        args = [dropext(arg.strip()) # we remove extended types
+                            for arg in match2.group(2).split(",")]
+                    iscstr = True
+                if match1 or match2:
                     self.funcs[funcname] = {
                         "rtyp": retType, 
                         "args": {arg.split()[1]: arg.split()[0] for arg in args},
@@ -140,10 +147,10 @@ class javahelper(codehelper):
                 
     def handle_implies(self, asrt):
         if "=>" in asrt:
-            fp, sp = asrt.split("=>")
+            fp, sp, *_ = asrt.split("=>")
             return f"!({fp.strip()}) || ({sp.strip()})"
         if "==>" in asrt:
-            fp, sp = asrt.split("==>")
+            fp, sp, *_ = asrt.split("==>")
             return f"!({fp.strip()}) || ({sp.strip()})"
         return asrt
     

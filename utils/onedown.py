@@ -20,7 +20,7 @@ def get_funcs(lines, langid="java"):
             buff.append((i, l))
             if balance == 0:
                 line = "\n".join([x for _, x in buff])
-                pattern = r"""^(public|protected|private\s+)?
+                pattern = r"""^(public|protected|private)?\s*
                               (static\s+)?
                               (final\s+)?
                               (synchronized\s+)?
