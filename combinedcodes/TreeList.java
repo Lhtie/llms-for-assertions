@@ -842,7 +842,7 @@ public class TreeList<E> extends AbstractList<E> {
     @Override
     public Iterator<E> iterator() {
         // override to go 75% faster
-        return null;
+        return listIterator(0);
     }
 
     /**
@@ -853,7 +853,7 @@ public class TreeList<E> extends AbstractList<E> {
     @Override
     public ListIterator<E> listIterator() {
         // override to go 75% faster
-        return null;
+        return listIterator(0);
     }
 
     /**
@@ -867,7 +867,157 @@ public class TreeList<E> extends AbstractList<E> {
         // override to go 75% faster
         // cannot use EmptyIterator as iterator.add() must work
         checkInterval(fromIndex, 0, size());
-        return null;
+        return new TreeListIterator<>(this, fromIndex);
+    }
+
+    /**
+     * A list iterator over the linked list.
+     */
+    static class TreeListIterator<E> implements ListIterator<E>, OrderedIterator<E> {
+        /** The parent list */
+        private final TreeList<E> parent;
+        /**
+         * Cache of the next node that will be returned by {@link #next()}.
+         */
+        private AVLNode<E> next;
+        /**
+         * The index of the next node to be returned.
+         */
+        private int nextIndex;
+        /**
+         * Cache of the last node that was returned by {@link #next()}
+         * or {@link #previous()}.
+         */
+        private AVLNode<E> current;
+        /**
+         * The index of the last node that was returned.
+         */
+        private int currentIndex;
+        /**
+         * The modification count that the list is expected to have. If the list
+         * doesn't have this count, then a
+         * {@link java.util.ConcurrentModificationException} may be thrown by
+         * the operations.
+         */
+        private int expectedModCount;
+
+        /**
+         * Create a ListIterator for a list.
+         *
+         * @param parent  the parent list
+         * @param fromIndex  the index to start at
+         */
+        protected TreeListIterator(final TreeList<E> parent, final int fromIndex) {
+            this.parent = parent;
+            this.expectedModCount = parent.modCount;
+            this.next = parent.root == null ? null : parent.root.get(fromIndex);
+            this.nextIndex = fromIndex;
+            this.currentIndex = -1;
+        }
+
+        @Override
+        public void add(final E obj) {
+            checkModCount();
+            parent.add(nextIndex, obj);
+            current = null;
+            currentIndex = -1;
+            nextIndex++;
+            expectedModCount++;
+        }
+
+        /**
+         * Checks the modification count of the list is the value that this
+         * object expects.
+         *
+         * @throws ConcurrentModificationException If the list's modification
+         * count isn't the value that was expected.
+         */
+        protected void checkModCount() {
+            if (parent.modCount != expectedModCount) {
+                throw new ConcurrentModificationException();
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return nextIndex < parent.size();
+        }
+
+        @Override
+        public boolean hasPrevious() {
+            return nextIndex > 0;
+        }
+
+        @Override
+        public E next() {
+            checkModCount();
+            if (!hasNext()) {
+                throw new NoSuchElementException("No element at index " + nextIndex + ".");
+            }
+            if (next == null) {
+                next = parent.root.get(nextIndex);
+            }
+            final E value = next.getValue();
+            current = next;
+            currentIndex = nextIndex++;
+            next = next.next();
+            return value;
+        }
+
+        @Override
+        public int nextIndex() {
+            return nextIndex;
+        }
+
+        @Override
+        public E previous() {
+            checkModCount();
+            if (!hasPrevious()) {
+                throw new NoSuchElementException("Already at start of list.");
+            }
+            if (next == null) {
+                next = parent.root.get(nextIndex - 1);
+            } else {
+                next = next.previous();
+            }
+            final E value = next.getValue();
+            current = next;
+            currentIndex = --nextIndex;
+            return value;
+        }
+
+        @Override
+        public int previousIndex() {
+            return nextIndex() - 1;
+        }
+
+        @Override
+        public void remove() {
+            checkModCount();
+            if (currentIndex == -1) {
+                throw new IllegalStateException();
+            }
+            parent.remove(currentIndex);
+            if (nextIndex != currentIndex) {
+                // remove() following next()
+                nextIndex--;
+            }
+            // the AVL node referenced by next may have become stale after a remove
+            // reset it now: will be retrieved by next call to next()/previous() via nextIndex
+            next = null;
+            current = null;
+            currentIndex = -1;
+            expectedModCount++;
+        }
+
+        @Override
+        public void set(final E obj) {
+            checkModCount();
+            if (current == null) {
+                throw new IllegalStateException();
+            }
+            current.setValue(obj);
+        }
     }
 
     /**

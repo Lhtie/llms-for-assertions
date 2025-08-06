@@ -216,7 +216,50 @@ public class ListOrderedSet<E>
 
     @Override
     public OrderedIterator<E> iterator() {
-        return null;
+        return new OrderedSetIterator<>(setOrder.listIterator(), decorated());
+    }
+
+    /**
+     * Internal iterator handle remove.
+     */
+    static class OrderedSetIterator<E>
+        extends AbstractIteratorDecorator<E>
+        implements OrderedIterator<E> {
+
+        /** Object we iterate on */
+        private final Collection<E> set;
+
+        /** Last object retrieved */
+        private E last;
+
+        private OrderedSetIterator(final ListIterator<E> iterator, final Collection<E> set) {
+            super(iterator);
+            this.set = set;
+        }
+
+        @Override
+        public boolean hasPrevious() {
+            return ((ListIterator<E>) getIterator()).hasPrevious();
+        }
+
+        @Override
+        public E next() {
+            last = getIterator().next();
+            return last;
+        }
+
+        @Override
+        public E previous() {
+            last = ((ListIterator<E>) getIterator()).previous();
+            return last;
+        }
+
+        @Override
+        public void remove() {
+            set.remove(last);
+            getIterator().remove();
+            last = null;
+        }
     }
 
     /**

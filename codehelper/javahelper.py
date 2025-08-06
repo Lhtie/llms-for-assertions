@@ -92,6 +92,8 @@ class javahelper(codehelper):
     
     def anlyz_class(self):
         self.funcs = {}
+        # Possibly encounter multiple methods with the same name
+        # Only keep record of the last one
         
         ret, buff = [], []
         balance = 0

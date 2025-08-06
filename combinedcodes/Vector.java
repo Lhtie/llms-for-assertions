@@ -738,7 +738,71 @@ public class Vector<E>
      * @return an iterator over the elements in this list in proper sequence
      */
     public synchronized Iterator<E> iterator() {
-        return null;
+        return new Itr();
+    }
+
+    /**
+     * An optimized version of AbstractList.Itr
+     */
+    private class Itr implements Iterator<E> {
+        int cursor;       // index of next element to return
+        int lastRet = -1; // index of last element returned; -1 if no such
+        int expectedModCount = modCount;
+
+        public boolean hasNext() {
+            // Racy but within spec, since modifications are checked
+            // within or after synchronization in next/previous
+            return cursor != elementCount;
+        }
+
+        public E next() {
+            synchronized (Vector.this) {
+                checkForComodification();
+                int i = cursor;
+                if (i >= elementCount)
+                    throw new NoSuchElementException();
+                cursor = i + 1;
+                return elementData(lastRet = i);
+            }
+        }
+
+        public void remove() {
+            if (lastRet == -1)
+                throw new IllegalStateException();
+            synchronized (Vector.this) {
+                checkForComodification();
+                Vector.this.remove(lastRet);
+                expectedModCount = modCount;
+            }
+            cursor = lastRet;
+            lastRet = -1;
+        }
+
+        @Override
+        public void forEachRemaining(Consumer<? super E> action) {
+            Objects.requireNonNull(action);
+            synchronized (Vector.this) {
+                final int size = elementCount;
+                int i = cursor;
+                if (i >= size) {
+                    return;
+                }
+                final Object[] es = elementData;
+                if (i >= es.length)
+                    throw new ConcurrentModificationException();
+                while (i < size && modCount == expectedModCount)
+                    action.accept(elementAt(es, i++));
+                // update once at end of iteration to reduce heap write traffic
+                cursor = i;
+                lastRet = i - 1;
+                checkForComodification();
+            }
+        }
+
+        final void checkForComodification() {
+            if (modCount != expectedModCount)
+                throw new ConcurrentModificationException();
+        }
     }
 
     /**
@@ -829,7 +893,7 @@ public class Vector<E>
     public synchronized ListIterator<E> listIterator(int index) {
         if (index < 0 || index > elementCount)
             throw new IndexOutOfBoundsException("Index: "+index);
-        return null;
+        return new ListItr(index);
     }
 
     /**
@@ -841,7 +905,60 @@ public class Vector<E>
      * @see #listIterator(int)
      */
     public synchronized ListIterator<E> listIterator() {
-        return null;
+        return new ListItr(0);
+    }
+
+    /**
+     * An optimized version of AbstractList.ListItr
+     */
+    final class ListItr extends Itr implements ListIterator<E> {
+        ListItr(int index) {
+            super();
+            cursor = index;
+        }
+
+        public boolean hasPrevious() {
+            return cursor != 0;
+        }
+
+        public int nextIndex() {
+            return cursor;
+        }
+
+        public int previousIndex() {
+            return cursor - 1;
+        }
+
+        public E previous() {
+            synchronized (Vector.this) {
+                checkForComodification();
+                int i = cursor - 1;
+                if (i < 0)
+                    throw new NoSuchElementException();
+                cursor = i;
+                return elementData(lastRet = i);
+            }
+        }
+
+        public void set(E e) {
+            if (lastRet == -1)
+                throw new IllegalStateException();
+            synchronized (Vector.this) {
+                checkForComodification();
+                Vector.this.set(lastRet, e);
+            }
+        }
+
+        public void add(E e) {
+            int i = cursor;
+            synchronized (Vector.this) {
+                checkForComodification();
+                Vector.this.add(i, e);
+                expectedModCount = modCount;
+            }
+            cursor = i + 1;
+            lastRet = -1;
+        }
     }
 
     private static long[] nBits(int n) {

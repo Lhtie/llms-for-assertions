@@ -264,7 +264,53 @@ public class FixedArrayList<E>
 	}
 
 	public java.util.Iterator<E> iterator() {
-		return null;
+		return new FixedArrayIterator();
+	}
+
+	protected class FixedArrayIterator implements java.util.Iterator<E> {
+		int i;
+		public FixedArrayIterator() {
+			i = -1;
+		}
+		
+		public boolean hasNext() {
+			int n = elements.size();
+			
+			for( int j=i+1; j<n; ++j ) {
+				if( elements.get( j ) != null )
+					return true;
+			}
+			
+			return false;
+		}
+
+		public E next() {
+			int n = elements.size();
+			
+			for( int j=i+1; j<n; ++j ) {
+				E e = elements.get( j );
+				if( e != null ) {
+					i = j;
+					return e;
+				}
+			}
+			
+			throw new NoSuchElementException( "no more elements in iterator" );
+		}
+		
+		public void remove() throws UnsupportedOperationException {
+			// throw new UnsupportedOperationException( "not implemented yet" );
+
+			if( i >= 0 && i < elements.size() && elements.get( i ) != null ) {
+				removeIt( i );	// A parent class method cannot be called if it has
+								// the same name as one in the inner class
+								// (normal), but even if they have distinct
+								// arguments types. Hence this strange removeIt()
+								// method...
+			} else {
+				throw new IllegalStateException( "no such element" );
+			}
+		}
 	}
 
 	/**

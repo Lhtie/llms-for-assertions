@@ -86,9 +86,9 @@ public class HashSet<E>
      * @throws     IllegalArgumentException if the initial capacity is less
      *             than zero, or if the load factor is nonpositive
      */
-    protected HashSet(int initialCapacity, float loadFactor, boolean dummy) {
-        map = new LinkedHashMap<>(initialCapacity, loadFactor);
-    }
+    // HashSet(int initialCapacity, float loadFactor, boolean dummy) {
+    //     map = new LinkedHashMap<>(initialCapacity, loadFactor);
+    // }
 
     /**
      * Constructs a new, empty set; the backing {@code HashMap} instance has
@@ -285,6 +285,7 @@ public class HashSet<E>
      * @since 1.8
      */
     public Spliterator<E> spliterator() {
+        // return new HashMap.KeySpliterator<>(map, 0, -1, 0, 0);
         return null;
     }
 }

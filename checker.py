@@ -27,7 +27,11 @@ def check_gen(func):
                 arr.append(dp[asrt])
                 continue
             print("!"*10 + f" Entry {i}", file=sys.stderr)
-            result = func(langid, pfx, sfx, grnd_truth, asrt)
+            try:
+                result = func(langid, pfx, sfx, grnd_truth, asrt)
+            except Exception as e:
+                print(f"Error in entry {i}: {e}", file=sys.stderr)
+                result = False
             arr.append(result)
             dp[asrt] = result
         return arr
@@ -65,7 +69,6 @@ if __name__ == "__main__":
 
     for glob_fmt in args.resultlist:
         for rdir in glob.glob(glob_fmt):
-
             sort_func = lambda x : int(x.split('.')[-1]) if x.split('.')[-1].isnumeric() else -1
             sorted_ls = sorted(os.listdir(args.codedir), key = sort_func)
             for f in sorted_ls:
@@ -91,7 +94,7 @@ if __name__ == "__main__":
 
                 try:
                     fd = open(os.path.join(rdir, f + ".extract"), "r")
-                    gen_asrts = fd.read().split("-"*20)[:-1]
+                    gen_asrts = [asrt.strip() for asrt in fd.read().split("-"*20)[:-1]]
                     fd.close()
                 except:
                     continue # result extract file doesnt exist
@@ -115,6 +118,7 @@ if __name__ == "__main__":
                 print("!"*10 + f" {rdir}/{f}", file=sys.stderr)
 
                 for chk_name, chk in zip(args.checklist, checks):
+                    print("!"*10 + f" Running {chk_name}", file=sys.stderr)
                     currmask = chk(langid, pfx, sfx, grnd_truth, gen_asrts, currmask)
                     toprint += f"{chk_name}: {str(currmask)} {sum(currmask)}/{len(currmask)}\n"
                 final = currmask

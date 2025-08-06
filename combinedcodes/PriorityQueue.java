@@ -392,7 +392,91 @@ public class PriorityQueue<E> extends AbstractQueue<E>
      * @return an iterator over the elements in this queue
      */
     public Iterator<E> iterator() {
-        return null;
+        return new Itr();
+    }
+
+    private final class Itr implements Iterator<E> {
+        /**
+         * Index (into queue array) of element to be returned by
+         * subsequent call to next.
+         */
+        private int cursor;
+
+        /**
+         * Index of element returned by most recent call to next,
+         * unless that element came from the forgetMeNot list.
+         * Set to -1 if element is deleted by a call to remove.
+         */
+        private int lastRet = -1;
+
+        /**
+         * A queue of elements that were moved from the unvisited portion of
+         * the heap into the visited portion as a result of "unlucky" element
+         * removals during the iteration.  (Unlucky element removals are those
+         * that require a siftup instead of a siftdown.)  We must visit all of
+         * the elements in this list to complete the iteration.  We do this
+         * after we've completed the "normal" iteration.
+         *
+         * We expect that most iterations, even those involving removals,
+         * will not need to store elements in this field.
+         */
+        private ArrayDeque<E> forgetMeNot;
+
+        /**
+         * Element returned by the most recent call to next iff that
+         * element was drawn from the forgetMeNot list.
+         */
+        private E lastRetElt;
+
+        /**
+         * The modCount value that the iterator believes that the backing
+         * Queue should have.  If this expectation is violated, the iterator
+         * has detected concurrent modification.
+         */
+        private int expectedModCount = modCount;
+
+        Itr() {}                        // prevent access constructor creation
+
+        public boolean hasNext() {
+            return cursor < size ||
+                (forgetMeNot != null && !forgetMeNot.isEmpty());
+        }
+
+        public E next() {
+            if (expectedModCount != modCount)
+                throw new ConcurrentModificationException();
+            if (cursor < size)
+                return (E) queue[lastRet = cursor++];
+            if (forgetMeNot != null) {
+                lastRet = -1;
+                lastRetElt = forgetMeNot.poll();
+                if (lastRetElt != null)
+                    return lastRetElt;
+            }
+            throw new NoSuchElementException();
+        }
+
+        public void remove() {
+            if (expectedModCount != modCount)
+                throw new ConcurrentModificationException();
+            if (lastRet != -1) {
+                E moved = PriorityQueue.this.removeAt(lastRet);
+                lastRet = -1;
+                if (moved == null)
+                    cursor--;
+                else {
+                    if (forgetMeNot == null)
+                        forgetMeNot = new ArrayDeque<>();
+                    forgetMeNot.add(moved);
+                }
+            } else if (lastRetElt != null) {
+                PriorityQueue.this.removeEq(lastRetElt);
+                lastRetElt = null;
+            } else {
+                throw new IllegalStateException();
+            }
+            expectedModCount = modCount;
+        }
     }
 
     private static long[] nBits(int n) {

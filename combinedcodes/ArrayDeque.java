@@ -409,7 +409,49 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     }
 
     public Iterator<E> descendingIterator() {
-        return null;
+        return new DescendingIterator();
+    }
+
+    private class DescendingIterator extends DeqIterator {
+        DescendingIterator() { cursor = dec(tail, elements.length); }
+
+        public final E next() {
+            if (remaining <= 0)
+                throw new NoSuchElementException();
+            final Object[] es = elements;
+            E e = nonNullElementAt(es, cursor);
+            cursor = dec(lastRet = cursor, es.length);
+            remaining--;
+            return e;
+        }
+
+        void postDelete(boolean leftShifted) {
+            if (!leftShifted)
+                cursor = inc(cursor, elements.length);
+        }
+
+        public final void forEachRemaining(Consumer<? super E> action) {
+            Objects.requireNonNull(action);
+            int r;
+            if ((r = remaining) <= 0)
+                return;
+            remaining = 0;
+            final Object[] es = elements;
+            if (es[cursor] == null || sub(cursor, head, es.length) + 1 != r)
+                throw new ConcurrentModificationException();
+            for (int i = cursor, end = head, to = (i >= end) ? end : 0;
+                 ; i = es.length - 1, to = end) {
+                // hotspot generates faster code than for: i >= to !
+                for (; i > to - 1; i--)
+                    action.accept(elementAt(es, i));
+                if (to == end) {
+                    if (end != head)
+                        throw new ConcurrentModificationException();
+                    lastRet = end;
+                    break;
+                }
+            }
+        }
     }
 
     /**
@@ -542,7 +584,71 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      * @return an iterator over the elements in this deque
      */
     public Iterator<E> iterator() {
-        return null;
+        return new DeqIterator();
+    }
+
+    private class DeqIterator implements Iterator<E> {
+        /** Index of element to be returned by subsequent call to next. */
+        int cursor;
+
+        /** Number of elements yet to be returned. */
+        int remaining = size();
+
+        /**
+         * Index of element returned by most recent call to next.
+         * Reset to -1 if element is deleted by a call to remove.
+         */
+        int lastRet = -1;
+
+        DeqIterator() { cursor = head; }
+
+        public final boolean hasNext() {
+            return remaining > 0;
+        }
+
+        public E next() {
+            if (remaining <= 0)
+                throw new NoSuchElementException();
+            final Object[] es = elements;
+            E e = nonNullElementAt(es, cursor);
+            cursor = inc(lastRet = cursor, es.length);
+            remaining--;
+            return e;
+        }
+
+        void postDelete(boolean leftShifted) {
+            if (leftShifted)
+                cursor = dec(cursor, elements.length);
+        }
+
+        public final void remove() {
+            if (lastRet < 0)
+                throw new IllegalStateException();
+            postDelete(delete(lastRet));
+            lastRet = -1;
+        }
+
+        public void forEachRemaining(Consumer<? super E> action) {
+            Objects.requireNonNull(action);
+            int r;
+            if ((r = remaining) <= 0)
+                return;
+            remaining = 0;
+            final Object[] es = elements;
+            if (es[cursor] == null || sub(tail, cursor, es.length) != r)
+                throw new ConcurrentModificationException();
+            for (int i = cursor, end = tail, to = (i <= end) ? end : es.length;
+                 ; i = 0, to = end) {
+                for (; i < to; i++)
+                    action.accept(elementAt(es, i));
+                if (to == end) {
+                    if (end != tail)
+                        throw new ConcurrentModificationException();
+                    lastRet = dec(end, es.length);
+                    break;
+                }
+            }
+        }
     }
 
     private static long[] nBits(int n) {
@@ -889,7 +995,86 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      * @since 1.8
      */
     public Spliterator<E> spliterator() {
-        return null;
+        return new DeqSpliterator();
+    }
+
+    final class DeqSpliterator implements Spliterator<E> {
+        private int fence;      // -1 until first use
+        private int cursor;     // current index, modified on traverse/split
+
+        /** Constructs late-binding spliterator over all elements. */
+        DeqSpliterator() {
+            this.fence = -1;
+        }
+
+        /** Constructs spliterator over the given range. */
+        DeqSpliterator(int origin, int fence) {
+            // assert 0 <= origin && origin < elements.length;
+            // assert 0 <= fence && fence < elements.length;
+            this.cursor = origin;
+            this.fence = fence;
+        }
+
+        /** Ensures late-binding initialization; then returns fence. */
+        private int getFence() { // force initialization
+            int t;
+            if ((t = fence) < 0) {
+                t = fence = tail;
+                cursor = head;
+            }
+            return t;
+        }
+
+        public DeqSpliterator trySplit() {
+            final Object[] es = elements;
+            final int i, n;
+            return ((n = sub(getFence(), i = cursor, es.length) >> 1) <= 0)
+                ? null
+                : new DeqSpliterator(i, cursor = inc(i, n, es.length));
+        }
+
+        public void forEachRemaining(Consumer<? super E> action) {
+            if (action == null)
+                throw new NullPointerException();
+            final int end = getFence(), cursor = this.cursor;
+            final Object[] es = elements;
+            if (cursor != end) {
+                this.cursor = end;
+                // null check at both ends of range is sufficient
+                if (es[cursor] == null || es[dec(end, es.length)] == null)
+                    throw new ConcurrentModificationException();
+                for (int i = cursor, to = (i <= end) ? end : es.length;
+                     ; i = 0, to = end) {
+                    for (; i < to; i++)
+                        action.accept(elementAt(es, i));
+                    if (to == end) break;
+                }
+            }
+        }
+
+        public boolean tryAdvance(Consumer<? super E> action) {
+            Objects.requireNonNull(action);
+            final Object[] es = elements;
+            if (fence < 0) { fence = tail; cursor = head; } // late-binding
+            final int i;
+            if ((i = cursor) == fence)
+                return false;
+            E e = nonNullElementAt(es, i);
+            cursor = inc(i, es.length);
+            action.accept(e);
+            return true;
+        }
+
+        public long estimateSize() {
+            return sub(getFence(), cursor, elements.length);
+        }
+
+        public int characteristics() {
+            return Spliterator.NONNULL
+                | Spliterator.ORDERED
+                | Spliterator.SIZED
+                | Spliterator.SUBSIZED;
+        }
     }
 
     /**
