@@ -13,6 +13,6 @@ fi
 # python main.py --codedir javacodes --modellist gpt4 --nsamples 3 --codelist {1..488} --resultdir ./results --write
 
 python checker.py --codedir javacodes --codelist 1 --resultlist ./results/Qwen2.5-Coder-32B-Instruct/* \
-    --checklist compile_check fuzz_check equiv_check \
+    --checklist equiv_check \
     --mask 0 \
     # --write

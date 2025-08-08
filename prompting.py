@@ -340,8 +340,8 @@ def transform(mkey, tid, tokenizer, code, langid, onemsg):
             header += f"Here are some rules and tips:\n"
             header += f"1. If the assert statement needs to access the value of an expression at the beginning of the function, you can use the `\\old(expression)` syntax.\n"
             header += f"2. To refer to the return value of the method in the assert statement, you can use `\\result` variable.\n"
-            header += f"3. To write A implies B, you may use the `A => B` syntax.\n"
-            header += f"4. If the assert statment needs to express that the `spec` should hold for each variable `i` where `cond` holds, you may use `\\forall var i; cond; spec` syntax.\n"
+            header += f"3. To write A implies B, you may use the `A => B` syntax. Keep in mind that `=>` may only appear once at the top level of an expression, and multiple occurrences require explicit grouping using parentheses.\n"
+            header += f"4. If the assert statment needs to express that the `spec` should hold for each int variable `i` where `cond` holds, you may use `\\forall int i; cond; spec` syntax.\n"
             header += f"5. Use only publicly accessible observer methods provided in the test function. All function calls in the test function should be of the format `this.func_name(args_list)`.\n"
         else: raise NotImplementedError
         

@@ -216,8 +216,11 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     jh.fuzz_objname = jh.fuzz_objname + "_new"
     asrt = jh.extract_formula(asrt)
     grnd_truth = jh.extract_formula(grnd_truth)
-    spec = f"({asrt}) == ({grnd_truth})"
-    spec, old_addns, forall_addns, split_addns = jh.trans_formula(spec)
+    asrt, old_addns_asrt, forall_addns_asrt, split_addns_asrt = jh.trans_formula(asrt)
+    grnd_truth, old_addns_gt, forall_addns_gt, split_addns_gt = jh.trans_formula(grnd_truth)
+    old_addns = old_addns_asrt + old_addns_gt
+    forall_addns = forall_addns_asrt + forall_addns_gt
+    split_addns = split_addns_asrt + split_addns_gt
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
     class_generic = jh.classname[jh.classname.find("<"):]
@@ -236,7 +239,7 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     code = javacode.format(
         imports, jh.namespace, class_generic, func_generic, jh.funcname,
         objarg_old, objarg_new, funcargs, old_addns, forall_addns,
-        split_addns, spec, "", "true"
+        split_addns, f"({asrt}) == ({grnd_truth})", "", "true"
     )
 
     if os.path.exists(tmp_dir):
@@ -257,12 +260,16 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     randoop_jar = os.path.join(tmp_dir, "randoop/randoop-all-4.3.3.jar")
     randoop_path = os.path.join(tmp_dir, "randoop")
     jar_files = ":".join(glob.glob(os.path.join(tmp_dir, "*.jar")))
-    _ = subprocess.run([
+    compile = subprocess.run([
             "javac",
             "-cp", f"{os.path.dirname(fname)}:{combinedcodes}:{jar_files}",
             fname,
             f"{combinedcodes}/{jh.namespace}.java"
         ], stderr=subprocess.DEVNULL)
+    if compile.returncode != 0:
+        print("!"*10 + " equiv check cannot compile", file=sys.stderr)
+        return False
+
     randoop_cmd = [
         "java", "-classpath", f"{randoop_jar}:{tmp_dir}:{os.path.dirname(combinedcodes)}:{jar_files}",
         "randoop.main.Main", "gentests",

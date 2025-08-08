@@ -89,6 +89,8 @@ class javahelper(codehelper):
         self.old_exprs = {}             # map raw \old exprs: tuple(var name, replaced exprs)
         self.old_vars = {}              # map var names: raw \old exprs
         self.asrt_exprs = {}            # map asrt expr names: asrt exprs
+        self.forall_idx = 0
+        self.asrt_exprs = {}
     
     def anlyz_class(self):
         self.funcs = {}
@@ -156,13 +158,7 @@ class javahelper(codehelper):
                 buff = []
                 
     def handle_implies(self, asrt):
-        if "=>" in asrt:
-            fp, sp, *_ = asrt.split("=>")
-            return f"!({fp.strip()}) || ({sp.strip()})"
-        if "==>" in asrt:
-            fp, sp, *_ = asrt.split("==>")
-            return f"!({fp.strip()}) || ({sp.strip()})"
-        return asrt
+        return asrt.replace("==>", "=>").replace("->", "=>").replace("-->", "=>")
     
     def handle_old(self, asrt):
         tr = parseTree()
@@ -206,7 +202,6 @@ class javahelper(codehelper):
     
     def handle_forall(self, asrt):
         old_addns, forall_addns = [], []
-        forall_idx = 0
 
         while True:
             m = re.search(r"\\forall", asrt)
@@ -241,7 +236,7 @@ class javahelper(codehelper):
                     # upd old_exprs map
                     self.old_exprs.pop(self.old_vars[old_var_name])
                     self.old_vars.pop(old_var_name)
-                    old_addns_arr.append((f"{old_var_name}_forallidx{forall_idx}", old_expr))
+                    old_addns_arr.append((f"{old_var_name}_forallidx{self.forall_idx}", old_expr))
 
             if old_addns_arr != []:
                 for old_var_name, old_expr in old_addns_arr:
@@ -265,7 +260,7 @@ class javahelper(codehelper):
                         old_var_name.split("_forallidx")[0], f"Array.get({old_var_name}, cur_idx)")
 
             forall_addns += [
-                f"Boolean forall_holds_forallidx{forall_idx} = Boolean.TRUE.equals(exec(() -> {{",
+                f"Boolean forall_holds_forallidx{self.forall_idx} = Boolean.TRUE.equals(exec(() -> {{",
                 f"\tboolean ret = true;",
                 f"\tint _cur_idx = 0;",
                 f"\tfor ({var_type} _{var_name} = {lo}; _{var_name} <= {hi}; _{var_name} += 1) {{",
@@ -283,8 +278,8 @@ class javahelper(codehelper):
                 f"\treturn ret;",
                 f"}}));",
             ]
-            asrt = asrt[:start] + f"forall_holds_forallidx{forall_idx}" + asrt[start + len(forall_expr):]
-            forall_idx += 1
+            asrt = asrt[:start] + f"forall_holds_forallidx{self.forall_idx}" + asrt[start + len(forall_expr):]
+            self.forall_idx += 1
 
         return forall_addns, old_addns, asrt
 
@@ -341,7 +336,6 @@ class javahelper(codehelper):
     
     def split_formula(self, asrt):
         tr = parseTree()
-        self.asrt_exprs = {}
 
         def split_top_level(asrt, delimiter):
             stack, ret = [], []
@@ -376,7 +370,7 @@ class javahelper(codehelper):
                 else:
                     break
             cur = tr.add_node((asrt, None), par)
-            for delimiter in ["||", "&&", "==", "!="]:
+            for delimiter in ["=>", "||", "&&"]:
                 cur.value = (cur.value[0], ' ' + delimiter + ' ')
                 parts = split_top_level(asrt, delimiter)
                 if len(parts) > 1:
@@ -393,15 +387,25 @@ class javahelper(codehelper):
                 child_asrt = traverse_tree(child)
                 child_asrts.append(child_asrt)
             if node != tr.root:
-                self.asrt_exprs[f"fuzzexpr{self.asrt_exprs.__len__()}"] = node.value[1].join(child_asrts)
+                fuzzexpr = f"fuzzexpr{self.asrt_exprs.__len__()}"
+                if node.value[1] == "=>":
+                    assert len(child_asrts) == 2, "Implication should have exactly two parts"
+                    self.asrt_exprs[fuzzexpr] = f"!({child_asrts[0]}) || ({child_asrts[1]})"
+                else:
+                    self.asrt_exprs[fuzzexpr] = node.value[1].join(child_asrts)
                 return f"fuzzexpr{self.asrt_exprs.__len__() - 1}"
             else:
-                return node.value[1].join(child_asrts)
+                if node.value[1] == "=>":
+                    assert len(child_asrts) == 2, "Implication should have exactly two parts"
+                    return f"!({child_asrts[0]}) || ({child_asrts[1]})"
+                else:
+                    return node.value[1].join(child_asrts)
 
         recursive_split(asrt, None)
+        start = len(self.asrt_exprs)
         asrt = traverse_tree(tr.root)
         split_addns = []
-        for k, v in self.asrt_exprs.items():
+        for k, v in list(self.asrt_exprs.items())[start:]:
             split_addns.append(f"Boolean {k} = Boolean.TRUE.equals(exec(() -> {v}));")
         return split_addns, asrt
     

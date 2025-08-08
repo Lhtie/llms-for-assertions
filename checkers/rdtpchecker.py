@@ -31,7 +31,9 @@ configs = {
         "num_backward": 8,
         "model_backward": None,
         "threshold": 0.8,
-        "use_nli": True
+        "use_nli": True,
+        "mkey_nli": "gpt3",
+        "model_nli": None
     }
 }
 nli_instr = """Your task is to determine the relationship between two given natural language sentences based on the following categories:
@@ -58,6 +60,28 @@ The second sentence is: {1}
 Please provide the answer:
 """
 
+def load_model(mkey):
+    mpath = modelpaths[mkey]
+    if mkey.startswith(("gpt3", "gpt4")):
+        oai_client = OpenAI(api_key = oai_key)
+        tokenizer = None
+        model = lambda msgdict, **k : oai_client.chat.completions.create(
+                messages = msgdict,
+                model = mpath,
+                **k
+        )
+        devices = None
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(mpath)
+        model = AutoModelForCausalLM.from_pretrained(
+            mpath,
+            torch_dtype=torch.bfloat16,
+            device_map="auto",
+        )
+        model.eval()
+        devices = {p.device for p in model.parameters()}
+    return tokenizer, model, devices
+
 def sim(x, y):
     if sentmodel is None:
         sentmodel = SentenceTransformer('all-MiniLM-L6-V2')
@@ -67,7 +91,12 @@ def sim(x, y):
     similarity = util.cos_sim(embx, emby)
     return similarity.item()
 
-def equiv(x, y, mkey, model, tokenizer, devices):
+def equiv(x, y, mkey, model_dict):
+    assert model_dict is not None, "No model configurations"
+    tokenizer = model_dict["tokenizer"]
+    model = model_dict["model"]
+    devices = model_dict["devices"]
+
     x2y = nli_instr.format(x, y)
     y2x = nli_instr.format(y, x)
 
@@ -129,7 +158,7 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
                 tot += equiv(
                     response.split("@@@")[-1].strip(), 
                     cmnt_line.split("@@@")[-1].strip(),
-                    mkey, model, tokenizer, devices
+                    config["mkey_nli"], config["model_nli"]
                 )
             else:
                 tot += sim(
@@ -150,33 +179,23 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
         return rtc, forward_lift
 
 def java_rdtpcheck(pfx, sfx, grnd_truth, asrt, check):
-    mkey = configs["java"]["mkey_backward"]
-    mpath = modelpaths[mkey]
-
     if configs["java"]["model_backward"] is None:
-        if mkey.startswith(("gpt3", "gpt4")):
-            oai_client = OpenAI(api_key = oai_key)
-            tokenizer = None
-            model = lambda msgdict, **k : oai_client.chat.completions.create(
-                    messages = msgdict,
-                    model = mpath,
-                    **k
-            )
-            devices = None
-        else:
-            tokenizer = AutoTokenizer.from_pretrained(mpath)
-            model = AutoModelForCausalLM.from_pretrained(
-                mpath,
-                torch_dtype=torch.bfloat16,
-                device_map="auto",
-            )
-            model.eval()
-            devices = {p.device for p in model.parameters()}
+        tokenizer, model, devices = load_model(configs["java"]["mkey_backward"])
         configs["java"]["model_backward"] = {
             "tokenizer": tokenizer,
             "model": model,
             "devices": devices,
         }
+    if configs["java"]["model_nli"] is None:
+        if configs["java"]["mkey_nli"] == configs["java"]["mkey_backward"]:
+            configs["java"]["model_nli"] = configs["java"]["model_backward"]
+        else:
+            tokenizer, model, devices = load_model(configs["java"]["mkey_nli"])
+            configs["java"]["model_nli"] = {
+                "tokenizer": tokenizer,
+                "model": model,
+                "devices": devices,
+            }
     
     config = configs["java"]
     if config["use_nli"]:
