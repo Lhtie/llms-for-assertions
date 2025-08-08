@@ -32,7 +32,7 @@ configs = {
         "model_backward": None,
         "threshold": 0.8,
         "use_nli": True,
-        "mkey_nli": "gpt3",
+        "mkey_nli": "qw32",
         "model_nli": None
     }
 }
