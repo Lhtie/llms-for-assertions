@@ -119,9 +119,9 @@ if __name__ == "__main__":
 
                 for chk_name, chk in zip(args.checklist, checks):
                     print("!"*10 + f" Running {chk_name}", file=sys.stderr)
-                    currmask = chk(langid, pfx, sfx, grnd_truth, gen_asrts, currmask)
-                    toprint += f"{chk_name}: {str(currmask)} {sum(currmask)}/{len(currmask)}\n"
-                final = currmask
+                    resmask = chk(langid, pfx, sfx, grnd_truth, gen_asrts, currmask)
+                    toprint += f"{chk_name}: {str(resmask)} {sum(resmask)}/{len(resmask)}\n"
+                final = resmask
 
                 toprint += "#"*20 + "\n"
 
