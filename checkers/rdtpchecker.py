@@ -87,10 +87,12 @@ def equiv(x, y, mkey, model, tokenizer, devices):
         if devices is not None and len(devices) <= 1:
             inputs = inputs.to(model.device)
 
+        # print(f"Inputs: {inputs[1]['content']}")
         response = run(mkey, model, tokenizer, inputs, 0.3)     # temp set to be 0.3
         e = response.find("Entailment") != -1
         c = response.find("Contradiction") != -1
         n = response.find("Neutral") != -1
+        # print(f"Response: {response}")
         assert int(e) + int(c) + int(n) == 1, "Answer should be direct and exact"
         if c or n:
             return 0
@@ -135,6 +137,7 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
                     cmnt_line.split("@@@")[-1].strip()
                 )
         tot /= config["num_backward"]
+        # print(f"Total: {tot}")
         return tot
         
     if nli:

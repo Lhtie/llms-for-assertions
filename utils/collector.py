@@ -5,7 +5,7 @@ from openpyxl import load_workbook
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Collect generated natural language assertions.")
-    parser.add_argument('--mode', type=str, default="file2sheet", choices=["file2sheet", "sheet2file", "findmissing"])
+    parser.add_argument('--mode', type=str, default="file2sheet", choices=["file2sheet", "sheet2file", "findmissing", "check2sheet"])
     parser.add_argument('--indir', type=str, help='Directory of the input')
     parser.add_argument('--info', type=str, default="codehelper/java_angello_info.json")
     parser.add_argument('--sheet', type=str, default="JDK")
@@ -99,3 +99,53 @@ if __name__ == "__main__":
                     args.range.remove(file.split('.')[-1])
 
             print(f"Missing files: {' '.join(args.range)}")
+
+    elif args.mode == "check2sheet":
+        with open(args.indir, "r") as f:
+            rows = f.readlines()
+        
+        infos, res = {}, []
+        cur_checks = {}
+        for row in rows:
+            if row.startswith("#" * 20):
+                infos[filepath] = {
+                    "post_cond": res,
+                    "checks": cur_checks
+                }
+                res = []
+                cur_checks = {}
+            elif row.startswith("#" * 10):
+                filepath = row.split("#"*10)[1].strip().replace(".check", ".extract")
+                with open(filepath, "r") as f:
+                    res = f.read().split("-" * 20 + '\n')[:-1]
+            elif ':' in row:
+                check_name, check_res = row.split(':')
+                check_res = check_res.strip()[1:-5].split(", ")
+                cur_checks[check_name] = check_res
+    
+        post_conds = sheet["C"][1:]
+        lines = []
+        for case in keys:
+            files = [file for file in infos.keys() if file.split('/')[-1].startswith(case)]
+            files = sorted(files, key=lambda x: int(x.split('.')[-2]))
+            for file in files:
+                info = infos[file]
+                post_cond = info["post_cond"]
+                checks = info["checks"]
+                line = []
+
+                for id, post in enumerate(post_cond):
+                    line.append(post.strip())
+                    for n, c in checks.items():
+                        line.append(c[id])
+                
+                lines.append("\t".join(line))
+                empty_line = "\t".join(["" for _ in line])
+        
+        index = 0
+        for post_cond in post_conds:
+            if post_cond.value is not None and post_cond.font.color.rgb != "FFFF0000":
+                print(lines[index])
+                index += 1
+            else:
+                print(empty_line)

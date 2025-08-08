@@ -106,6 +106,7 @@ class javahelper(codehelper):
                             (static\s+)?
                             (final\s+)?
                             (synchronized\s+)?
+                            (<\w+(\s*,\s*\w+)*>\s+)?
                             (?!if|else|for|while|switch|catch|throw|return|
                                 public|protected|private|static|final|synchronized)\b
                             (\w+[\w\<\>\[\],\s\?]*)\s+
@@ -115,28 +116,34 @@ class javahelper(codehelper):
                         """
                 match1 = re.match(pattern, line.strip(), re.VERBOSE)
                 if match1:
-                    retType = dropext(match1.group(5).strip())
-                    funcname = match1.group(6)
-                    if match1.group(7) == "":
+                    generic = match1.group(5)
+                    retType = dropext(match1.group(7).strip())
+                    funcname = match1.group(8)
+                    if match1.group(9) == "":
                         args = []
                     else:
                         args = [dropext(arg.strip()) # we remove extended types
-                            for arg in match1.group(7).split(",")]
+                            for arg in match1.group(9).split(",")]
                     iscstr = False
                 pattern = r"""^(public|protected|private)?\s*
+                            (static\s+)?
+                            (final\s+)?
+                            (synchronized\s+)?
+                            (<\w+(\s*,\s*\w+)*>\s+)?
                         """ + self.namespace + r"""\s*
                             \(([\w\<\>\[\],\s\?]*)\)\s*
                             ({|;)?.*
                         """
                 match2 = re.match(pattern, line.strip(), re.VERBOSE)
                 if match2:
+                    generic = match2.group(5)
                     retType = "void"
                     funcname = self.namespace
-                    if match2.group(2) == "":
+                    if match2.group(7) == "":
                         args = []
                     else:
                         args = [dropext(arg.strip()) # we remove extended types
-                            for arg in match2.group(2).split(",")]
+                            for arg in match2.group(7).split(",")]
                     iscstr = True
                 if match1 or match2:
                     self.funcs[funcname] = {
@@ -144,6 +151,7 @@ class javahelper(codehelper):
                         "args": {arg.split()[1]: arg.split()[0] for arg in args},
                         "isobs": funcname in obs_funcs,
                         "iscstr": iscstr,
+                        "generic": generic.strip() if generic is not None else None
                     }
                 buff = []
                 
@@ -290,7 +298,7 @@ class javahelper(codehelper):
 
     def guessfuncname(self):
         for l in self.code.split("\n")[::-1]:
-            pattern = r"""^public\s+(static\s+)?(final\s+)?(synchronized\s+)?
+            pattern = r"""^public\s+(static\s+)?(final\s+)?(synchronized\s+)?(<\w+(\s*,\s*\w+)*>\s+)?
                               (?!if|else|for|while|switch|catch|throw|return)\b
                               (\w+[\w\<\>\[\],\s\?]*)\s+
                               (\w+)\s*
@@ -298,15 +306,15 @@ class javahelper(codehelper):
                             """
             match = re.match(pattern, l.strip(), re.VERBOSE)
             if match:
-                return match.group(5)
-            pattern = r"""^public\s+(static\s+)?(final\s+)?(synchronized\s+)?
+                return match.group(7)
+            pattern = r"""^public\s+(static\s+)?(final\s+)?(synchronized\s+)?(<\w+(\s*,\s*\w+)*>\s+)?
                               (?!if|else|for|while|switch|catch|throw|return)\b
                               (\w+)\s*
                               \(.*
                             """
             match = re.match(pattern, l.strip(), re.VERBOSE)
             if match:
-                return match.group(4)
+                return match.group(6)
         raise Exception("Function name not found")
 
     def guessnamespace(self):

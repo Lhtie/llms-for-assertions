@@ -90,24 +90,24 @@ import java.lang.Runnable;
 import combinedcodes.{1};
 
 public class FuzzTest{2}{{
-    public void FuzzTest_{3}({1}{2} {4}, {1}{2} {5}{6}){{
-        if ({4} == null || {5} == null) return ;   // ignore null test objects
+    public{3} void FuzzTest_{4}({1}{2} {5}, {1}{2} {6}{7}){{
+        if ({5} == null || {6} == null) return ;   // ignore null test objects
         
         // copy old values
-{7}
-
-        // compute forall
 {8}
 
-        // normal post condition
+        // compute forall
 {9}
-        Boolean normalpost = exec(() -> {10});
+
+        // normal post condition
+{10}
+        Boolean normalpost = exec(() -> {11});
         if (normalpost == null || !normalpost)
             throw new RuntimeException("Normal Postcondition Violated");
 
         // exceptional post condition
-{11}
-        Boolean exceptionalpost = exec(() -> {12});
+{12}
+        Boolean exceptionalpost = exec(() -> {13});
         if (exceptionalpost == null || !exceptionalpost)
             throw new RuntimeException("Exceptional Postcondition Violated");
     }}
@@ -220,7 +220,9 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     spec, old_addns, forall_addns, split_addns = jh.trans_formula(spec)
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
-    generic = jh.classname[jh.classname.find("<"):]
+    class_generic = jh.classname[jh.classname.find("<"):]
+    func_generic = jh.funcs[jh.funcname]["generic"]
+    func_generic = f" {func_generic}" if func_generic is not None else ""
     objarg_new = jh.fuzz_objname
     objarg_old = jh.fuzz_objname.replace("_new", "_old")
     rettyp = jh.funcs[jh.funcname]["rtyp"]
@@ -232,7 +234,7 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     split_addns = "\n".join(["\t\t" + l for l in split_addns])
 
     code = javacode.format(
-        imports, jh.namespace, generic, jh.funcname,
+        imports, jh.namespace, class_generic, func_generic, jh.funcname,
         objarg_old, objarg_new, funcargs, old_addns, forall_addns,
         split_addns, spec, "", "true"
     )
@@ -274,7 +276,7 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     ]
     proc = subprocess.run(randoop_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    shutil.rmtree(tmp_dir)
+    # shutil.rmtree(tmp_dir)
     if proc.returncode != 0:
         print("!"*10 + " equiv check failure", file=sys.stderr)
         print(proc.stdout)

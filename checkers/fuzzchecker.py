@@ -91,27 +91,27 @@ import java.lang.Runnable;
 import combinedcodes.{1};
 
 public class FuzzTest{2}{{
-    public void FuzzTest_{3}({1}{2} {4}{5}){{
-        if ({4} == null) return ;   // ignore null test objects
+    public{3} void FuzzTest_{4}({1}{2} {5}{6}){{
+        if ({5} == null) return ;   // ignore null test objects
         
         // copy old values
-{6}
-
-        // function call
 {7}
 
-        // compute forall
+        // function call
 {8}
 
-        // normal post condition
+        // compute forall
 {9}
-        Boolean normalpost = exec(() -> {10});
+
+        // normal post condition
+{10}
+        Boolean normalpost = exec(() -> {11});
         if (normalpost == null || !normalpost)
             throw new RuntimeException("Normal Postcondition Violated");
 
         // exceptional post condition
-{11}
-        Boolean exceptionalpost = exec(() -> {12});
+{12}
+        Boolean exceptionalpost = exec(() -> {13});
         if (exceptionalpost == null || !exceptionalpost)
             throw new RuntimeException("Exceptional Postcondition Violated");
     }}
@@ -322,7 +322,9 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     asrt, old_addns, forall_addns, split_addns = jh.trans_formula(asrt)
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
-    generic = jh.classname[jh.classname.find("<"):]
+    class_generic = jh.classname[jh.classname.find("<"):]
+    func_generic = jh.funcs[jh.funcname]["generic"]
+    func_generic = f" {func_generic}" if func_generic is not None else ""
     funcargs = jh.funcs[jh.funcname]["args"]
     funcargs = "".join([f", {typ} {var}" for var, typ in funcargs.items()])
     old_addns = "\n".join(["\t\t" + l for l in old_addns])
@@ -333,11 +335,11 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     
     if jh.funcs[jh.funcname]["iscstr"]:
         forall_addns = forall_addns.replace(jh.fuzz_objname, jh.fuzz_objname + "_final")
-        split_addns = split_addns.replace(jh.fuzz_objname, jh.fuzz_objname + "_final");
-        asrt = asrt.replace(jh.fuzz_objname, jh.fuzz_objname + "_final");
+        split_addns = split_addns.replace(jh.fuzz_objname, jh.fuzz_objname + "_final")
+        asrt = asrt.replace(jh.fuzz_objname, jh.fuzz_objname + "_final")
 
     code = javacode.format(
-        imports, jh.namespace, generic, jh.funcname, jh.fuzz_objname, funcargs, 
+        imports, jh.namespace, class_generic, func_generic, jh.funcname, jh.fuzz_objname, funcargs, 
         old_addns, func_call, forall_addns, split_addns, asrt, "", "true"
     )
 
@@ -378,7 +380,7 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     ]
     proc = subprocess.run(randoop_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    shutil.rmtree(tmp_dir)
+    # shutil.rmtree(tmp_dir)
     if proc.returncode != 0:
         print("!"*10 + " fuzz check failure", file=sys.stderr)
         print(proc.stdout)
