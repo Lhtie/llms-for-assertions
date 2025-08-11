@@ -388,14 +388,14 @@ class javahelper(codehelper):
                 child_asrts.append(child_asrt)
             if node != tr.root:
                 fuzzexpr = f"fuzzexpr{self.asrt_exprs.__len__()}"
-                if node.value[1] == "=>":
+                if node.value[1].strip() == "=>":
                     assert len(child_asrts) == 2, "Implication should have exactly two parts"
                     self.asrt_exprs[fuzzexpr] = f"!({child_asrts[0]}) || ({child_asrts[1]})"
                 else:
                     self.asrt_exprs[fuzzexpr] = node.value[1].join(child_asrts)
                 return f"fuzzexpr{self.asrt_exprs.__len__() - 1}"
             else:
-                if node.value[1] == "=>":
+                if node.value[1].strip() == "=>":
                     assert len(child_asrts) == 2, "Implication should have exactly two parts"
                     return f"!({child_asrts[0]}) || ({child_asrts[1]})"
                 else:
