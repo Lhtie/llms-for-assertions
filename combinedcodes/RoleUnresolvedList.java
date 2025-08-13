@@ -84,8 +84,7 @@ public class RoleUnresolvedList extends ArrayList<Object> {
      *
      * @see ArrayList#ArrayList(java.util.Collection)
      */
-    public RoleUnresolvedList(List<RoleUnresolved> list)
-        throws IllegalArgumentException {
+    public RoleUnresolvedList(List<RoleUnresolved> list) throws IllegalArgumentException {
         // Check for null parameter
         //
         if (list == null)
@@ -137,11 +136,7 @@ public class RoleUnresolvedList extends ArrayList<Object> {
      * @exception IndexOutOfBoundsException if index is out of range
      * (<code>index &lt; 0 || index &gt; size()</code>).
      */
-    public void add(int index,
-                    RoleUnresolved role)
-        throws IllegalArgumentException,
-               IndexOutOfBoundsException {
-
+    public void add(int index, RoleUnresolved role) throws IllegalArgumentException, IndexOutOfBoundsException {
         if (role == null) {
             String excMsg = "Invalid parameter";
             throw new IllegalArgumentException(excMsg);
@@ -180,9 +175,7 @@ public class RoleUnresolvedList extends ArrayList<Object> {
      *
      * @exception IllegalArgumentException  if the unresolved role is null.
      */
-    public void add(RoleUnresolved role)
-        throws IllegalArgumentException {
-
+    public void add(RoleUnresolved role) throws IllegalArgumentException {
         if (role == null) {
             String excMsg = "Invalid parameter";
             throw new IllegalArgumentException(excMsg);
@@ -339,11 +332,7 @@ public class RoleUnresolvedList extends ArrayList<Object> {
      * @exception IndexOutOfBoundsException if index is out of range
      * (<code>index &lt; 0 || index &gt;= size()</code>).
      */
-    public void set(int index,
-                    RoleUnresolved role)
-        throws IllegalArgumentException,
-            IndexOutOfBoundsException {
-
+    public void set(int index, RoleUnresolved role) throws IllegalArgumentException, IndexOutOfBoundsException {
         if (role == null) {
             String excMsg = "Invalid parameter";
             throw new IllegalArgumentException(excMsg);

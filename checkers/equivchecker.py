@@ -223,13 +223,13 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     split_addns = split_addns_asrt + split_addns_gt
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
-    class_generic = jh.classname[jh.classname.find("<"):]
-    func_generic = jh.funcs[jh.funcname]["generic"]
+    class_generic = jh.classname[jh.classname.find("<"):] if jh.classname.find("<") != -1 else ""
+    func_generic = jh.funcs[-1]["generic"]
     func_generic = f" {func_generic}" if func_generic is not None else ""
     objarg_new = jh.fuzz_objname
     objarg_old = jh.fuzz_objname.replace("_new", "_old")
-    rettyp = jh.funcs[jh.funcname]["rtyp"]
-    funcargs = jh.funcs[jh.funcname]["args"]
+    rettyp = jh.funcs[-1]["rtyp"]
+    funcargs = jh.funcs[-1]["args"]
     funcargs = ", ".join([f", {typ} {var}" for var, typ in funcargs.items()]) \
                 + (f", {rettyp} {jh.fuzz_retvar}" if rettyp != "void" else "")
     old_addns = "\n".join(["\t\t" + l.replace("_new", "_old") for l in old_addns])

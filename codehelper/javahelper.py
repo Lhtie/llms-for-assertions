@@ -83,9 +83,9 @@ class javahelper(codehelper):
         self.imports = self.guessimports()
         self.namespace = self.guessnamespace()
         self.classname = self.guessclassname()
+        self.anlyz_class()
         self.funcname = self.guessfuncname()
 
-        self.anlyz_class()
         self.old_exprs = {}             # map raw \old exprs: tuple(var name, replaced exprs)
         self.old_vars = {}              # map var names: raw \old exprs
         self.asrt_exprs = {}            # map asrt expr names: asrt exprs
@@ -93,9 +93,7 @@ class javahelper(codehelper):
         self.asrt_exprs = {}
     
     def anlyz_class(self):
-        self.funcs = {}
-        # Possibly encounter multiple methods with the same name
-        # Only keep record of the last one
+        self.funcs = []
         
         ret, buff = [], []
         balance = 0
@@ -148,13 +146,14 @@ class javahelper(codehelper):
                             for arg in match2.group(7).split(",")]
                     iscstr = True
                 if match1 or match2:
-                    self.funcs[funcname] = {
+                    self.funcs.append({
+                        "funcname": funcname,
                         "rtyp": retType, 
                         "args": {arg.split()[1]: arg.split()[0] for arg in args},
                         "isobs": funcname in obs_funcs,
                         "iscstr": iscstr,
                         "generic": generic.strip() if generic is not None else None
-                    }
+                    })
                 buff = []
                 
     def handle_implies(self, asrt):
@@ -292,25 +291,10 @@ class javahelper(codehelper):
         return import_list
 
     def guessfuncname(self):
-        for l in self.code.split("\n")[::-1]:
-            pattern = r"""^public\s+(static\s+)?(final\s+)?(synchronized\s+)?(<\w+(\s*,\s*\w+)*>\s+)?
-                              (?!if|else|for|while|switch|catch|throw|return)\b
-                              (\w+[\w\<\>\[\],\s\?]*)\s+
-                              (\w+)\s*
-                              \(.*
-                            """
-            match = re.match(pattern, l.strip(), re.VERBOSE)
-            if match:
-                return match.group(7)
-            pattern = r"""^public\s+(static\s+)?(final\s+)?(synchronized\s+)?(<\w+(\s*,\s*\w+)*>\s+)?
-                              (?!if|else|for|while|switch|catch|throw|return)\b
-                              (\w+)\s*
-                              \(.*
-                            """
-            match = re.match(pattern, l.strip(), re.VERBOSE)
-            if match:
-                return match.group(6)
-        raise Exception("Function name not found")
+        if len(self.funcs) > 0:
+            return self.funcs[-1]["funcname"]
+        else:
+            raise Exception("Function name not found")
 
     def guessnamespace(self):
         for l in self.code.split("\n"):
@@ -321,7 +305,7 @@ class javahelper(codehelper):
         
     def guessclassname(self):
         for l in self.code.split("\n"):
-            match = re.match(r".*public\s+class\s+([\w<>]+).*", l.strip())
+            match = re.match(r".*public\s+class\s+(\w+\s*(<\w+(\s*,\s*\w+)*>)?).*", l.strip())
             if match:
                 return match.group(1)
         raise Exception("Class name not found")
@@ -419,16 +403,17 @@ class javahelper(codehelper):
 
         return asrt, old_addns_0 + old_addns_1, forall_addns, split_addns
 
-    def func_call(self, funcname, args):
-        assert funcname in self.funcs, f"Function {funcname} not found"
+    def func_call(self, func):
+        funcname = func["funcname"]
+        args = func["args"].keys()
 
-        if self.funcs[funcname]["iscstr"]:
+        if func["iscstr"]:
             return [
                 f"var paired_ret = func_call_supplier(() -> new {self.classname}({', '.join(args)}));",
                 f"var {self.fuzz_objname}_final = paired_ret.first;",
                 f"String exceptionType = paired_ret.second;"
             ]
-        elif self.funcs[funcname]["rtyp"] == "void":
+        elif func["rtyp"] == "void":
             return [
                 f"String exceptionType = func_call_runnable(() -> {self.fuzz_objname}.{funcname}({', '.join(args)}));"
             ]

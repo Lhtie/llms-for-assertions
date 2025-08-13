@@ -406,7 +406,7 @@ public class ListOrderedSet<E>
     public int size() {
         return decorated().size();
         // @@@ size of the set is always greater than or equal to 0
-        // assert \result>=0；
+        // assert \result>=0;
     }
 
     @Override

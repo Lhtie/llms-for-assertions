@@ -196,20 +196,27 @@ public class FixedArrayList<E>
 					if(e0 != e1) {
 						if(e0 == null && e1 != null)
 							return false;
-
 						if(e0 != null && e1 == null)
 							return false;
-
 						if(! e0.equals(e1))
 							return false;
 					}
 				}
-
 				return true;
 			}
 		}
 
 		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		int h = 1;
+		for (int i = 0, n = size(); i < n; i++) {
+			Object e = elements.get(i);
+			h = 31 * h + (e == null ? 0 : e.hashCode());
+		}
+		return h;
 	}
 
 	/**

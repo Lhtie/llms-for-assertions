@@ -135,11 +135,7 @@ public class RoleList extends ArrayList<Object> {
      * @exception IndexOutOfBoundsException  if accessing with an index
      * outside of the list.
      */
-    public void add(int index,
-                    Role role)
-        throws IllegalArgumentException,
-               IndexOutOfBoundsException {
-
+    public void add(int index, Role role) throws IllegalArgumentException, IndexOutOfBoundsException {
         if (role == null) {
             String excMsg = "Invalid parameter";
             throw new IllegalArgumentException(excMsg);
@@ -178,9 +174,7 @@ public class RoleList extends ArrayList<Object> {
      *
      * @exception IllegalArgumentException  if the role is null.
      */
-    public void add(Role role)
-        throws IllegalArgumentException {
-
+    public void add(Role role) throws IllegalArgumentException {
         if (role == null) {
             String excMsg = "Invalid parameter";
             throw new IllegalArgumentException(excMsg);
@@ -340,11 +334,7 @@ public class RoleList extends ArrayList<Object> {
      * @exception IndexOutOfBoundsException  if accessing with an index
      * outside of the list.
      */
-    public void set(int index,
-                    Role role)
-        throws IllegalArgumentException,
-                IndexOutOfBoundsException {
-
+    public void set(int index, Role role) throws IllegalArgumentException, IndexOutOfBoundsException {
         if (role == null) {
             // Revisit [cebro] Localize message
             String excMsg = "Invalid parameter.";

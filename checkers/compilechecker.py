@@ -293,18 +293,18 @@ def java_cmplecheck(pfx, sfx, grnd_truth, asrt):
     asrt, old_addns, forall_addns, split_addns = jh.trans_formula(asrt)
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
-    class_generic = jh.classname[jh.classname.find("<"):]
-    func_generic = jh.funcs[jh.funcname]["generic"]
+    class_generic = jh.classname[jh.classname.find("<"):] if jh.classname.find("<") != -1 else ""
+    func_generic = jh.funcs[-1]["generic"]
     func_generic = f" {func_generic}" if func_generic is not None else ""
-    funcargs = jh.funcs[jh.funcname]["args"]
+    funcargs = jh.funcs[-1]["args"]
     funcargs = "".join([f", {typ} {var}" for var, typ in funcargs.items()])
     old_addns = "\n".join(["\t\t" + l for l in old_addns])
     forall_addns = "\n".join(["\t\t" + l for l in forall_addns])
     split_addns = "\n".join(["\t\t" + l for l in split_addns])
-    func_call = jh.func_call(jh.funcname, jh.funcs[jh.funcname]["args"].keys())
+    func_call = jh.func_call(jh.funcs[-1])
     func_call = "\n".join(["\t\t" + l for l in func_call])
     
-    if jh.funcs[jh.funcname]["iscstr"]:
+    if jh.funcs[-1]["iscstr"]:
         forall_addns = forall_addns.replace(jh.fuzz_objname, jh.fuzz_objname + "_final")
         split_addns = split_addns.replace(jh.fuzz_objname, jh.fuzz_objname + "_final")
         asrt = asrt.replace(jh.fuzz_objname, jh.fuzz_objname + "_final")

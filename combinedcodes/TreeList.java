@@ -791,7 +791,7 @@ public class TreeList<E> extends AbstractList<E> {
         root = null;
         size = 0;
         // @@@ The list is empty.
-        // assert this.isEmtpy();
+        // assert this.isEmpty();
         // @@@ The size of the list is zero after clearing it.
         // assert this.size()==0;
     }

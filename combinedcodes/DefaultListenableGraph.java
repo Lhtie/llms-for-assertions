@@ -1,5 +1,6 @@
-package org.jgrapht.graph;
+package combinedcodes;
 
+import org.jgrapht.graph.*;
 import org.jgrapht.*;
 import org.jgrapht.event.*;
 import org.jgrapht.util.*;
