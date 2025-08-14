@@ -230,7 +230,7 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     objarg_old = jh.fuzz_objname.replace("_new", "_old")
     rettyp = jh.funcs[-1]["rtyp"]
     funcargs = jh.funcs[-1]["args"]
-    funcargs = ", ".join([f", {typ} {var}" for var, typ in funcargs.items()]) \
+    funcargs = "".join([f", {typ} {var}" for var, typ in funcargs.items()]) \
                 + (f", {rettyp} {jh.fuzz_retvar}" if rettyp != "void" else "")
     old_addns = "\n".join(["\t\t" + l.replace("_new", "_old") for l in old_addns])
     forall_addns = "\n".join(["\t\t" + l for l in forall_addns])

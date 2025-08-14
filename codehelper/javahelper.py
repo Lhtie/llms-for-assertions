@@ -22,9 +22,10 @@ third_party = [
 ]
 combinedcodes = "./combinedcodes"
 
-def dropext(typ):
+def drop(typ):
     # remove ambiguous extended types
     typ = re.sub(r"\s*\?\s+extends\s+", "", typ)
+    typ = re.sub(r"\s*\b(?:final|static|synchronized)\b", "", typ)
     return typ
 
 def closing_paren(string, start):
@@ -117,12 +118,12 @@ class javahelper(codehelper):
                 match1 = re.match(pattern, line.strip(), re.VERBOSE)
                 if match1:
                     generic = match1.group(5)
-                    retType = dropext(match1.group(7).strip())
+                    retType = drop(match1.group(7).strip())
                     funcname = match1.group(8)
                     if match1.group(9) == "":
                         args = []
                     else:
-                        args = [dropext(arg.strip()) # we remove extended types
+                        args = [drop(arg.strip()) # we remove extended types
                             for arg in match1.group(9).split(",")]
                     iscstr = False
                 pattern = r"""^(public|protected|private)?\s*
@@ -142,7 +143,7 @@ class javahelper(codehelper):
                     if match2.group(7) == "":
                         args = []
                     else:
-                        args = [dropext(arg.strip()) # we remove extended types
+                        args = [drop(arg.strip()) # we remove extended types
                             for arg in match2.group(7).split(",")]
                     iscstr = True
                 if match1 or match2:
