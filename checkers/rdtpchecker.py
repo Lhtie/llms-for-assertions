@@ -22,6 +22,7 @@ modelpaths = {
         "mc7":      "Magicoder-S-DS-6.7B",
         "oc7":      "OpenCodeInterpreter-DS-6.7B",
         "qw32":     "Qwen2.5-Coder-32B-Instruct",
+        "rlm":      "roberta-large-mnli",
         "gpt3":     "gpt-3.5-turbo",
         "gpt4":     "gpt-4-turbo"
 }
@@ -32,7 +33,7 @@ configs = {
         "model_backward": None,
         "threshold": 0.8,
         "use_nli": True,
-        "mkey_nli": "qw32",
+        "mkey_nli": "rlm",
         "model_nli": None
     }
 }
@@ -97,10 +98,8 @@ def equiv(x, y, mkey, model_dict):
     model = model_dict["model"]
     devices = model_dict["devices"]
 
-    x2y = nli_instr.format(x, y)
-    y2x = nli_instr.format(y, x)
-
-    for prompt in [x2y, y2x]:
+    for premise, hypothesis in [(x, y), (y, x)]:
+        prompt = nli_instr.format(premise, hypothesis)
         msgdict = [
             {'role': 'system', 'content': f"You are a helpful assistant that excels at natural language inference."},
             {'role': 'user', 'content': prompt}
@@ -108,6 +107,8 @@ def equiv(x, y, mkey, model_dict):
 
         if mkey.startswith(("gpt3", "gpt4")):
             inputs = msgdict
+        elif mkey == "rlm":
+            inputs = tokenizer.encode_plus(premise, hypothesis, return_tensors="pt")
         else:
             inputs = tokenizer.apply_chat_template(
                     msgdict,
@@ -117,10 +118,18 @@ def equiv(x, y, mkey, model_dict):
             inputs = inputs.to(model.device)
 
         # print(f"Inputs: {inputs[1]['content']}")
-        response = run(mkey, model, tokenizer, inputs, 0.3)     # temp set to be 0.3
-        e = response.find("Entailment") != -1
+        if mkey == "rlm":
+            with torch.no_grad():
+                logits = model(**inputs).logits
+            response = torch.softmax(logits, dim=1).numpy()[0]
+            response = torch.argmax(response).item()
+            response = ["Contradiction", "Neutral", "Entailment"][response]
+        else:
+            response = run(mkey, model, tokenizer, inputs, 0.3)     # temp set to be 0.3
+            
         c = response.find("Contradiction") != -1
         n = response.find("Neutral") != -1
+        e = response.find("Entailment") != -1
         # print(f"Response: {response}")
         assert int(e) + int(c) + int(n) == 1, "Answer should be direct and exact"
         if c or n:

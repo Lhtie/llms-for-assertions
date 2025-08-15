@@ -1233,4 +1233,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
         checkInvariants();
         // @@@ For every valid index i within the length of this BitSet, the value at index i after the operation is the logical XOR of the original value at this index and the value at the corresponding index in the specified BitSet set.
         // assert \forall int i; 0<=i && i<this.length(); this.get(i)==(\old(this.get(i)) ^ set.get(i));
-    }}
+    }
+    
+}

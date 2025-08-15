@@ -257,67 +257,68 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
      */
     @Override
     public Iterator<E> iterator() {
-        return new Iterator<E>() {
+        return new Itr();
+    }
 
-            private int index = start;
-            private int lastReturnedIndex = -1;
-            private boolean isFirst = full;
+    private class Itr implements Iterator<E> {
+        private int index = start;
+        private int lastReturnedIndex = -1;
+        private boolean isFirst = full;
 
-            @Override
-            public boolean hasNext() {
-                return isFirst || index != end;
+        @Override
+        public boolean hasNext() {
+            return isFirst || index != end;
+        }
+
+        @Override
+        public E next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            isFirst = false;
+            lastReturnedIndex = index;
+            index = increment(index);
+            return elements[lastReturnedIndex];
+        }
+
+        @Override
+        public void remove() {
+            if (lastReturnedIndex == -1) {
+                throw new IllegalStateException();
             }
 
-            @Override
-            public E next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException();
-                }
-                isFirst = false;
-                lastReturnedIndex = index;
-                index = increment(index);
-                return elements[lastReturnedIndex];
+            // First element can be removed quickly
+            if (lastReturnedIndex == start) {
+                CircularFifoQueue.this.remove();
+                lastReturnedIndex = -1;
+                return;
             }
 
-            @Override
-            public void remove() {
-                if (lastReturnedIndex == -1) {
-                    throw new IllegalStateException();
-                }
-
-                // First element can be removed quickly
-                if (lastReturnedIndex == start) {
-                    CircularFifoQueue.this.remove();
-                    lastReturnedIndex = -1;
-                    return;
-                }
-
-                int pos = lastReturnedIndex + 1;
-                if (start < lastReturnedIndex && pos < end) {
-                    // shift in one part
-                    System.arraycopy(elements, pos, elements, lastReturnedIndex, end - pos);
-                } else {
-                    // Other elements require us to shift the subsequent elements
-                    while (pos != end) {
-                        if (pos >= maxElements) {
-                            elements[pos - 1] = elements[0];
-                            pos = 0;
-                        } else {
-                            elements[decrement(pos)] = elements[pos];
-                            pos = increment(pos);
-                        }
+            int pos = lastReturnedIndex + 1;
+            if (start < lastReturnedIndex && pos < end) {
+                // shift in one part
+                System.arraycopy(elements, pos, elements, lastReturnedIndex, end - pos);
+            } else {
+                // Other elements require us to shift the subsequent elements
+                while (pos != end) {
+                    if (pos >= maxElements) {
+                        elements[pos - 1] = elements[0];
+                        pos = 0;
+                    } else {
+                        elements[decrement(pos)] = elements[pos];
+                        pos = increment(pos);
                     }
                 }
-
-                lastReturnedIndex = -1;
-                end = decrement(end);
-                elements[end] = null;
-                full = false;
-                index = decrement(index);
             }
 
-        };
-    }
+            lastReturnedIndex = -1;
+            end = decrement(end);
+            elements[end] = null;
+            full = false;
+            index = decrement(index);
+        }
+
+    };
 
     /**
      * Gets the maximum size of the collection (the bound).
