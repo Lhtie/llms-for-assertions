@@ -61,7 +61,9 @@ if __name__ == "__main__":
     else: 
         outname = "N".join([x.translate({ord('.'):'', ord('/'):'', ord('*'):'X'})
             for x in args.resultlist]) + ".txt"
-    if args.write: outfd = open(os.path.join(args.outdir, outname), "w")
+    if args.write: 
+        os.makedirs(args.outdir, exist_ok=True)
+        outfd = open(os.path.join(args.outdir, outname), "w")
     else: print(args.outdir + "/" + outname)
 
     succs, tries = 0, 0
