@@ -1,5 +1,5 @@
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelForSequenceClassification
 from openai import OpenAI
 import os
 import argparse
@@ -33,7 +33,7 @@ configs = {
         "model_backward": None,
         "threshold": 0.8,
         "use_nli": True,
-        "mkey_nli": "rlm",
+        "mkey_nli": "qw32",
         "model_nli": None
     }
 }
@@ -43,19 +43,23 @@ nli_instr = """Your task is to determine the relationship between two given natu
 3. Neutral: The second sentence is neither entailed nor contradicted by the first sentence.
 
 For instances,
-The first sentence is \"A man inspects the uniform of a figure in some East Asian country.\".
-The second sentence is \"The man is sleeping\".
+The first sentence is \"size of the array is always greater than or equal to 0.\".
+The second sentence is \"size of the array is less than 0.\".
 The answer is: Contradiction.
 
-The first sentence is \"An older and younger man smiling.\".
-The second sentence is \"Two men are smiling and laughing at the cats playing on the floor.\".
+The first sentence is \"first index of value in the array remains the same if value was already in the list.\".
+The second sentence is \"first index of value in the array remains the same.\".
 The answer is: Neutral.
 
-The first sentence is \"A soccer game with multiple males playing.\".
-The second sentence is \"Some men are playing a sport.\".
+The first sentence is \"All the valid indices (between 0 and old size) in the array before add have the same element after add.\".
+The second sentence is \"After the operation, all the elements in valid indices (between 0 and old size) in the array have the same value as before.\".
 The answer is: Entailment.
 
-Your output should be directly one of the three categories. (without any explanation or auxiliary information)
+- Your output should be directly one of the three categories. (without any explanation or auxiliary information)
+- Please ignore potential differences in wording or phrasing of technical terms.
+- You don't have to be too strict, just focus on the main meaning of the sentences.
+- Only label as Neutral when the hypothesis clearly introduces new information not guaranteed by the premise, omits essential details required to verify it, or contains information unrelated to the premise.
+
 The first sentence is: {0}
 The second sentence is: {1}
 Please provide the answer:
@@ -72,6 +76,15 @@ def load_model(mkey):
                 **k
         )
         devices = None
+    elif mkey == "rlm":
+        tokenizer = AutoTokenizer.from_pretrained(mpath)
+        model = AutoModelForSequenceClassification.from_pretrained(
+            mpath,
+            torch_dtype=torch.bfloat16,
+            device_map="auto",
+        )
+        model.eval()
+        devices = {p.device for p in model.parameters()}
     else:
         tokenizer = AutoTokenizer.from_pretrained(mpath)
         model = AutoModelForCausalLM.from_pretrained(
@@ -121,12 +134,12 @@ def equiv(x, y, mkey, model_dict):
         if mkey == "rlm":
             with torch.no_grad():
                 logits = model(**inputs).logits
-            response = torch.softmax(logits, dim=1).numpy()[0]
+            response = torch.softmax(logits, dim=1)[0]
             response = torch.argmax(response).item()
             response = ["Contradiction", "Neutral", "Entailment"][response]
         else:
             response = run(mkey, model, tokenizer, inputs, 0.3)     # temp set to be 0.3
-            
+
         c = response.find("Contradiction") != -1
         n = response.find("Neutral") != -1
         e = response.find("Entailment") != -1
