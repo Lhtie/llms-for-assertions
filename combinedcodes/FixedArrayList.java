@@ -81,10 +81,10 @@ public class FixedArrayList<E>
 		}
 
 		return true;
-        // @@@ the array contains the added element after the operation
-        // assert this.contains(element);
-        // @@@ The method always returns true.
-        // assert \result==true;
+        // @@@ If the element is not null, then the array contains the added element after the operation
+        // assert element!=null => this.contains(element);
+        // @@@ If the element is not null, then the method returns true.
+        // assert element!=null => \result==true;
         // @@@ If the element is null, then the last element in the array is null; if the element is not null, then the last element in the array is equal to the added element.
         // assert element==null && this.get(this.size()-1)==null || e!=null && element.equals(this.get(this.size()-1));
 	}

@@ -278,7 +278,7 @@ public class ArrayList<E> extends AbstractList<E>
         // @@@ The size of the cloned ArrayList is equal to the size of the original ArrayList.
         // assert \result.size()==this.size();
         // @@@ For every valid index i (from 0 up to the size of this list), the element at index i in the cloned list is the same as the element at index i in the original list.
-        // assert \forall int i; 0<=i && i<this.size(); result.get(i)==this.get(i);
+        // assert \forall int i; 0<=i && i<this.size(); \result.get(i)==this.get(i);
         // @@@ The result of cloning this ArrayList instance is never null.
         // assert \result!=null;
     }

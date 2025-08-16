@@ -31,10 +31,11 @@ configs = {
         "mkey_backward": "qw32",
         "num_backward": 8,
         "model_backward": None,
-        "threshold": 0.8,
+        "threshold": 0.6,
         "use_nli": True,
         "mkey_nli": "qw32",
-        "model_nli": None
+        "model_nli": None,
+        "records": {}
     }
 }
 nli_instr = """Your task is to determine the relationship between two given natural language sentences based on the following categories:
@@ -57,7 +58,6 @@ The answer is: Entailment.
 
 - Your output should be directly one of the three categories. (without any explanation or auxiliary information)
 - Please ignore potential differences in wording or phrasing of technical terms.
-- You don't have to be too strict, just focus on the main meaning of the sentences.
 - Only label as Neutral when the hypothesis clearly introduces new information not guaranteed by the premise, omits essential details required to verify it, or contains information unrelated to the premise.
 
 The first sentence is: {0}
@@ -111,6 +111,7 @@ def equiv(x, y, mkey, model_dict):
     model = model_dict["model"]
     devices = model_dict["devices"]
 
+    rec = []
     for premise, hypothesis in [(x, y), (y, x)]:
         prompt = nli_instr.format(premise, hypothesis)
         msgdict = [
@@ -139,6 +140,11 @@ def equiv(x, y, mkey, model_dict):
             response = ["Contradiction", "Neutral", "Entailment"][response]
         else:
             response = run(mkey, model, tokenizer, inputs, 0.3)     # temp set to be 0.3
+        rec.append({
+            "premise": premise,
+            "hypothesis": hypothesis,
+            "response": response
+        })
 
         c = response.find("Contradiction") != -1
         n = response.find("Neutral") != -1
@@ -146,9 +152,9 @@ def equiv(x, y, mkey, model_dict):
         # print(f"Response: {response}")
         assert int(e) + int(c) + int(n) == 1, "Answer should be direct and exact"
         if c or n:
-            return 0
+            return 0, rec
     
-    return 1
+    return 1, rec
 
 def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
     mkey = config["mkey_backward"]
@@ -172,22 +178,35 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
             inputs = prompt
             
         tot = 0
+        config["records"][asrt] = {
+            "samples": [],
+            "score": None
+        }
         for _ in range(config["num_backward"]):
             response = run(mkey, model, tokenizer, inputs, 0.3)     # temp set to be 0.3
             # print(f"Response: {response}")
             assert "@@@" in response, "Generated NL not well formed"
+
             if nli:
-                tot += equiv(
+                f, rec = equiv(
                     response.split("@@@")[-1].strip(), 
                     cmnt_line.split("@@@")[-1].strip(),
                     config["mkey_nli"], config["model_nli"]
                 )
+                tot += f
+                config["records"][asrt]["samples"].append({
+                    "nl_asrt": response,
+                    "nli": rec
+                })
+
             else:
                 tot += sim(
                     response.split("@@@")[-1].strip(), 
                     cmnt_line.split("@@@")[-1].strip()
                 )
+            
         tot /= config["num_backward"]
+        config["records"][asrt]["score"] = tot
         # print(f"Total: {tot}")
         return tot
         
@@ -231,6 +250,9 @@ def java_rdtpcheck(pfx, sfx, grnd_truth, asrt, check):
 def rdtpcheck(langid, pfx, sfx, grnd_truth, asrt, check):
     if(langid == "java"):
         result = java_rdtpcheck(pfx, sfx, grnd_truth, asrt, check)
+        os.makedirs(".cache", exist_ok=True)
+        with open(f".cache/{langid}-rdtpcheck.json", "w") as f:
+            json.dump(configs["java"]["records"], f, indent=4)
 
     else: 
         assert False, "Incorrect language id: " + langid

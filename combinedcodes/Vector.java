@@ -383,7 +383,7 @@ public class Vector<E>
     public void clear() {
         removeAllElements();
         // @@@ The vector is empty after clearing all elements.
-        // assert this.isEmtpy();
+        // assert this.isEmpty();
         // @@@ The size of the vector is zero after this operation.
         // assert this.size()==0;
     }
@@ -1100,7 +1100,7 @@ public class Vector<E>
         }
         return false;
         // @@@ If the vector initially contains the object, then the result of the removal is true.
-        // assert \old(this.contains(o)) => \result==true;
+        // assert \old(this.contains(obj)) => \result==true;
     }
 
     /**

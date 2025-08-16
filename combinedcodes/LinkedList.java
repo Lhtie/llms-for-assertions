@@ -288,7 +288,7 @@ public class LinkedList<E>
         size = 0;
         modCount++;
         // @@@ The list is empty after the operation.
-        // assert this.isEmtpy();
+        // assert this.isEmpty();
         // @@@ The size of the list is zero after clearing it.
         // assert this.size()==0;
     }
@@ -965,10 +965,10 @@ public class LinkedList<E>
         return unlinkFirst(f);
         // @@@ If the list is not empty, then the result is either null and the first element was null, or the result is equal to the first element before the operation.
         // assert !this.isEmpty() => \result==null && \old(this.get(0))==null|| \result.equals(\old(this.get(0)));
-        // @@@ The returned element is the same as the first element of the list before the method execution.
-        // assert \result==\old(this.get(0));
-        // @@@ For every valid index from 0 to the old size minus one, if the element at that index in the list is null, then the next element in the old list was also null; otherwise, the element at that index is equal to the next element in the old list.
-        // assert \forall int i; 0<=i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
+        // @@@ If the list is not empty, then the returned element is the same as the first element of the list before the method execution.
+        // assert !this.isEmpty() => \result==\old(this.get(0));
+        // @@@ If the list is not empty, then for every valid index from 0 to the old size minus one, if the element at that index in the list is null, then the next element in the old list was also null; otherwise, the element at that index is equal to the next element in the old list.
+        // assert !this.isEmpty() => \forall int i; 0<=i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
     /**
@@ -999,10 +999,10 @@ public class LinkedList<E>
         return unlinkLast(l);
         // @@@ If the list is not empty, then the result is either null and the previously last element was null, or the result is equal to the previously last element.
         // assert !this.isEmpty() => \result==null && \old(this.get(\old(this.size()-1)))==null|| \result.equals(\old(this.get(\old(this.size()-1))));
-        // @@@ the returned element is the last element of the list before the modification
-        // assert \result==\old(this.get(this.size()-1))
-        // @@@ For every valid index from 0 up to one less than the previous size of the list, if the element at that index was null before, it remains null, or if it was not null, it remains equal to its previous value.
-        // assert \forall int i; 0<=i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ If the list is not empty, then the returned element is the last element of the list before the modification
+        // assert !this.isEmpty() => \result==\old(this.get(this.size()-1));
+        // @@@ If the list is not empty, then for every valid index from 0 up to one less than the previous size of the list, if the element at that index was null before, it remains null, or if it was not null, it remains equal to its previous value.
+        // assert !this.isEmpty() => \forall int i; 0<=i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
     /**

@@ -301,7 +301,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         circularClear(elements, head, tail);
         head = tail = 0;
         // @@@ the deque is empty after this operation
-        // assert this.isEmtpy();
+        // assert this.isEmpty();
         // @@@ The deque is empty after this operation.
         // assert this.size()==0;
     }

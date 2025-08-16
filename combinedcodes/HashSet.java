@@ -176,7 +176,7 @@ public class HashSet<E>
     public void clear() {
         map.clear();
         // @@@ the set is empty after the clear operation
-        // assert this.isEmtpy();
+        // assert this.isEmpty();
         // @@@ The set is empty after this method is called.
         // assert this.size()==0;
     }

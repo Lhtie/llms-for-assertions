@@ -5,11 +5,12 @@ from openpyxl import load_workbook
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Collect generated natural language assertions.")
-    parser.add_argument('--mode', type=str, default="file2sheet", choices=["file2sheet", "sheet2file", "findmissing", "check2sheet"])
+    parser.add_argument('--mode', type=str, default="file2sheet", choices=["file2sheet", "sheet2file", "findmissing", "check2sheet", "combinechecks"])
     parser.add_argument('--indir', type=str, help='Directory of the input')
     parser.add_argument('--info', type=str, default="codehelper/java_angello_info.json")
     parser.add_argument('--sheet', type=str, default="JDK")
     parser.add_argument('--range', nargs='+', default=[])
+    parser.add_argument('--outdir', type=str, default="")
     args = parser.parse_args()
     
     with open(args.info, "r") as f:
@@ -149,3 +150,49 @@ if __name__ == "__main__":
                 index += 1
             else:
                 print(empty_line)
+
+    elif args.mode == "combinechecks":
+        with open(args.indir, "r") as f:
+            ins = f.readlines()
+        with open(args.outdir, "r") as f:
+            outs = f.readlines()
+        
+        infos_list = []
+        for rows in [ins, outs]:
+            infos, res = {}, []
+            cur_checks = {}
+            for row in rows:
+                if row.startswith("#" * 20):
+                    infos[filepath] = {
+                        "post_cond": res,
+                        "checks": cur_checks
+                    }
+                    res = []
+                    cur_checks = {}
+                elif row.startswith("#" * 10):
+                    filepath = row.split("#"*10)[1].strip().replace(".check", ".extract")
+                    with open(filepath, "r") as f:
+                        res = f.read().split("-" * 20 + '\n')[:-1]
+                elif ':' in row:
+                    check_name, check_res = row.split(':')
+                    check_res = check_res.strip()[1:-5].split(", ")
+                    cur_checks[check_name] = check_res
+            infos_list.append(infos)
+
+        for file in infos_list[1].keys():
+            infos_list[1][file]["checks"].update(infos_list[0][file]["checks"])
+
+        out_lines = []
+        for file, info in infos_list[1].items():
+            print(file)
+            out_lines.append("#" * 10 + " " + file + " " + "#" * 10)
+            for check_name in ["null_check", "compile_check", "fuzz_check", "rdtp_check", "equiv_check"]:
+                if check_name not in info["checks"]:
+                    continue
+                res = info['checks'][check_name]
+                trues = [res[i] for i in range(len(res)) if res[i] == "True"]
+                out_lines.append(f"{check_name}: [{', '.join(res)}] {len(trues)}/{len(res)}")
+            out_lines.append("#" * 20)
+
+        with open(args.outdir, "w") as f:
+            f.write("\n".join(out_lines))

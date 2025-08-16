@@ -129,7 +129,7 @@ public class DefaultListenableGraph<V, E>
         // @@@ The graph contains the target vertex after attempting to add an edge.
         // assert this.containsVertex(targetVertex);
         // @@@ The graph contains the edge returned by the method.
-        // assert this.containsEdge(\result);
+        // assert this.containsEdge(e);
     }
 
     @Override

@@ -134,7 +134,7 @@ public class Path implements Structure {
 		// Runtime.getRuntime().gc();
 		root = null;
         // @@@ The path is empty after clearing it.
-        // assert this.emtpy();
+        // assert this.empty();
         // @@@ The size of the path is zero after clearing it.
         // assert this.size()==0;
 	}
