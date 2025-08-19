@@ -13,6 +13,7 @@ import subprocess
 from keysecrets import *
 from codehelper.javahelper import *
 from nlasrtgen import prompt_transform, run
+from codehelper.javahelper import javahelper
 
 from sentence_transformers import SentenceTransformer, util
 sentmodel = None
@@ -38,30 +39,36 @@ configs = {
         "records": {}
     }
 }
-nli_instr = """Your task is to determine the relationship between two given natural language sentences based on the following categories:
+nli_instr = """Your task is to determine the relationship between two natural language assertions based on the following categories:
 1. Entailment: The second sentence logically follows from the first sentence.
 2. Contradiction: The second sentence contradicts with the first sentence.
 3. Neutral: The second sentence is neither entailed nor contradicted by the first sentence.
 
 For instances,
-The first sentence is \"size of the array is always greater than or equal to 0.\".
-The second sentence is \"size of the array is less than 0.\".
+The premise is \"size of the array is always greater than or equal to 0.\".
+The hypothesis is \"size of the array is less than 0.\".
 The answer is: Contradiction.
 
-The first sentence is \"first index of value in the array remains the same if value was already in the list.\".
-The second sentence is \"first index of value in the array remains the same.\".
+The premise is \"first index of value in the array remains the same if value was already in the list.\".
+The hypothesis is \"first index of value in the array remains the same.\".
 The answer is: Neutral.
 
-The first sentence is \"All the valid indices (between 0 and old size) in the array before add have the same element after add.\".
-The second sentence is \"After the operation, all the elements in valid indices (between 0 and old size) in the array have the same value as before.\".
+The premise is \"All the valid indices (between 0 and old size) in the array before add have the same element after add.\".
+The hypothesis is \"After the operation, all the elements in valid indices (between 0 and old size) in the array have the same value as before.\".
 The answer is: Entailment.
+
+Here is the context information to help understand the sentences:
+The sentences are assertions in natural language form describing the expected behavior or properties of a piece of code, such as a function or method.
+More specifically, You are given the implementation of a class {0}. Inside this class, there is a method {1}. The following two assertions are both written about the behavior of the method. To help you reason about their relationship, here is some context:
+- The method takes in ({2}) as parameters.
+- {3}
 
 - Your output should be directly one of the three categories. (without any explanation or auxiliary information)
 - Please ignore potential differences in wording or phrasing of technical terms.
 - Only label as Neutral when the hypothesis clearly introduces new information not guaranteed by the premise, omits essential details required to verify it, or contains information unrelated to the premise.
 
-The first sentence is: {0}
-The second sentence is: {1}
+The premise is: {4}
+The hypothesis is: {5}
 Please provide the answer:
 """
 
@@ -105,7 +112,7 @@ def sim(x, y):
     similarity = util.cos_sim(embx, emby)
     return similarity.item()
 
-def equiv(x, y, mkey, model_dict):
+def equiv(x, y, mkey, model_dict, jh):
     assert model_dict is not None, "No model configurations"
     tokenizer = model_dict["tokenizer"]
     model = model_dict["model"]
@@ -113,7 +120,13 @@ def equiv(x, y, mkey, model_dict):
 
     rec = []
     for premise, hypothesis in [(x, y), (y, x)]:
-        prompt = nli_instr.format(premise, hypothesis)
+        prompt = nli_instr.format(
+            jh.classname, jh.funcname, 
+            "".join([f", {typ} {var}" for var, typ in jh.funcs[-1]["args"].items()]),
+            f"The method returns {jh.funcs[-1]['rtyp']} as result."
+                if jh.funcs[-1]["rtyp"] != "void" else f"The method does not return any value.",
+            premise, hypothesis
+        )
         msgdict = [
             {'role': 'system', 'content': f"You are a helpful assistant that excels at natural language inference."},
             {'role': 'user', 'content': prompt}
@@ -163,6 +176,8 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
     model = config["model_backward"]["model"]
     tokenizer = config["model_backward"]["tokenizer"]
     devices = config["model_backward"]["devices"]
+
+    jh = javahelper(pfx + '\n' + sfx)
     
     def sampling(x):
         cmnt_line = pfx.split("\n")[-1]
@@ -191,7 +206,7 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
                 f, rec = equiv(
                     response.split("@@@")[-1].strip(), 
                     cmnt_line.split("@@@")[-1].strip(),
-                    config["mkey_nli"], config["model_nli"]
+                    config["mkey_nli"], config["model_nli"], jh
                 )
                 tot += f
                 config["records"][asrt]["samples"].append({
