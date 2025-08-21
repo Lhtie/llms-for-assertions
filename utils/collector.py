@@ -8,14 +8,17 @@ if __name__ == "__main__":
     parser.add_argument('--mode', type=str, default="file2sheet", choices=["file2sheet", "sheet2file", "findmissing", "check2sheet", "combinechecks"])
     parser.add_argument('--indir', type=str, help='Directory of the input')
     parser.add_argument('--info', type=str, default="codehelper/java_angello_info.json")
-    parser.add_argument('--sheet', type=str, default="JDK")
+    parser.add_argument('--sheet', type=str, default="All")
     parser.add_argument('--range', nargs='+', default=[])
     parser.add_argument('--outdir', type=str, default="")
     args = parser.parse_args()
     
     with open(args.info, "r") as f:
         info = json.load(f)
-    keys = list(info[args.sheet].keys())
+    if args.sheet == "All":
+        keys = [x for sheet in info.values() for x in sheet.keys()]
+    else:
+        keys = list(info[args.sheet].keys())
         
     wb = load_workbook("Assertions from C2S.xlsx")
     sheet = wb[args.sheet]
@@ -139,6 +142,7 @@ if __name__ == "__main__":
                     line.append(post.strip())
                     for n, c in checks.items():
                         line.append(c[id])
+                    line += [""] * 5
                 
                 lines.append("\t".join(line))
                 empty_line = "\t".join(["" for _ in line])
