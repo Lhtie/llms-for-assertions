@@ -193,7 +193,9 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
             inputs = prompt
             
         tot = 0
-        config["records"][asrt] = {
+        args = "".join([f", {typ} {var}" for var, typ in jh.funcs[-1]["args"].items()])
+        rec_title = f"{jh.namespace}:{jh.funcname}({args}):{asrt}"
+        config["records"][rec_title] = {
             "samples": [],
             "score": None
         }
@@ -209,7 +211,7 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
                     config["mkey_nli"], config["model_nli"], jh
                 )
                 tot += f
-                config["records"][asrt]["samples"].append({
+                config["records"][rec_title]["samples"].append({
                     "nl_asrt": response,
                     "nli": rec
                 })
@@ -221,7 +223,7 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
                 )
             
         tot /= config["num_backward"]
-        config["records"][asrt]["score"] = tot
+        config["records"][rec_title]["score"] = tot
         # print(f"Total: {tot}")
         return tot
         

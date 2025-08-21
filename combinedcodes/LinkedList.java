@@ -447,7 +447,7 @@ public class LinkedList<E>
         // @@@ If the result is not -1 and the element at the resulting index is not null, then the element at that index is equal to the specified element.
         // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
         // @@@ If the result is not -1, then for every index i from 0 to the result minus one, either the element at index i is null and o is not null, or the element at index i is not null and does not equal o.
-        // assert \result!=-1 => \forall int i; 0<=I && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
+        // assert \result!=-1 => \forall int i; 0<=i && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
     /**

@@ -211,7 +211,7 @@ public class ListOrderedSet<E>
         // @@@ If the index of the first occurrence of the specified element is not -1 and the element at that index is not null, then the element at that index must be equal to the specified element.
         // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(object);
         // @@@ If the index of the first occurrence of the specified element is not -1, then for every index from 0 up to but not including this index, the element at each index is either null and the specified element is not null, or the element at each index is not null and does not equal the specified element.
-        // assert \result!=-1 => \forall int i; 0<=I && i<\result; this.get(i)==null && object!=null || this.get(i)!=null && !this.get(i).equals(object);
+        // assert \result!=-1 => \forall int i; 0<=i && i<\result; this.get(i)==null && object!=null || this.get(i)!=null && !this.get(i).equals(object);
     }
 
     @Override

@@ -630,7 +630,7 @@ public class Vector<E>
         // @@@ If the method returns a non-negative result and the element at that position is not null, then the element at that position must be equal to the specified element.
         // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
         // @@@ If the result is not -1, then for every index from 0 up to but not including the result, either the element at that index is null and the object being searched is not null, or the element at that index is not null and does not equal the object being searched.
-        // assert \result!=-1 => \forall int i; 0<=I && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
+        // assert \result!=-1 => \forall int i; 0<=i && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
     /**
