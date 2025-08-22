@@ -700,7 +700,7 @@ public class LinkedList<E>
     public boolean offer(E e) {
         return add(e);
         // @@@ The list contains the specified element after it is added.
-        // asssert this.contains(e);
+        // assert this.contains(e);
         // @@@ If the added element is null, then the last element in the list is also null; if the added element is not null, then it equals the last element in the list.
         // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
         // @@@ The result of adding an element to the list is always true.

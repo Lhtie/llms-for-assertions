@@ -92,6 +92,13 @@ class javahelper(codehelper):
         self.asrt_exprs = {}            # map asrt expr names: asrt exprs
         self.forall_idx = 0
         self.asrt_exprs = {}
+
+    def _get_documentation(self, line):
+        start = line - 1
+        code = self.code.split("\n")
+        while code[start].strip().startswith(tuple(["//", "/*", "*", "*/", "@"])):
+            start -= 1
+        return "\n".join([l.strip() for l in code[start+1:line]]) if start + 1 < line else ""
     
     def anlyz_class(self):
         self.funcs = []
@@ -151,6 +158,7 @@ class javahelper(codehelper):
                         "funcname": funcname,
                         "rtyp": retType, 
                         "args": {arg.split()[1]: arg.split()[0] for arg in args},
+                        "docs": self._get_documentation(buff[0][0]),
                         "isobs": funcname in obs_funcs,
                         "iscstr": iscstr,
                         "generic": generic.strip() if generic is not None else None
@@ -312,8 +320,10 @@ class javahelper(codehelper):
         raise Exception("Class name not found")
 
     def extract_formula(self, asrt):
-        match = re.match(r".*assert\s*(.*)\s*;.*", asrt.strip())
+        match = re.match(r".*assert\s*(.*?)\s*;.*", asrt.strip())
         assert match, "Assertion not in the required format"
+        assert len(re.findall(r"assert\s*(.*?)\s*;", asrt.strip())) == 1, "Only allow one assertion"
+        
         asrt = match.group(1)
         asrt = self.handle_implies(asrt)
 

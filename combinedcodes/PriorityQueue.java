@@ -573,7 +573,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         // @@@ If the element was not in the queue before the operation, then the result is false.
         // assert !\old(this.contains(o)) => \result==false;
         // @@@ If the element was originally in the queue, then the result of the removal is true.
-        // assert \old(this.contains(o)) => \result=true;
+        // assert \old(this.contains(o)) => \result==true;
         // @@@ If the queue initially contains the specified element, then the size of the queue after removal is one less than the initial size.
         // assert\old(this.contains(o)) => this.size()==\old(this.size())-1;
         // @@@ If the queue is not empty, the element at the head of the queue after removal is greater than or equal to the element that was at the head before removal.

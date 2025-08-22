@@ -29,12 +29,12 @@ modelpaths = {
 }
 configs = {
     "java": {
-        "mkey_backward": "qw32",
+        "mkey_backward": "gpt3",
         "num_backward": 8,
         "model_backward": None,
         "threshold": 0.6,
         "use_nli": True,
-        "mkey_nli": "qw32",
+        "mkey_nli": "gpt3",
         "model_nli": None,
         "records": {}
     }
@@ -62,13 +62,16 @@ The sentences are assertions in natural language form describing the expected be
 More specifically, You are given the implementation of a class {0}. Inside this class, there is a method {1}. The following two assertions are both written about the behavior of the method. To help you reason about their relationship, here is some context:
 - The method takes in ({2}) as parameters.
 - {3}
+- The functionality of the method is documented below:
+{4}
 
 - Your output should be directly one of the three categories. (without any explanation or auxiliary information)
 - Please ignore potential differences in wording or phrasing of technical terms.
+- Please be careful about details (numerical bounds, conditions, `\\old` symbol, implications and equivalence)
 - Only label as Neutral when the hypothesis clearly introduces new information not guaranteed by the premise, omits essential details required to verify it, or contains information unrelated to the premise.
 
-The premise is: {4}
-The hypothesis is: {5}
+The premise is: {5}
+The hypothesis is: {6}
 Please provide the answer:
 """
 
@@ -122,9 +125,10 @@ def equiv(x, y, mkey, model_dict, jh):
     for premise, hypothesis in [(x, y), (y, x)]:
         prompt = nli_instr.format(
             jh.classname, jh.funcname, 
-            "".join([f", {typ} {var}" for var, typ in jh.funcs[-1]["args"].items()]),
+            ", ".join([f"{typ} {var}" for var, typ in jh.funcs[-1]["args"].items()]),
             f"The method returns {jh.funcs[-1]['rtyp']} as result."
                 if jh.funcs[-1]["rtyp"] != "void" else f"The method does not return any value.",
+            jh.funcs[-1]["docs"],
             premise, hypothesis
         )
         msgdict = [
@@ -193,7 +197,7 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
             inputs = prompt
             
         tot = 0
-        args = "".join([f", {typ} {var}" for var, typ in jh.funcs[-1]["args"].items()])
+        args = ", ".join([f"{typ} {var}" for var, typ in jh.funcs[-1]["args"].items()])
         rec_title = f"{jh.namespace}:{jh.funcname}({args}):{asrt}"
         config["records"][rec_title] = {
             "samples": [],

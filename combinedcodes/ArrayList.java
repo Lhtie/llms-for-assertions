@@ -364,7 +364,7 @@ public class ArrayList<E> extends AbstractList<E>
         // assert \result!=-1 && this.get(\result)==null ==> o==null;
         // @@@ If the result is not -1 and the element at the result index is not null, then the element at the result index must be equal to the specified element.
         // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ If the result is not -1, then for every index from 0 to the result, the element at that index is either null and the searched object is not null, or the element is not null and does not equal the searched object.
+        // @@@ If the result is not -1, then for every index from 0 to result-1, the element at that index is either null and the searched object is not null, or the element is not null and does not equal the searched object.
         // assert \result!=-1 => \forall int i; 0<=i && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
