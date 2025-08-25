@@ -320,7 +320,7 @@ class javahelper(codehelper):
         raise Exception("Class name not found")
 
     def extract_formula(self, asrt):
-        match = re.match(r".*assert\s*(.*?)\s*;.*", asrt.strip())
+        match = re.match(r".*assert\s*(.*)\s*;.*", asrt.strip())
         assert match, "Assertion not in the required format"
         assert len(re.findall(r"assert\s*(.*?)\s*;", asrt.strip())) == 1, "Only allow one assertion"
         
