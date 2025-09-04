@@ -134,14 +134,14 @@ public class ArrayList<E> extends AbstractList<E>
                          s - index);
         elementData[index] = element;
         size = s + 1;
-        // @@@ If the index is between 0 and the size of the list inclusive, then the list contains the inserted element.
-        // assert index>=0 && index<=this.size() => this.contains(element);
-        // @@@ If the index is between 0 and the size of the list inclusive, then if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element.
-        // assert index>=0 && index<=this.size() => element==null&&this.get(index)==null || this.get(index).equals(element);
-        // @@@ If the index is between 0 and the size of the list inclusive, then for every valid index less than the specified index, each element at these indices remains unchanged or is null both before and after the operation.
-        // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is between 0 and the size of the list inclusive, then for every valid index from the insertion point to the old size of the list, the element at each subsequent index in the updated list is either null and was null in the old list, or is equal to the element at the previous index in the old list.
-        // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
+        // @@@ If the index is between 0 and the initial size of the list inclusive, then the list contains the inserted element.
+        // assert index>=0 && index<=\old(this.size()) => this.contains(element);
+        // @@@ If the index is between 0 and the initial size of the list inclusive, then if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element.
+        // assert index>=0 && index<=\old(this.size()) => element==null&&this.get(index)==null || this.get(index).equals(element);
+        // @@@ If the index is between 0 and the initial size of the list inclusive, then for every valid index less than the specified index, each element at these indices remains unchanged or is null both before and after the operation.
+        // assert index>=0 && index<=\old(this.size()) => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ If the index is between 0 and the initial size of the list inclusive, then for every valid index from the insertion point to the old size of the list, the element at each subsequent index in the updated list is either null and was null in the old list, or is equal to the element at the previous index in the old list.
+        // assert index>=0 && index<=\old(this.size()) => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
     /**
@@ -641,12 +641,12 @@ public class ArrayList<E> extends AbstractList<E>
         fastRemove(es, index);
 
         return oldValue;
-        // @@@ If the index is valid (greater than or equal to 0 and less than the size of the list), then the result is the element that was at that index before the removal.
-        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ If the index is valid (greater than or equal to 0 and less than the size of the list), then for every valid index before the specified index, either both the current and old values at that index are null, or the current value at that index equals the old value at that index.
-        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is valid (greater than or equal to 0 and less than the size of the list), then for every position i greater than the index and less than the old size minus one, either both the current and the next elements in the old list are null, or the element at position i in the updated list is equal to the element at position i+1 in the old list.
-        // assert index>=0 && index<this.size() => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
+        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size of the list), then the result is the element that was at that index before the removal.
+        // assert index>=0 && index<\old(this.size()) => \result==\old(this.get(index));
+        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size of the list), then for every valid index before the specified index, either both the current and old values at that index are null, or the current value at that index equals the old value at that index.
+        // assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size of the list), then for every position i greater than the index and less than the old size minus one, either both the current and the next elements in the old list are null, or the element at position i in the updated list is equal to the element at position i+1 in the old list.
+        // assert index>=0 && index<\old(this.size()) => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
     /**
@@ -759,12 +759,12 @@ public class ArrayList<E> extends AbstractList<E>
         E oldValue = elementData(index);
         elementData[index] = element;
         return oldValue;
-        // @@@ If the index is non-negative and less than the size of the list, then the returned value is the same as the element that was at that position before the update.
-        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ If the index is valid (non-negative and less than the size of the list), then for every valid index i before the specified index, either both the current and old values at i are null, or the current value at i is equal to its old value.
-        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is valid (non-negative and less than the size of the list), then for every position greater than the index and within the list size, the element at that position remains unchanged if it was null before, or it is equal to its old value if it was not null.
-        // assert index>=0 && index<this.size() => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ If the index is non-negative and less than the initial size of the list, then the returned value is the same as the element that was at that position before the update.
+        // assert index>=0 && index<\old(this.size()) => \result==\old(this.get(index));
+        // @@@ If the index is valid (non-negative and less than the initial size of the list), then for every valid index i before the specified index, either both the current and old values at i are null, or the current value at i is equal to its old value.
+        // assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ If the index is valid (non-negative and less than the initial size of the list), then for every position greater than the index and within the list size, the element at that position remains unchanged if it was null before, or it is equal to its old value if it was not null.
+        // assert index>=0 && index<\old(this.size()) => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
     /** Erases the gap from lo to hi, by sliding down following elements. */

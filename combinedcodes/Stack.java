@@ -60,8 +60,8 @@ public class Stack<E> extends Vector<E> {
         if (len == 0)
             throw new EmptyStackException();
         return elementAt(len - 1);
-        // @@@ If the stack is not empty, then the result is either null and the last element of the stack is null, or the result is equal to the last element of the stack.
-        // assert !this.empty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
+        // @@@ If the stack is initially not empty, then the result is either null and the last element of the stack is null, or the result is equal to the last element of the stack.
+        // assert !\old(this.empty()) => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
     /**
@@ -80,8 +80,8 @@ public class Stack<E> extends Vector<E> {
         removeElementAt(len - 1);
 
         return obj;
-        // @@@ If the stack is not empty, then the result is either null and the last element of the stack is null, or the result is equal to the last element of the stack.
-        // assert !this.empty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
+        // @@@ If the stack is initially not empty, then the result is either null and the last element of the stack is null, or the result is equal to the last element of the stack.
+        // assert !\old(this.empty()) => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
     /**

@@ -103,14 +103,14 @@ public class ListOrderedSet<E>
             return true;
         }
         return false;
-        // @@@ If the index is between 0 and the size of the set inclusive, then the set contains the object.
-        // assert index>=0 && index<=this.size() => this.contains(object);
-        // @@@ If the index is valid (between 0 and the size of the set inclusive), then if the object is null, the element at that index is also null, or the element at that index equals the object.
-        // assert index>=0 && index<=this.size() => object==null&&this.get(index)==null||this.get(index).equals(object);
-        // @@@ If the index is valid (between 0 and the size of the set inclusive), then for every valid index up to the specified index, each element at that index either remains null if it was initially null, or remains unchanged compared to its initial state.
-        // assert index>=0 && index<=this.size() => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is between 0 and the size of the set, then for every index i from the given index to the old size minus one, the element at position i+1 is either null and the element at position i was null, or the element at position i+1 is equal to the element at position i in the old set.
-        // assert index>=0 && index<=this.size() => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
+        // @@@ If the index is between 0 and the initial size of the set inclusive, then the set contains the object.
+        // assert index>=0 && index<=\old(this.size()) => this.contains(object);
+        // @@@ If the index is valid (between 0 and the initial size of the set inclusive), then if the object is null, the element at that index is also null, or the element at that index equals the object.
+        // assert index>=0 && index<=\old(this.size()) => object==null&&this.get(index)==null||this.get(index).equals(object);
+        // @@@ If the index is valid (between 0 and the initial size of the set inclusive), then for every valid index up to the specified index, each element at that index either remains null if it was initially null, or remains unchanged compared to its initial state.
+        // assert index>=0 && index<=\old(this.size()) => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ If the index is between 0 and the initial size of the set, then for every index i from the given index to the old size minus one, the element at position i+1 is either null and the element at position i was null, or the element at position i+1 is equal to the element at position i in the old set.
+        // assert index>=0 && index<=\old(this.size()) => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
     /**
@@ -337,12 +337,12 @@ public class ListOrderedSet<E>
         final E obj = setOrder.remove(index);
         remove(obj);
         return obj;
-        // @@@ If the index is valid (greater than or equal to 0 and less than the size of the set), then the result is the element that was at that index before the operation.
-        // assert index>=0 && index<this.size() => \result==\old(this.get(index));
-        // @@@ If the index is valid (greater than or equal to 0 and less than the size of the set), then for every valid index less than the specified index, the element at that position remains unchanged or continues to be null after the removal.
-        // assert index>=0 && index<size() => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is valid (greater than or equal to 0 and less than the size of the set), then for every position i greater than the index and less than the old size minus one, either both the current and the next old elements are null, or the current element equals the next old element.
-        // assert index>=0 && index<this.size() => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
+        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size of the set), then the result is the element that was at that index before the operation.
+        // assert index>=0 && index<\old(this.size()) => \result==\old(this.get(index));
+        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size of the set), then for every valid index less than the specified index, the element at that position remains unchanged or continues to be null after the removal.
+        // assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size of the set), then for every position i greater than the index and less than the old size minus one, either both the current and the next old elements are null, or the current element equals the next old element.
+        // assert index>=0 && index<\old(this.size()) => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
     @Override

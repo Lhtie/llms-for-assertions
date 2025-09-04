@@ -83,8 +83,8 @@ public class ArrayStack<E> extends ArrayList<E> {
             throw new EmptyStackException();
         }
         return get(n - 1);
-        // @@@ If the stack is not empty, then the result is either null and the last item in the stack is null, or the result is equal to the last item in the stack.
-        // assert !this.empty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
+        // @@@ If the stack is initially not empty, then the result is either null and the last item in the stack is null, or the result is equal to the last item in the stack.
+        // assert !\old(this.empty()) => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
     /**
@@ -116,8 +116,8 @@ public class ArrayStack<E> extends ArrayList<E> {
             throw new EmptyStackException();
         }
         return remove(n - 1);
-        // @@@ If the stack is not empty, then the result is either null and the last item in the stack is null, or the result is equal to the last item in the stack.
-        // assert !this.empty() => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
+        // @@@ If the stack is initially not empty, then the result is either null and the last item in the stack is null, or the result is equal to the last item in the stack.
+        // assert !\old(this.empty()) => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
     /**

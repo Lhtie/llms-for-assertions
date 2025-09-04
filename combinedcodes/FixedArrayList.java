@@ -355,12 +355,12 @@ public class FixedArrayList<E>
 		}
 
 		throw new ArrayIndexOutOfBoundsException("index "+i+" does not exist");
-        // @@@ If the index is non-negative and less than the size of the array, then the result is equal to the element at that index before the method was executed.
-        // assert i>=0 && i<this.size() => \result==\old(this.get(i));
+        // @@@ If the index is non-negative and less than the initial size of the array, then the result is equal to the element at that index before the method was executed.
+        // assert i>=0 && i<\old(this.size()) => \result==\old(this.get(i));
         // @@@ If the index i is within valid bounds, then for each index j less than i, the element at j either remains null if it was null before, or remains unchanged.
-        // assert i>=0 && i<size() => \forall int j; 0<=j && j<i; this.get(j)==null && \old(this.get(j))==null || this.get(j).equals(\old(this.get(j)));
-        // @@@ If the index is valid (between 0 and the size of the array), then for every index greater than the specified index and less than the previous size minus one, the element at that index should either be null and the next element should also be null, or it should be equal to the next element.
-        // assert i>=0 && i<this.size() => \forall int j; index<j && j<\old(this.size()-1); this.get(j)==null && \old(this.get(j+1))==null || this.get(j).equals(\old(this.get(j+1)));
+        // assert i>=0 && i<\old(this.size()) => \forall int j; 0<=j && j<i; this.get(j)==null && \old(this.get(j))==null || this.get(j).equals(\old(this.get(j)));
+        // @@@ If the index is valid (between 0 and the initial size of the array), then for every index greater than the specified index and less than the previous size minus one, the element at that index should either be null and the next element should also be null, or it should be equal to the next element.
+        // assert i>=0 && i<\old(this.size()) => \forall int j; index<j && j<\old(this.size()-1); this.get(j)==null && \old(this.get(j+1))==null || this.get(j).equals(\old(this.get(j+1)));
 	}
 
 	/**
