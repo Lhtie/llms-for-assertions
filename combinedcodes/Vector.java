@@ -411,9 +411,9 @@ public class Vector<E>
         // @@@ The returned object from the method is equal to the original object.
         // assert \result.equals(this);
         // @@@ The size of the cloned vector is equal to the size of the original vector.
-        // assert \result.size()==this.size();
+        // assert ((Vector<E>) \result).size()==this.size();
         // @@@ For every valid index i (from 0 to the size of this vector), the element at index i in the cloned vector is the same as the element at index i in the original vector.
-        // assert \forall int i; 0<=i && i<this.size(); \result.get(i)==this.get(i);
+        // assert \forall int i; 0<=i && i<this.size(); ((Vector<E>) \result).get(i)==this.get(i);
         // @@@ The result of cloning the vector is never null.
         // assert \result!=null;
     }

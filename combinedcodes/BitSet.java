@@ -327,7 +327,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
         // @@@ The returned object is not the same instance as the original object.
         // assert \result!=this;
         // @@@ The size of the original BitSet is equal to the size of its clone.
-        // assert this.size()==result.size();
+        // assert ((BitSet) \result).size()==this.size();
         // @@@ The result of cloning is never null.
         // assert \result!=null;
     }

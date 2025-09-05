@@ -703,7 +703,7 @@ public class HashMap<K,V>
         // @@@ The result of the clone method is not the same instance as the original HashMap.
         // assert \result!=this;
         // @@@ The size of the cloned HashMap is equal to the size of the original HashMap.
-        // assert \result.size()==this.size();
+        // assert ((HashMap<K,V>) \result).size()==this.size();
     }
 
     static class Entry<K,V> implements Map.Entry<K,V> {

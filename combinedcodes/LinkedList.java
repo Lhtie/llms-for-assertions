@@ -317,9 +317,9 @@ public class LinkedList<E>
         // @@@ The returned object from the method is equal to the current instance of the list.
         // assert \result.equals(this);
         // @@@ The size of the cloned list is equal to the size of the original list.
-        // assert \result.size()==this.size();
+        // assert ((LinkedList<E>) \result).size()==this.size();
         // @@@ For every valid index in the original list, the element at that index in the cloned list is the same as the element at that index in the original list.
-        // assert \forall int i; 0<=i && i<this.size(); result.get(i)==this.get(i);
+        // assert \forall int i; 0<=i && i<this.size(); ((LinkedList<E>) result).get(i)==this.get(i);
         // @@@ The result of cloning the list is never null.
         // assert \result!=null;
     }

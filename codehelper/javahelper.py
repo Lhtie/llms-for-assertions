@@ -248,10 +248,11 @@ class javahelper(codehelper):
 
             if old_addns_arr != []:
                 for old_var_name, old_expr in old_addns_arr:
+                    ex = re.sub(rf'\b{re.escape(var_name)}\b', lo, old_expr)[11:-1]
                     old_addns += [
                         f"var {old_var_name} = exec(() -> {{",
                         f"\tint capacity = ({hi}) - ({lo}) + 1;",
-                        f"\tObject ex = {old_expr.replace(var_name, lo)[11:-1]};",
+                        f"\tObject ex = {ex};",
                         f"\tvar ret = Array.newInstance(ex.getClass(), capacity);",
                         f"\tint cur_idx = 0;",
                         f"\tfor ({var_type} {var_name} = {lo}; {var_name} <= {hi}; {var_name} += 1) {{",
