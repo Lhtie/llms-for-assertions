@@ -284,7 +284,59 @@ eg_java = [
         // @@@ All the valid indices (between 0 and old size) in the array before add have the same element after add
     }
 }""",
-"<code>assert \\forall int i; 0<=i && i<\\old(this.getCount()-1); this.query(i)==\\old(this.query(i));</code>"
+"<code>assert \\forall int i; 0<=i && i<\\old(this.getCount()); this.query(i).equals(\\old(this.query(i)));</code>"
+)
+#3
+("""public class Array<T> {
+    /**
+     * Returns true if the array contains the specified element.
+     *
+     * @param o element who is to be tested
+     * @return true if this array contains the specified element
+     */
+    public boolean contains(Object o) ;
+ 
+    /**
+     * Returns the element at the specified position in the array.
+     *
+     * @param  index index of the element to return
+     * @return the element at the specified position in the array
+     */
+    public E query(int index) ;
+ 
+    /**
+     * Returns the index of the first occurrence of the specified element
+     * in the array, or -1 if this array does not contain the element.
+     */
+    public int index_of(Object x) ;
+ 
+    /**
+     * Returns the number of elements in this array.
+     *
+     * @return the number of elements in this array
+     */
+    public int getCount() ;
+    
+    /**
+     * Add the specified element to this array at the specified index out
+       of the first 10 positions.
+     *
+     * @param value element to be appended to this array
+     * @param index position at which the element is to be inserted
+     * @return sz the number of elements in the result array
+     */
+    public int add_at_front(Object value, int index) {
+        if (_sz == _items.length) ensureCapacity(_sz + 1);
+        if (index < 0 || index > 10) throw new IndexOutofBoundsException();
+        _items[index] = value;
+        _version++;
+        return _sz++;
+        // @@@ If the insert position is valid (between 0 and 9), all the indices 
+            before the insert position in the array before add have the same element 
+            after the addition
+    }
+}""",
+"<code>assert index>=0 && index<=9 => \\forall int i; 0<=i && i<index; this.query(i).equals(\\old(this.query(i)));</code>"
 )
 ]
 
