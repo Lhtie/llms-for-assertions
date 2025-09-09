@@ -285,7 +285,7 @@ eg_java = [
     }
 }""",
 "<code>assert \\forall int i; 0<=i && i<\\old(this.getCount()); this.query(i).equals(\\old(this.query(i)));</code>"
-)
+),
 #3
 ("""public class Array<T> {
     /**
