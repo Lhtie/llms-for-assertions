@@ -23,10 +23,32 @@ third_party = [
 combinedcodes = "./combinedcodes"
 
 def drop(typ):
-    # remove ambiguous extended types
-    typ = re.sub(r"\s*\?\s+extends\s+", "", typ)
+    # drop extended types
     typ = re.sub(r"\s*\b(?:final|static|synchronized)\b", "", typ)
     return typ
+
+def split_args_outside_generics(s: str):
+    res, buf = [], []
+    depth_angle = depth_paren = depth_brack = 0
+
+    for ch in s:
+        if ch == '<': depth_angle += 1
+        elif ch == '>': depth_angle -= 1
+        elif ch == '(': depth_paren += 1
+        elif ch == ')': depth_paren -= 1
+        elif ch == '[': depth_brack += 1
+        elif ch == ']': depth_brack -= 1
+
+        if ch == ',' and depth_angle == 0 and depth_paren == 0 and depth_brack == 0:
+            res.append(''.join(buf).strip())
+            buf = []
+            continue
+
+        buf.append(ch)
+
+    if buf or (s and s[-1] == ','):
+        res.append(''.join(buf).strip())
+    return res
 
 def closing_paren(string, start):
     # Find the closing parenthesis for the opening parenthesis at index `start`
@@ -131,7 +153,7 @@ class javahelper(codehelper):
                         args = []
                     else:
                         args = [drop(arg.strip()) # we remove extended types
-                            for arg in match1.group(9).split(",")]
+                            for arg in split_args_outside_generics(match1.group(9))]
                     iscstr = False
                 pattern = r"""^(public|protected|private)?\s*
                             (static\s+)?
@@ -151,13 +173,13 @@ class javahelper(codehelper):
                         args = []
                     else:
                         args = [drop(arg.strip()) # we remove extended types
-                            for arg in match2.group(7).split(",")]
+                            for arg in split_args_outside_generics(match2.group(7))]
                     iscstr = True
                 if match1 or match2:
                     self.funcs.append({
                         "funcname": funcname,
                         "rtyp": retType, 
-                        "args": {arg.split()[1]: arg.split()[0] for arg in args},
+                        "args": {arg.rsplit(' ', 1)[1]: arg.rsplit(' ', 1)[0] for arg in args},
                         "docs": self._get_documentation(buff[0][0]),
                         "isobs": funcname in obs_funcs,
                         "iscstr": iscstr,
