@@ -1,38 +1,34 @@
-<code>assert \old(this.size()) >= 0 && \old(this.size()) <= this.size() && (object == null || this.get(\old(this.size())) == null || this.get(\old(this.size())) == object);</code>
+<code>assert \forall int index; 0<=index && index<=\old(this.size()); (\old(this.get(index)) == null && this.get(index) == null) || (\old(this.get(index)).equals(this.get(index)) && this.get(index).equals(object));</code>
 
-However, the comment seems to imply that the check should be made for a valid index (0 to initial size inclusive) and the condition should apply to that specific index. Let's refine the assertion to reflect that:
+However, the above assertion seems incorrect because it checks the condition for all indices up to the new size, but the comment specifies "initial size." Let's correct it:
 
-<code>assert \forall int i; 0 <= i && i <= \old(this.size()); (object == null || this.get(i) == null || this.get(i) == object);</code>
+<code>assert \forall int index; 0<=index && index<\old(this.size()); (\old(this.get(index)) == null && this.get(index) == null) || (\old(this.get(index)).equals(this.get(index)) && this.get(index).equals(object));</code>
 
-But since the comment specifically mentions "the index is valid (between 0 and the initial size of the set inclusive), then if the object is null, the element at that index is also null, or the element at that index equals the object," it seems to imply checking the element at the specific index which would be the newly added element if the object was added successfully. Therefore, the correct assertion should be:
-
-<code>assert \old(this.size()) >= 0 && \old(this.size()) <= this.size() && (object == null || this.get(\old(this.size())) == null || this.get(\old(this.size())) == object);</code>
-
-Given the context, the most accurate assertion would be:
-
-<code>assert \old(this.size()) >= 0 && \old(this.size()) <= this.size() && (object == null || this.get(\old(this.size())) == object);</code>
-
-Since the new element would be added at the end of the list, the index to check would be the old size of the set. Therefore, the final assertion is:
-
-<code>assert object == null || this.get(\old(this.size())) == object;</code>
+This ensures that the assertion checks the condition only for indices within the initial size of the set.
 --------------------
-<code>assert \forall int i; 0<=i && i<=\old(this.size()); (\old(this.get(i)) == null || \old(this.get(i)).equals(object)) => this.get(i) == \old(this.get(i));</code>
+<code>assert \old(this.size()) >= 0 && \old(this.size()) <= this.size() => (object == null ? this.get(\old(this.size())) == null : this.get(\old(this.size())).equals(object));</code>
 
-However, the comment seems to imply that if the object is added successfully, the element at the index of the initial size should be equal to the object. Therefore, a more precise assert statement would be:
+However, the comment specifies that the condition should hold for a valid index between 0 and the initial size of the set inclusive, and it seems like the intention is to check the element at the position where the new element would be added if it's not already present. Given that, a more accurate representation would be:
 
-<code>assert \old(this.decorated().add(object)) => this.get(\old(this.size())) == object;</code>
+<code>assert \old(this.size()) >= 0 && \old(this.size()) <= this.size() && (object == null ? this.get(\old(this.size())) == null : this.get(\old(this.size())).equals(object)) || !\old(this.contains(object));</code>
 
-This captures the essence that if the object was successfully added, it should be at the position corresponding to the old size of the set.
+But since the comment specifically mentions the index being valid and the element at that index, and considering the behavior of the `add` method, a simpler and more direct interpretation would be:
+
+<code>assert \old(this.size()) >= 0 && \old(this.size()) <= this.size() && (object == null ? this.get(\old(this.size())) == null : this.get(\old(this.size())).equals(object));</code>
+
+This assumes that if the object is added, it will be at the position equal to the old size of the set. However, since the object might not be added if it already exists, a more precise assertion would be:
+
+<code>assert \old(this.size()) >= 0 && \old(this.size()) <= this.size() && (!\old(this.contains(object)) => (object == null ? this.get(\old(this.size())) == null : this.get(\old(this.size())).equals(object)));</code>
+
+This ensures that the assertion only checks the condition when the object is actually added. Therefore, the most appropriate assert statement would be:
+
+<code>assert \old(this.size()) >= 0 && \old(this.size()) <= this.size() && (!\old(this.contains(object)) => (object == null ? this.get(\old(this.size())) == null : this.get(\old(this.size())).equals(object)));</code>
 --------------------
-<code>assert \old(this.size()) >= 0 && \old(this.size()) <= this.size() && (object == null => this.get(\old(this.size())) == null || this.get(\old(this.size())) != null && this.get(\old(this.size())).equals(object));</code>
+<code>assert \forall int i; 0<=i && i<=\old(this.size()); (\old(this.get(i)) == null && this.get(i) == null) || (this.get(i).equals(\old(this.get(i))) || (i == \result-1 && Objects.equals(this.get(i), object)));</code>
 
-However, based on the comment, it seems like the intention might be to check the condition for a valid index between 0 and the initial size of the set inclusive, but the context suggests it's specifically about the last added element. Therefore, a more accurate assertion would be:
-
-<code>assert \old(this.size()) >= 0 && \old(this.size()) <= this.size() && (object == null => this.get(\old(this.size())) == null || this.get(\old(this.size())) != null && this.get(\old(this.size())).equals(object));</code>
-
-But since the comment specifies "If the index is valid (between 0 and the initial size of the set inclusive)", and the operation adds the element at the end, a simpler and more precise assertion would be:
-
-<code>assert object == null => this.get(\old(this.size())) == null || this.get(\old(this.size())).equals(object);</code>
-
-This directly checks the condition for the newly added element at the position equal to the old size of the set.
+Explanation:
+- The assertion checks for each index `i` from `0` to the initial size of the set (inclusive) whether the element at that index remains unchanged unless it's the newly added element.
+- If the index `i` is the position of the newly added element (`i == \result-1`), it checks if the element at that index equals the object being added.
+- If the element at index `i` was `null`, it ensures that it remains `null` after the addition.
+- Otherwise, it ensures that the element at index `i` equals the element at the same index before the addition.
 --------------------
