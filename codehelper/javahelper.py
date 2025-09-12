@@ -114,6 +114,7 @@ class javahelper(codehelper):
         self.asrt_exprs = {}            # map asrt expr names: asrt exprs
         self.forall_idx = 0
         self.asrt_exprs = {}
+        self.asrt_operands = []
 
     def _get_documentation(self, line):
         start = line - 1
@@ -388,7 +389,7 @@ class javahelper(codehelper):
                 else:
                     break
             cur = tr.add_node((asrt, None), par)
-            for delimiter in ["=>", "||", "&&"]:
+            for delimiter in ["=>", "||", "&&", "=="]:
                 cur.value = (cur.value[0], ' ' + delimiter + ' ')
                 parts = split_top_level(asrt, delimiter)
                 if len(parts) > 1:
@@ -408,14 +409,28 @@ class javahelper(codehelper):
                 fuzzexpr = f"fuzzexpr{self.asrt_exprs.__len__()}"
                 if node.value[1].strip() == "=>":
                     assert len(child_asrts) == 2, "Implication should have exactly two parts"
-                    self.asrt_exprs[fuzzexpr] = f"!({child_asrts[0]}) || ({child_asrts[1]})"
+                    self.asrt_exprs[fuzzexpr] = f"!{child_asrts[0]} || {child_asrts[1]}"
+                elif node.value[1].strip() == "==":
+                    assert len(child_asrts) == 2, "Equality should have exactly two parts"
+                    self.asrt_operands += child_asrts
+                    if self.asrt_exprs[child_asrts[0]] == "null" or self.asrt_exprs[child_asrts[1]] == "null":
+                        self.asrt_exprs[fuzzexpr] = f"{child_asrts[0]} == {child_asrts[1]}"
+                    else:
+                        self.asrt_exprs[fuzzexpr] = f"Objects.equals({child_asrts[0]}, {child_asrts[1]})"
                 else:
                     self.asrt_exprs[fuzzexpr] = node.value[1].join(child_asrts)
-                return f"fuzzexpr{self.asrt_exprs.__len__() - 1}"
+                return fuzzexpr
             else:
                 if node.value[1].strip() == "=>":
                     assert len(child_asrts) == 2, "Implication should have exactly two parts"
-                    return f"!({child_asrts[0]}) || ({child_asrts[1]})"
+                    return f"!{child_asrts[0]} || {child_asrts[1]}"
+                elif node.value[1].strip() == "==":
+                    assert len(child_asrts) == 2, "Equality should have exactly two parts"
+                    self.asrt_operands += child_asrts
+                    if self.asrt_exprs[child_asrts[0]] == "null" or self.asrt_exprs[child_asrts[1]] == "null":
+                        return f"{child_asrts[0]} == {child_asrts[1]}"
+                    else:
+                        return f"Objects.equals({child_asrts[0]}, {child_asrts[1]})"
                 else:
                     return node.value[1].join(child_asrts)
 
@@ -424,7 +439,10 @@ class javahelper(codehelper):
         asrt = traverse_tree(tr.root)
         split_addns = []
         for k, v in list(self.asrt_exprs.items())[start:]:
-            split_addns.append(f"Boolean {k} = Boolean.TRUE.equals(exec(() -> {v}));")
+            if k in self.asrt_operands:
+                split_addns.append(f"var {k} = exec(() -> {v});")
+            else:
+                split_addns.append(f"Boolean {k} = Boolean.TRUE.equals(exec(() -> {v}));")
         return split_addns, asrt
     
     def trans_formula(self, asrt):
