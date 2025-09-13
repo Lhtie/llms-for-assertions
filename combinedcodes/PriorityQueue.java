@@ -510,7 +510,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         // @@@ If the element is not null, then for every valid index before adding the element, the priority queue contains the element at that index.
         // assert e!=null => \forall int i; 0<=i && i<\old(this.size()); this.contains(\old(this.get(i)));
         // @@@ If the element is not null, then the element at the head of the queue after adding is less than or equal to the element that was at the head before adding.
-        // assert e!=null => this.peek().compareTo(\old(this.peek()))<=0;
+        // assert e!=null => this.comparator().compare(this.peek(), \old(this.peek()))<=0;
     }
 
     public E peek() {
@@ -518,7 +518,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         // @@@ If the size of the queue is greater than 0, then the result is not null.
         // assert this.size()>0 => \result!=null;
         // @@@ If the queue is not empty, then the element returned by peek is less than or equal to every other element in the queue.
-        // assert this.size()>0 => \forall int i; 0<=i && i<this.size(); \result.compareTo(this.get(i))<=0;
+        // assert this.size()>0 => \forall int i; 0<=i && i<this.size(); this.comparator().compare(\result, this.get(i))<=0;
         // @@@ If the size of the queue is zero, then the result is null.
         // assert this.size()==0 => \result==null;
     }
@@ -548,7 +548,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         // @@@ If the queue size was greater than 0 before the operation, then the size of the queue after the operation is one less than before.
         // assert \old(this.size())>0 => this.size()==\old(this.size())-1;
         // @@@ If the queue is not empty, the element at the head of the queue after the operation is greater than or equal to the element that was at the head before the operation.
-        // assert this.size()>0 => this.peek().compareTo(\old(this.peek()))>=0;
+        // assert this.size()>0 => this.comparator().compare(this.peek(), \old(this.peek()))>=0;
     }
 
     /**
@@ -577,7 +577,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         // @@@ If the queue initially contains the specified element, then the size of the queue after removal is one less than the initial size.
         // assert\old(this.contains(o)) => this.size()==\old(this.size())-1;
         // @@@ If the queue is not empty, the element at the head of the queue after removal is greater than or equal to the element that was at the head before removal.
-        // assert this.size()>0 => this.peek().compareTo(\old(this.peek()))>=0;
+        // assert this.size()>0 => this.comparator().compare(this.peek(), \old(this.peek()))>=0;
     }
 
     /**
