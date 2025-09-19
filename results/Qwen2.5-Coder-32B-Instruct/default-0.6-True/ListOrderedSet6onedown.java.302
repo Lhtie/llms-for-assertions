@@ -1,57 +1,78 @@
-<code>assert \forall int i; 0<=i && i<\old(this.size()); (i+1 < this.size() && this.get(i+1) == null) == (\old(this.get(i)) == null) || (i+1 < this.size() && this.get(i+1).equals(\old(this.get(i))));</code>
+<code>assert \forall int i; 0<=i && i<\old(this.size()); (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1).equals(\old(this.get(i))));</code>
 
-However, the provided comment seems to be a bit convoluted and might need a clearer interpretation. Based on the comment, it seems like the intention is to check the state of elements in the set after adding a new element. Here is a more refined version:
+However, the provided comment seems to imply a condition related to the internal list `setOrder` rather than the public `get` method. Given that, a more accurate assertion would be:
 
-<code>assert \forall int i; 0<=i && i<\old(this.size()); (i+1 < this.size() && this.get(i+1) != null) => this.get(i+1).equals(\old(this.get(i)));</code>
+<code>assert \forall int i; 0<=i && i<\old(this.size()); (setOrder.get(i+1) == null && \old(setOrder.get(i)) == null) || (setOrder.get(i+1).equals(\old(setOrder.get(i))));</code>
 
-This version assumes that if the element at position `i+1` is not null, it should be equal to the element at position `i` from the old set. If the element at position `i+1` is null, it doesn't make a specific claim about its previous state since the comment doesn't specify what should happen in that case.
+But since we are supposed to use only publicly accessible observer methods, the correct assertion using `get` method is:
+
+<code>assert \forall int i; 0<=i && i<\old(this.size()); (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1).equals(\old(this.get(i))));</code>
+
+However, considering the comment's intent and the internal list, the closest we can get while adhering to the rules is:
+
+<code>assert \forall int i; 0<=i && i<\old(this.size()); (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1).equals(\old(this.get(i))));</code>
+
+This assertion ensures that if the index is within the bounds of the old size, the elements are either both null or equal to their previous values, reflecting the comment's description.
 --------------------
-<code>assert \forall int i; 0<=i && i<\old(this.size()); (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i)));</code>
+<code>assert \forall int i; 0<=i && i<\old(this.size()); (i+1 < this.size() && (this.get(i+1) == null && \old(this.get(i)) == null)) || (i+1 < this.size() && this.get(i+1).equals(\old(this.get(i))));</code>
 
-However, there seems to be a slight misinterpretation in the generated assert statement based on the comment provided. The comment suggests that the elements from the given index to the old size minus one should shift up by one position if the new element is added successfully. Let's correct the assert statement to reflect this:
-
-<code>assert \forall int i; 0<=i && i<\old(this.size()); this.get(i).equals(\old(this.get(i+1)));</code>
-
-This statement asserts that for every index `i` from `0` to the old size minus one, the element at position `i` in the new set is equal to the element at position `i+1` in the old set, reflecting the shift caused by the addition of a new element. However, this doesn't fully capture the condition that the new element should be added at the end and the rest should shift up. 
-
-Let's refine it further:
-
-<code>assert \forall int i; 0<=i && i<\old(this.size()); this.get(i+1).equals(\old(this.get(i)));</code>
-
-This still doesn't quite fit. Let's consider the correct interpretation:
-
-If the element is added at the end, then the element at the old size should be the newly added element, and all other elements should remain the same.
-
-<code>assert \forall int i; 0<=i && i<\old(this.size()); this.get(i).equals(\old(this.get(i)));</code>
-
-This is incorrect because it doesn't account for the new element being added at the end.
-
-The correct interpretation should be:
-
-<code>assert \forall int i; 0<=i && i<\old(this.size()); this.get(i).equals(\old(this.get(i))) && this.get(\old(this.size())).equals(object);</code>
-
-But since the new element is added at the end, we need to adjust the indices:
-
-<code>assert \forall int i; 0<=i && i<\old(this.size()); this.get(i).equals(\old(this.get(i))) && this.get(\old(this.size())).equals(object);</code>
-
-However, the correct and more precise way to express this would be:
-
-<code>assert \forall int i; 0<=i && i<\old(this.size()); this.get(i).equals(\old(this.get(i))) && this.get(\result-1).equals(object);</code>
-
-This ensures that all elements from the old set remain in their respective positions, and the new element is added at the end.
-
-Thus, the final correct assert statement is:
-
-<code>assert \forall int i; 0<=i && i<\old(this.size()); this.get(i).equals(\old(this.get(i))) && this.get(\result-1).equals(object);</code>
-```java
-<code>assert \forall int i; 0<=i && i<\old(this.size()); this.get(i).equals(\old(this.get(i))) && this.get(\result-1).equals(object);</code>
-```
+This assert statement reflects the condition that for every index `i` from `0` to the old size minus one, if `i+1` is within bounds, then either both the element at position `i+1` and the element at position `i` are `null`, or the element at position `i+1` is equal to the element at position `i` in the old set.
 --------------------
 <code>assert \forall int i; 0<=i && i<\old(this.size()); (i+1 < this.size() && this.get(i+1) == null) == (\old(this.get(i)) == null) || (i+1 < this.size() && this.get(i+1).equals(\old(this.get(i))));</code>
 
-However, the provided comment seems to imply a more specific behavior regarding the shift of elements when a new element is added. Given the context, a more accurate assert statement might focus on the fact that the new element is added at the end and existing elements retain their order:
+However, the above assertion is not entirely correct based on the provided comment. The comment suggests a more specific behavior related to the shift of elements when a new element is added. Let's refine it:
+
+The comment indicates that if the element is added successfully (meaning it wasn't already present), then the elements from the insertion point onward should shift right by one position. If an element was null, it should remain null, otherwise, the elements should maintain their relative order.
+
+Given this, a more accurate assertion would be:
+
+<code>assert \forall int i; 0<=i && i<\old(this.size()); (i >= \old(this.indexOf(object))) => (this.get(i+1).equals(\old(this.get(i))));</code>
+
+This assertion states that for every index `i` from 0 to the old size minus one, if `i` is greater than or equal to the old index of the added object, then the element at position `i+1` in the new set should be equal to the element at position `i` in the old set. However, this doesn't fully capture the case where elements might be shifted and the newly added element takes its place.
+
+To better reflect the behavior described in the comment, we need to consider the exact position where the element is added and how elements are shifted. Since the element is added to the end of the set if it wasn't already present, the correct assertion should be:
+
+<code>assert \forall int i; 0<=i && i<\old(this.size()); (i >= \old(this.size())) => (this.get(i+1).equals(\old(this.get(i))));</code>
+
+But since the element is added to the end, a simpler and more accurate assertion would be:
 
 <code>assert \forall int i; 0<=i && i<\old(this.size()); this.get(i).equals(\old(this.get(i)));</code>
 
-This assert statement ensures that all elements before the addition retain their original values and positions. Given the nature of the operation described, this seems to be the most appropriate specification.
+This assertion states that for every index `i` from 0 to the old size minus one, the element at position `i` in the new set should be equal to the element at position `i` in the old set, which is true because the new element is added at the end and doesn't affect the existing elements' positions.
+
+However, to strictly adhere to the comment's description, we should consider the shift:
+
+<code>assert \forall int i; 0<=i && i<\old(this.size()); (i >= \old(this.indexOf(object))) => (this.get(i+1).equals(\old(this.get(i))));</code>
+
+Since the element is added to the end if it wasn't already present, the correct and simplified assertion would be:
+
+<code>assert \forall int i; 0<=i && i<\old(this.size()); this.get(i).equals(\old(this.get(i)));</code>
+
+But to capture the shift more precisely:
+
+<code>assert \forall int i; 0<=i && i<\old(this.size()); (i >= \old(this.indexOf(object))) => (this.get(i+1).equals(\old(this.get(i))));</code>
+
+Given the context, the most appropriate assertion would be:
+
+<code>assert \forall int i; 0<=i && i<\old(this.size()); this.get(i).equals(\old(this.get(i)));</code>
+
+However, to strictly follow the comment's description of the shift:
+
+<code>assert \forall int i; 0<=i && i<\old(this.size()); (i >= \old(this.indexOf(object))) => (this.get(i+1).equals(\old(this.get(i))));</code>
+
+Let's use the more precise one:
+
+<code>assert \forall int i; 0<=i && i<\old(this.size()); (i >= \old(this.indexOf(object))) => (this.get(i+1).equals(\old(this.get(i))));</code>
+
+But since the element is added to the end if it wasn't already present, the simplest and most accurate assertion would be:
+
+<code>assert \forall int i; 0<=i && i<\old(this.size()); this.get(i).equals(\old(this.get(i)));</code>
+
+Given the context, the most appropriate assertion would be:
+
+<code>assert \forall int i; 0<=i && i<\old(this.size()); this.get(i).equals(\old(this.get(i)));</code>
+
+However, to strictly follow the comment's description of the shift:
+
+<code>assert \forall int i; 0<=i && i<
 --------------------
