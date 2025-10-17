@@ -88,30 +88,30 @@ import java.util.function.Supplier;
 import java.lang.Runnable;
 {0}
 
-import combinedcodes.{1};
+import {1}.{2};
 
-public class FuzzTest{2}{{
-    public{3} void FuzzTest_{4}({1}{2} {5}{6}){{
-        if ({5} == null) return ;   // ignore null test objects
+public class FuzzTest{3}{{
+    public{4} void FuzzTest_{5}({2}{3} {6}{7}){{
+        if ({6} == null) return ;   // ignore null test objects
         
         // copy old values
-{7}
-
-        // function call
 {8}
 
-        // compute forall
+        // function call
 {9}
 
-        // normal post condition
+        // compute forall
 {10}
-        Boolean normalpost = exec(() -> {11});
+
+        // normal post condition
+{11}
+        Boolean normalpost = exec(() -> {12});
         if (normalpost == null || !normalpost)
             throw new RuntimeException("Normal Postcondition Violated");
 
         // exceptional post condition
-{12}
-        Boolean exceptionalpost = exec(() -> {13});
+{13}
+        Boolean exceptionalpost = exec(() -> {14});
         if (exceptionalpost == null || !exceptionalpost)
             throw new RuntimeException("Exceptional Postcondition Violated");
     }}
@@ -322,6 +322,7 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     asrt, old_addns, forall_addns, split_addns = jh.trans_formula(asrt)
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
+    package = combinedcodes.split("/")[-1]
     class_generic = jh.classname[jh.classname.find("<"):] if jh.classname.find("<") != -1 else ""
     func_generic = jh.funcs[-1]["generic"]
     func_generic = f" {func_generic}" if func_generic is not None else ""
@@ -339,7 +340,7 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
         asrt = asrt.replace(jh.fuzz_objname, jh.fuzz_objname + "_final")
 
     code = javacode.format(
-        imports, jh.namespace, class_generic, func_generic, jh.funcname, jh.fuzz_objname, funcargs, 
+        imports, package, jh.namespace, class_generic, func_generic, jh.funcname, jh.fuzz_objname, funcargs, 
         old_addns, func_call, forall_addns, split_addns, asrt, "", "true"
     )
 

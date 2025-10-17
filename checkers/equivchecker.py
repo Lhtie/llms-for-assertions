@@ -87,27 +87,27 @@ import java.util.function.Supplier;
 import java.lang.Runnable;
 {0}
 
-import combinedcodes.{1};
+import {1}.{2};
 
-public class FuzzTest{2}{{
-    public{3} void FuzzTest_{4}({1}{2} {5}, {1}{2} {6}{7}){{
-        if ({5} == null || {6} == null) return ;   // ignore null test objects
+public class FuzzTest{3}{{
+    public{4} void FuzzTest_{5}({2}{3} {6}, {2}{3} {7}{8}){{
+        if ({6} == null || {7} == null) return ;   // ignore null test objects
         
         // copy old values
-{8}
-
-        // compute forall
 {9}
 
-        // normal post condition
+        // compute forall
 {10}
-        Boolean normalpost = exec(() -> {11});
+
+        // normal post condition
+{11}
+        Boolean normalpost = exec(() -> {12});
         if (normalpost == null || !normalpost)
             throw new RuntimeException("Normal Postcondition Violated");
 
         // exceptional post condition
-{12}
-        Boolean exceptionalpost = exec(() -> {13});
+{13}
+        Boolean exceptionalpost = exec(() -> {14});
         if (exceptionalpost == null || !exceptionalpost)
             throw new RuntimeException("Exceptional Postcondition Violated");
     }}
@@ -223,6 +223,7 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     split_addns = split_addns_asrt + split_addns_gt
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
+    package = combinedcodes.split("/")[-1]
     class_generic = jh.classname[jh.classname.find("<"):] if jh.classname.find("<") != -1 else ""
     func_generic = jh.funcs[-1]["generic"]
     func_generic = f" {func_generic}" if func_generic is not None else ""
@@ -237,7 +238,7 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
     split_addns = "\n".join(["\t\t" + l for l in split_addns])
 
     code = javacode.format(
-        imports, jh.namespace, class_generic, func_generic, jh.funcname,
+        imports, package, jh.namespace, class_generic, func_generic, jh.funcname,
         objarg_old, objarg_new, funcargs, old_addns, forall_addns,
         split_addns, f"({asrt}) == ({grnd_truth})", "", "true"
     )

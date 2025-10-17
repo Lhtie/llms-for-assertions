@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ ! -d "javacodes" ]; then
-    for cls in $(ls combinedcodes/*.java); do
+    for cls in $(ls naturalness/*.java); do
         python utils/dispatch.py --infile $cls --outdir javacodes --write --obsonly
     done
 fi
@@ -10,7 +10,7 @@ fi
 
 # python main.py --codedir javacodes --modellist qw32 --nsamples 3 --codelist {1..488} --resultdir ./results --write
 
-python checker.py --codedir javacodes --codelist 283 --resultlist ./results/Qwen2.5-Coder-32B-Instruct/* \
+python checker.py --codedir javacodes --codelist 1 --resultlist ./results/Qwen2.5-Coder-32B-Instruct/* \
     --checklist fuzz_check \
     --mask 0 \
     # --write

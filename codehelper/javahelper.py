@@ -20,7 +20,7 @@ third_party = [
     "./java-thirdparty/gs-core-2.0.jar",
     "./java-thirdparty/jgrapht-core-1.5.2.jar"
 ]
-combinedcodes = "./combinedcodes"
+combinedcodes = "./naturalness"
 
 def drop(typ):
     # drop extended types
