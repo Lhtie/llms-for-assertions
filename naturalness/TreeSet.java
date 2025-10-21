@@ -423,7 +423,7 @@ public class TreeSet<E> extends AbstractSet<E>
         // @@@ the returned value should be the first element in the set if it is not null.
         // assert \result!=null => \result.equals(\old(this.first()));
         // @@@ the polled value should not be present in the set after the operation if the return is not null.
-        // assert \result!=null => !this.contains(\result));
+        // assert \result!=null => !this.contains(\result);
     }
 
     /**
@@ -439,7 +439,7 @@ public class TreeSet<E> extends AbstractSet<E>
         // @@@ the returned value should be the last element in the set if it is not null.
         // assert \result!=null => \result.equals(\old(this.last()));
         // @@@ the polled value should not be present in the set after the operation if the return is not null.
-        // assert \result!=null => !this.contains(\result));
+        // assert \result!=null => !this.contains(\result);
     }
 
     /**
