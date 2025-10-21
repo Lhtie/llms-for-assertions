@@ -24,7 +24,7 @@ import java.util.TreeMap;
  *
  * <p><strong>Thread-safety:</strong> This class is not thread-safe.</p>
  */
-public final class Trie {
+public class Trie {
 
     /** Root node (represents the empty prefix). */
     private final Node root = new Node();
