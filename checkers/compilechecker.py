@@ -84,6 +84,7 @@ package fuzztests;
 import java.lang.reflect.Array;
 import java.util.function.Supplier;
 import java.lang.Runnable;
+import java.util.Objects;
 {0}
 
 import {1}.{2};
