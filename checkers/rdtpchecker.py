@@ -240,7 +240,7 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
     
         return rtc, forward_lift
 
-def java_rdtpcheck(pfx, sfx, grnd_truth, asrt, check):
+def java_rdtpcheck(pfx, sfx, asrt):
     if configs["java"]["model_backward"] is None:
         tokenizer, model, devices = load_model(configs["java"]["mkey_backward"])
         configs["java"]["model_backward"] = {
@@ -268,9 +268,9 @@ def java_rdtpcheck(pfx, sfx, grnd_truth, asrt, check):
         
         return gain >= config["threshold"]
 
-def rdtpcheck(langid, pfx, sfx, grnd_truth, asrt, check):
+def rdtpcheck(langid, pfx, sfx, grnd_truth, asrt, cc, check):
     if(langid == "java"):
-        result = java_rdtpcheck(pfx, sfx, grnd_truth, asrt, check)
+        result = java_rdtpcheck(pfx, sfx, asrt)
         os.makedirs(".cache", exist_ok=True)
         with open(f".cache/{langid}-rdtpcheck.json", "w") as f:
             json.dump(configs["java"]["records"], f, indent=4)

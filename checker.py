@@ -17,7 +17,7 @@ langmap = {
 }
 
 def check_gen(func):
-    def f(langid, pfx, sfx, grnd_truth, gen_asrts, mask):
+    def f(langid, pfx, sfx, grnd_truth, gen_asrts, cc, mask):
         arr, dp = [], {}
         for i, asrt in enumerate(gen_asrts):
             if not mask[i]:
@@ -28,7 +28,7 @@ def check_gen(func):
                 continue
             print("!"*10 + f" Entry {i}", file=sys.stderr)
             try:
-                result = func(langid, pfx, sfx, grnd_truth, asrt)
+                result = func(langid, pfx, sfx, grnd_truth, asrt, cc)
             except Exception as e:
                 print(f"Error in entry {i}: {e}", file=sys.stderr)
                 result = False
@@ -45,6 +45,7 @@ equiv_check     = check_gen(equivchecker.equivcheck)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--combinedcodes", type=str, default="./combinedcodes")
     parser.add_argument("--codedir", type=str, default="./codes")
     parser.add_argument("--codelist", nargs='+', default=[])
     parser.add_argument("--resultlist", nargs='+', default=["./results/*/*/"])
@@ -102,6 +103,7 @@ if __name__ == "__main__":
                     continue # result extract file doesnt exist
 
                 pfx, sfx = "\n".join(lines[:asrtlno]), "\n".join(lines[asrtlno+1:])
+                cc = args.combinedcodes
 
                 checks = []
                 for check in args.checklist:
@@ -121,7 +123,7 @@ if __name__ == "__main__":
 
                 for chk_name, chk in zip(args.checklist, checks):
                     print("!"*10 + f" Running {chk_name}", file=sys.stderr)
-                    resmask = chk(langid, pfx, sfx, grnd_truth, gen_asrts, currmask)
+                    resmask = chk(langid, pfx, sfx, grnd_truth, gen_asrts, cc, currmask)
                     toprint += f"{chk_name}: {str(resmask)} {sum(resmask)}/{len(resmask)}\n"
                 final = resmask
 

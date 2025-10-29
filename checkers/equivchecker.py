@@ -7,7 +7,7 @@ import glob
 
 from codehelper.csharphelper import *
 from codehelper.javahelper import javahelper
-from codehelper.javahelper import third_party, combinedcodes
+from codehelper.javahelper import third_party
 
 cscode = """
 // AssemblyInfo.cs
@@ -120,6 +120,15 @@ public class FuzzTest{3}{{
 			return null;
 		}}
 	}}
+ 
+    @SuppressWarnings("unchecked")
+	public static <T> T get_from_array(Object arr, int index, T ex_val){{
+		try {{
+			return (T) Array.get(arr, index);
+		}} catch (Exception fuzzexception) {{
+			return null;
+		}}
+	}}
 }}
 """
 
@@ -212,7 +221,7 @@ def cs_equivcheck(pfx, sfx, grnd_truth, asrt):
     
     return passing_tests == total_tests
 
-def java_equivcheck(pfx, sfx, grnd_truth, asrt):
+def java_equivcheck(pfx, sfx, grnd_truth, asrt, combinedcodes):
     jh = javahelper(pfx + '\n' + sfx)
     jh.fuzz_objname = jh.fuzz_objname + "_new"
     asrt = jh.extract_formula(asrt)
@@ -295,7 +304,7 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt):
             return True
         return False
 
-def equivcheck(langid, pfx, sfx, grnd_truth, asrt):
+def equivcheck(langid, pfx, sfx, grnd_truth, asrt, cc):
     if(langid == "py"):
         result = True
 
@@ -303,7 +312,7 @@ def equivcheck(langid, pfx, sfx, grnd_truth, asrt):
         result = cs_equivcheck(pfx, sfx, grnd_truth, asrt)
 
     elif(langid == "java"):
-        result = java_equivcheck(pfx, sfx, grnd_truth, asrt)
+        result = java_equivcheck(pfx, sfx, grnd_truth, asrt, cc)
 
     else: 
         assert False, "Incorrect language id: " + langid

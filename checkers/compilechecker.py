@@ -7,7 +7,7 @@ import glob
 
 from codehelper.csharphelper import *
 from codehelper.javahelper import javahelper
-from codehelper.javahelper import third_party, combinedcodes
+from codehelper.javahelper import third_party
 
 cscode = """
 // AssemblyInfo.cs
@@ -124,6 +124,15 @@ public class FuzzTest{3}{{
             this.second = second;
         }}
     }}
+    
+    @SuppressWarnings("unchecked")
+	public static <T> T get_from_array(Object arr, int index, T ex_val){{
+		try {{
+			return (T) Array.get(arr, index);
+		}} catch (Exception fuzzexception) {{
+			return null;
+		}}
+	}}
     
     public static <T> T exec(Supplier<T> supplier){{
 		try {{
@@ -288,7 +297,7 @@ def py_cmplecheck(pfx, sfx, grnd_truth, asrt):
                 stderr=subprocess.DEVNULL)
     return proc.returncode == 0
 
-def java_cmplecheck(pfx, sfx, grnd_truth, asrt):
+def java_cmplecheck(pfx, sfx, grnd_truth, asrt, combinedcodes):
     jh = javahelper(pfx + '\n' + sfx)
     asrt = jh.extract_formula(asrt)
     asrt, old_addns, forall_addns, split_addns = jh.trans_formula(asrt)
@@ -342,7 +351,7 @@ def java_cmplecheck(pfx, sfx, grnd_truth, asrt):
     # shutil.rmtree(tmp_dir)
     return proc.returncode == 0
 
-def cmplecheck(langid, pfx, sfx, grnd_truth, asrt):
+def cmplecheck(langid, pfx, sfx, grnd_truth, asrt, cc):
 
     if(langid == "py"):
         result = py_cmplecheck(pfx, sfx, grnd_truth, asrt)
@@ -351,7 +360,7 @@ def cmplecheck(langid, pfx, sfx, grnd_truth, asrt):
         result = cs_cmplecheck(pfx, sfx, grnd_truth, asrt)
     
     elif(langid == "java"):
-        result = java_cmplecheck(pfx, sfx, grnd_truth, asrt)
+        result = java_cmplecheck(pfx, sfx, grnd_truth, asrt, cc)
 
     else: 
         assert False, "Incorrect language id: " + langid

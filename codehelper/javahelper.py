@@ -20,7 +20,6 @@ third_party = [
     "./java-thirdparty/gs-core-2.0.jar",
     "./java-thirdparty/jgrapht-core-1.5.2.jar"
 ]
-combinedcodes = "./naturalness"
 
 def drop(typ):
     # drop extended types
@@ -286,10 +285,11 @@ class javahelper(codehelper):
                         f"}});",
                     ]
                 for old_var_name, old_expr in old_addns_arr:
+                    ex = re.sub(rf'\b{re.escape(var_name)}\b', lo, old_expr)[11:-1]
                     cond_expr = cond_expr.replace(
-                        old_var_name.split("_forallidx")[0], f"Array.get({old_var_name}, cur_idx)")
+                        old_var_name.split("_forallidx")[0], f"get_from_array({old_var_name}, cur_idx, {ex})")
                     spec_expr = spec_expr.replace(
-                        old_var_name.split("_forallidx")[0], f"Array.get({old_var_name}, cur_idx)")
+                        old_var_name.split("_forallidx")[0], f"get_from_array({old_var_name}, cur_idx, {ex})")
 
             forall_addns += [
                 f"Boolean forall_holds_forallidx{self.forall_idx} = Boolean.TRUE.equals(exec(() -> {{",

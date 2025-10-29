@@ -7,7 +7,7 @@ import glob
 
 from codehelper.csharphelper import *
 from codehelper.javahelper import javahelper
-from codehelper.javahelper import third_party, combinedcodes
+from codehelper.javahelper import third_party
 
 cscode = """
 // AssemblyInfo.cs
@@ -126,6 +126,15 @@ public class FuzzTest{3}{{
             this.second = second;
         }}
     }}
+    
+    @SuppressWarnings("unchecked")
+	public static <T> T get_from_array(Object arr, int index, T ex_val){{
+		try {{
+			return (T) Array.get(arr, index);
+		}} catch (Exception fuzzexception) {{
+			return null;
+		}}
+	}}
     
     public static <T> T exec(Supplier<T> supplier){{
 		try {{
@@ -317,7 +326,7 @@ def cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     
     return passing_tests == total_tests
 
-def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
+def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, combinedcodes, check):
     jh = javahelper(pfx + '\n' + sfx)
     asrt = jh.extract_formula(asrt)
     asrt, old_addns, forall_addns, split_addns = jh.trans_formula(asrt)
@@ -392,7 +401,7 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
             return True
         return False
 
-def fuzzcheck(langid, pfx, sfx, grnd_truth, asrt, check):
+def fuzzcheck(langid, pfx, sfx, grnd_truth, asrt, cc, check):
     if(langid == "py"):
         result = True
 
@@ -400,7 +409,7 @@ def fuzzcheck(langid, pfx, sfx, grnd_truth, asrt, check):
         result = cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check)
 
     elif(langid == "java"):
-        result = java_fuzzcheck(pfx, sfx, grnd_truth, asrt, check)
+        result = java_fuzzcheck(pfx, sfx, grnd_truth, asrt, cc, check)
 
     else: 
         assert False, "Incorrect language id: " + langid

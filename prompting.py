@@ -346,7 +346,7 @@ langmap = {
         "java": ("java",    "//",   eg_java, r"Assert .*?;"),
 }
 
-default = """Your task is to read {0} code and output one assert statement (specification) corresponding to the comment that starts with "@@@". Please output the {0} code of the assert statement in a <code></code> block.\n"""
+default = """Your task is to read {0} code and output one assert statement (specification) corresponding to the comment that starts with "@@@". You can think step by step before coming up with the final answer, but please make sure that your final answer(the {0} code of the assert statement) is displayed in a <code></code> block.\n"""
 
 def apply_chat_template(mkey, tokenizer, inst, langid, onemsg):
     if onemsg:
