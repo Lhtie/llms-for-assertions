@@ -346,7 +346,9 @@ langmap = {
         "java": ("java",    "//",   eg_java, r"Assert .*?;"),
 }
 
-default = """Your task is to read {0} code and output one assert statement (specification) corresponding to the comment that starts with "@@@". You can think step by step before coming up with the final answer, but please make sure that your final answer(the {0} code of the assert statement) is displayed in a <code></code> block.\n"""
+default = """Your task is to read {0} code and output exactly one assert statement (specification) corresponding to the comment that starts with "@@@". 
+Your statement should accurately reflect the natural language assertion. Make sure to include all relevant details (such as premises, bounds, or branch cases), and avoid leaving out information or adding anything extraneous.
+You can think step by step before coming up with the final answer, but please make sure that your final answer(the {0} code of the assert statement) is displayed in a <code></code> block.\n"""
 
 def apply_chat_template(mkey, tokenizer, inst, langid, onemsg):
     if onemsg:
@@ -392,10 +394,9 @@ def transform(mkey, tid, tokenizer, code, langid, onemsg):
             header += f"Here are some rules and tips:\n"
             header += f"1. If the assert statement needs to access the value of an expression at the beginning of the function, you can use the `\\old(expression)` syntax.\n"
             header += f"2. To refer to the return value of the method in the assert statement, you can use `\\result` variable.\n"
-            header += f"3. To write A implies B, you may use the `A => B` syntax. Keep in mind that `=>` may only appear once at the top level of an expression, and multiple occurrences require explicit grouping using parentheses (`=>` has lower priority than `&&` and `||`).\n"
+            header += f"3. To write A implies B or B happens if A holds, you may use the `A => B` syntax. Keep in mind that `=>` is binary with exactly two operands, and `=>` has lower priority than operator `&&` and `||`.\n"
             header += f"4. If the assert statment needs to express that the `spec` should hold for each int variable `i` where `cond` holds, you may use `\\forall int i; cond; spec` syntax.\n"
             header += f"5. Use only publicly accessible observer methods provided in the test function. (Use `\\result` instead of calling the observer method that is being tested) All function calls in the test function should be of the format `this.func_name(args_list)`.\n"
-            header += f"6. Your statement should accurately reflect the natural language assertion. Make sure to include all relevant details (such as premises, bounds, or branch cases), and avoid leaving out information or adding anything extraneous.\n"
 
         else: raise NotImplementedError
         
