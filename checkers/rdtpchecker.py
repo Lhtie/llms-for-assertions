@@ -271,8 +271,8 @@ def java_rdtpcheck(pfx, sfx, asrt):
 def rdtpcheck(langid, pfx, sfx, grnd_truth, asrt, cc, check):
     if(langid == "java"):
         result = java_rdtpcheck(pfx, sfx, asrt)
-        os.makedirs(".cache", exist_ok=True)
-        with open(f".cache/{langid}-rdtpcheck.json", "w") as f:
+        os.makedirs("./results/logs", exist_ok=True)
+        with open(f"./results/logs/rdtpcheck_{langid}-{cc}.json", "w") as f:
             json.dump(configs["java"]["records"], f, indent=4)
 
     else: 
