@@ -10,7 +10,7 @@ fi
 
 # python main.py --codedir javacodes --modellist qw32 --nsamples 3 --codelist {1..488} --resultdir ./results --write
 
-python checker.py --codedir javacodes --codelist 27 --combinedcodes ./naturalness --resultlist ./results/naturalness/Qwen2.5-Coder-32B-Instruct/* \
-    --checklist equiv_check \
+python checker.py --codedir javacodes --codelist 1 --combinedcodes ./naturalness --resultlist ./results/naturalness/Qwen2.5-Coder-32B-Instruct/* \
+    --checklist fuzz_check \
     --mask 0 \
     # --write
