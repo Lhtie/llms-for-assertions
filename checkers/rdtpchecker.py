@@ -47,15 +47,15 @@ nli_instr = """Your task is to determine the relationship between two natural la
 For instances,
 The premise is \"size of the array is always greater than or equal to 0.\".
 The hypothesis is \"size of the array is less than 0.\".
-The answer is: Contradiction.
+The final answer should be Contradiction.
 
 The premise is \"first index of value in the array remains the same if value was already in the list.\".
 The hypothesis is \"first index of value in the array remains the same.\".
-The answer is: Neutral.
+The final answer should be Neutral.
 
 The premise is \"All the valid indices (between 0 and old size) in the array before add have the same element after add.\".
 The hypothesis is \"After the operation, all the elements in valid indices (between 0 and old size) in the array have the same value as before.\".
-The answer is: Entailment.
+The final answer should be Entailment.
 
 Here is the context information to help understand the sentences:
 The sentences are assertions in natural language form describing the expected behavior or properties of a piece of code, such as a function or method.
@@ -65,14 +65,19 @@ More specifically, You are given the implementation of a class {0}. Inside this 
 - The functionality of the method is documented below:
 {4}
 
-- Your output should be directly one of the three categories. (without any explanation or auxiliary information)
+Additional requirements:
 - Please ignore potential differences in wording or phrasing of technical terms.
 - Please be careful about details (numerical bounds, conditions, `\\old` symbol, implications and equivalence)
 - Only label as Neutral when the hypothesis clearly introduces new information not guaranteed by the premise, omits essential details required to verify it, or contains information unrelated to the premise.
 
+Output format:
+- First, breifly explain your reasoning process in 1-3 concise sentences.
+- Then, output only your decision as one of the three categories: Entailment, Contradiction, or Neutral wrapped in <ans> </ans> tags.
+- Place exactly one category inside the tags. Do not include anything else inside the tags.
+
+Here are the two assertions to evaluate:
 The premise is: {5}
 The hypothesis is: {6}
-Please provide the answer:
 """
 
 def load_model(mkey):
@@ -105,6 +110,14 @@ def load_model(mkey):
         model.eval()
         devices = {p.device for p in model.parameters()}
     return tokenizer, model, devices
+
+def extract_ans(res):
+    match = re.search(r"<ans>\s*(.*?)\s*</ans>", res, re.DOTALL)
+    if match:
+        ans_str = match.group(1)
+        return ans_str
+    else:
+        return None
 
 def sim(x, y):
     if sentmodel is None:
@@ -154,19 +167,20 @@ def equiv(x, y, mkey, model_dict, jh):
                 logits = model(**inputs).logits
             response = torch.softmax(logits, dim=1)[0]
             response = torch.argmax(response).item()
-            response = ["Contradiction", "Neutral", "Entailment"][response]
+            ans = ["Contradiction", "Neutral", "Entailment"][response]
         else:
-            response = run(mkey, model, tokenizer, inputs, 0.3)     # temp set to be 0.3
+            response = run(mkey, model, tokenizer, inputs, 0.6)     # temp set to be 0.6
+            ans = extract_ans(response)
         rec.append({
             "premise": premise,
             "hypothesis": hypothesis,
-            "response": response
+            "response": response,
+            "answer": ans
         })
 
-        c = response.find("Contradiction") != -1
-        n = response.find("Neutral") != -1
-        e = response.find("Entailment") != -1
-        # print(f"Response: {response}")
+        c = ans.find("Contradiction") != -1
+        n = ans.find("Neutral") != -1
+        e = ans.find("Entailment") != -1
         assert int(e) + int(c) + int(n) == 1, "Answer should be direct and exact"
         if c or n:
             return 0, rec
@@ -174,6 +188,7 @@ def equiv(x, y, mkey, model_dict, jh):
     return 1, rec
 
 def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
+
     mkey = config["mkey_backward"]
     
     assert config["model_backward"] is not None, "No model configurations"
