@@ -44,18 +44,28 @@ nli_instr = """You are judging whether two natural-language assertions about a m
 2. Contradiction: The second sentence contradicts with the first sentence.
 3. Neutral: The second sentence is neither entailed nor contradicted by the first sentence.
 
-For instances,
-The premise is \"size of the array is always greater than or equal to 0.\".
-The hypothesis is \"size of the array is less than 0.\".
-The final answer should be Contradiction.
+Additional requirements:
+- Please ignore potential differences in wording or phrasing of technical terms.
+- Please be careful about details (numerical bounds, conditions, `\\old` symbol, implications and equivalence)
+- Only label as Neutral when the hypothesis clearly introduces new information not guaranteed by the premise, omits essential details required to verify it, or contains information unrelated to the premise.
+- Be aware that you are in a programming context (both the premise and the hypothesis are post-conditions), so consider the implications of the assertions in relation to code behavior.
 
-The premise is \"first index of value in the array remains the same if value was already in the list.\".
-The hypothesis is \"first index of value in the array remains the same.\".
-The final answer should be Neutral.
+For instances,
+The premise is \"the result of the cloned array is not null.\".
+The hypothesis is \"the result of cloning the array can never be null.\".
+The final answer should be Entailment.
+
+The premise is \"the element is contained in the array after the add operation.\".
+The hypothesis is \"the element should be included in the array.\".
+The final answer should be Entailment.
 
 The premise is \"All the valid indices (between 0 and old size) in the array before add have the same element after add.\".
 The hypothesis is \"After the operation, all the elements in valid indices (between 0 and old size) in the array have the same value as before.\".
 The final answer should be Entailment.
+
+The premise is \"first index of value in the array remains the same if value was already in the list.\".
+The hypothesis is \"first index of value in the array remains the same.\".
+The final answer should be Neutral.
 
 Here is the context information to help understand the sentences:
 The sentences are assertions in natural language form describing the expected behavior or properties of a piece of code, such as a function or method.
@@ -64,12 +74,6 @@ More specifically, You are given the implementation of a class {0}. Inside this 
 - {3}
 - The functionality of the method is documented below:
 {4}
-
-Additional requirements:
-- Please ignore potential differences in wording or phrasing of technical terms.
-- Please be careful about details (numerical bounds, conditions, `\\old` symbol, implications and equivalence)
-- Only label as Neutral when the hypothesis clearly introduces new information not guaranteed by the premise, omits essential details required to verify it, or contains information unrelated to the premise.
-- Be aware that you are in a programming context, so consider the implications of the assertions in relation to code behavior.
 
 Output format:
 - First, breifly explain your reasoning process in 1-3 concise sentences.
