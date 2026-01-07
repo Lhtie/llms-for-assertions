@@ -39,7 +39,7 @@ configs = {
         "records": {}
     }
 }
-nli_instr = """Your task is to determine the relationship between two natural language assertions based on the following categories:
+nli_instr = """You are judging whether two natural-language assertions about a method are equivalent, contradictory, or unrelated, in the context of programming specification and method verification:
 1. Entailment: The second sentence logically follows from the first sentence.
 2. Contradiction: The second sentence contradicts with the first sentence.
 3. Neutral: The second sentence is neither entailed nor contradicted by the first sentence.
@@ -69,6 +69,7 @@ Additional requirements:
 - Please ignore potential differences in wording or phrasing of technical terms.
 - Please be careful about details (numerical bounds, conditions, `\\old` symbol, implications and equivalence)
 - Only label as Neutral when the hypothesis clearly introduces new information not guaranteed by the premise, omits essential details required to verify it, or contains information unrelated to the premise.
+- Be aware that you are in a programming context, so consider the implications of the assertions in relation to code behavior.
 
 Output format:
 - First, breifly explain your reasoning process in 1-3 concise sentences.
