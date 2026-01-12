@@ -25,16 +25,16 @@ modelpaths = {
         "qw32":     "Qwen2.5-Coder-32B-Instruct",
         "rlm":      "roberta-large-mnli",
         "gpt3":     "gpt-3.5-turbo",
-        "gpt4":     "gpt-4-turbo"
+        "gpt4":     "gpt-4.1"
 }
 configs = {
     "java": {
-        "mkey_backward": "qw32",
+        "mkey_backward": "gpt4",
         "num_backward": 8,
         "model_backward": None,
         "threshold": 0.6,
         "use_nli": True,
-        "mkey_nli": "qw32",
+        "mkey_nli": "gpt4",
         "model_nli": None,
         "records": {}
     }
@@ -292,7 +292,7 @@ def rdtpcheck(langid, pfx, sfx, grnd_truth, asrt, cc, check):
     if(langid == "java"):
         result = java_rdtpcheck(pfx, sfx, asrt)
         os.makedirs("./results/logs", exist_ok=True)
-        with open(f"./results/logs/rdtpcheck_{langid}-{cc.split('/')[-1]}.json", "w") as f:
+        with open(f"./results/logs/rdtpcheck_{langid}_{configs[langid]['mkey_backward']}_{configs[langid]['mkey_nli']}-{cc.split('/')[-1]}.json", "w") as f:
             json.dump(configs["java"]["records"], f, indent=4)
 
     else: 
