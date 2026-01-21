@@ -178,8 +178,6 @@ public class Path implements Structure {
 	 */
 	public boolean empty() {
 		return nodePath.empty();
-        // @@@ The result is true if and only if the size of the path is zero.
-        // assert \result==(this.size()==0);
 	}
 
 	/**
@@ -411,8 +409,6 @@ public class Path implements Structure {
 	 */
 	public int size() {
 		return nodePath.size();
-        // @@@ The size of the path is always greater than or equal to 0.
-        // assert \result>=0;
 	}
 
 	/**

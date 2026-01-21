@@ -601,10 +601,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
      */
     public boolean isEmpty() {
         return wordsInUse == 0;
-        // @@@ The result is true if and only if the number of bits set to true in this BitSet is zero.
-        // assert \result==(this.cardinality()==0);
-        // @@@ The result is true if and only if the length of the BitSet is zero.
-        // assert \result==(this.length()==0);
     }
 
     /**
@@ -621,8 +617,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         return BITS_PER_WORD * (wordsInUse - 1) +
             (BITS_PER_WORD - Long.numberOfLeadingZeros(words[wordsInUse - 1]));
-        // @@@ The logical size of the BitSet is always greater than or equal to 0.
-        // assert \result>=0;
     }
 
     /**
@@ -977,8 +971,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
      */
     public int size() {
         return words.length * BITS_PER_WORD;
-        // @@@ The size of the BitSet in bits is always greater than or equal to 0.
-        // assert /result>=0;
     }
 
     /**
@@ -1105,7 +1097,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
             ;
         return new BitSet(Arrays.copyOf(longs, n));
         // @@@ The returned BitSet is not null and its long array representation is equal to the input long array.
-        // assert \result!=null && \result.toLongArray().equals(longs);
+        // assert \result!=null && Arrays.equals(\result.toLongArray(), longs);
     }
 
     /**
@@ -1133,7 +1125,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
         lb.get(words);
         return new BitSet(words);
         // @@@ The returned BitSet is not null and each element in the long array representation of the returned BitSet matches the corresponding element in the LongBuffer from its current position to its limit.
-        // assert \result!=null && \forall int i; 0<=i && i<\result.toLongArray().size(); \result.toLongArray()[i].equals(lb.get(i));
+        // assert \result!=null && \forall int i; 0<=i && i<\result.toLongArray().length; \result.toLongArray()[i] == lb.get(i);
     }
 
     /**
@@ -1154,7 +1146,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
     public static BitSet valueOf(byte[] bytes) {
         return BitSet.valueOf(ByteBuffer.wrap(bytes));
         // @@@ The returned BitSet is not null and its byte array representation is equal to the input byte array.
-        // assert \result!=null && \result.toByteArray().equals(bytes);
+        // assert \result!=null && Arrays.equals(\result.toByteArray(), bytes);
     }
 
     /**
@@ -1187,7 +1179,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
             words[i] |= (bb.get() & 0xffL) << (8 * j);
         return new BitSet(words);
         // @@@ The result is not null and each byte in the resulting BitSet's byte array representation matches the corresponding byte in the ByteBuffer 'bb' from index 0 up to the size of the byte array.
-        // assert \result!=null && \forall int i; 0<=i && i<\result.toByteArray().size(); \result.toByteArray()[i].equals(bb.get(i))
+        // assert \result!=null && \forall int i; 0<=i && i<\result.toByteArray().length; \result.toByteArray()[i] == bb.get(i);
     }
 
     /**

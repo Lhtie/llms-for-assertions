@@ -11,7 +11,7 @@ fi
 # python main.py --codedir javacodes --modellist qw32 --nsamples 3 --codelist {1..488} --resultdir ./results --write
 # 46 48 63 430 440 441 446 458 459 460 465 477 222 230 243 245 249 261 269 273 276 279 281 290
 
-python checker.py --codedir javacodes --codelist 243 --combinedcodes ./combinedcodes --resultlist ./results/Qwen2.5-Coder-32B-Instruct/* \
-    --checklist equiv_check \
+python checker.py --codedir javacodes --codelist 147 --combinedcodes ./combinedcodes --resultlist ./results/Qwen2.5-Coder-32B-Instruct/* \
+    --checklist fuzz_check \
     --mask 0 \
     # --write

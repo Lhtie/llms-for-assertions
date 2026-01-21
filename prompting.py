@@ -234,10 +234,11 @@ eg_java = [
         _items[_sz] = value;
         _version++;
         return _sz++;
-        // @@@ first index of value in the array remains the same if value was already in the list
+        // @@@ first index of value in the array remains the same if value was already in the list,
+            and value should be at the end of the array if it was not contained before.
     }
 }""", 
-"<code>assert \\old(this.contains(value)) => this.index_of(value) == \\old(this.index_of(value));</code>"
+"<code>assert (\\old(this.contains(value)) => this.index_of(value) == \\old(this.index_of(value))) && (!\\old(this.contains(value)) => this.index_of(value) == this.getCount()-1);</code>"
 ),
 #2
 ("""public class Array<T> {
@@ -394,7 +395,7 @@ def transform(mkey, tid, tokenizer, code, langid, onemsg):
             header += f"Here are some rules and tips:\n"
             header += f"1. If the assert statement needs to access the value of an expression at the beginning of the function, you can use the `\\old(expression)` syntax.\n"
             header += f"2. To refer to the return value of the method in the assert statement, you can use `\\result` variable.\n"
-            header += f"3. To write A implies B or B happens if A holds, you may use the `A => B` syntax. Keep in mind that `=>` is binary with exactly two operands, and `=>` has lower priority than operator `&&` and `||`.\n"
+            header += f"3. To write A implies B or B happens if A holds, you may use the `A => B` syntax. Keep in mind that `=>` is binary with exactly two operands, and `=>` has lower priority than operator `&&` and `||` so use parentheses to ensure correct grouping.\n"
             header += f"4. If the assert statment needs to express that the `spec` should hold for each int variable `i` where `cond` holds, you may use `\\forall int i; cond; spec` syntax.\n"
             header += f"5. Use only publicly accessible observer methods provided in the test function. (Use `\\result` instead of calling the observer method that is being tested) All function calls in the test function should be of the format `this.func_name(args_list)`.\n"
 

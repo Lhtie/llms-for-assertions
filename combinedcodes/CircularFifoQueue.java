@@ -233,8 +233,6 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
     @Override
     public boolean isEmpty() {
         return size() == 0;
-        // @@@ The result is true if and only if the size of the queue is zero.
-        // assert \result==(this.size()==0);
     }
 
     /**
@@ -401,8 +399,6 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
         }
 
         return size;
-        // @@@ The size of the queue is always greater than or equal to 0.
-        // assert \result>=0;
     }
 
     /**

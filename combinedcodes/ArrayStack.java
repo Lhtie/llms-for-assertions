@@ -67,8 +67,6 @@ public class ArrayStack<E> extends ArrayList<E> {
      */
     public boolean empty() {
         return isEmpty();
-        // @@@ The result is true if and only if the size of the stack is zero.
-        // assert \result==(this.size()==0);
     }
 
     /**
@@ -83,8 +81,6 @@ public class ArrayStack<E> extends ArrayList<E> {
             throw new EmptyStackException();
         }
         return get(n - 1);
-        // @@@ If the stack is initially not empty, then the result is either null and the last item in the stack is null, or the result is equal to the last item in the stack.
-        // assert !\old(this.empty()) => \result==null && this.get(this.size()-1)==null|| \result.equals(this.get(this.size()-1));
     }
 
     /**
@@ -131,7 +127,7 @@ public class ArrayStack<E> extends ArrayList<E> {
         add(item);
         return item;
         // @@@ The stack contains the pushed item after the operation.
-        // assert this.contains(e);
+        // assert this.contains(item);
         // @@@ If the pushed item is null, then the last item in the stack is also null; otherwise, the last item in the stack is equal to the pushed item.
         // assert item==null && this.get(this.size()-1)==null || item!=null && item.equals(this.get(this.size()-1));
     }

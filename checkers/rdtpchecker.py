@@ -9,6 +9,7 @@ import re
 import json
 import glob
 import subprocess
+import numpy as np
 
 from keysecrets import *
 from codehelper.javahelper import *
@@ -34,38 +35,48 @@ configs = {
         "model_backward": None,
         "threshold": 0.6,
         "use_nli": True,
+        "mode_nli": "score",    # "label" or "score"
         "mkey_nli": "gpt4",
         "model_nli": None,
         "records": {}
     }
 }
-nli_instr = """You are judging whether two natural-language assertions about a method are equivalent, contradictory, or unrelated, in the context of programming specification and method verification:
-1. Entailment: The second sentence logically follows from the first sentence.
-2. Contradiction: The second sentence contradicts with the first sentence.
-3. Neutral: The second sentence is neither entailed nor contradicted by the first sentence.
+nli_instr = """You are judging whether two natural-language assertions about a method are equivalent, contradictory, or unrelated, in the context of programming specification and method verification.
+Instead of outputting a discrete label, output a real-valued matching score in the range [-1.0, 1.0] that measures how well the detailed semantics of the hypothesis matches the premise.
+Score interpretation:
+1. +1.0  = Perfect Match: The hypothesis expresses the same meaning and constraints as the premise, possibly with different wording.
+2. +0.5  = Partial Match: The hypothesis is mostly consistent with the premise but misses some conditions, weakens constraints, or only describes a subset of the behavior.
+3.  0.0  = No Match / Unrelated: The hypothesis describes different properties, introduces unrelated information, or is independent of the premise.
+4. -0.5  = Partial Conflict: Some parts of the hypothesis contradict the premise, or the constraints are incompatible in certain cases.
+5. -1.0  = Complete Conflict: The hypothesis expresses behavior that directly contradicts the premise and cannot be true at the same time.
 
 Additional requirements:
 - Please ignore potential differences in wording or phrasing of technical terms.
-- Please be careful about details (numerical bounds, conditions, `\\old` symbol, implications and equivalence)
-- Only label as Neutral when the hypothesis clearly introduces new information not guaranteed by the premise, omits essential details required to verify it, or contains information unrelated to the premise.
+- Please be careful about details
+  - numerical bounds, conditions, `\\old` symbol, implications and equivalence)
+- Only score as Neutral (0.0) when the hypothesis clearly introduces new information not guaranteed by the premise, omits essential details required to verify it, or contains information unrelated to the premise.
 - Be aware that you are in a programming context (both the premise and the hypothesis are post-conditions), so consider the implications of the assertions in relation to code behavior.
+- The score should primarily reflect:
+  - how completely the hypothesis preserves the constraints in the premise
+  - whether important conditions are missing or weakened
+  - whether extra restrictions or contradictions are introduced
 
 For instances,
 The premise is \"the result of the cloned array is not null.\".
 The hypothesis is \"the result of cloning the array can never be null.\".
-The final answer should be Entailment.
+The final answer should be 1.0.
 
 The premise is \"the element is contained in the array after the add operation.\".
 The hypothesis is \"the element should be included in the array.\".
-The final answer should be Entailment.
+The final answer should be 1.0.
 
 The premise is \"All the valid indices (between 0 and old size) in the array before add have the same element after add.\".
-The hypothesis is \"After the operation, all the elements in valid indices (between 0 and old size) in the array have the same value as before.\".
-The final answer should be Entailment.
+The hypothesis is \"After the operation, all the elements in valid indices in the array have the same value as before.\".
+The final answer should be 0.8.
 
 The premise is \"first index of value in the array remains the same if value was already in the list.\".
 The hypothesis is \"first index of value in the array remains the same.\".
-The final answer should be Neutral.
+The final answer should be 0.1.
 
 Here is the context information to help understand the sentences:
 The sentences are assertions in natural language form describing the expected behavior or properties of a piece of code, such as a function or method.
@@ -77,8 +88,8 @@ More specifically, You are given the implementation of a class {0}. Inside this 
 
 Output format:
 - First, breifly explain your reasoning process in 1-3 concise sentences.
-- Then, output only your decision as one of the three categories: Entailment, Contradiction, or Neutral wrapped in <ans> </ans> tags.
-- Place exactly one category inside the tags. Do not include anything else inside the tags.
+- Then, output only your decision as real-valued score wrapped in <ans> </ans> tags.
+- Place exactly one score inside the tags. Do not include anything else inside the tags.
 
 Here are the two assertions to evaluate:
 The premise is: {5}
@@ -120,9 +131,20 @@ def extract_ans(res):
     match = re.search(r"<ans>\s*(.*?)\s*</ans>", res, re.DOTALL)
     if match:
         ans_str = match.group(1)
-        return ans_str
+        try:
+            return float(ans_str)
+        except ValueError:
+            return None
     else:
         return None
+
+def score_to_label(score, pos_th=0.3, neg_th=-0.3):
+    if score >= pos_th:
+        return "Entailment"
+    elif score <= neg_th:
+        return "Contradiction"
+    else:
+        return "Neutral"
 
 def sim(x, y):
     if sentmodel is None:
@@ -133,13 +155,18 @@ def sim(x, y):
     similarity = util.cos_sim(embx, emby)
     return similarity.item()
 
-def equiv(x, y, mkey, model_dict, jh):
+def equiv(x, y, config, mode, jh):
+    mkey = config["mkey_nli"]
+    model_dict = config["model_nli"]
+    threshold = config["threshold"]
+    
     assert model_dict is not None, "No model configurations"
     tokenizer = model_dict["tokenizer"]
     model = model_dict["model"]
     devices = model_dict["devices"]
 
     rec = []
+    scores = []
     for premise, hypothesis in [(x, y), (y, x)]:
         prompt = nli_instr.format(
             jh.classname, jh.funcname, 
@@ -167,15 +194,10 @@ def equiv(x, y, mkey, model_dict, jh):
             inputs = inputs.to(model.device)
 
         # print(f"Inputs: {inputs[1]['content']}")
-        if mkey == "rlm":
-            with torch.no_grad():
-                logits = model(**inputs).logits
-            response = torch.softmax(logits, dim=1)[0]
-            response = torch.argmax(response).item()
-            ans = ["Contradiction", "Neutral", "Entailment"][response]
-        else:
-            response = run(mkey, model, tokenizer, inputs, 0.6)     # temp set to be 0.6
-            ans = extract_ans(response)
+        response = run(mkey, model, tokenizer, inputs, 0.6)     # temp set to be 0.6
+        ans = extract_ans(response)
+        if mode == "label":
+            ans = score_to_label(ans, threshold, -threshold)
         rec.append({
             "premise": premise,
             "hypothesis": hypothesis,
@@ -183,14 +205,17 @@ def equiv(x, y, mkey, model_dict, jh):
             "answer": ans
         })
 
-        c = ans.find("Contradiction") != -1
-        n = ans.find("Neutral") != -1
-        e = ans.find("Entailment") != -1
-        assert int(e) + int(c) + int(n) == 1, "Answer should be direct and exact"
-        if c or n:
-            return 0, rec
+        if mode == "label":
+            c = ans.find("Contradiction") != -1
+            n = ans.find("Neutral") != -1
+            e = ans.find("Entailment") != -1
+            assert int(e) + int(c) + int(n) == 1, "Answer should be direct and exact"
+            if c or n:
+                scores.append(int(e))
+        else:
+            scores.append(ans)
     
-    return 1, rec
+    return np.min(scores), rec
 
 def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
 
@@ -232,7 +257,7 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
                 f, rec = equiv(
                     response.split("@@@")[-1].strip(), 
                     cmnt_line.split("@@@")[-1].strip(),
-                    config["mkey_nli"], config["model_nli"], jh
+                    config, jh
                 )
                 tot += f
                 config["records"][rec_title]["samples"].append({
@@ -292,7 +317,7 @@ def rdtpcheck(langid, pfx, sfx, grnd_truth, asrt, cc, check):
     if(langid == "java"):
         result = java_rdtpcheck(pfx, sfx, asrt)
         os.makedirs("./results/logs", exist_ok=True)
-        with open(f"./results/logs/rdtpcheck_{langid}_{configs[langid]['mkey_backward']}_{configs[langid]['mkey_nli']}-{cc.split('/')[-1]}.json", "w") as f:
+        with open(f"./results/logs/rdtpcheck_{langid}_{configs[langid]['mkey_backward']}_{configs[langid]['mkey_nli']}_{configs[langid]['mode_nli']}-{cc.split('/')[-1]}.json", "w") as f:
             json.dump(configs["java"]["records"], f, indent=4)
 
     else: 

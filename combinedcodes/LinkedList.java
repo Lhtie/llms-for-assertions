@@ -319,7 +319,7 @@ public class LinkedList<E>
         // @@@ The size of the cloned list is equal to the size of the original list.
         // assert ((LinkedList<E>) \result).size()==this.size();
         // @@@ For every valid index in the original list, the element at that index in the cloned list is the same as the element at that index in the original list.
-        // assert \forall int i; 0<=i && i<this.size(); ((LinkedList<E>) result).get(i)==this.get(i);
+        // assert \forall int i; 0<=i && i<this.size(); ((LinkedList<E>) \result).get(i)==this.get(i);
         // @@@ The result of cloning the list is never null.
         // assert \result!=null;
     }
@@ -369,8 +369,6 @@ public class LinkedList<E>
      */
     public E element() {
         return getFirst();
-        // @@@ If the list is initially not empty, then the result is either null and the first element is null, or the result equals the first element of the list.
-        // assert !\old(this.isEmpty()) => \result==null && this.get(0)==null|| \result.equals(this.get(0));
     }
 
     /**
@@ -396,8 +394,6 @@ public class LinkedList<E>
         if (f == null)
             throw new NoSuchElementException();
         return f.item;
-        // @@@ If the list is initially not empty, then the result is either null and the first element of the list is also null, or the result equals the first element of the list.
-        // assert !\old(this.isEmpty()) => \result==null && this.get(0)==null|| \result.equals(this.get(0));
     }
 
     /**
@@ -411,8 +407,6 @@ public class LinkedList<E>
         if (l == null)
             throw new NoSuchElementException();
         return l.item;
-        // @@@ If the list is initially not empty, then the result is either null or equals the last element of the list.
-        // assert !\old(this.isEmpty()) => \result==null || \result.equals(this.get(this.size()-1));
     }
 
     /**
@@ -442,12 +436,6 @@ public class LinkedList<E>
             }
         }
         return -1;
-        // @@@ If the index of the first occurrence of the specified element is not -1 and the element at that index is null, then the specified element is null.
-        // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ If the result is not -1 and the element at the resulting index is not null, then the element at that index is equal to the specified element.
-        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ If the result is not -1, then for every index i from 0 to the result minus one, either the element at index i is null and o is not null, or the element at index i is not null and does not equal o.
-        // assert \result!=-1 => \forall int i; 0<=i && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
     /**
@@ -492,12 +480,6 @@ public class LinkedList<E>
             }
         }
         return -1;
-        // @@@ If the method returns a non-negative index and the element at that index is null, then the searched object must also be null.
-        // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ If the method returns a non-negative index and the element at that index is not null, then the element at that index is equal to the specified element 'o'.
-        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ If the result is not -1, then for every index greater than the result and less than the size of the list, if the searched object is not null, the element at that index is null, or if the searched object is not null, the element at that index is not equal to the searched object.
-        // assert \result!=-1 => \forall int i; \result<i && i<this.size(); this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
     /**
@@ -762,10 +744,6 @@ public class LinkedList<E>
     public E peek() {
         final Node<E> f = first;
         return (f == null) ? null : f.item;
-        // @@@ If the list is initially not empty, then the result is either null and the first element is null, or the result is equal to the first element of the list.
-        // assert !\old(this.isEmpty()) => \result==null && this.get(0)==null|| \result.equals(this.get(0));
-        // @@@ If the list is initially empty, then the result is null.
-        // assert \old(this.isEmpty()) => \result==null;
     }
 
     /**
@@ -779,10 +757,6 @@ public class LinkedList<E>
     public E peekFirst() {
         final Node<E> f = first;
         return (f == null) ? null : f.item;
-        // @@@ If the list is initially not empty, then the result is either null and the first element is null, or the result is equal to the first element of the list.
-        // assert !\old(this.isEmpty()) => \result==null && this.get(0)==null|| \result.equals(this.get(0));
-        // @@@ If the list is initially empty, then the result is null.
-        // assert \old(this.isEmpty()) => \result==null;
      }
 
     /**
@@ -796,10 +770,6 @@ public class LinkedList<E>
     public E peekLast() {
         final Node<E> l = last;
         return (l == null) ? null : l.item;
-        // @@@ If the list is initially not empty, then the result is either null or equals the last element of the list.
-        // assert !\old(this.isEmpty()) => \result==null || \result.equals(this.get(this.size()-1));
-        // @@@ If the list is initially empty, then the result is null.
-        // assert \old(this.isEmpty()) => \result==null;
     }
 
     /**
@@ -1065,8 +1035,6 @@ public class LinkedList<E>
      */
     public int size() {
         return size;
-        // @@@ The number of elements in the list is always greater than or equal to 0.
-        // assert \result>=0;
     }
 
     /**

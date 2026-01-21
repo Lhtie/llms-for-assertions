@@ -360,12 +360,6 @@ public class ArrayList<E> extends AbstractList<E>
      */
     public int indexOf(Object o) {
         return indexOfRange(o, 0, size);
-        // @@@ If the result is not -1 and the element at the resulting index is null, then the searched object must be null.
-        // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ If the result is not -1 and the element at the result index is not null, then the element at the result index must be equal to the specified element.
-        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ If the result is not -1, then for every index from 0 to result-1, the element at that index is either null and the searched object is not null, or the element is not null and does not equal the searched object.
-        // assert \result!=-1 => \forall int i; 0<=i && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
     int indexOfRange(Object o, int start, int end) {
@@ -393,8 +387,6 @@ public class ArrayList<E> extends AbstractList<E>
      */
     public boolean isEmpty() {
         return size == 0;
-        // @@@ The result is true if and only if the size of the list is zero.
-        // assert \result==(this.size()==0);
     }
 
     /**
@@ -484,12 +476,6 @@ public class ArrayList<E> extends AbstractList<E>
      */
     public int lastIndexOf(Object o) {
         return lastIndexOfRange(o, 0, size);
-        // @@@ If the result is not -1 and the element at the resulting index is null, then the searched object must be null.
-        // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ If the result is not -1 and the element at the result index is not null, then the element at the result index must be equal to the specified element 'o'.
-        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ If the result is not -1, then for every index greater than the result and less than the size of the list, the element at that index is either null and the searched object is not null, or the element is not null and does not equal the searched object.
-        // assert \result!=-1 => \forall int i; \result<i && i<this.size(); this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
     int lastIndexOfRange(Object o, int start, int end) {
@@ -781,8 +767,6 @@ public class ArrayList<E> extends AbstractList<E>
      */
     public int size() {
         return size;
-        // @@@ The number of elements in the list is always greater than or equal to 0.
-        // assert \result>=0;
     }
 
     /**

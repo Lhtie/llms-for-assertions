@@ -226,8 +226,6 @@ public class HashSet<E>
      */
     public boolean isEmpty() {
         return map.isEmpty();
-        // @@@ The result is true if and only if the size of the set is zero.
-        // assert \result==(this.size()==0);
     }
 
     /**
@@ -268,8 +266,6 @@ public class HashSet<E>
      */
     public int size() {
         return map.size();
-        // @@@ The result is equal to the size of the map.
-        // assert \result==map.size();
     }
 
     /**

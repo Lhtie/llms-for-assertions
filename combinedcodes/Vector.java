@@ -479,8 +479,6 @@ public class Vector<E>
         }
 
         return elementData(index);
-        // @@@ If the index is greater than or equal to 0 and less than the initial size of the vector, then the result is equal to the element at that index.
-        // assert index>=0 && index<\old(this.size()) => \result==this.get(index);
     }
 
     @SuppressWarnings("unchecked")
@@ -546,8 +544,6 @@ public class Vector<E>
             throw new NoSuchElementException();
         }
         return elementData(0);
-        // @@@ If the initial vector is not empty, then the result is the first element of the vector.
-        // assert \old(this.size())!=0 => \result==this.get(0);
     }
 
     /**
@@ -625,12 +621,6 @@ public class Vector<E>
      */
     public int indexOf(Object o) {
         return indexOf(o, 0);
-        // @@@ If the method returns an index that is not -1 and the element at that index is null, then the searched object must also be null.
-        // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ If the method returns an index that is not -1 and the element at that position is not null, then the element at that position must be equal to the specified element.
-        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ If the result is not -1, then for every index from 0 up to but not including the result, either the element at that index is null and the object being searched is not null, or the element at that index is not null and does not equal the object being searched.
-        // assert \result!=-1 => \forall int i; 0<=i && i<\result; this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
     /**
@@ -660,10 +650,6 @@ public class Vector<E>
                     return i;
         }
         return -1;
-        // @@@ If the method returns an index that is not -1 and the element at that index is null, then the searched object must also be null.
-        // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ If the result is not -1 and the element at the resulting index is not null, then the element at that index is equal to the specified object.
-        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
     }
 
     /**
@@ -726,8 +712,6 @@ public class Vector<E>
      */
     public synchronized boolean isEmpty() {
         return elementCount == 0;
-        // @@@ The result is true if and only if the size of the vector is zero.
-        // assert \result==(this.size()==0);
     }
 
     /**
@@ -817,8 +801,6 @@ public class Vector<E>
             throw new NoSuchElementException();
         }
         return elementData(elementCount - 1);
-        // @@@ If the vector is initially not empty, then the result is the same as the last element of the vector.
-        // assert \old(this.size())!=0 => \result==this.get(this.size()-1);
     }
 
     /**
@@ -834,12 +816,6 @@ public class Vector<E>
      */
     public synchronized int lastIndexOf(Object o) {
         return lastIndexOf(o, elementCount-1);
-        // @@@ If the result is not -1 and the element at the resulting index is null, then the searched object must be null.
-        // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ If the last index of the element is not -1 and the element at that index is not null, then the element at that index is equal to the specified element.
-        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
-        // @@@ If the result is not -1, then for every index greater than the result and less than the size of the vector, the element at that index is either null and the searched object is not null, or the element is not null and does not equal the searched object.
-        // assert \result!=-1 => \forall int i; \result<i && i<this.size(); this.get(i)==null && o!=null || this.get(i)!=null && !this.get(i).equals(o);
     }
 
     /**
@@ -872,10 +848,6 @@ public class Vector<E>
                     return i;
         }
         return -1;
-        // @@@ If the result is not -1 and the element at the resulting index is null, then the searched object must also be null.
-        // assert \result!=-1 && this.get(\result)==null ==> o==null;
-        // @@@ If the result is not -1 and the element at the result index is not null, then the element at the result index must be equal to the specified object 'o'.
-        // assert \result!=-1 && this.get(\result)!=null ==> this.get(\result).equals(o);
     }
 
     /**
@@ -1302,8 +1274,6 @@ public class Vector<E>
      */
     public synchronized int size() {
         return elementCount;
-        // @@@ The result, which represents the number of components in the vector, is always greater than or equal to 0.
-        // assert \result>=0;
     }
 
     @SuppressWarnings("unchecked")

@@ -515,12 +515,6 @@ public class PriorityQueue<E> extends AbstractQueue<E>
 
     public E peek() {
         return (E) queue[0];
-        // @@@ If the size of the queue is greater than 0, then the result is not null.
-        // assert this.size()>0 => \result!=null;
-        // @@@ If the queue is not empty, then the element returned by peek is less than or equal to every other element in the queue.
-        // assert this.size()>0 => \forall int i; 0<=i && i<this.size(); this.comparator().compare(\result, this.get(i))<=0;
-        // @@@ If the size of the queue is zero, then the result is null.
-        // assert this.size()==0 => \result==null;
     }
 
     public E poll() {
@@ -757,8 +751,6 @@ public class PriorityQueue<E> extends AbstractQueue<E>
 
     public int size() {
         return size;
-        // @@@ The size of the priority queue is always greater than or equal to 0.
-        // assert \result>=0;
     }
 
     /**

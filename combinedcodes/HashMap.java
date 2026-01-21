@@ -271,8 +271,6 @@ public class HashMap<K,V>
      */
     public int size() {
         return size;
-        // @@@ The number of key-value mappings in the map is always greater than or equal to 0.
-        // assert \result>=0;
     }
 
     /**
@@ -282,8 +280,6 @@ public class HashMap<K,V>
      */
     public boolean isEmpty() {
         return size == 0;
-        // @@@ The result is true if and only if the size of the map is zero.
-        // assert \result==(this.size()==0);
     }
 
     /**

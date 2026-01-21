@@ -400,8 +400,6 @@ public class FixedArrayList<E>
 	 */
 	public int size() {
 		return elements.size() - freeIndices.size();
-        // @@@ The number of elements in the array is always greater than or equal to zero.
-        // assert \result>=0;
 	}
 
 	public Object[] toArray() {

@@ -571,8 +571,6 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public boolean isEmpty() {
         return head == tail;
-        // @@@ The result is true if and only if the size of the deque is zero.
-        // assert \result==(this.size()==0);
     }
 
     /**
@@ -742,21 +740,15 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public E peek() {
         return peekFirst();
-        // @@@ If the deque is empty, then the result is null.
-        // assert this.isEmpty() => \result==null;
     }
 
     public E peekFirst() {
         return elementAt(elements, head);
-        // @@@ If the deque is empty, then the result is null.
-        // assert this.isEmpty() => \result==null;
     }
 
     public E peekLast() {
         final Object[] es;
         return elementAt(es = elements, dec(tail, es.length));
-        // @@@ If the deque is empty, then the result is null.
-        // assert this.isEmpty() => \result==null;
     }
 
     /**
@@ -977,8 +969,6 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public int size() {
         return sub(tail, head, elements.length);
-        // @@@ The number of elements in the deque is always greater than or equal to zero.
-        // assert \result>=0;
     }
 
     /**
