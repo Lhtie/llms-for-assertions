@@ -30,13 +30,13 @@ modelpaths = {
 }
 configs = {
     "java": {
-        "mkey_backward": "gpt4",
+        "mkey_backward": "qw32",
         "num_backward": 8,
         "model_backward": None,
         "threshold": 0.6,
         "use_nli": True,
         "mode_nli": "score",    # "label" or "score"
-        "mkey_nli": "gpt4",
+        "mkey_nli": "qw32",
         "model_nli": None,
         "records": {}
     }
