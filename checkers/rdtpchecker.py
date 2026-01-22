@@ -155,7 +155,7 @@ def sim(x, y):
     similarity = util.cos_sim(embx, emby)
     return similarity.item()
 
-def equiv(x, y, config, mode, jh):
+def equiv(x, y, config, jh):
     mkey = config["mkey_nli"]
     model_dict = config["model_nli"]
     threshold = config["threshold"]

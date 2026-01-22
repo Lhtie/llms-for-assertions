@@ -6,10 +6,9 @@ if [ ! -d "javacodes" ]; then
     done
 fi
 
-# python nlasrtgen.py --codedir javacodes --modellist gpt4 --temp 0.3 --nsamples 3 --codelist {1..488} --resultdir results_nl --write
+# python nlasrtgen.py --codedir javacodes --modellist gpt4 --temp 0.3 --nsamples 3 --codelist {1..418} --resultdir results_nl --write
 
-# python main.py --codedir javacodes --modellist qw32 --nsamples 3 --codelist {1..488} --resultdir ./results --write
-# 46 48 63 430 440 441 446 458 459 460 465 477 222 230 243 245 249 261 269 273 276 279 281 290
+# python main.py --codedir javacodes --modellist qw32 --nsamples 3 --codelist {1..418} --resultdir ./results --write
 
 python checker.py --codedir javacodes --codelist 147 --combinedcodes ./combinedcodes --resultlist ./results/Qwen2.5-Coder-32B-Instruct/* \
     --checklist fuzz_check \
