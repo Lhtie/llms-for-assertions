@@ -158,6 +158,7 @@ def sim(x, y):
 def equiv(x, y, config, jh):
     mkey = config["mkey_nli"]
     model_dict = config["model_nli"]
+    mode = config["mode_nli"]
     threshold = config["threshold"]
     
     assert model_dict is not None, "No model configurations"
