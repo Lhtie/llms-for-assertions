@@ -216,7 +216,7 @@ def equiv(x, y, config, jh):
         else:
             scores.append(ans)
     
-    return np.min(scores), rec
+    return min(scores), rec
 
 def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
 
