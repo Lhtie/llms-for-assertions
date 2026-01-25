@@ -191,8 +191,7 @@ def equiv(x, y, config, jh):
                     msgdict,
                     return_tensors="pt",
                     add_generation_prompt=True)
-        if devices is not None and len(devices) <= 1:
-            inputs = inputs.to(model.device)
+        inputs = inputs.to(model.device)
 
         # print(f"Inputs: {inputs[1]['content']}")
         response = run(mkey, model, tokenizer, inputs, 0.6)     # temp set to be 0.6
@@ -237,10 +236,7 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
         
         code = new_pfx + "\n" + cmnt_prefix[:-3] + x + "\n" + sfx
         prompt = prompt_transform(mkey, tokenizer, code, langid)
-        if devices is not None and len(devices) <= 1:
-            inputs = prompt.to(model.device)
-        else:
-            inputs = prompt
+        inputs = prompt.to(model.device)
             
         tot = 0
         args = ", ".join([f"{typ} {var}" for var, typ in jh.funcs[-1]["args"].items()])

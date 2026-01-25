@@ -87,10 +87,7 @@ if __name__ == "__main__":
             langid = f.split('.')[-2]
 
             prompt = transform(mkey, args.prompt, tokenizer, code, langid, args.onemsg)
-            if devices is not None and len(devices) <= 1:
-                inputs = prompt.to(model.device)
-            else:
-                inputs = prompt
+            inputs = prompt.to(model.device)
 
             allrspnse, allasrts  = "", ""
             for _ in range(args.nsamples):
