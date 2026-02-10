@@ -41,25 +41,53 @@ configs = {
         "records": {}
     }
 }
-nli_instr = """You are judging whether two natural-language assertions about a method are equivalent, contradictory, or unrelated, in the context of programming specification and method verification.
-Instead of outputting a discrete label, output a real-valued matching score in the range [-1.0, 1.0] that measures how well the detailed semantics of the hypothesis matches the premise.
-Score interpretation:
-1. +1.0  = Perfect Match: The hypothesis expresses the same meaning and constraints as the premise, possibly with different wording.
-2. +0.5  = Partial Match: The hypothesis is mostly consistent with the premise but misses some conditions, weakens constraints, or only describes a subset of the behavior.
-3.  0.0  = No Match / Unrelated: The hypothesis describes different properties, introduces unrelated information, or is independent of the premise.
-4. -0.5  = Partial Conflict: Some parts of the hypothesis contradict the premise, or the constraints are incompatible in certain cases.
-5. -1.0  = Complete Conflict: The hypothesis expresses behavior that directly contradicts the premise and cannot be true at the same time.
+nli_instr = """You are performing a **roundtrip conformance check** between:
+(1) a natural-language post-condition (the “premise”), and
+(2) a second natural-language statement (the “hypothesis”) that is intended to reflect the semantics/structure of a generated post-condition formula.
 
-Additional requirements:
-- Please ignore potential differences in wording or phrasing of technical terms.
-- Please be careful about details
-  - numerical bounds, conditions, `\\old` symbol, implications and equivalence)
-- Only score as Neutral (0.0) when the hypothesis clearly introduces new information not guaranteed by the premise, omits essential details required to verify it, or contains information unrelated to the premise.
-- Be aware that you are in a programming context (both the premise and the hypothesis are post-conditions), so consider the implications of the assertions in relation to code behavior.
-- The score should primarily reflect:
-  - how completely the hypothesis preserves the constraints in the premise
-  - whether important conditions are missing or weakened
-  - whether extra restrictions or contradictions are introduced
+Your job is to judge how well the hypothesis conforms to the premise under the following responsibility:
+
+Conformance responsibility
+1) Completeness: The hypothesis must not omit any component that the premise intends.
+   - Every component mentioned or implied as an intended constraint in the premise should be present in, or entailed by, the hypothesis.
+2) Soundness: The hypothesis should not introduce unrelated or unjustified components.
+   - Ideally, every component in the hypothesis should be traceable to the premise’s intention.
+   - In practice, *minor reasonable supplementation* is allowed (e.g., explicit bounds/ranges, type conversions, edge-case handling) as long as it does not change the intended structure or meaning.
+
+What counts as a “component” (treat these as the primary comparison units)
+- Variables / terms: \\result, method parameters, fields, local/loop variables, \old(…)
+- Quantifiers: \\forall, \exists, and their quantified variables
+- Bounds / ranges: index ranges, quantified ranges, numeric bounds, inclusive/exclusive endpoints
+- Predicate relations: ==, !=, <, <=, >, >=, membership/containment, function calls used as predicates
+- Logical connectives / structure: &&, ||, !, => (implication), grouping/precedence
+
+Evaluation principle
+- This is a *structure- and alignment-focused* check: prioritize whether the hypothesis preserves the overall logical skeleton and aligns each segment/component to the premise.
+- Ignore superficial wording differences and synonyms of technical terms.
+- Ignore fine-grained details; focus on whether the same structural components are present and aligned, and whether their logical relationships (quantifiers, bounds, predicates, connectives) match.
+- The hypothesis may be imperfectly phrased or not fully “compilable” as a formula; still score based on whether the intended components/structure match.
+
+Scoring (real value in [-1.0, 1.0])
+Interpret the score as a combined measure of:
+- Completeness (missing components/segments → lower score)
+- Soundness (unjustified extra components/segments → lower score)
+- Logical compatibility (contradictions/incompatible constraints → negative score)
+
+Use these anchor points (you may output intermediate values like 0.8, 0.2, -0.3):
++1.0 Perfect Conformance:
+  - Hypothesis preserves all components and the logical structure of the premise (may rephrase wording).
++0.5 Mostly Conformant / Minor Loss:
+  - Hypothesis is consistent with the premise but omits some non-trivial components, weakens constraints, or only covers a subset of cases.
+  - Or adds only minor, clearly reasonable supplementation that does not change intent.
+  - (Typical: one missing bound, a weakened quantifier range, or missing a secondary conjunct.)
+0.0 Neutral / Not Established:
+  - The hypothesis is largely unrelated to the premise’s components/structure, OR
+  - The hypothesis introduces new requirements not supported by the premise, OR
+  - The hypothesis omits essential segments such that conformance cannot be verified from it.
+-0.5 Partially Conflicting:
+  - Some aligned components exist, but at least one important segment contradicts the premise (e.g., flipped inequality, negation, wrong \old usage, implication reversed, incompatible bound).
+-1.0 Completely Conflicting:
+  - The core structure/meaning contradicts the premise and cannot hold simultaneously.
 
 For instances,
 The premise is \"the result of the cloned array is not null.\".
@@ -168,7 +196,7 @@ def equiv(x, y, config, jh):
 
     rec = []
     scores = []
-    for premise, hypothesis in [(x, y), (y, x)]:
+    for premise, hypothesis in [(x, y)]:
         prompt = nli_instr.format(
             jh.classname, jh.funcname, 
             ", ".join([f"{typ} {var}" for var, typ in jh.funcs[-1]["args"].items()]),
@@ -252,8 +280,8 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
 
             if nli:
                 f, rec = equiv(
-                    response.split("@@@")[-1].strip(), 
                     cmnt_line.split("@@@")[-1].strip(),
+                    response.split("@@@")[-1].strip(),
                     config, jh
                 )
                 tot += f

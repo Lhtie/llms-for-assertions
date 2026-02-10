@@ -95,7 +95,7 @@ public class Stack<E> extends Vector<E> {
 
         return item;
         // @@@ The stack contains the pushed item after the operation.
-        // assert this.contains(e);
+        // assert this.contains(item);
         // @@@ If the pushed item is null, the last element in the stack is also null; otherwise, the last element in the stack is equal to the pushed item.
         // assert item==null && this.get(this.size()-1)==null || item!=null && item.equals(this.get(this.size()-1));
     }
