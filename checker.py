@@ -4,6 +4,7 @@ import argparse
 import glob
 import subprocess
 import re
+import traceback
 
 import checkers.fuzzchecker as fuzzchecker
 import checkers.compilechecker as compilechecker
@@ -30,7 +31,8 @@ def check_gen(func):
             try:
                 result = func(langid, pfx, sfx, grnd_truth, asrt, cc)
             except Exception as e:
-                print(f"Error in entry {i}: {e}", file=sys.stderr)
+                print(f"Error in entry {i}: error type - {type(e).__name__}; error msg - {e}", file=sys.stderr)
+                traceback.print_exc()
                 result = False
             arr.append(result)
             dp[asrt] = result
