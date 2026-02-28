@@ -407,8 +407,8 @@ def extract(tid, rspnse, langid):
     _, _, _, srch_term = langmap[langid]
 
     if(tid == "default"):
-        match = re.search(r"<code>(.*?)</code>", rspnse, re.DOTALL)
-        return match.group(1) if match else ""
+        match = re.findall(r"<code>\s*(.*?)\s*</code>", rspnse, re.DOTALL)
+        return match[-1] if match else ""
     
     else:   
         assert False, "Incorrect transform id: " + tid

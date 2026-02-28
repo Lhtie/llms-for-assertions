@@ -114,9 +114,9 @@ The hypothesis is: {7}
 """
 
 def extract_ans(res):
-    match = re.search(r"<ans>\s*(.*?)\s*</ans>", res, re.DOTALL)
+    match = re.findall(r"<ans>\s*(.*?)\s*</ans>", res, re.DOTALL)
     if match:
-        ans_str = match.group(1)
+        ans_str = match[-1]
         try:
             return float(ans_str)
         except ValueError:
