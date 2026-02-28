@@ -367,14 +367,7 @@ def apply_chat_template(mkey, tokenizer, inst, langid, onemsg):
             msgdict += [{ 'role': 'assistant', 'content': inst[egid][1] }]
         msgdict += [{ 'role': 'user', 'content':  f"```{langid}\n{inst[-1]}\n```" }]
 
-    if mkey.startswith(("gpt3", "gpt4")):
-        return msgdict
-    else:
-        return tokenizer.apply_chat_template(
-                msgdict,
-                return_tensors="pt",
-                add_generation_prompt=True)
-
+    return msgdict
 
 def transform(mkey, tid, tokenizer, code, langid, onemsg):
     lang, cmnt_tkn, eg_lang, srch_term = langmap[langid]

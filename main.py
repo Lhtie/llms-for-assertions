@@ -1,37 +1,7 @@
-import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
 import os
 import argparse
 from prompting import *
-from keysecrets import *
-from openai import OpenAI
-from time import sleep
-
-modelpaths = {
-        "ds7":      "deepseek-coder-6.7b-instructD",
-        "mc7":      "Magicoder-S-DS-6.7B",
-        "oc7":      "OpenCodeInterpreter-DS-6.7B",
-        "qw32":     "Qwen2.5-Coder-32B-Instruct",
-        "gpt3":     "gpt-3.5-turbo",
-        "gpt4":     "gpt-4-turbo"
-}
-
-def run(mkey, model, tokenizer, inputs, temp):
-    if mkey.startswith(("gpt3", "gpt4")):
-        sleep(1)
-        outputs = model(inputs, max_tokens=1024, temperature=temp)
-        return outputs.choices[0].message.content
-    else:
-        outputs = model.generate(
-            inputs, 
-            max_new_tokens=1024,
-            do_sample=True,
-            pad_token_id=tokenizer.eos_token_id,
-            eos_token_id=tokenizer.eos_token_id,
-            temperature=temp
-        ) # other params: https://huggingface.co/docs/transformers/v4.39.3/en/main_classes/text_generation
-        
-        return tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
+from llm import modelpaths, load_model, move_inputs_to_model, run_model
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -46,8 +16,6 @@ if __name__ == "__main__":
     parser.add_argument("--write", default=False, action="store_true")
     args = parser.parse_args()
 
-    oai_client = OpenAI(api_key = oai_key)
-
     for mkey in modelpaths:
         if(len(args.modellist) != 0 and mkey not in args.modellist):
             continue
@@ -58,23 +26,7 @@ if __name__ == "__main__":
         dirname = args.resultdir + "/" + mname + "/" + params
         assert mname and params
 
-        if mkey.startswith(("gpt3", "gpt4")):
-            tokenizer = None
-            model = lambda msgdict, **k : oai_client.chat.completions.create(
-                    messages = msgdict,
-                    model = mpath,
-                    **k
-            )
-            devices = None
-        else:
-            tokenizer = AutoTokenizer.from_pretrained(mpath)
-            model = AutoModelForCausalLM.from_pretrained(
-                mpath,
-                torch_dtype=torch.bfloat16,
-                device_map="auto",
-            )
-            model.eval()
-            devices = {p.device for p in model.parameters()}
+        tokenizer, model, devices = load_model(mkey)
 
         for f in os.listdir(args.codedir):
             if(len(args.codelist) != 0 and f.split('.')[-1] not in args.codelist):
@@ -87,12 +39,10 @@ if __name__ == "__main__":
             langid = f.split('.')[-2]
 
             prompt = transform(mkey, args.prompt, tokenizer, code, langid, args.onemsg)
-            inputs = prompt.to(model.device)
 
             allrspnse, allasrts  = "", ""
             for _ in range(args.nsamples):
-                # print(inputs[0]["content"])
-                response = run(mkey, model, tokenizer, inputs, args.temp)
+                response = run_model(mkey, model, tokenizer, devices, prompt, args.temp)
                 asrt = extract(args.prompt, response, langid)
                 allrspnse += response + '\n' + "-"*20 + '\n'
                 allasrts += asrt + '\n' + "-"*20 + '\n'
