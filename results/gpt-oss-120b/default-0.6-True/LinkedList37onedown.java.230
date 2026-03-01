@@ -1,0 +1,90 @@
+analysisWe need to produce assert statement for comment at end of pollLast method.
+
+We need to parse comment: 
+"// @@@ If the list is initially not empty, then the result is either null and the last element was null, or the result equals the last element of the list before the operation."
+
+Interpretation: For method pollLast(): returns E. It first captures final Node<E> l = last; then returns (l == null) ? null : unlink... So behavior: If list initially not empty (i.e., last != null), then result is either null (if the last element's item is null) or equals the last element's item (i.e., the element stored in node before unlink). Actually unlinkLast returns the element of node l, which is l.item (maybe null). So result equals l.item. The comment says: "If the list is initially not empty, then the result is either null and the last element was null, or the result equals the last element of the list before the operation."
+
+Thus we need assert: (!\old(this.isEmpty())) => (\result == null ? \old(this.getLast()) == null : \result.equals(\old(this.getLast()))). But need to express using observers: we have getLast() method returns first/last element; also size etc. For old state we need to capture old last element. Use \old(this.getLast()). Also need premise that list initially not empty: !\old(this.isEmpty()) or \old(this.size()) > 0.
+
+Better: \old(this.size()) > 0 => ( (\result == null && \old(this.getLast()) == null) || \result.equals(\old(this.getLast())) ).
+
+But need to ensure null equality: use == for null, and .equals for non-null. However we cannot call .equals on possibly null result. Use ( \result == null ? \old(this.getLast()) == null : \result.equals(\old(this.getLast())) ). That captures both cases.
+
+Thus final assert:
+
+assert (\old(this.size()) > 0) => ( \result == null ? \old(this.getLast()) == null : \result.equals(\old(this.getLast())) );
+
+Need to ensure we use this.getLast() as observer. Yes.
+
+Thus output code block.
+
+assistantfinal<code>assert (\old(this.size()) > 0) => ( \result == null ? \old(this.getLast()) == null : \result.equals(\old(this.getLast())) );</code>
+--------------------
+analysisWe need to read the code, find comment with @@@ inside pollLast method.
+
+Method:
+
+public E pollLast() {
+    final Node<E> l = last;
+    return (l == null) ? null : unlinkLast(l);
+    // @@@ If the list is initially not empty, then the result is either null and the last element was null, or the result equals the last element of the list before the operation.
+}
+
+We need to produce an assert statement reflecting that natural language assertion.
+
+Interpretation: If the list is initially not empty (i.e., before operation, size > 0, or last != null), then the result (the returned value) is either null and the last element was null, or the result equals the last element of the list before the operation.
+
+We need to use \old to refer to pre-state values. The result is \result. The last element before operation can be accessed via some observer method: maybe getLast() returns the last element, but after removal the list changes. We need old value: \old(this.getLast())? But before removal, last element is l.item. But we can use \old(this.getLast()) as observer method to get the element before removal. However after removal, getLast may be different. But we need old value. So we can write:
+
+assert ( \old(this.size()) == 0 ) || ( (\result == null && \old(this.getLast()) == null) || \result.equals(\old(this.getLast())) );
+
+But need to ensure we use appropriate equality for objects: maybe .equals. In spec we can use == for reference equality? Usually they use .equals for object equality. In previous examples they used .equals for query results. So we can write:
+
+assert \old(this.isEmpty()) || ( (\result == null && \old(this.getLast()) == null) || (\result != null && \result.equals(\old(this.getLast()))) );
+
+But the condition "If the list is initially not empty" means antecedent: !\old(this.isEmpty()) => ... So we could write:
+
+assert !\old(this.isEmpty()) => ( (\result == null && \old(this.getLast()) == null) || \result.equals(\old(this.getLast())) );
+
+But need to also ensure that if list was empty, result is null (by method). Not required by comment, but we can restrict to antecedent.
+
+Thus final assert:
+
+assert !\old(this.isEmpty()) => ( (\result == null && \old(this.getLast()) == null) || (\result != null && \result.equals(\old(this.getLast()))) );
+
+We need to include parentheses properly.
+
+Let's craft final code:
+
+<code>assert !\old(this.isEmpty()) => ( (\result == null && \old(this.getLast()) == null) || (\result != null && \result.equals(\old(this.getLast()))) );</code>
+
+Check syntax: using && and ||, parentheses fine. Use \old(this.isEmpty()) for pre-state emptiness. Or we could use \old(this.size()) == 0. Use isEmpty.
+
+Thus final answer.assistantfinal<code>assert !\old(this.isEmpty()) => ( (\result == null && \old(this.getLast()) == null) || (\result != null && \result.equals(\old(this.getLast()))) );</code>
+--------------------
+analysisWe need to produce assert statement for the comment after pollLast method.
+
+The comment: 
+"@@@ If the list is initially not empty, then the result is either null and the last element was null, or the result equals the last element of the list before the operation."
+
+Interpretation: For method pollLast, which returns E. The spec: If initially not empty (i.e., old size >0), then either result is null and the last element before was null, or result equals the last element before.
+
+We need to refer to old state using \old. Use this.last? But we cannot access internal fields directly; need to use public observer methods. We have getLast() returns last element, but throws exception if empty. However we can use peekLast() which returns null if empty. But we need old last element before removal. Since method may throw? pollLast returns null if list empty; but spec only for initially not empty.
+
+We can use \old(this.getLast())? But getLast throws NoSuchElementException if empty. Since we assume not empty, it's okay. But spec uses result may be null if last element was null. So we need to compare result (\result) with \old(this.peekLast())? peekLast returns null if empty, but if not empty returns element (could be null). That matches. So we can use \old(this.peekLast()).
+
+Spec: if \old(this.size()) > 0 then ( (\result == null && \old(this.peekLast()) == null) || \result.equals(\old(this.peekLast())) ). However need to handle equality for possibly null. Use ( \result == null ? \old(this.peekLast()) == null : \result.equals(\old(this.peekLast())) ). But spec says either null and last element was null, or result equals last element. So we can express as: \old(this.size()) > 0 => ( (\result == null && \old(this.peekLast()) == null) || (\result != null && \result.equals(\old(this.peekLast())) ) ). However if result null and old last not null, that case not allowed.
+
+Simplify using equivalence: (\result == null) <=> (\old(this.peekLast()) == null) . Actually if result null then old last must be null, and if old last null then result null (since result equals old last). So condition: \old(this.size()) > 0 => (\result == null ? \old(this.peekLast()) == null : \result.equals(\old(this.peekLast()))). That's fine.
+
+We need to use size() observer: this.size() returns current size after operation? After pollLast, size decreased by 1 if not empty. So old size is \old(this.size()). So condition: \old(this.size()) > 0 => ( (\result == null && \old(this.peekLast()) == null) || (\result != null && \result.equals(\old(this.peekLast())) ) ). Could also simplify using equality.
+
+Write assert statement:
+
+assert \old(this.size()) > 0 => ( (\result == null && \old(this.peekLast()) == null) || (\result != null && \result.equals(\old(this.peekLast())) ) );
+
+Make sure parentheses and syntax correct. Use &&, ||.
+
+Thus final answer in code block.assistantfinal<code>assert \old(this.size()) > 0 => ( (\result == null && \old(this.peekLast()) == null) || (\result != null && \result.equals(\old(this.peekLast()))) );</code>
+--------------------

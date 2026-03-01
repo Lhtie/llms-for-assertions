@@ -43,8 +43,8 @@ Conformance responsibility
    - In practice, *minor reasonable supplementation* is allowed (e.g., explicit bounds/ranges, type conversions, edge-case handling) as long as it does not change the intended structure or meaning.
 
 What counts as a “component” (treat these as the primary comparison units)
-- Variables / terms: \\result, method parameters, fields, local/loop variables, \old(…)
-- Quantifiers: \\forall, \exists, and their quantified variables
+- Variables / terms: \\result, method parameters, fields, local/loop variables, \\old(…)
+- Quantifiers: \\forall, \\exists, and their quantified variables
 - Bounds / ranges: index ranges, quantified ranges, numeric bounds, inclusive/exclusive endpoints
 - Predicate relations: ==, !=, <, <=, >, >=, membership/containment, function calls used as predicates
 - Logical connectives / structure: &&, ||, !, => (implication), grouping/precedence
@@ -114,9 +114,9 @@ The hypothesis is: {7}
 """
 
 def extract_ans(res):
-    match = re.findall(r"<ans>\s*(.*?)\s*</ans>", res, re.DOTALL)
+    match = re.search(r"(?:.*)<ans>\s*(.*?)\s*</ans>", res, re.DOTALL)
     if match:
-        ans_str = match[-1]
+        ans_str = match.group(1)
         try:
             return float(ans_str)
         except ValueError:

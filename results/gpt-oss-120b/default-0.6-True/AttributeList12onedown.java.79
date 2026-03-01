@@ -1,0 +1,82 @@
+analysisWe need to parse comment: "If the index is valid (between 0 and the initial size of the list inclusive), then for every valid index before the specified index, each element at that position remains unchanged or is null both before and after the operation."
+
+We need assert statement after the operation.
+
+We have method add(int index, Attribute attribute) that adds attribute at index, shifting elements from index onward.
+
+We need spec: If index is valid (0 <= index && index <= old size), then for every valid index i before the specified index (i.e., 0 <= i < index), each element at that position remains unchanged or is null both before and after the operation.
+
+Interpretation: For each i in [0, index-1], the element at position i after operation (this.get(i)) equals the element before operation ( \old(this.get(i)) ) OR both are null? Actually "remains unchanged or is null both before and after the operation." Means either the element stays same, or it is null both before and after. But if it stays same, it could also be null (since unchanged null = null). So condition could be: this.get(i).equals(\old(this.get(i))) OR (this.get(i) == null && \old(this.get(i)) == null). But equality with null would cause NullPointerException, so we need explicit null checks.
+
+Simplify: (\old(this.get(i)) == null && this.get(i) == null) || this.get(i).equals(\old(this.get(i))). However if both null, equals would cause NPE. So we need null checks.
+
+Thus assert: (0 <= index && index <= \old(this.size())) => \forall int i; 0 <= i && i < index; ( (\old(this.get(i)) == null && this.get(i) == null) || this.get(i).equals(\old(this.get(i))) );
+
+Need to use this.get(i) returns Attribute. Use .equals for non-null. So final assert.
+
+Make sure we refer to old size: \old(this.size()).
+
+Thus final answer:
+
+<code>assert (0 <= index && index <= \old(this.size())) => \forall int i; 0 <= i && i < index; ((\old(this.get(i)) == null && this.get(i) == null) || this.get(i).equals(\old(this.get(i))));</code>
+
+Check parentheses: The outer implication parentheses.
+
+Return final.assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => \forall int i; 0 <= i && i < index; ((\old(this.get(i)) == null && this.get(i) == null) || this.get(i).equals(\old(this.get(i))));</code>
+--------------------
+analysisWe need to parse comment: 
+
+// @@@ If the index is valid (between 0 and the initial size of the list inclusive), then for every valid index before the specified index, each element at that position remains unchanged or is null both before and after the operation.
+
+We need to produce an assert statement reflecting this. The method is void add(int index, Attribute attribute). It calls super.add(index, attribute). The comment says: If index is valid (between 0 and the initial size inclusive), then for every valid index before the specified index, each element at that position remains unchanged or is null both before and after the operation.
+
+Interpretation: For all i such that 0 <= i < index, the element at position i after the operation is equal to the element before the operation, or both are null? Actually "remains unchanged or is null both before and after the operation." That suggests that the element either stays the same (unchanged) or both before and after are null. So we need assert: (0 <= index && index <= \old(this.size())) => \forall int i; 0 <= i && i < index; ( this.get(i) == null && \old(this.get(i)) == null ) || this.get(i).equals(\old(this.get(i))) . But need to handle null equality safely; we can use (this.get(i)==null ? \old(this.get(i))==null : this.get(i).equals(\old(this.get(i)))) . However spec in examples used .equals for objects. They didn't handle null. But we can express as (this.get(i)==\old(this.get(i))) || (this.get(i)==null && \old(this.get(i))==null). Simpler: (this.get(i)==null && \old(this.get(i))==null) || this.get(i).equals(\old(this.get(i))) . But if both null, .equals would NPE. So need null check.
+
+Better to use: (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i)))) . That covers unchanged (including null). The phrase "remains unchanged or is null both before and after" essentially means unchanged, which includes null unchanged. So the condition is unchanged (including null). So we can just assert unchanged: (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i)))) . That covers null unchanged as well.
+
+Thus final assert:
+
+assert (0 <= index && index <= \old(this.size())) => \forall int i; 0 <= i && i < index; (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i))));
+
+Need to ensure we use this.get(i) returns Attribute. Use .equals. That's fine.
+
+Wrap in code block.assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => \forall int i; 0 <= i && i < index; (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i))));</code>
+--------------------
+analysisWe need to parse the comment: 
+
+"// @@@ If the index is valid (between 0 and the initial size of the list inclusive), then for every valid index before the specified index, each element at that position remains unchanged or is null both before and after the operation."
+
+We need to produce an assert statement.
+
+We have method add(int index, Attribute attribute) that inserts attribute at index, shifting later elements. The comment says: if index is valid (0 <= index <= initial size), then for every valid index before the specified index, each element at that position remains unchanged or is null both before and after the operation.
+
+"valid index before the specified index": i such that 0 <= i < index. For each such i, the element at position i after operation equals the element at position i before operation, or both are null? Actually "remains unchanged or is null both before and after the operation." Means that after operation, element at i is either same as before, or both before and after are null. But if we think of list, before operation there might be null entries (since list extends ArrayList<Object>, but typical list does not contain null? It's allowed). The spec: each element at that position remains unchanged or is null both before and after.
+
+Interpretation: For each i with 0 <= i < index, we have (this.get(i) == \old(this.get(i))) || (this.get(i) == null && \old(this.get(i)) == null). However "remains unchanged or is null both before and after" maybe means if element is null before, it's still null after; if not null, it stays unchanged. So we can assert:
+
+index >=0 && index <= \old(this.size()) => \forall int i; 0 <= i && i < index; (this.get(i) == \old(this.get(i)) || (this.get(i) == null && \old(this.get(i)) == null))
+
+But note that equality of objects: we can use .equals? Since Attribute objects may not have equals defined, but we can use == for reference equality. In previous examples they used .equals for query(i). But for generic objects, they used .equals. In earlier examples they used this.query(i).equals(\old(this.query(i))). So we can use .equals if not null, but need to handle null.
+
+We could write: (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i)))) . That's a bit complex. Simpler: (this.get(i) == \old(this.get(i))) because if both null, they are equal; if both same reference, equal; but if they are equal but different objects with same content, not captured. But spec says unchanged or null both before and after; unchanged could be equality by .equals. We'll follow pattern: this.get(i).equals(\old(this.get(i))) . But need to guard null to avoid NullPointerException.
+
+In earlier examples they used .equals directly without null guard, assuming no null. Here spec mentions null possibility, so we need to incorporate null condition.
+
+Thus assert:
+
+assert (index >= 0 && index <= \old(this.size())) => \forall int i; 0 <= i && i < index; ( (this.get(i) == null && \old(this.get(i)) == null) || (this.get(i) != null && this.get(i).equals(\old(this.get(i)))) );
+
+That captures unchanged (by equals) or both null.
+
+Make sure syntax: Use => lower priority than &&, so parentheses needed around premise: (index >=0 && index <= \old(this.size())) => \forall...
+
+But \old(this.size()) is size before operation.
+
+Thus final code block:
+
+<code>assert (index >= 0 && index <= \old(this.size())) => \forall int i; 0 <= i && i < index; ( (this.get(i) == null && \old(this.get(i)) == null) || (this.get(i) != null && this.get(i).equals(\old(this.get(i)))) );</code>
+
+Check for syntax: \forall int i; condition; spec . Yes.
+
+Return final.assistantfinal<code>assert (index >= 0 && index <= \old(this.size())) => \forall int i; 0 <= i && i < index; ( (this.get(i) == null && \old(this.get(i)) == null) || (this.get(i) != null && this.get(i).equals(\old(this.get(i)))) );</code>
+--------------------

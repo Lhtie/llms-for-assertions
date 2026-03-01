@@ -233,9 +233,9 @@ def extract(text, langid):
     result = []
     
     for line in lines:
-        match = re.findall(cmnt_tkn + r" @@@(.*)", line)
+        match = re.search(rf"(?:.*){cmnt_tkn}\s*@@@(.*)", line)
         if match:
-            result.append(match[-1].strip())
+            result.append(match.group(1).strip())
             
     return result
 

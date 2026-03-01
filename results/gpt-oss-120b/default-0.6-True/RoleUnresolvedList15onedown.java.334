@@ -1,0 +1,94 @@
+analysisWe need to produce assert statement for the comment.
+
+Let's parse the comment:
+
+```
+// @@@ If the index is within valid range (0 to initial size inclusive) and the role is not null, then for every position from the index to the old size of the list, the element at the next position is either null and the old element at that position was null, or it is equal to the old element at that position.
+```
+
+We need to express: If index in [0, old size] and role != null, then for each position i from index to old size-1? Wait "from the index to the old size of the list, the element at the next position is either null and the old element at that position was null, or it is equal to the old element at that position."
+
+We inserted role at index, shifting elements at positions >= index up by one. So after insertion, for each original position i (old list) from index to oldSize-1, the new element at i+1 equals old element at i (or both null). The comment says "element at the next position is either null and the old element at that position was null, or it is equal to the old element at that position." So new list's element at position i+1 is either null (and old element at i was null) or equals old element at i.
+
+Thus we need to assert: (0 <= index && index <= \old(this.size()) && role != null) => \forall int i; index <= i && i < \old(this.size()); (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) . But need to handle null equality: Use == for null, and .equals for non-null. Since RoleUnresolved maybe object, we can use (this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i)))) . But spec uses "either null and old element null, or equal". Simpler: (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) . However if this.get(i+1) is null, .equals would cause NPE, but we are in logical expression; we need to ensure we don't call .equals on null. Use conditional.
+
+We can write: (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i)))) . But the specification may accept simpler.
+
+Also we need to refer to role variable. In method signature, role parameter.
+
+Also note list extends ArrayList<Object>, but get returns RoleUnresolved. We'll just use this.get(i) etc.
+
+Thus final assert:
+
+assert (0 <= index && index <= \old(this.size()) && role != null) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i))) ) );
+
+Make sure parentheses correct. Use && for conjunction.
+
+Thus final answer in code block.
+
+assistantfinal<code>assert (0 <= index && index <= \old(this.size()) && role != null) => 
+    \forall int i; index <= i && i < \old(this.size());
+        ( (this.get(i+1) == null && \old(this.get(i)) == null) ||
+          (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i)))) );</code>
+--------------------
+analysisWe need to produce assert statement reflecting the comment.
+
+We have method add(int index, RoleUnresolved role). It inserts at index, shifting elements >= index up. The comment: "If the index is within valid range (0 to initial size inclusive) and the role is not null, then for every position from the index to the old size of the list, the element at the next position is either null and the old element at that position was null, or it is equal to the old element at that position."
+
+We need to express postcondition. Use \old to refer to pre-state. Variables: index, role. Precondition: 0 <= index && index <= \old(this.size()) && role != null.
+
+Then postcondition: for every int i; index <= i && i < \old(this.size()); ??? Wait "from the index to the old size of the list" meaning positions i in that range (including old size? old size is original count). After insertion, list size becomes old size +1. Elements shifted: element at position i+1 after operation equals old element at i (for i from index to old size-1). Also element at index after operation is role (not mentioned). The comment says: "the element at the next position is either null and the old element at that position was null, or it is equal to the old element at that position." So for each position i in [index, oldSize-1], after operation, element at i+1 (new) is either null and old element at i was null, or equals old element at i. That's basically: this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i))) . But we need to express using equality maybe .equals for objects. Use .equals or ==? RoleUnresolved is object; we can use .equals.
+
+Simplify: (\old(this.get(i)) == null && this.get(i+1) == null) || this.get(i+1).equals(\old(this.get(i))). However need to avoid null pointer on .equals when old is null. So use condition with null check.
+
+Better: (\old(this.get(i)) == null && this.get(i+1) == null) || (\old(this.get(i)) != null && this.get(i+1).equals(\old(this.get(i)))).
+
+But comment says "either null and old element was null, or equal to old element". So we can express as:
+
+(\old(this.get(i)) == null ? this.get(i+1) == null : this.get(i+1).equals(\old(this.get(i))))
+
+That's concise.
+
+We need universal quantifier: \forall int i; index <= i && i < \old(this.size()); (\old(this.get(i)) == null ? this.get(i+1) == null : this.get(i+1).equals(\old(this.get(i)))).
+
+Also need premise: (0 <= index && index <= \old(this.size()) && role != null) => that universal.
+
+Thus final assert:
+
+assert (0 <= index && index <= \old(this.size()) && role != null) => \forall int i; index <= i && i < \old(this.size()); (\old(this.get(i)) == null ? this.get(i+1) == null : this.get(i+1).equals(\old(this.get(i))));
+
+Make sure syntax correct: In JML-like, use && inside quantifier condition. The spec expects parentheses for implication.
+
+Thus final code block.
+
+assistantfinal<code>assert (0 <= index && index <= \old(this.size()) && role != null) => 
+       \forall int i; index <= i && i < \old(this.size()); 
+           (\old(this.get(i)) == null ? this.get(i+1) == null 
+                                      : this.get(i+1).equals(\old(this.get(i))));</code>
+--------------------
+analysisWe need to produce assert statement reflecting comment.
+
+Comment: 
+// @@@ If the index is within valid range (0 to initial size inclusive) and the role is not null, then for every position from the index to the old size of the list, the element at the next position is either null and the old element at that position was null, or it is equal to the old element at that position.
+
+Interpretation: After insertion at index, elements from index to old size (inclusive? shift up) - after insertion, element at position i+1 (next position) corresponds to old element at i. Actually they say "for every position from the index to the old size of the list, the element at the next position is either null and the old element at that position was null, or it is equal to the old element at that position."
+
+We need assert using this.get(i) after operation, compare with \old(this.get(i)) maybe. Since insertion shifts elements up by one. For positions i from index to oldSize-1 (old size before add). After insertion, element at i+1 equals old element at i, unless both null. So we can phrase: For all int i; index <= i && i < \old(this.size()); (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))). Need to handle null equality: use (this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i)))).
+
+Premise: index>=0 && index<=\old(this.size()) && role != null. role is parameter, not null already ensured else exception. So premise is index>=0 && index<=\old(this.size()) && role != null.
+
+Thus final assert:
+
+assert (index >= 0 && index <= \old(this.size()) && role != null) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i))) ) );
+
+Need to ensure parentheses.
+
+Return type void, but we can still assert after super.add.
+
+Thus final answer code block.
+
+assistantfinal<code>assert (index >= 0 && index <= \old(this.size()) && role != null) => 
+    \forall int i; index <= i && i < \old(this.size()); 
+        ( (this.get(i+1) == null && \old(this.get(i)) == null) ||
+          (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i)))) );</code>
+--------------------

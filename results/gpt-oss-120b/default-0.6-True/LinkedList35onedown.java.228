@@ -1,0 +1,90 @@
+analysisWe need to produce an assert statement matching the comment.
+
+We have method pollFirst() returning E.
+
+Comment: 
+// @@@ If the list is initially not empty, then the result is either null and the first element was originally null, or the result is equal to the original first element of the list.
+
+Interpretation: If the list initially not empty (i.e., old size > 0), then the result (\result) satisfies: either \result == null && old first element was null, or \result.equals(old first element). Since we need to refer to original first element: we can use \old(this.getFirst())? But getFirst() throws exception if empty, but we know not empty. Could also use \old(this.peekFirst()) which returns null if empty. But we have getFirst method defined earlier; we can use \old(this.getFirst()) assuming not empty. We'll need to ensure we have access. The spec says use publicly accessible observer methods provided in the test function. Within same class, we can call this.getFirst(). It's public, returns first element or throws NoSuchElementException if empty. Since we are in spec after method call, we can refer to \old(this.getFirst()) given precondition size>0.
+
+Thus assertion: if \old(this.size()) > 0 then (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))). But we also need case when result may be null because original first element was null. Actually condition: result is either null and the first element was originally null, or result equals original first element. If original first element was null, then result is null, which also satisfies equality? Since null.equals would throw NPE. So we separate.
+
+Thus: assert (\old(this.size()) == 0) || ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));
+
+But also if size==0, result is null per implementation; but comment only about initially not empty. So we can just assert: (\old(this.size()) == 0) => \result == null ? Not needed but could include. But spec only requires condition for not empty. So we can write: assert (\old(this.size()) == 0) || ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));
+
+Better to use parentheses and => maybe: (\old(this.size()) > 0) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));
+
+Yes.
+
+Thus final answer: <code>assert (\old(this.size()) > 0) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));</code>
+
+Check syntax: Use && and || operators. Use \old(this.size()). Good.
+
+Return final.assistantfinal<code>assert (\old(this.size()) > 0) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));</code>
+--------------------
+analysisWe need to produce assert statement for comment after pollFirst method.
+
+We need to parse method: pollFirst returns E (element). Implementation:
+
+final Node<E> f = first;
+return (f == null) ? null : unlinkFirst(f);
+
+So behavior: if list empty (first == null) returns null. If not empty, returns result of unlinkFirst(f). Need to know what unlinkFirst does: probably removes first node and returns its item. But we don't have its spec. However comment: "If the list is initially not empty, then the result is either null and the first element was originally null, or the result is equal to the original first element of the list."
+
+Interpretation: When list non-empty, result either null (if original first element's item was null) or equals original first element (item). So we need to assert that either list empty -> result == null, or list not empty -> result == \old(this.getFirst())? Actually getFirst returns first element (throws if empty). But we can use first element via maybe this.peekFirst() which returns null if empty. But we need to refer to original first element before removal. Use \old(this.peekFirst())? peekFirst returns first element or null if empty. Since before removal list not empty, peekFirst() would return the element (maybe null). So result should equal \old(this.peekFirst()). That matches comment: result either null (if original first element null) or equal to original first element. So assert: (\old(!this.isEmpty())) => \result == \old(this.peekFirst()).
+
+But also need case when list empty: result must be null. So overall: (this.isEmpty() => \result == null) && (!this.isEmpty() => \result == \old(this.peekFirst())) . However note that after removal, isEmpty may have changed. We need to refer to initial state. Use \old(this.isEmpty()) to express initial emptiness. So: (\old(this.isEmpty())) => \result == null && (!\old(this.isEmpty())) => \result == \old(this.peekFirst()).
+
+Combine with &&: (\old(this.isEmpty()) => \result == null) && (!\old(this.isEmpty()) => \result == \old(this.peekFirst())).
+
+But comment says "If the list is initially not empty, then the result is either null and the first element was originally null, or the result is equal to the original first element of the list." This is captured by equality with old peekFirst (which could be null). So we don't need extra disjunction. So final assert as above.
+
+Check syntax: Use \old(this.isEmpty()) etc. Use \result.
+
+Thus final answer:
+
+<code>assert (\old(this.isEmpty()) => \result == null) && (!\old(this.isEmpty()) => \result == \old(this.peekFirst()));</code>
+
+Make sure parentheses correct. Use && between two implications.
+
+Return final.assistantfinal<code>assert (\old(this.isEmpty()) => \result == null) && (!\old(this.isEmpty()) => \result == \old(this.peekFirst()));</code>
+--------------------
+analysisWe need to produce an assert statement for the comment after pollFirst method.
+
+We have method pollFirst() that returns E (generic). Implementation:
+
+```
+final Node<E> f = first;
+return (f == null) ? null : unlinkFirst(f);
+```
+
+Comment: 
+"@@@ If the list is initially not empty, then the result is either null and the first element was originally null, or the result is equal to the original first element of the list."
+
+Interpretation: Precondition: list initially not empty? Actually comment says "If the list is initially not empty, then the result is either null and the first element was originally null, or the result is equal to the original first element of the list."
+
+So we need to assert something about the result (\result) in relation to old state. Use \old(this.first) maybe, but we cannot directly access private field first. Must use public observer methods. What observers are available? We have getFirst(), peekFirst(), element(), get(int index), etc. For the original first element, we could use \old(this.getFirst())? But getFirst() throws NoSuchElementException if list empty. Since we are in case where list initially not empty, that call is safe. However spec can use \old(this.getFirst()) if list not empty pre-state.
+
+We need to express: if initially not empty (i.e., old size > 0), then either result is null and the original first element was null, or result equals original first element.
+
+Thus: assert (\old(this.size()) > 0) => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst())) ) );
+
+But we need to compare equality: for generic type, we can use .equals. In spec examples they used .equals for objects. So we can write: (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst())))
+
+But also need to handle case where result is null and original first element was null; that matches.
+
+Edge: result could be null also when original first element was null; but also if original first element not null, result cannot be null. So condition covers.
+
+Thus final assert.
+
+Make sure syntax: use &&, ||, =>. Surround parentheses.
+
+Thus final answer:
+
+<code>assert (\old(this.size()) > 0) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));</code>
+
+Check that we used only public observer methods: size() and getFirst(). getFirst() may throw if empty, but precondition ensures old size >0, so safe.
+
+Thus final.assistantfinal<code>assert (\old(this.size()) > 0) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));</code>
+--------------------
