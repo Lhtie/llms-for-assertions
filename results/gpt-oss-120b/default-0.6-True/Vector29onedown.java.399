@@ -1,70 +1,62 @@
-analysisWe need to produce an assert statement for the comment.
-
-We have method remove(int index). The comment:
-
-// @@@ If the index is greater than or equal to 0 and less than the initial size of this vector, then the result is equal to the value at the specified index before the method was executed.
-
-We need to express that if index in [0, old size) then \result equals old value at that index.
-
-Need to use \old(this.size()) for initial size, and \old(this.elementData(index))? But elementData is protected field; we should use public observer methods. There is elementAt(int index) which returns component at index; also get(int index). Both are synchronized observer. So we can use this.elementAt(index) after removal? However after removal, the element at that index will be the next element (shifted). But we need old value. Use \old(this.elementAt(index)) or \old(this.get(index)). Use elementAt as it's defined in class.
-
-Thus assert: (index >= 0 && index < \old(this.size())) => \result.equals(\old(this.elementAt(index)));
-
-But need to consider result type E may be object; equality via .equals? In spec examples they used .equals for objects, not ==. In earlier examples they used this.query(i).equals(\old(this.query(i))). So we should use .equals.
-
-Thus final assert:
-
-assert (index >= 0 && index < \old(this.size())) => \result.equals(\old(this.elementAt(index)));
-
-Make sure parentheses: (index >= 0 && index < \old(this.size())) => \result.equals(\old(this.elementAt(index)));
-
-Wrap in <code> tags.
-
-assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => \result.equals(\old(this.elementAt(index)));</code>
---------------------
-analysisWe need to produce an assert statement for the comment at end of remove method.
+analysisWe need to produce an assert statement for the comment after remove method.
 
 Comment: 
-```
 // @@@ If the index is greater than or equal to 0 and less than the initial size of this vector, then the result is equal to the value at the specified index before the method was executed.
-```
 
-We need to express that if precondition holds (0 <= index < old size), then \result equals the element at that index before execution.
+We need to refer to result: \result is the return value. Need to express condition: index >=0 && index < \old(this.size()) => \result.equals(\old(this.elementAt(index)))? But we have elementAt method? It's synchronized E elementAt(int index). Could use this.elementAt(index) after removal? However after removal, the element at that index may have shifted. So we need the old value before removal. Use \old(this.elementAt(index)). Since elementAt is observer method. Use \old(this.elementAt(index)). Also need premise: index >=0 && index < \old(this.size()). Use =>.
 
-We have method remove(int index) returns E oldValue = elementData(index); they use elementData(index) which is a private method? Actually elementData(index) maybe a method to get element at index; but there is a public method get(int). But we can use this.elementAt(index) or this.get(index). The observer methods available: contains, elementAt, get, indexOf, size, etc. The comment refers to "value at the specified index before the method was executed". So we need to use \old(this.get(index)) or \old(this.elementAt(index)). Use public method get(int) which returns element at index. So assert: (0 <= index && index < \old(this.size())) => \result.equals(\old(this.get(index)))? Since E could be object, equality semantics? In examples they used == for int indices, but for objects they used .equals. In earlier examples they used this.contains(value) etc. For element equality they used .equals in query example. So we should use \result.equals(\old(this.get(index))) . However need to ensure null case? If vector may contain null elements; .equals would throw NPE. But typical spec might use \result == \old(this.get(index)) . In JML, you can use \result == \old(this.get(index)) for reference equality. But comment says "equal to the value" maybe using equals semantics. We could use (\result == null ? \old(this.get(index)) == null : \result.equals(\old(this.get(index)))) but that's too complex. Simpler: \result == \old(this.get(index)). Many specs use == for reference equality. I'll follow pattern from earlier examples: they used this.query(i).equals(\old(this.query(i))) for object equality. That uses equals method. So we can do \result.equals(\old(this.get(index))) . But need to guard null? In earlier example they used .equals on query result which may be null? Not sure. We'll follow that pattern.
+Thus assert: assert (index >= 0 && index < \old(this.size())) => \result.equals(\old(this.elementAt(index)));
 
-Thus assert statement:
+But need to ensure using .equals for objects. Could also use == if reference equality? Use .equals. So final.
 
+Wrap in code block.assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => \result.equals(\old(this.elementAt(index)));</code>
+--------------------
+analysisWe need to produce assert statement for the comment after remove method.
+
+Comment: 
+// @@@ If the index is greater than or equal to 0 and less than the initial size of this vector, then the result is equal to the value at the specified index before the method was executed.
+
+We need to produce an assert that captures this specification.
+
+We have method signature: public synchronized E remove(int index) { ... return oldValue; }
+
+We need to assert: if (index >=0 && index < \old(this.size())) then \result.equals(\old(this.get(index)))? Actually element at that index before removal. The class has get method, but we can use elementData(index) maybe but not accessible; we must use public observer methods. get(int) returns element at index. So we can use this.get(index). So old value is \old(this.get(index)). The result is \result. Need equality semantics: for objects, we could use .equals, but generic type E may not have equals defined; but we can use .equals as typical. In examples they used .equals for query(i). So we can use \result.equals(\old(this.get(index))) . However need to ensure null handling? But assume non-null maybe.
+
+Thus assert: index >= 0 && index < \old(this.size()) => \result.equals(\old(this.get(index)));
+
+Need parentheses: (index >= 0 && index < \old(this.size())) => \result.equals(\old(this.get(index)));
+
+Return type is E which may be null; equality may be .equals not safe for null. But spec likely expects .equals. Could also use ==? In earlier examples they used .equals for objects. We'll follow that.
+
+Thus final answer:
+
+<code>assert (index >= 0 && index < \old(this.size())) => \result.equals(\old(this.get(index)));</code>
+
+Check syntax: need parentheses around condition maybe not needed but fine.
+
+Return final.assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => \result.equals(\old(this.get(index)));</code>
+--------------------
+analysisWe need to generate assert statement for the comment at end of remove method.
+
+Comment:
+
+"// @@@ If the index is greater than or equal to 0 and less than the initial size of this vector, then the result is equal to the value at the specified index before the method was executed."
+
+We need to express: If 0 <= index < old size, then \result equals the element at that index before removal.
+
+We have observer methods: size() returns current size, but we need old size before removal. Use \old(this.size()). Also we need to get element at index before removal. There is elementAt? There's elementAt synchronized method, but it's public. Also get(int) returns element at index. We can use this.get(index) after removal? After removal, the element at that index now is the next element previously at index+1. So we need old value. Use \old(this.get(index)). That works.
+
+Thus assert: (0 <= index && index < \old(this.size())) => \result.equals(\old(this.get(index)))? But need to compare objects. The return type is E, generic, could be object. Use .equals maybe. In examples they used this.index_of(value) == ... for ints. For objects they used .equals in universal quantification. For equality of result to old value, we can assert \result == \old(this.get(index))? But for objects reference equality maybe not appropriate; but typical spec uses .equals. In earlier examples they used .equals for query(i). So we can use \result.equals(\old(this.get(index))) if result may be null? Might need to handle null. Use (\result == null ? \old(this.get(index)) == null : \result.equals(\old(this.get(index)))) but that's complex. Simpler: assert (0 <= index && index < \old(this.size())) => \result.equals(\old(this.get(index)));
+
+Assume non-null. We'll produce.
+
+Thus final code:
+
+<code>assert (0 <= index && index < \old(this.size())) => \result.equals(\old(this.get(index)));</code>
+
+Check syntax: need parentheses around implication? Use =>. Use parentheses around condition? Fine.
+
+Return final.assistantfinal```java
 assert (0 <= index && index < \old(this.size())) => \result.equals(\old(this.get(index)));
-
-Wrap in code block.
-
-Check syntax: need parentheses around antecedent: (0 <= index && index < \old(this.size())) => \result.equals(\old(this.get(index)));
-
-That's final.assistantfinal<code>assert (0 <= index && index < \old(this.size())) => \result.equals(\old(this.get(index)));</code>
---------------------
-analysisWe need to produce assert statement for comment.
-
-Comment: 
 ```
-// @@@ If the index is greater than or equal to 0 and less than the initial size of this vector, then the result is equal to the value at the specified index before the method was executed.
-```
-
-We are in method remove(int index) returning E oldValue (the removed element). Need assert: if 0 <= index && index < \old(this.size()) then \result.equals(\old(this.elementAt(index)))? Actually elementAt is synchronized method returning element at index. Or we can use this.elementAt(index) after removal? After removal, the element at that index is now the next element. So we need to refer to old value before removal. Use \old(this.elementAt(index)). Since elementAt may be defined; but we have elementAt method. Use this.elementAt? But after removal, elementAt(index) will be the element that shifted. The spec wants result equals value at specified index before method execution. So assert: (0 <= index && index < \old(this.size())) => \result.equals(\old(this.elementAt(index)));
-
-Need to use .equals for objects (E). Could also use ==? Use .equals.
-
-Thus final assert.
-
-Make sure to include parentheses around implication. Use =>.
-
-So final code:
-
-```java
-assert (0 <= index && index < \old(this.size())) => \result.equals(\old(this.elementAt(index)));
-```
-
-Check: need to use this.elementAt? method is synchronized but accessible. Use this.elementAt(index). Good.
-
-Return final.assistantfinal<code>assert (0 <= index && index < \old(this.size())) => \result.equals(\old(this.elementAt(index)));</code>
 --------------------

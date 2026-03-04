@@ -1,72 +1,71 @@
-analysisWe need to translate the comment into an assert specification.
-
-The method remove(int index) removes element at index, shifts subsequent elements left. The comment: 
-
-"If the index is valid (greater than or equal to 0 and less than the initial size of the list), then for every position i greater than the index and less than the old size minus one, either both the current and the next elements in the old list are null, or the element at position i in the updated list is equal to the element at position i+1 in the old list."
-
-We need to express: index >=0 && index < \old(this.size()) => for all int i; index < i && i < \old(this.size())-1; ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || this.get(i).equals(\old(this.get(i+1))) )? Wait "either both the current and the next elements in the old list are null, or the element at position i in the updated list is equal to the element at position i+1 in the old list."
-
-We need to reference old list's elements: \old(this.get(i)) etc. Updated list's element at i: this.get(i). Use equals maybe need to handle null. They said "either both the current and the next elements in the old list are null" meaning if both were null, then shifting yields null? Actually after shift, position i will hold old position i+1. If both old i and old i+1 are null, then it's okay. The condition: (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || this.get(i).equals(\old(this.get(i+1))) . But need to guard against null for this.get(i). Could use Objects.equals(this.get(i), \old(this.get(i+1))) which handles nulls. However the spec says either both old are null OR element at position i in updated list equals old i+1. Using Objects.equals covers both cases, but they explicitly want the disjunction. Could write: (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || Objects.equals(this.get(i), \old(this.get(i+1))) . But we might not have Objects.equals accessible in spec? Usually allowed. Use \old(this.get(i)) == null && \old(this.get(i+1)) == null || this.get(i).equals(\old(this.get(i+1))) . Need to avoid null pointer when this.get(i) is null. Safer to use Objects.equals.
-
-Spec syntax: \forall int i; index > =0 && index < \old(this.size()) && i > index && i < \old(this.size())-1; ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || Objects.equals(this.get(i), \old(this.get(i+1))) );
-
-But need to include premise index valid. Since the forall quantifier includes condition i range, we also need outer implication: (index >=0 && index < \old(this.size())) => \forall int i; index < i && i < \old(this.size())-1; ( ... ).
-
-Thus final assert:
-
-assert (index >= 0 && index < \old(this.size())) => \forall int i; index < i && i < \old(this.size())-1; ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || Objects.equals(this.get(i), \old(this.get(i+1))) );
-
-Check syntax: need parentheses around forall spec? Usually: \forall int i; cond; body . So we embed inside implication.
-
-Thus final answer in code block.assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; index < i && i < \old(this.size()) - 1; ( (\old(this.get(i)) == null && \old(this.get(i + 1)) == null) || Objects.equals(this.get(i), \old(this.get(i + 1))) );</code>
---------------------
-analysisWe need to produce assert statement for the comment.
+analysisWe need to produce an assert statement that matches the comment.
 
 We have method remove(int index). The comment: 
 "If the index is valid (greater than or equal to 0 and less than the initial size of the list), then for every position i greater than the index and less than the old size minus one, either both the current and the next elements in the old list are null, or the element at position i in the updated list is equal to the element at position i+1 in the old list."
 
-We need to translate to assertion using observer methods: we have get(int index), size(), maybe also elementData not accessible. Use get to compare elements. Also need to refer to old size: \old(this.size()). Need to refer to old element at position i+1: \old(this.get(i+1)). And current element at position i after removal: this.get(i). Also need to consider null condition: both old elements at i and i+1 are null? Wait phrasing: "either both the current and the next elements in the old list are null, or the element at position i in the updated list is equal to the element at position i+1 in the old list." The "current and the next elements in the old list" refers to old list positions i and i+1? Actually "both the current and the next elements in the old list are null" meaning old list's element at i is null and old list's element at i+1 is null. That case we don't need equality. So condition: ( \old(this.get(i)) == null && \old(this.get(i+1)) == null ) OR ( this.get(i).equals( \old(this.get(i+1)) ) ). But need to handle possibly null values when using equals: we can use Objects.equals. Since observer method get returns E, we can use \old(this.get(i)) == null etc. Use Objects.equals? Not available in spec. Could use (this.get(i) == null ? \old(this.get(i+1)) == null : this.get(i).equals(\old(this.get(i+1)))) . But spec may accept equality via == for objects? In examples they used .equals for objects. We'll assume elements are objects and .equals works. For null case we need to avoid NullPointerException. So we can use (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || ( this.get(i) != null && this.get(i).equals(\old(this.get(i+1))) ) . But also need to handle case where this.get(i) is null but old(i+1) not null; that would be false. That's fine.
+Interpretation: For all i such that index < i && i < \old(this.size()) - 1, then ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || this.get(i).equals(\old(this.get(i+1))) ). But need to consider null equality: maybe use == for null, else .equals. Could use \old(this.get(i)) == null && \old(this.get(i+1)) == null || this.get(i).equals(\old(this.get(i+1))). However need to ensure we don't call .equals on null. So we can write: (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || ( \old(this.get(i+1)) != null && this.get(i).equals(\old(this.get(i+1))) ). But spec says either both null OR element at position i in updated list equals element at i+1 in old list. If old(i+1) null, then equality would be null? The spec says if both null, okay; else equality.
 
-Now the premise: index>=0 && index<\old(this.size()). So overall assert: (index>=0 && index<\old(this.size())) => \forall int i; index < i && i < \old(this.size())-1; ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || (this.get(i) != null && this.get(i).equals(\old(this.get(i+1)))) );
+Simplify: ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || this.get(i).equals(\old(this.get(i+1))) ). However if \old(this.get(i+1)) is null, then this.get(i).equals(null) would be false (or NPE). So need guard.
 
-Need to ensure bounds: i greater than index and less than old size -1 (since i+1 must be < old size). So i in (index+1) .. (oldSize-2) inclusive? Actually condition: i > index and i < oldSize -1. That's correct.
-
-Thus final assert statement.
+Thus assert: index >=0 && index < \old(this.size()) => \forall int i; index < i && i < \old(this.size())-1; ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || ( \old(this.get(i+1)) != null && this.get(i).equals(\old(this.get(i+1))) ) );
 
 Make sure to use parentheses correctly.
 
-Return final code block.
+Thus final code:
 
-assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => 
-    \forall int i; index < i && i < \old(this.size()) - 1;
-        ( (\old(this.get(i)) == null && \old(this.get(i + 1)) == null) ||
-          (this.get(i) != null && this.get(i).equals(\old(this.get(i + 1)))) );</code>
+<code>assert index >= 0 && index < \old(this.size()) => \forall int i; index < i && i < \old(this.size()) - 1; ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || ( \old(this.get(i+1)) != null && this.get(i).equals(\old(this.get(i+1))) ) );</code>
+
+Check syntax: In JML style, quantifier: \forall int i; condition; property. So we need ; after condition. So:
+
+\forall int i; index < i && i < \old(this.size()) - 1; ( ... );
+
+Thus final assert line.
+
+Let's produce.assistantfinal<code>assert index >= 0 && index < \old(this.size()) => \forall int i; index < i && i < \old(this.size()) - 1; ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || ( \old(this.get(i+1)) != null && this.get(i).equals(\old(this.get(i+1))) ) );</code>
 --------------------
-analysisWe need to produce assert statement for the comment.
+analysisWe need to produce assert statement reflecting the comment.
 
 We have method remove(int index). The comment: 
 "If the index is valid (greater than or equal to 0 and less than the initial size of the list), then for every position i greater than the index and less than the old size minus one, either both the current and the next elements in the old list are null, or the element at position i in the updated list is equal to the element at position i+1 in the old list."
 
-We need to express this as an assert.
+We need to express using observers: we have get(int index) to retrieve element; size() returns size. Also maybe we can use elementData directly? Not allowed; only public observer methods. So we can refer to this.get(i) for element at position i. However after removal, list size decreased by 1. For old size we use \old(this.size()). For old element at position i+1 we use \old(this.get(i+1)). For current element at position i we use this.get(i). Need condition: for all int i; i > index && i < \old(this.size()) - 1 => ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || this.get(i).equals(\old(this.get(i+1))) ). But need to handle null equality: if element may be null, we can't call equals on null. So we can use ( \old(this.get(i)) == null && \old(this.get(i+1)) == null ) || ( \old(this.get(i+1)) != null && this.get(i).equals(\old(this.get(i+1))) ) . But also need to consider case where this.get(i) may be null? The spec says "either both the current and the next elements in the old list are null, or the element at position i in the updated list is equal to the element at position i+1 in the old list." It doesn't require that this.get(i) is null in the first case? It says both the current and the next elements in the old list are null. That refers to old list's elements at i and i+1 being null. It doesn't say anything about current list's element at i in that case; but after removal, that position i holds old element at i+1, which is null, so it's also null. So we can just check old elements both null, that's sufficient.
 
-We have observer methods: get(int), size(), maybe also elementData not accessible. Use get(i) to get element at position i. Need old size: \old(this.size()). Also need old element at position i+1: \old(this.get(i+1)). Need current element at position i after removal: this.get(i). Also need to handle null case: both the current and next elements in old list are null. That is: (\old(this.get(i)) == null && \old(this.get(i+1)) == null) OR this.get(i).equals(\old(this.get(i+1)))? Actually need equality semantics: Objects.equals. Use .equals maybe but need null safe. Could use (\old(this.get(i)) == null ? \old(this.get(i+1)) == null : \old(this.get(i)).equals(\old(this.get(i+1)))) . However spec may use Objects.equals semantics. Simpler: (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || this.get(i).equals(\old(this.get(i+1))). But need to ensure this.get(i) not null before calling equals. Could write: (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || (\old(this.get(i+1)) != null && this.get(i).equals(\old(this.get(i+1)))) . However if this.get(i) may be null? After removal, element at i is from old i+1, which could be null. So need equality condition: Objects.equals(this.get(i), \old(this.get(i+1))). So we can use: java.util.Objects.equals(this.get(i), \old(this.get(i+1))). But we cannot call static method? Might be allowed as observer? Usually we can call static methods. In examples they used .equals directly. We'll use Objects.equals.
+Thus assert: index >=0 && index < \old(this.size()) => \forall int i; i>index && i<\old(this.size())-1; ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || this.get(i).equals(\old(this.get(i+1))) );
 
-Thus condition: index >=0 && index < \old(this.size()) => \forall int i; i>index && i<\old(this.size())-1; ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || java.util.Objects.equals(this.get(i), \old(this.get(i+1))) ).
+Need to ensure parentheses for implication: (index>=0 && index<\old(this.size())) => \forall ... . Use => operator.
 
-But the comment says "either both the current and the next elements in the old list are null, or the element at position i in the updated list is equal to the element at position i+1 in the old list." So we need to express that.
+Potential need to ensure i bounds: i > index && i < \old(this.size()) - 1 . Could also write index < i && i < \old(this.size())-1.
 
-Thus assert:
+Now produce final assert statement in code block.
 
-assert (index >=0 && index < \old(this.size())) => \forall int i; i>index && i<\old(this.size())-1; ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || java.util.Objects.equals(this.get(i), \old(this.get(i+1))) );
+assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; i > index && i < \old(this.size()) - 1; ( (\old(this.get(i)) == null && \old(this.get(i + 1)) == null) || this.get(i).equals(\old(this.get(i + 1))) );</code>
+--------------------
+analysisWe need to craft assert statement based on comment.
 
-Make sure parentheses for implication.
+Comment: 
+"@@@ If the index is valid (greater than or equal to 0 and less than the initial size of the list), then for every position i greater than the index and less than the old size minus one, either both the current and the next elements in the old list are null, or the element at position i in the updated list is equal to the element at position i+1 in the old list."
 
-Return statement not needed.
+We need to refer to old size: \old(this.size()) maybe. Also need to refer to element at positions: we have get(i) method to retrieve element. The old list's element at position i+1: \old(this.get(i+1)). Updated list's element at position i: this.get(i). Also need to check nullness of both current and next elements in the old list: that means \old(this.get(i)) == null && \old(this.get(i+1)) == null. So condition: for all int i; index < i && i < \old(this.size())-1; ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || this.get(i).equals(\old(this.get(i+1))) ). Need to handle possible null equality: use == for null, else .equals. Could express as ( \old(this.get(i)) == null && \old(this.get(i+1)) == null ) || this.get(i).equals(\old(this.get(i+1))) . But need to ensure when this.get(i) may be null? In list after removal, element at i should be equal to old i+1; if old i+1 could be null, then this.get(i) should be null as well. So maybe better: this.get(i) == \old(this.get(i+1)). Use == for reference equality, but for objects we want equality via Objects.equals. Use Objects.equals(this.get(i), \old(this.get(i+1))) which handles null. However we must use only public observer methods; Objects.equals is static, but may be allowed? Not sure. In examples they used .equals method on objects. Could use this.get(i).equals(\old(this.get(i+1))) but that fails if null. In earlier examples they used .equals for non-null values. Here they include null case separately. So we can keep as given: either both old are null, or this.get(i).equals(\old(this.get(i+1))). That matches comment.
 
-Thus final answer in code block.
+Premise: index >=0 && index < \old(this.size()). So assert should be: assert (index >=0 && index < \old(this.size())) => \forall int i; index < i && i < \old(this.size())-1; ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || this.get(i).equals(\old(this.get(i+1))) );
 
-assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => 
-    \forall int i; i > index && i < \old(this.size()) - 1;
-        ( (\old(this.get(i)) == null && \old(this.get(i + 1)) == null) ||
-          java.util.Objects.equals(this.get(i), \old(this.get(i + 1))) );</code>
+Need parentheses for precedence: => lower than &&, so we need parentheses around premise? Actually we have (index >=0 && index < \old(this.size())) => ... . That's fine.
+
+Quantifier: \forall int i; index < i && i < \old(this.size())-1; spec.
+
+Spec: ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || this.get(i).equals(\old(this.get(i+1))) )
+
+Make sure to use this.get(i) after removal. Use this.get(i) is valid because i < new size? For i up to old size -2, after removal size = old size -1, so i <= old size-2, which is < new size. So fine.
+
+Now produce final code.
+
+Check syntax: need semicolon at end.
+
+Thus final answer:
+
+<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; index < i && i < \old(this.size()) - 1; ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || this.get(i).equals(\old(this.get(i+1))) );</code>
+
+Make sure spacing ok.
+
+assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; index < i && i < \old(this.size()) - 1; ( (\old(this.get(i)) == null && \old(this.get(i+1)) == null) || this.get(i).equals(\old(this.get(i+1))) );</code>
 --------------------

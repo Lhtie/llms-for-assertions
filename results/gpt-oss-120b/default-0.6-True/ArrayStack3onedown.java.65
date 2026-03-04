@@ -1,58 +1,73 @@
-analysisWe need to produce an assert statement matching the comment.
+analysisWe need to produce an assert statement for the comment.
 
-We have method pop(): returns top item (last element). Comment: "If the stack is initially not empty, then the result is either null and the last item in the stack is null, or the result is equal to the last item in the stack."
+Comment: 
+// @@@ If the stack is initially not empty, then the result is either null and the last item in the stack is null, or the result is equal to the last item in the stack.
 
-Interpretation: Precondition: initially not empty, i.e., \old(this.size()) > 0. Then the postcondition: (\result == null && \old(this.get(this.size()-1)) == null) || (\result.equals(\old(this.get(this.size()-1))))? Actually result is either null and last item was null, or result equals last item. Need to refer to old last item before removal. Since after removal size decreased by 1. So before pop, old size n = \old(this.size()). The last item before pop is at index n-1. After pop, size is n-1. So we can refer to \old(this.get(n-1)). Use \old(this.get(\old(this.size())-1)). The result may be null; equality for objects: we can use (\result == null ? \old(this.get(...)) == null : \result.equals(\old(this.get(...)))) but spec says either both null or result equals last item. Simpler: (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result != null && \result.equals(\old(this.get(\old(this.size())-1)))) . But they didn't require null check on result equality case maybe just \result.equals(...). Might be okay to write (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result.equals(\old(this.get(\old(this.size())-1)))) . However if result is null, calling equals would cause NPE, but spec is just expression; we can use implication: (\result == null) => (\old(this.get(...)) == null) && (\result != null) => (\result.equals(\old(this.get(...)))) . But the comment says "either null and the last item in the stack is null, or the result is equal to the last item". So we can express as: (\old(this.size()) > 0) => ((\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result.equals(\old(this.get(\old(this.size())-1))))) .
+We are inside method pop(). It throws if empty. So precondition: initially not empty (size > 0). The comment states: If the stack is initially not empty, then the result (\result) is either null and the last item in the stack is null, or the result is equal to the last item in the stack.
 
-Need to ensure parentheses for => lower precedence than && and ||, so wrap antecedent: (\old(this.size()) > 0) => ((\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result.equals(\old(this.get(\old(this.size())-1))))) .
+We need to refer to the last item before removal: that is the element at index n-1 before pop. Since we remove and return it, after the call the stack size decreased by 1. The result equals the element that was at the last index before removal. The comment also includes case when that element is null: result is null and the last item in the stack is null. Actually both are same: result equals the last item (which could be null). But they phrase as either result is null and last item is null, or result equals last item. That's logically equivalent to result == \old(this.get(n-1)). However need to ensure that if result is null then old last item is null; but equality works for null as well. So assert: \old(this.size()) > 0 => (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result.equals(\old(this.get(\old(this.size())-1))))? But need to handle null equality: we can use (\result == \old(this.get(...))) which works for null reference equality. In Java, == works for reference equality, null matches null. So we can assert:
 
-Thus final assert.
+\old(this.size()) > 0 => \result == \old(this.get(\old(this.size())-1))
 
-Check syntax: use \old(this.size()) etc. Use this.get for observer method. Should be fine.
+But the comment splits into two cases; we could mirror that:
 
-Return final answer in code block.assistantfinal<code>assert (\old(this.size()) > 0) => ((\result == null && \old(this.get(\old(this.size()) - 1)) == null) || (\result.equals(\old(this.get(\old(this.size()) - 1)))));</code>
+\old(this.size()) > 0 => (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result == \old(this.get(\old(this.size())-1)));
+
+But the first disjunct is redundant, but okay.
+
+Need to use \old for size and get. Use \result for return.
+
+Thus final assert statement:
+
+assert \old(this.size()) > 0 => (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result == \old(this.get(\old(this.size())-1)));
+
+But we need parentheses correctly: A => B && C? Actually we have implication with consequent being a disjunction. So:
+
+assert \old(this.size()) > 0 => ((\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result == \old(this.get(\old(this.size())-1))));
+
+Make sure parentheses.
+
+Thus output code block.assistantfinal<code>assert \old(this.size()) > 0 => ((\result == null && \old(this.get(\old(this.size()) - 1)) == null) || (\result == \old(this.get(\old(this.size()) - 1))));</code>
 --------------------
-analysisWe need to produce assert statement matching comment.
+analysisWe need to produce an assert statement for the comment after pop method.
 
 Comment: "If the stack is initially not empty, then the result is either null and the last item in the stack is null, or the result is equal to the last item in the stack."
 
-We are inside pop method. Preconditions: stack not empty initially. So we need to express: \old(this.size()) > 0 => (\result == null && \old(this.get(this.size()-1)) == null) || (\result.equals(\old(this.get(this.size()-1))))? Actually after pop, size decreased by 1. So before pop, last item index = old size -1. After removal, size is old size -1. So we need to refer to old last element: \old(this.get(\old(this.size())-1)). After removal, we have result returned by remove. The spec: if stack initially not empty, then result is either null and the last item in the stack is null, or result equals last item. So we can write:
+We need to express specification using \old for initial state. The method returns \result. The condition "stack is initially not empty" means \old(this.size()) > 0. Then we need to assert: (\old(this.size()) > 0) => ( (\result == null && \old(this.get(this.size()-1)) == null) || \result.equals(\old(this.get(this.size()-1))) ). But careful: after removal, size decreased by 1. The old last item is at index \old(this.size())-1. After removal, the new size is \old(this.size())-1. The result is either null and the old last item was null, or result equals old last item.
 
-assert \old(this.size()) > 0 => ( (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result != null && \result.equals(\old(this.get(\old(this.size())-1))) ) );
+We need to use public observer methods: size(), get(int). Since after removal, get may be out of bounds if we try to get old last index after removal; but we refer to old state using \old(this.get(\old(this.size())-1)). That's okay.
 
-But need to use public observer methods: size(), get(int), maybe contains? get is public. Use this.get. Use \old(this.get(\old(this.size())-1)). However after pop, size decreased, but we refer to old size.
+Equality: For generic type E may be null; use == null check, else .equals. In spec they often use .equals for objects. The earlier examples used .equals for query(i).equals(\old(...)). For null, they used == null. So we can write:
 
-Edge: result may be null; equality check for objects: we can use (\result == null ? \old(... ) == null : \result.equals(...)). But spec says either both null or equal. Simpler: (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result != null && \result.equals(\old(this.get(\old(this.size())-1))) ). That's fine.
+assert (\old(this.size()) > 0) => ( (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result != null && \result.equals(\old(this.get(\old(this.size())-1)))) );
 
-Wrap condition with =>.
+But we also need to consider case result null and old last item null; if result null, we don't need to check .equals. So the second disjunct should be \result.equals(old...). But if result null, .equals would throw NPE. So we separate.
 
 Thus final assert:
 
-assert \old(this.size()) > 0 => ( (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result != null && \result.equals(\old(this.get(\old(this.size())-1))) ) );
+assert (\old(this.size()) > 0) => ( (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result != null && \result.equals(\old(this.get(\old(this.size())-1)))) );
 
-Make sure parentheses correct.
+Check parentheses: outer => with condition. Inside we have (A || B). Good.
 
-Return final code block.assistantfinal<code>assert \old(this.size()) > 0 => ( (\result == null && \old(this.get(\old(this.size()) - 1)) == null) || (\result != null && \result.equals(\old(this.get(\old(this.size()) - 1))) ) );</code>
+We must ensure using this.get after removal? We use old. Good.
+
+Return type E may be primitive? No generic.
+
+Thus final answer in code block.assistantfinal```java
+assert (\old(this.size()) > 0) => ( (\result == null && \old(this.get(\old(this.size()) - 1)) == null) || (\result != null && \result.equals(\old(this.get(\old(this.size()) - 1)))) );
+```
 --------------------
-analysisWe need to produce an assert statement for the comment.
+analysisWe need to read comment: "If the stack is initially not empty, then the result is either null and the last item in the stack is null, or the result is equal to the last item in the stack."
 
-We have method pop(): precondition: stack not empty (size >0). The comment: "If the stack is initially not empty, then the result is either null and the last item in the stack is null, or the result is equal to the last item in the stack."
+We need assert statement after pop method. The method returns E result (pop). Preconditions: initially not empty (i.e., old size >0). The assertion: if old size >0 then either ( \result == null && last item before pop is null ) OR ( \result equals last item before pop ). Need to refer to last item before pop: that is element at index old size-1. Use this.get(oldSize-1). Use \old(this.size()) for old size. So condition: \old(this.size()) > 0 => ( (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result.equals(\old(this.get(\old(this.size())-1))) ) ). But careful: result may be null, so we cannot call equals on null. Use ( \result == null ? \old(this.get(...)) == null : \result.equals(\old(this.get(...))) ). But spec says either both null or result equals last item. Simpler: ( (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result != null && \result.equals(\old(this.get(\old(this.size())-1))) ) ). That's fine.
 
-Interpretation: For a non-empty stack before pop, after pop we return either null (if the last item was null) OR the result equals the last item before removal. Since removal also removes it, but we need to refer to old state. So assertion: \old(this.size()) > 0 => (\result == null && \old(this.get(this.size())) == null) || (\result.equals(\old(this.get(this.size())))). Wait after removal, size decreased by 1. Old size = n. After pop, new size = n-1. The last index before removal is n-1. After removal, size is n-1, so the old last item is at index n-1 before removal. In new state, that index no longer exists. So we need to refer to old get(n-1). Use \old(this.get(\old(this.size())-1)). The result is either null and that old element is null, or result equals that old element.
+Thus final assert: assert \old(this.size()) > 0 => ( (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result != null && \result.equals(\old(this.get(\old(this.size())-1))) ) );
 
-Thus assert: \old(this.size()) > 0 => ( (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result != null && \result.equals(\old(this.get(\old(this.size())-1))) ) );
+Need parentheses correctly.
 
-But we could also write result == \old(this.get(\old(this.size())-1)). However if both null, equals would cause NullPointer. So need case distinction.
+Return type E maybe generic, but equality using .equals. For null case we compare with ==.
 
-Simplify: \old(this.size()) > 0 => (\result == null ? \old(this.get(\old(this.size())-1)) == null : \result.equals(\old(this.get(\old(this.size())-1)))).
+Thus final answer code block.
 
-But we need to use logical operators. Use: (\result == null && \old(this.get(\old(this.size())-1)) == null) || (\result != null && \result.equals(\old(this.get(\old(this.size())-1)))).
-
-Thus final assert.
-
-Make sure to include parentheses for implication: \old(this.size()) > 0 => ( ... );
-
-Return as code block.
-
-assistantfinal<code>assert \old(this.size()) > 0 => ( (\result == null && \old(this.get(\old(this.size()) - 1)) == null) || (\result != null && \result.equals(\old(this.get(\old(this.size()) - 1)))) );</code>
+assistantfinal<code>assert \old(this.size()) > 0 => ( (\result == null && \old(this.get(\old(this.size()) - 1)) == null) || (\result != null && \result.equals(\old(this.get(\old(this.size()) - 1))) ) );</code>
 --------------------

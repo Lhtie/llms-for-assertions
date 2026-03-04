@@ -1,79 +1,66 @@
-analysisWe need to produce an assert statement for the comment after pop method.
+analysisWe need to produce assert statement for the comment in pop() method.
 
 Comment: 
 // @@@ If the list is initially not empty, then the result is either null and the first element was null before the operation, or the result is equal to the first element before the operation.
 
-We need to express: If initially not empty (i.e., \old(!this.isEmpty()) ), then result satisfies: either (\result == null && \old(this.getFirst()) == null) OR (\result.equals(\old(this.getFirst()))). Since may be null, need careful equality. Use == for null, .equals for non-null? In spec we can use \result == null && \old(this.getFirst()) == null || (\result != null && \result.equals(\old(this.getFirst()))). But they said "result is either null and the first element was null before the operation, or the result is equal to the first element before the operation." So we can express: \old(!this.isEmpty()) => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst())) ) ).
+Interpretation: The method pop() returns removeFirst(). So the specification: If the list is initially not empty (i.e., \old(!this.isEmpty())), then the result (\result) satisfies: either (\result == null && \old(this.getFirst()) == null) OR (\result.equals(\old(this.getFirst()))). Actually need to consider equality: For objects, we can use \result == null etc. Should we use .equals? In earlier examples they used .equals for query, but for generic E they may use .equals. Use \result == null && \old(this.getFirst()) == null OR \result.equals(\old(this.getFirst())) . However need to ensure result not null case: if result not null then equals old first. Could also write: (\old(!this.isEmpty())) => (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))). But the comment says "either null and the first element was null before the operation, or the result is equal to the first element before the operation." So we can express as: \old(!this.isEmpty()) => (\result == null && \old(this.getFirst()) == null) || (\result.equals(\old(this.getFirst()))). Need to handle null equality: if old first null, result null case covered. If old first not null, then result equals old first.
 
-But need to use observer methods: we have getFirst() method returns first element, may throw if empty, but we are using old state where list not empty, so safe. Also isEmpty() method.
+Thus final assert: 
+assert \old(!this.isEmpty()) => (\result == null && \old(this.getFirst()) == null) || (\result.equals(\old(this.getFirst())));
 
-Thus final assert: assert \old(!this.isEmpty()) => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst())) ) );
+Make sure parentheses correct with => lower priority. So we need parentheses around RHS maybe: \old(!this.isEmpty()) => ((\result == null && \old(this.getFirst()) == null) || (\result.equals(\old(this.getFirst()))));
 
-Make sure parentheses correct.
+Return final code block.
 
-Return value is \result.
-
-Thus output code block.
-
-assistantfinal<code>assert \old(!this.isEmpty()) => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst())) ) );</code>
+assistantfinal<code>assert \old(!this.isEmpty()) => ((\result == null && \old(this.getFirst()) == null) || (\result.equals(\old(this.getFirst()))));</code>
 --------------------
-analysisWe need to produce an assert statement for the comment after pop method.
+analysisWe need to produce an assert statement for the comment in pop() method.
 
 Comment: 
 // @@@ If the list is initially not empty, then the result is either null and the first element was null before the operation, or the result is equal to the first element before the operation.
 
-Interpretation: For pop(), which removes and returns first element. The spec: If initially not empty, then result is either null (if first element was null) OR result equals the first element before operation. So basically result equals old first element (which could be null). So we can assert: !\old(this.isEmpty()) => (\result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst()))). But need to use observer methods: we have getFirst() returns first element, possibly throws if empty. But we only call when not empty. So we can use \old(this.getFirst()).
+Interpretation: For pop(), which calls removeFirst(). The specification: If the list is initially not empty (i.e., old size > 0), then the result (\result) satisfies: either (\result == null && old first element was null) OR (\result.equals(old first element)). Actually "result is either null and the first element was null before the operation, or the result is equal to the first element before the operation." So we need to express as: \old(this.size()) > 0 => ( (\result == null && \old(this.getFirst()) == null) || (\result.equals(\old(this.getFirst())) ) ). But need to use observer methods available: we have getFirst() method that returns first element, may be null. Also size() method. Use \old(this.size()) etc.
 
-Simplify: !\old(this.isEmpty()) => (\result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst()))).
+Equality: For objects, we can use .equals, but need to handle null. In spec, we treat null case separately. So we can write: (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))). However the second case also works when both null? Already covered by first case. So we can just use \result.equals(\old(this.getFirst())) but if \result is null would cause NPE. So better to use explicit null check.
 
-Alternatively we can assert equality directly: !\old(this.isEmpty()) => (\result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst()))).
+Thus assert: \old(this.size()) > 0 => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))) );
 
-But maybe they want: !\old(this.isEmpty()) => (\result == null && \old(this.getFirst()) == null) || \result.equals(\old(this.getFirst())).
-
-Better to express as: !\old(this.isEmpty()) => (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))).
-
-But if result is null and old first is null, that's covered. If result is non-null, must equal old first.
-
-Thus final assert.
-
-Make sure to use proper syntax: \old(this.isEmpty())? Actually we need "initially not empty": !\old(this.isEmpty()).
-
-Thus final code:
-
-<code>assert !\old(this.isEmpty()) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));</code>
-
-Check parentheses: outer => has lower precedence, need parentheses around RHS maybe.
-
-Thus final answer.assistantfinal<code>assert !\old(this.isEmpty()) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));</code>
---------------------
-analysisWe need to generate assert statement for comment after pop method.
-
-We need to read comment: 
-"// @@@ If the list is initially not empty, then the result is either null and the first element was null before the operation, or the result is equal to the first element before the operation."
-
-Interpretation: For pop(), if the list was not empty initially, the result (\result) is either null and the first element before operation was null, OR the result equals the first element before operation.
-
-Essentially: if \old(!this.isEmpty()) then (\result == null && \old(this.getFirst()) == null) || (\result.equals(\old(this.getFirst()))). Since elements may be null, equality should be via Objects.equals maybe, but we can use == for null and .equals for non-null? In examples they used .equals for objects. In earlier spec they used this.query(i).equals(\old(this.query(i))) . So we can use .equals.
-
-Thus condition: !\old(this.isEmpty()) => ( (\result == null && \old(this.getFirst()) == null) || \result.equals(\old(this.getFirst())) ).
-
-But need to be careful: if result is null, we already covered case where old first is null. If old first is null, result could be null (since first element null). So the statement can be simplified: !\old(this.isEmpty()) => \result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst())).
-
-But using ternary not allowed. Use implication with OR.
-
-Thus final assert:
-
-assert !\old(this.isEmpty()) => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst())) ) );
-
-But we need to include case result null and old first null; if result null but old first not null shouldn't happen. So we need to ensure equivalence.
-
-Simplify: !\old(this.isEmpty()) => (\old(this.getFirst()) == null ? \result == null : \result.equals(\old(this.getFirst()))). But we can't use conditional.
-
-We'll use disjunction: (!\old(this.isEmpty())) => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst())) ) );
-
-We need to reference getFirst method; it's public E getFirst(). So okay.
+Make sure parentheses correct. Use => lower precedence than &&, so need parentheses around condition before =>? Actually syntax: A => B. So we need parentheses around left side? Not needed but fine.
 
 Thus final answer code block.
 
-assistantfinal<code>assert !\old(this.isEmpty()) => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))) );</code>
+assistantfinal<code>assert \old(this.size()) > 0 => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))) );</code>
+--------------------
+analysisWe need to read the code, find comment starting with "@@@". It's inside pop() method:
+
+```java
+public E pop() {
+    return removeFirst();
+    // @@@ If the list is initially not empty, then the result is either null and the first element was null before the operation, or the result is equal to the first element before the operation.
+}
+```
+
+We need to produce an assert statement reflecting that natural language assertion.
+
+We have method removeFirst() presumably removes and returns first element. The spec: If the list is initially not empty, then the result is either null and the first element was null before the operation, or the result is equal to the first element before the operation.
+
+So we need to assert something about \result, and about old state.
+
+Premise: initially not empty => old size > 0, i.e., \old(this.size()) > 0. Or maybe they have method size(). Use this.size() to get current size after operation? At the moment after pop, size decreased by 1. So we need to refer to old size before operation: \old(this.size()) > 0.
+
+Then conclusion: (\result == null && \old(this.getFirst()) == null) || \result.equals(\old(this.getFirst()))? Actually result may be null, and first element before operation was null. Or result equals first element before operation (including null? they separate case). So we can express: (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))). But also if result is null and old first element was null, that satisfies equality; but they separate case maybe because null equality is tricky. Use Objects.equals semantics maybe. For generic E, we can use \result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst())).
+
+Thus assertion: \old(this.size()) > 0 => (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))).
+
+But we need to use public observer methods only. We have getFirst() method defined. Also size() method. So fine.
+
+Thus final assert statement:
+
+assert \old(this.size()) > 0 => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));
+
+Make sure parentheses correct: A => B, where B is the disjunction.
+
+Thus final answer in code block.
+
+assistantfinal<code>assert \old(this.size()) > 0 => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));</code>
 --------------------

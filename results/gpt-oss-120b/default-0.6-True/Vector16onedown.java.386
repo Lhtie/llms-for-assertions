@@ -1,77 +1,75 @@
 analysisWe need to produce an assert statement reflecting the comment.
 
+We have method add(int index, E element) which calls insertElementAt(element, index). The comment:
+
+"@@@ If the index is greater than or equal to 0 and less than or equal to the initial size of the vector, then for every valid index i from the insertion index to the old size of the vector, the element at position i+1 in the updated vector is either null and the old element at i was null, or it is equal to the old element at i."
+
+Interpretation: Preconditions: index >=0 && index <= old size (size before insertion). Then for all int i; i >= index && i < oldSize; the element at position i+1 after insertion (i.e., this.elementAt(i+1) after) satisfies: (this.elementAt(i+1) == null && \old(this.elementAt(i)) == null) || this.elementAt(i+1).equals(\old(this.elementAt(i))) . Since element may be null, we need to compare with null.
+
+We need observer methods: elementAt(int) returns E, get(int) also returns element. Use this.elementAt maybe accessible. In spec we can use this.elementAt(i+1). For old value: \old(this.elementAt(i)). For null equality we can use == null. For object equality we can use .equals but need to avoid null pointer. Could use (this.elementAt(i+1) == null ? \old(this.elementAt(i)) == null : this.elementAt(i+1).equals(\old(this.elementAt(i)))).
+
+Simplify: (this.elementAt(i+1) == null && \old(this.elementAt(i)) == null) || (this.elementAt(i+1) != null && this.elementAt(i+1).equals(\old(this.elementAt(i)))).
+
+But we can use the equals approach with null safe: java.util.Objects.equals(a,b) but not available as observer? Might be allowed to call static method? Usually spec only uses observers; but we can use .equals with null check.
+
+We'll produce assert:
+
+assert (index >= 0 && index <= \old(this.size())) => \forall int i; i >= index && i < \old(this.size()); ( (this.elementAt(i+1) == null && \old(this.elementAt(i)) == null) || (this.elementAt(i+1) != null && this.elementAt(i+1).equals(\old(this.elementAt(i)))) );
+
+Need to get old size: \old(this.size()).
+
+Make sure parentheses.
+
+Thus final answer code block.
+
+assistantfinal<code>assert (index >= 0 && index <= \old(this.size())) => 
+    \forall int i; i >= index && i < \old(this.size()); 
+        ( (this.elementAt(i+1) == null && \old(this.elementAt(i)) == null) ||
+          (this.elementAt(i+1) != null && this.elementAt(i+1).equals(\old(this.elementAt(i)))) );</code>
+--------------------
+analysisWe need to output an assert statement matching the comment.
+
 Comment: 
 ```
 // @@@ If the index is greater than or equal to 0 and less than or equal to the initial size of the vector, then for every valid index i from the insertion index to the old size of the vector, the element at position i+1 in the updated vector is either null and the old element at i was null, or it is equal to the old element at i.
 ```
 
-We need to refer to old size, old element at i, and new element at i+1 after insertion. Use this.get(i) maybe? Since method add(int index, E element) inserts using insertElementAt(element, index). After insertion, size increases by 1. Need to use observer methods: get(int index) returns element at index. size() returns size. Also maybe elementAt? get is public.
+We need to write assert using observers: we have methods: get(int index) returns element at index. Also maybe elementAt etc. Use this.get(i) etc. Also size() returns current size. At start, old size = \old(this.size()). The method is void add(int index, E element) which inserts element at index (shifts). The spec: If index >=0 && index <= old size, then for every i in [index, oldSize-1] (since old size is number of elements before insertion), the element at position i+1 after update is either null and old element at i was null, or equals old element at i.
 
-So we need assert: if index >=0 && index <= \old(this.size()) then for all int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) ). Need to handle null equality: use == for null, else equals. Could use (this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i)))).
+We need to express that condition. Use \forall int i; index>=0 && index<=\old(this.size()) && i>=index && i<\old(this.size()); (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) . Need to handle null equality; we can use (this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i)))) . Simpler: (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i)))) . But spec allowed "either null and old element was null, or equal". Use expression as described.
 
-But spec style earlier used .equals for objects, not null. In examples they used this.query(i).equals(\old(this.query(i))) assuming non-null? Not handling null. For simplicity, we can use this.get(i+1).equals(\old(this.get(i))) . Might ignore null case. But comment explicitly mentions null case. Could express as (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))). That's acceptable.
+Also need antecedent: index>=0 && index<=\old(this.size()) => ... . So final assert: assert (index>=0 && index<=\old(this.size())) => \forall int i; i>=index && i<\old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i)))) );
 
-Thus final assert:
+Make sure parentheses correct. Use && for conjunction inside forall condition? Syntax: \forall int i; 0 <= i && i < N; P . So we can write: \forall int i; i>=index && i<\old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) );
 
-assert (index >= 0 && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) );
+But need to guard equals when null? In spec they said "or it is equal to the old element at i". If old element was null, equality would be null.equals? Not allowed. So we need to ensure we don't call equals on null. Use condition: (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i)))) . That handles null.
 
-Make sure parentheses correct. Use => as implication.
+Thus final assert line.
 
-Return final code block.
+Wrap in <code> tags.
 
-assistantfinal<code>assert (index >= 0 && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) );</code>
+assistantfinal<code>assert (index >= 0 && index <= \old(this.size())) => \forall int i; i >= index && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i)))) );</code>
 --------------------
-analysisWe need to produce an assert statement for the comment.
+analysisWe need to produce assert statement for the comment.
 
-We need to understand the method: add(int index, E element) calls insertElementAt(element, index). The comment: 
-
-"@@@ If the index is greater than or equal to 0 and less than or equal to the initial size of the vector, then for every valid index i from the insertion index to the old size of the vector, the element at position i+1 in the updated vector is either null and the old element at i was null, or it is equal to the old element at i."
-
-Interpretation: Precondition: index >=0 && index <= old size (size before insertion). For each i such that index <= i < oldSize (i from insertion index up to oldSize-1), after insertion, element at position i+1 (i+1 in new vector) satisfies: either both are null (new element null and old element null) OR new element equals old element (i.e., this.elementAt(i+1).equals(\old(this.elementAt(i)))? Actually equality semantics: "or it is equal to the old element at i". So condition: (this.elementAt(i+1) == null && \old(this.elementAt(i)) == null) || this.elementAt(i+1).equals(\old(this.elementAt(i))) . But need to use public observer methods. We have elementAt(int index) method (public synchronized E elementAt(int index)). That's an observer. So we can use this.elementAt(i+1). Also need old version: \old(this.elementAt(i)). So the assert should be something like:
-
-assert (index >= 0 && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.elementAt(i+1) == null && \old(this.elementAt(i)) == null) || this.elementAt(i+1).equals(\old(this.elementAt(i))) );
-
-But we need to ensure we refer to size before insertion: \old(this.size()). Since size changes after insertion (size increased by 1). So old size is \old(this.size()).
-
-Also note that after insertion, size is oldSize+1. So i+1 is within new size.
-
-Edge cases: if elementAt returns null, calling .equals would cause NPE. So we need to guard. Use (this.elementAt(i+1) == null ? \old(this.elementAt(i)) == null : this.elementAt(i+1).equals(\old(this.elementAt(i)))) . But the comment says "either null and old element null, or equal". So we can express as ( (this.elementAt(i+1) == null && \old(this.elementAt(i)) == null) || (this.elementAt(i+1) != null && this.elementAt(i+1).equals(\old(this.elementAt(i))) ) ). Simpler: (this.elementAt(i+1) == null ? \old(this.elementAt(i)) == null : this.elementAt(i+1).equals(\old(this.elementAt(i)))) . But typical spec uses equality operator for objects? In earlier examples they used .equals for objects. So we can use .equals.
-
-Thus final assert:
-
-assert (index >= 0 && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.elementAt(i+1) == null && \old(this.elementAt(i)) == null) || this.elementAt(i+1).equals(\old(this.elementAt(i))) );
-
-Make sure parentheses correct.
-
-Return type void, so no \result.
-
-Thus produce code block.
-
-assistantfinal<code>assert (index >= 0 && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.elementAt(i+1) == null && \old(this.elementAt(i)) == null) || this.elementAt(i+1).equals(\old(this.elementAt(i))) );</code>
---------------------
-analysisWe need to produce an assert statement for the comment.
-
-We need to read the method add(int index, E element). It calls insertElementAt(element, index). The comment:
-
+Comment: 
 // @@@ If the index is greater than or equal to 0 and less than or equal to the initial size of the vector, then for every valid index i from the insertion index to the old size of the vector, the element at position i+1 in the updated vector is either null and the old element at i was null, or it is equal to the old element at i.
 
-Interpretation: Preconditions: index >=0 && index <= old size (i.e., old size before insertion). Then for all i such that index <= i < oldSize, we have that after insertion, element at i+1 equals either null with old element at i null, or equals old element at i. Basically element at i+1 after insertion equals old element at i (including null case). So we need to express that.
+We need to express specification after add(int index, E element). The method inserts element at index, shifting elements right. The comment says: If index >=0 && index <= old size, then for every valid i from index to old size (inclusive? "to the old size of the vector". The old size is before insertion. Indices valid originally: 0..oldSize-1. After insertion size = oldSize+1. The shift: elements at positions i (old) become at i+1 (new) for i >= index and i < oldSize. For i = oldSize, there is no old element; new element at oldSize+1? Actually after insertion, the new element placed at index, old elements shifted right. So for i from index to oldSize-1, new element at i+1 equals old element at i. For i = oldSize, new element at oldSize+1? Wait new size = oldSize+1, last index = oldSize. The element formerly at oldSize-1 shifts to oldSize. So i runs from index to oldSize-1. The comment says "from the insertion index to the old size of the vector". Might include oldSize? But old size index is out of range, there is no old element. The condition about null: "the element at position i+1 in the updated vector is either null and the old element at i was null, or it is equal to the old element at i." So for i = oldSize, old element at i is out of bounds; maybe treat as null? Might be they consider old element at i is null (since beyond size). We'll follow comment: i from index to oldSize (inclusive). For i = oldSize, old element is considered null (since beyond). The condition: new element at i+1 (i+1 = oldSize+1) would be out of new size (since new size = oldSize+1, max index oldSize). So i cannot be oldSize because i+1 would be oldSize+1 > new size-1. So likely i goes to oldSize-1. We'll adopt that.
 
-We need to use observer methods: We have elementAt(int index) maybe to get element at index. Also get(int index) is synchronized, returns element. Use this.get(i) maybe. Since method is synchronized? Not needed.
+Thus spec: (index >=0 && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); (this.elementAt(i+1) == null ? \old(this.elementAt(i)) == null : this.elementAt(i+1).equals(\old(this.elementAt(i))))
 
-We also need to refer to old size: \old(this.size()).
+But need to use public observer methods: elementAt(int) returns E. That's okay. Use this.elementAt(i+1).equals(...). Need null check. Use (this.elementAt(i+1) == null && \old(this.elementAt(i)) == null) || this.elementAt(i+1).equals(\old(this.elementAt(i))). However need to ensure safe null comparison. Use .equals only if not null. Use expression as above.
 
-We need to refer to old element: \old(this.get(i)).
+Also need to refer to old size: \old(this.size()).
 
-After insertion, element at i+1: this.get(i+1). But note that after insertion, size increased by 1. So we need to assert for all i in [index, oldSize-1] (i < oldSize). Condition: this.get(i+1).equals(\old(this.get(i)))? But need to handle null equality: equals method may throw NPE if null. Use == for null? Typically they use .equals for objects, but they may use == for null. In examples, they used .equals for objects: this.query(i).equals(\old(this.query(i))). That implies query returns reference, they call .equals. For null, .equals would NPE. But they assumed not null perhaps. In our case, need to handle null case: either both null or equal. Could express as (this.get(i+1)==null && \old(this.get(i))==null) || this.get(i+1).equals(\old(this.get(i))). But using .equals on possibly null is unsafe. In specification language, they might allow .equals with null? Not sure. In earlier examples, they used .equals directly, assuming non-null elements. Here comment explicitly mentions null case. So we need to encode the disjunction.
+Thus final assert:
 
-Thus assert: (index>=0 && index<=\old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1)==null && \old(this.get(i))==null) || this.get(i+1).equals(\old(this.get(i))) );
+assert (index >= 0 && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.elementAt(i+1) == null && \old(this.elementAt(i)) == null) || this.elementAt(i+1).equals(\old(this.elementAt(i))) );
 
 Make sure parentheses.
 
-We need to reference index variable (parameter). Use index.
+Return as code block.
 
-Thus final answer code block.
-
-assistantfinal<code>assert (index >= 0 && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) );</code>
+assistantfinal<code>assert (index >= 0 && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.elementAt(i+1) == null && \old(this.elementAt(i)) == null) || this.elementAt(i+1).equals(\old(this.elementAt(i))) );</code>
 --------------------

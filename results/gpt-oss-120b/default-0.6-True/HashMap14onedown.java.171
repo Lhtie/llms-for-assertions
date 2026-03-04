@@ -1,52 +1,68 @@
-analysisWe need to produce assert statement for the comment:
+analysisWe need to read the code, find comment starting with "@@@". It's in remove method:
 
 ```java
-// @@@ If the result is not null, then the key was present in the map before the operation.
+public V remove(Object key) {
+    Entry<K,V> e = removeEntryForKey(key);
+    return (e == null ? null : e.value);
+    // @@@ If the result is not null, then the key was present in the map before the operation.
+}
 ```
 
-We are in method remove(Object key) returning V. The comment: "If the result is not null, then the key was present in the map before the operation."
+We need to produce an assert statement that matches this natural language assertion.
 
-We need to express as an assertion: (\result != null) => this.containsKey(key) before operation? Actually after removal, the map no longer contains the key (assuming removal succeeded). But the statement only says: If result is not null, then the key was present before operation. That can be expressed using old state: \old(this.containsKey(key)). So assert: (\result != null) => \old(this.containsKey(key)). Also maybe need to assert that if result == null, key may not have been present, but not required.
+Interpretation: The method returns V. The result is null if no mapping existed, otherwise returns the previous value. The comment says: "If the result is not null, then the key was present in the map before the operation."
 
-Thus final assert: assert (\result != null) => \old(this.containsKey(key));.
+Thus assert: (\result != null) => this.containsKey(key). But we need to use observer methods. The class has containsKey(Object key) method defined earlier (public boolean containsKey(Object key);). So we can use this.containsKey(key). The method is called on this map after removal? At that point, after removal, the key may no longer be present. But the assertion says before the operation, the key was present. However we don't have a direct observer for "before". Could use \old(this.containsKey(key)). Since we need to refer to the map before the operation. So assert: (\result != null) => \old(this.containsKey(key)). That's accurate.
 
-Make sure syntax: parentheses around condition.
+Check: The result is \result (value). So we assert: (\result != null) => \old(this.containsKey(key));
 
-Return final code block.
+Make sure syntax: parentheses around condition. Should we need to use &&? Not needed.
 
-assistantfinal<code>assert (\result != null) => \old(this.containsKey(key));</code>
---------------------
-analysisWe need to produce an assert statement corresponding to comment:
+Thus final answer:
 
 ```java
-// @@@ If the result is not null, then the key was present in the map before the operation.
-```
-
-We are inside method `public V remove(Object key)`. The method returns V (value) of removed entry, or null if none. The comment says: If the result is not null, then the key was present in the map before the operation.
-
-We need to express: `\result != null => \old(this.containsKey(key))`. Since we need to refer to old state before removal. Use \old(this.containsKey(key)). Also maybe also need to assert that if result != null, then old map contains key, and perhaps also that result equals the old value associated with key? The comment only mentions key presence, not value equality. So we just assert the implication.
-
-Thus assert: `assert (\result != null) => \old(this.containsKey(key));`
-
-Make sure syntax: parentheses around left side maybe not needed but fine.
-
-Return final code block.
-
-assistantfinal<code>assert (\result != null) => \old(this.containsKey(key));</code>
---------------------
-analysisWe need to produce a single assert statement matching the comment.
-
-The method remove(Object key) returns V. The comment: "// @@@ If the result is not null, then the key was present in the map before the operation."
-
-We need to express: if \result != null then the map contained the key before removal. Use \old(this.containsKey(key)). Since we need to refer to pre-state. So assert (\result != null) => \old(this.containsKey(key));
-
-But need to also maybe ensure that if result is null, we don't assert anything. The spec just says that if result is not null, then key was present before operation. So that's the implication.
-
-Thus final assert statement:
-
 assert (\result != null) => \old(this.containsKey(key));
+```
 
-Make sure syntax: parentheses maybe needed: (\result != null) => \old(this.containsKey(key))
+Return in <code> block.assistantfinal<code>assert (\result != null) => \old(this.containsKey(key));</code>
+--------------------
+analysisWe need to produce an assert statement for the comment in remove method:
 
-Wrap in <code></code>.assistantfinal<code>assert (\result != null) => \old(this.containsKey(key));</code>
+```java
+public V remove(Object key) {
+    Entry<K,V> e = removeEntryForKey(key);
+    return (e == null ? null : e.value);
+    // @@@ If the result is not null, then the key was present in the map before the operation.
+}
+```
+
+We need to express: If the result (i.e., return value) is not null, then the key was present in the map before the operation.
+
+We need to refer to the result using \result. Need to refer to presence before operation: i.e., \old(this.containsKey(key)) is true. So assertion: (\result != null) => \old(this.containsKey(key))
+
+But need to ensure we use correct syntax: \result != null => \old(this.containsKey(key))
+
+In JML style, we need parentheses maybe: (\result != null) => \old(this.containsKey(key))
+
+Thus final answer: <code>assert (\result != null) => \old(this.containsKey(key));</code>
+
+Check if any other details: The method returns V, could be null also if key not present or value stored was null. The comment says "If the result is not null, then the key was present in the map before the operation." That's exactly that.
+
+Thus final.assistantfinal<code>assert (\result != null) => \old(this.containsKey(key));</code>
+--------------------
+analysisWe need to produce an assert statement for the comment: "// @@@ If the result is not null, then the key was present in the map before the operation."
+
+Method remove(Object key) returns V (value) which is previous value associated with key, or null if no mapping existed (or if mapping existed but value was null). The comment says: If the result is not null, then the key was present in the map before the operation.
+
+But note nuance: result being null could also mean key present with null value. The comment says "If the result is not null, then the key was present in the map before the operation." That's straightforward: (\result != null) => \old(this.containsKey(key))
+
+We need to use \old to refer to pre-state. Use this.containsKey(key) method. Use \result for return.
+
+Thus assert: assert (\result != null) => \old(this.containsKey(key));
+
+Make sure syntax: parentheses maybe not needed but fine.
+
+Return final answer in code block.
+
+assistantfinal<code>assert (\result != null) => \old(this.containsKey(key));</code>
 --------------------

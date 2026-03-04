@@ -1,66 +1,52 @@
-analysisWe need to parse the comment: "if the index is valid (non-negative and less than the initial size of the list), then for every valid index i less than the specified index, either both the current and old values at i are null, or the current value at i equals the old value at i."
+analysisWe need to produce an assert statement matching the comment.
 
-We need to produce an assert statement in JML-like syntax with \old, \forall, etc.
+We have method set(int index, Attribute attribute). It attempts to set element at index. The comment: "if the index is valid (non-negative and less than the initial size of the list), then for every valid index i less than the specified index, either both the current and old values at i are null, or the current value at i equals the old value at i."
 
-Method set(int index, Attribute attribute). It modifies the list at position index (replaces). The comment says: if index is valid (non-negative and less than the initial size of the list), then for every valid index i less than the specified index, either both the current and old values at i are null, or the current value at i equals the old value at i.
+We need to refer to old size? "initial size of the list" meaning size before operation. So condition: index >=0 && index < \old(this.size()). Then for all int i; 0 <= i && i < index; we have (this.get(i) == null && \old(this.get(i)) == null) || this.get(i).equals(\old(this.get(i))) . Since get returns Attribute, may be null. So we need equality handling. Use .equals if not null. Use (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i)))).
 
-We need to refer to initial size: before operation. That's \old(this.size())? The condition "index is valid (non-negative and less than the initial size of the list)" i.e., index >=0 && index < \old(this.size()). Use that as premise.
+Thus assert: index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i))));
 
-Then for all int i; 0 <= i && i < index; we need condition: (this.get(i) == null && \old(this.get(i)) == null) || this.get(i).equals(\old(this.get(i))) . But need to handle null equality. Use == for null, else .equals. So we can write: (this.get(i) == null && \old(this.get(i)) == null) || (this.get(i) != null && this.get(i).equals(\old(this.get(i)))) . Simpler: (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i)))) . But typical spec uses either both null or equals.
+Make sure syntax: use && inside forall condition.
 
-We'll produce: assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; (this.get(i) == null && \old(this.get(i)) == null) || this.get(i).equals(\old(this.get(i)));
+Thus final code:
 
-Make sure syntax matches examples: they used "assert index>=0 && index<=9 => \forall int i; 0<=i && i<index; this.query(i).equals(\old(this.query(i)));" So they use "=>" directly after premise. Use parentheses to ensure grouping: (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; (this.get(i) == null && \old(this.get(i)) == null) || this.get(i).equals(\old(this.get(i)));
+<code>assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i))));</code>
 
-Return type void, no result.
+Check parentheses: need parentheses around whole condition after => maybe: index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i))));
 
-Thus final answer.assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; (this.get(i) == null && \old(this.get(i)) == null) || this.get(i).equals(\old(this.get(i))));</code>
---------------------
-analysisWe need to craft an assert statement for the comment.
+Yes.
 
-We have method set(int index, Attribute attribute). It sets element at index, but only if index valid (0 <= index < size before operation). The comment: "if the index is valid (non-negative and less than the initial size of the list), then for every valid index i less than the specified index, either both the current and old values at i are null, or the current value at i equals the old value at i."
-
-We need to produce assert statement using \old for old values, this.get(i) for current values, etc. Need to refer to size before operation: \old(this.size()). The condition: index >=0 && index < \old(this.size()). Then for all i; 0 <= i && i < index; (this.get(i) == null && \old(this.get(i)) == null) || this.get(i).equals(\old(this.get(i)))? Since Attribute type, we can use .equals. Use .equals for non-null case. But need to handle null case: either both null OR equals. So spec: (\old(this.get(i)) == null && this.get(i) == null) || (this.get(i).equals(\old(this.get(i)))) . But we must avoid NullPointer when calling equals on null. So we can write: (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i)))) . That's typical.
-
-Thus overall assert: index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i))));
-
-Make sure parentheses.
-
-Return type void, no result.
-
-Thus final answer in code block.
-
-assistantfinal<code>assert index >= 0 && index < \old(this.size()) => \forall int i; 0 <= i && i < index; (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i))));</code>
+Return final.assistantfinal<code>assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i))));</code>
 --------------------
 analysisWe need to produce an assert statement reflecting the comment.
 
-We have a method set(int index, Attribute attribute). It replaces the attribute at the specified index with the supplied attribute, using super.set. If index invalid, it throws RuntimeOperationsException.
+We have method set(int index, Attribute attribute). It replaces the attribute at index with supplied attribute. The comment: "if the index is valid (non-negative and less than the initial size of the list), then for every valid index i less than the specified index, either both the current and old values at i are null, or the current value at i equals the old value at i."
 
-Comment: 
-"@@@ if the index is valid (non-negative and less than the initial size of the list), then for every valid index i less than the specified index, either both the current and old values at i are null, or the current value at i equals the old value at i."
+We need to express: if index >=0 && index < \old(this.size()) then for all int i; 0 <= i && i < index; ( (this.get(i) == null && \old(this.get(i)) == null) || this.get(i).equals(\old(this.get(i))) ). Since get returns Attribute (object). Use .equals for non-null case. Need to handle null equality.
 
-We need to write an assert that captures this property.
+Thus assert: index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; ( (this.get(i)==null && \old(this.get(i))==null) || this.get(i).equals(\old(this.get(i))) );
 
-Observations: We need to refer to old list values before the operation. Use \old(this.get(i))? The get method returns Attribute. For null equality we can use == null or .equals. Should express: if index >=0 && index < \old(this.size()) then for all int i; 0 <= i && i < index => ( (this.get(i) == null && \old(this.get(i)) == null) || this.get(i).equals(\old(this.get(i))) ). However need to handle null safely: we can use (this.get(i) == null ? \old(this.get(i)) == null : this.get(i).equals(\old(this.get(i)))).
+Make sure syntax: use && inside forall condition? The spec says \forall int i; cond; spec. So cond is 0<=i && i<index. spec is the equality condition.
 
-Simplify: (this.get(i) == null && \old(this.get(i)) == null) || (this.get(i) != null && this.get(i).equals(\old(this.get(i)))).
+Thus final assert: assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; ( (this.get(i)==null && \old(this.get(i))==null) || this.get(i).equals(\old(this.get(i))) ); 
 
-But spec says "either both the current and old values at i are null, or the current value at i equals the old value at i." So we can write: (this.get(i) == null && \old(this.get(i)) == null) || this.get(i).equals(\old(this.get(i))). However if this.get(i) is null, then calling equals would cause NullPointerException in spec? In JML, expressions are evaluated left to right? Safer to use conditional.
+Wrap in <code> tags.
 
-Let's produce assert:
+assistantfinal<code>assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; ( (this.get(i)==null && \old(this.get(i))==null) || this.get(i).equals(\old(this.get(i))) );</code>
+--------------------
+analysisWe need to produce an assert statement for the comment.
 
-assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; ( (this.get(i) == null && \old(this.get(i)) == null) || (this.get(i) != null && this.get(i).equals(\old(this.get(i)))) );
+We have method set(int index, Attribute attribute). It modifies the list by replacing element at index. The comment: "if the index is valid (non-negative and less than the initial size of the list), then for every valid index i less than the specified index, either both the current and old values at i are null, or the current value at i equals the old value at i."
 
-Need to reference index variable. In assert we can use index directly.
+We need to express: (index >=0 && index < \old(this.size())) => for all int i; 0 <= i && i < index; ( (this.get(i) == null && \old(this.get(i)) == null) || this.get(i).equals(\old(this.get(i))) ). Need to use .equals for Attribute equality; but we can use .equals method. Also need to handle null case.
 
-Thus final answer.
+Thus assert: index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; ( (this.get(i)==null && \old(this.get(i))==null) || this.get(i).equals(\old(this.get(i))) );
 
-Make sure to include parentheses for implication.
+Make sure syntax: use parentheses around implication: (index>=0 && index<\old(this.size())) => \forall int i; 0<=i && i<index; ( (this.get(i)==null && \old(this.get(i))==null) || this.get(i).equals(\old(this.get(i))) );
 
-Return as code block.
+Return type void, so no \result.
 
-assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => 
-       \forall int i; 0 <= i && i < index; 
-           ( (this.get(i) == null && \old(this.get(i)) == null) ||
-             (this.get(i) != null && this.get(i).equals(\old(this.get(i)))) );</code>
+Thus final answer inside code block.
+
+assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; ((this.get(i) == null && \old(this.get(i)) == null) || this.get(i).equals(\old(this.get(i))));</code>
 --------------------

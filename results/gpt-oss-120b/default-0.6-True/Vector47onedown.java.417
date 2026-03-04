@@ -1,85 +1,93 @@
-analysisWe need to produce assert statement reflecting comment.
+analysisWe need to produce an assert statement for the comment in toArray method.
 
-Comment: "For every valid index i from 0 to the size of this vector, if the element at index i in the vector is null, then the element at index i in the resulting array is also null; otherwise, the element at index i in the resulting array is equal to the element at index i in the vector."
+The comment: "For every valid index i from 0 to the size of this vector, if the element at index i in the vector is null, then the element at index i in the resulting array is also null; otherwise, the element at index i in the resulting array is equal to the element at index i in the vector."
 
-We are in method toArray() returning Object[] array. Need to refer to result array: \result. Vector size before operation? The method does not modify vector; just returns copy. So we can use this.size() (or this.getCount?) The class has size() method. Use this.size() after operation (same as before). So spec: \forall int i; 0 <= i && i < this.size(); (this.elementAt(i) == null => \result[i] == null) && (this.elementAt(i) != null => \result[i].equals(this.elementAt(i))) . But we need to use observer methods: elementAt(int) is synchronized method returning E. That's accessible. Use this.elementAt(i). For equality, we can use .equals. For null case, direct comparison.
+We need to refer to the result array: \result. The method returns Object[]. So we need to assert for all i: 0 <= i && i < this.size() => (this.elementAt(i)==null => \result[i]==null) && (this.elementAt(i)!=null => \result[i].equals(this.elementAt(i)))? Since element type is E, but result is Object, we can use equals.
 
-Thus assert: \forall int i; 0 <= i && i < this.size(); (this.elementAt(i) == null => \result[i] == null) && (this.elementAt(i) != null => \result[i].equals(this.elementAt(i)));
+We need to use observer methods: elementAt (synchronized) returns E. Also size(). Use \forall int i; 0 <= i && i < this.size(); ( (this.elementAt(i) == null) => \result[i] == null ) && ( (this.elementAt(i) != null) => \result[i].equals(this.elementAt(i)) ).
 
-But need parentheses grouping: \forall int i; 0 <= i && i < this.size(); (this.elementAt(i) == null => \result[i] == null) && (this.elementAt(i) != null => \result[i].equals(this.elementAt(i)));
+But we must ensure parentheses correct. Use \forall int i; 0 <= i && i < this.size(); ( (this.elementAt(i) == null) => \result[i] == null ) && ( (this.elementAt(i) != null) => \result[i].equals(this.elementAt(i)) ).
 
-Make sure precedence: => lower than &&, so need parentheses around each implication. Already.
+However need to combine with implication? Actually for each i, the condition is: if element is null then result element is null; else result element equals element. This can be expressed as: (this.elementAt(i) == null ? \result[i] == null : \result[i].equals(this.elementAt(i))). But we can use logical equivalence: (this.elementAt(i) == null) => (\result[i] == null) && (this.elementAt(i) != null) => \result[i].equals(this.elementAt(i)). Combine with && inside forall.
 
-Return final code block.
+Thus final assert:
 
-assistantfinal<code>assert \forall int i; 0 <= i && i < this.size(); (this.elementAt(i) == null => \result[i] == null) && (this.elementAt(i) != null => \result[i].equals(this.elementAt(i)));</code>
+assert \forall int i; 0 <= i && i < this.size(); ( (this.elementAt(i) == null) => \result[i] == null ) && ( (this.elementAt(i) != null) => \result[i].equals(this.elementAt(i)) );
+
+Make sure parentheses: \forall int i; 0 <= i && i < this.size(); ( (this.elementAt(i) == null) => \result[i] == null ) && ( (this.elementAt(i) != null) => \result[i].equals(this.elementAt(i)) );
+
+Yes.
+
+Return final code block.assistantfinal<code>assert \forall int i; 0 <= i && i < this.size(); ( (this.elementAt(i) == null) => \result[i] == null ) && ( (this.elementAt(i) != null) => \result[i].equals(this.elementAt(i)) );</code>
 --------------------
-analysisWe need to output an assert statement that captures the comment.
+analysisWe need to produce an assert statement for the comment.
 
-Comment: "For every valid index i from 0 to the size of this vector, if the element at index i in the vector is null, then the element at index i in the resulting array is also null; otherwise, the element at index i in the resulting array is equal to the element at index i in the vector."
+Comment: 
+```
+// @@@ For every valid index i from 0 to the size of this vector, if the element at index i in the vector is null, then the element at index i in the resulting array is also null; otherwise, the element at index i in the resulting array is equal to the element at index i in the vector.
+```
 
-We are in method toArray(): returns Object[].
+We are in method `toArray()` returning `Object[]`. Need to refer to result array via `\result`. Need to refer to vector's size before operation? The method does not modify vector, just copies. So size unchanged. Use `this.size()` after call; also old size same. Use `\forall int i; 0 <= i && i < this.size();` condition.
 
-We need to refer to result array via \result. Need to use this.get(i) or elementAt? The public observer methods: there is get(int index) synchronized, elementAt(int index). Both return E. Use this.get(i). That's accessible.
+Spec: if this.elementAt(i) is null -> \result[i] == null. else -> \result[i].equals(this.elementAt(i))? Since elements are Objects, equality via `Objects.equals`. But we can use `\result[i] == null ? ...` but spec: "otherwise, the element at index i in the resulting array is equal to the element at index i in the vector." Use `\result[i].equals(this.elementAt(i))` but need to ensure not null. Could use `\result[i].equals(this.elementAt(i))` assuming non-null.
 
-We need size: this.size().
+Thus assert: 
+`assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null ? \result[i] == null : \result[i].equals(this.get(i)));`
 
-We need to quantify over i: 0 <= i && i < this.size() (valid indices). For each i, condition: if this.get(i) == null then \result[i] == null else \result[i].equals(this.get(i)). Since result is Object[].
+But we need to use public observer methods: we have `get(int index)` method which returns element. That's public. Use `this.get(i)`. The result array is `\result`. Access via `\result[i]`.
 
-We can write: assert \forall int i; 0 <= i && i < this.size(); (\old(this.get(i)) == null ? \result[i] == null : \result[i].equals(\old(this.get(i))));
+Thus final answer.
 
-But note we need to refer to element before method call? The vector may be modified during toArray? The method just reads elementData and copies; no modifications. So using this.get(i) after call should be same as before. But to be safe we can use \old(this.get(i)). Use \old for pre-state. Use \result[i] for array element.
+Check syntax: Use parentheses around implication? We use conditional expression with `? :`. That's allowed? Generally JML uses `? :` as conditional expression. Should be okay. Could also write `(this.get(i) == null => \result[i] == null) && (this.get(i) != null => \result[i].equals(this.get(i)))`. That may be clearer.
 
-Thus assert statement:
-
-assert \forall int i; 0 <= i && i < this.size(); (\old(this.get(i)) == null ? \result[i] == null : \result[i].equals(\old(this.get(i))));
-
-Make sure syntax: conditional operator? In earlier examples they used logical implication patterns not ternary. Could also express as: (\old(this.get(i)) == null => \result[i] == null) && (\old(this.get(i)) != null => \result[i].equals(\old(this.get(i)))).
-
-Better to avoid ternary as not mentioned. Use implication.
-
-Thus:
-
-assert (\forall int i; 0 <= i && i < this.size(); (\old(this.get(i)) == null => \result[i] == null) && (\old(this.get(i)) != null => \result[i].equals(\old(this.get(i)))) );
-
-But need parentheses correctly: The quantifier applies to whole spec; inside we have conjunction of two implications.
-
-Write:
-
-assert \forall int i; 0 <= i && i < this.size(); (\old(this.get(i)) == null => \result[i] == null) && (\old(this.get(i)) != null => \result[i].equals(\old(this.get(i))));
-
-That matches.
-
-Return final code block.assistantfinal<code>assert \forall int i; 0 <= i && i < this.size(); (\old(this.get(i)) == null => \result[i] == null) && (\old(this.get(i)) != null => \result[i].equals(\old(this.get(i))));</code>
---------------------
-analysisWe need to read the comment and produce assert statement specification.
-
-The method toArray returns an Object[] array copy of elementData up to elementCount. The comment:
-
-"@@@ For every valid index i from 0 to the size of this vector, if the element at index i in the vector is null, then the element at index i in the resulting array is also null; otherwise, the element at index i in the resulting array is equal to the element at index i in the vector."
-
-We need assert expression after method body using \result for returned array.
-
-We need to refer to size() before call? Since size may change after? The method is synchronized and returns copy of current state. So we need to use \old for size? Usually we refer to pre-state values: \old(this.size()) maybe. But size() after method returns same as before because no modifications inside. Use \old(this.get(i))? Actually we have method get(int index) which returns element at index. It's public synchronized E get(int index). We can use this.get(i) after call; but after method returns, vector unchanged, so same as before. But spec should refer to old state to be safe: \old(this.get(i)). However we need to ensure we can call this.get(i) inside assert? It's allowed; it's an observer method (public). So we can use \old(this.get(i)). The result array is \result, typed Object[]. So we need to assert for all i in range 0 <= i < this.size() (or \old(this.size())) that:
-
-(\old(this.get(i)) == null) => \result[i] == null
-&& (\old(this.get(i)) != null) => \result[i].equals(\old(this.get(i)))? Since element types are Object, equality should be Objects.equals. The comment says "equal to". Use .equals maybe. Use \result[i].equals(\old(this.get(i))) if not null. But need to handle null case; we already separate.
-
-Thus assert: \forall int i; 0 <= i && i < \old(this.size()); (\old(this.get(i)) == null => \result[i] == null) && (\old(this.get(i)) != null => \result[i].equals(\old(this.get(i))));
-
-But need parentheses grouping: (\old(this.get(i)) == null => \result[i] == null) && (\old(this.get(i)) != null => \result[i].equals(\old(this.get(i))))
-
-Wrap inside \forall.
+I'll produce that.
 
 Thus final code:
 
-<code>assert \forall int i; 0 <= i && i < \old(this.size()); (\old(this.get(i)) == null => \result[i] == null) && (\old(this.get(i)) != null => \result[i].equals(\old(this.get(i))));</code>
+```java
+assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => \result[i].equals(this.get(i)));
+```
 
-Check syntax: need parentheses around whole spec after semicolon? The assert statement ends with semicolon. Use parentheses for each implication. That's fine.
+Make sure parentheses: outer `\forall int i; cond; spec`. spec is conjunction of two implications. So final.
 
-Make sure we use this.get(i) is observer method; it's synchronized but okay.
+Return.assistantfinal<code>assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => \result[i].equals(this.get(i)));</code>
+--------------------
+analysisWe need to produce an assert statement corresponding to the comment.
 
-Return array is Object[], we can index with [i].
+Comment: 
+```
+// @@@ For every valid index i from 0 to the size of this vector, if the element at index i in the vector is null, then the element at index i in the resulting array is also null; otherwise, the element at index i in the resulting array is equal to the element at index i in the vector.
+```
 
-Thus final answer.assistantfinal<code>assert \forall int i; 0 <= i && i < \old(this.size()); (\old(this.get(i)) == null => \result[i] == null) && (\old(this.get(i)) != null => \result[i].equals(\old(this.get(i))));</code>
+Method toArray returns Object[] array = Arrays.copyOf(elementData, elementCount);
+
+We need to assert property about result array vs vector elements.
+
+We have observers: size() returns number of components. elementAt(int index) returns component at index (synchronized). Also get(int index) returns element. Both are accessible.
+
+In this class, we can use this.get(i) or this.elementAt(i) maybe. Since get is public, we can use this.get(i). Also we need to refer to result array: it's the return value, so \result.
+
+We need to quantify over i from 0 inclusive to size()-1 inclusive.
+
+Spec: For each i, if this.get(i) == null then \result[i] == null; else \result[i].equals(this.get(i)). Since array elements are Objects, equality can be .equals? The comment says "equal to", could use .equals. Use .equals for non-null case.
+
+Thus assertion: \forall int i; 0 <= i && i < this.size(); (this.get(i) == null ? \result[i] == null : \result[i].equals(this.get(i)));
+
+We need to use proper syntax: maybe using implication: (this.get(i) == null) => \result[i] == null && (this.get(i) != null) => \result[i].equals(this.get(i)). But simpler with conditional expression.
+
+But typical spec language uses logical operators, not ternary. Use implication.
+
+So: \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => \result[i].equals(this.get(i)));
+
+Combine with && inside quantifier? Actually spec: \forall int i; cond; (A => B) && (C => D). That's fine.
+
+Thus final assert statement:
+
+<code>assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => \result[i].equals(this.get(i)));</code>
+
+Check syntax: need parentheses around whole quantifier expression after semicolon? The syntax: \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => \result[i].equals(this.get(i)));
+
+Yes.
+
+Return final.assistantfinal<code>assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => \result[i].equals(this.get(i)));</code>
 --------------------

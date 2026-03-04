@@ -1,79 +1,75 @@
-analysisWe need to produce an assert statement reflecting comment:
-
-"// @@@ If the bit index is non-negative, then for every valid index in the BitSet that is not the specified bit index, the value of the bit remains unchanged after the operation."
-
-We need to write assertion using \old for pre-state values. Need to refer to get(i) method to get bit value. Valid indices: presumably any index i such that 0 <= i < this.size()? Actually valid index in BitSet: indices that are within current logical size? The comment says "valid index in the BitSet". In BitSet, there is no explicit bound; get(i) returns false for out-of-range bits? In Java BitSet, get(i) works for any non-negative index, returning false if beyond current size. But we can define valid index as 0 <= i && i < this.size()? However size() returns number of bits of space actually in use, which may be larger than logical size. But typical spec uses size() as capacity. Might be better to use this.get(i) works for any non-negative index; but "valid index" could be any i such that i >=0 && i < this.size(). We'll use that.
-
-We need premise: bitIndex >=0 (already checked). So assert: bitIndex >=0 => \forall int i; i>=0 && i<this.size() && i != bitIndex; this.get(i) == \old(this.get(i));
-
-But we also need to ensure that the bitIndex is non-negative; but method already throws if negative. The assertion could be simply: assert \forall int i; i>=0 && i<this.size() && i != bitIndex; this.get(i) == \old(this.get(i));
-
-But we might need to include condition that bitIndex is non-negative: (bitIndex >=0) => ... but since method throws otherwise, maybe not needed. But to reflect comment: "If the bit index is non-negative, then for every valid index ... the value remains unchanged". So include implication.
-
-Thus final assert:
-
-assert (bitIndex >= 0) => (\forall int i; i >= 0 && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i)));
-
-Make sure syntax: need parentheses around forall? Usually: \forall int i; cond; spec. So we can embed inside implication.
-
-Thus final code:
-
-<code>assert (bitIndex >= 0) => \forall int i; i >= 0 && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i));</code>
-
-Check precedence: => lower than &&, so fine.
-
-Return final.assistantfinal<code>assert (bitIndex >= 0) => \forall int i; i >= 0 && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i));</code>
---------------------
-analysisWe need to generate assert statement matching comment.
+analysisWe need to produce assert statement for the comment.
 
 Comment: 
-"// @@@ If the bit index is non-negative, then for every valid index in the BitSet that is not the specified bit index, the value of the bit remains unchanged after the operation."
+// @@@ If the bit index is non-negative, then for every valid index in the BitSet that is not the specified bit index, the value of the bit remains unchanged after the operation.
 
-We need to express: if bitIndex >=0 then for all int i; 0 <= i && i < this.size()? Actually "valid index in the BitSet" meaning indices that are within the logical size? In BitSet, valid indices are those less than size()? size() returns number of bits of space actually in use. Could be wordsInUse*64? But we can use this.size() as number of bits currently in use. So we need: bitIndex >=0 => forall int i; 0 <= i && i < this.size() && i != bitIndex => this.get(i) == \old(this.get(i))
+We need to capture premise: bitIndex >= 0 (non-negative). Also need "valid index in the BitSet" meaning indices that are within the BitSet's logical size? Probably indices that are within range of bits that exist. In BitSet, there is no explicit size method for valid indices; but we have size() returns number of bits of space actually in use; length() returns logical size (index of highest set bit +1). The comment says "valid index in the BitSet". Usually valid indices are those between 0 (inclusive) and size()-1? Or maybe between 0 and length()-1? Since size() returns number of bits currently in this bit set (capacity). The logical size is length(). The valid indices for bits that exist are up to size()-1, but bits beyond current wordsInUse may be considered out of range but get() would return false. For invariants, they probably consider indices less than size(). I'd assume valid index means 0 <= i < this.size().
 
-But need to use observer methods that are public: get(int) returns boolean. size() returns int.
+Thus assert: if bitIndex >=0 then for all int i; 0 <= i && i < this.size() && i != bitIndex => this.get(i) == \old(this.get(i))
 
-Thus assert: bitIndex >= 0 => \forall int i; 0 <= i && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i));
+But need to use observer methods: we have get(int). So we can use this.get(i). Use \old(this.get(i)) for before.
 
-Need parentheses for implication.
+Premise also includes maybe that bitIndex is non-negative, but also the method already throws if negative. So we assert only when bitIndex >=0 (which is always true when not thrown). So we can write:
+
+assert bitIndex >= 0 => \forall int i; 0 <= i && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i));
+
+Need parentheses: (bitIndex >= 0) => (\forall int i; 0 <= i && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i)));
+
+Make sure syntax: \forall int i; condition; spec
+
+Return boolean? assert expects boolean expression.
 
 Thus final code:
 
-<code>assert bitIndex >= 0 => \forall int i; 0 <= i && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i));</code>
+<code>assert (bitIndex >= 0) => \forall int i; 0 <= i && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i));</code>
 
-Check syntax: The specification language as per examples: they use "assert (\old(this.contains(value)) => ... ) && (!\old(...)" etc. For forall they use: \forall int i; 0<=i && i<\old(this.getCount()); this.query(i).equals(\old(this.query(i)));
+Check precedence: => lower than &&, so need parentheses around left side maybe not needed. But to be safe: (bitIndex >= 0) => (\forall int i; 0 <= i && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i)));
 
-Thus we can use: assert bitIndex >= 0 => \forall int i; 0 <= i && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i));
-
-Make sure semicolons: In examples, after forall they put a semicolon after condition before body, like: \forall int i; 0<=i && i<\old(this.getCount()); this.query(i).equals(...);
-
-Thus we follow same.
-
-Return final.assistantfinal<code>assert bitIndex >= 0 => \forall int i; 0 <= i && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i));</code>
+Thus final answer.assistantfinal<code>assert (bitIndex >= 0) => (\forall int i; 0 <= i && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i)));</code>
 --------------------
-analysisWe need to produce assert statement corresponding to comment:
+analysisWe need to write an assert statement matching the comment:
 
 "// @@@ If the bit index is non-negative, then for every valid index in the BitSet that is not the specified bit index, the value of the bit remains unchanged after the operation."
 
-We need to write an assert spec after method clear. The method clears bit at bitIndex if non-negative. The spec: if bitIndex >=0, then for all valid indices i (i.e., 0 <= i < some bound) where i != bitIndex, the bit value after operation equals its value before operation.
+We need to refer to bitIndex parameter, check that bitIndex >= 0. For every valid index (i.e., 0 <= i < this.size()? Actually valid index: indices that are within the logical size? BitSet can have infinite bits, but only bits up to some length? The method clear doesn't change size, but bits beyond wordsInUse are considered false. The spec: "for every valid index in the BitSet that is not the specified bit index, the value of the bit remains unchanged after the operation."
 
-We need to refer to old values using \old(this.get(i))? There's a public method get(int). Yes, get returns boolean. So we can use \old(this.get(i)).
+Valid index likely means indices that are within the current logical size? Could be any index that is currently within the BitSet's range (i.e., 0 <= i < this.size()? size() returns number of bits of space actually in use, which is wordsInUse*64 maybe. But to be safe, we can use this.size() as bound. Or maybe we can use this.length()? length() is logical size (highest set bit+1). However "valid index in the BitSet" probably means any index that is less than size(). We'll use this.size().
 
-What is "valid index in the BitSet"? Probably indices less than size()? The BitSet size may be bigger than logical length; but valid index is maybe 0 <= i < this.size()? Or maybe 0 <= i < this.length()? The spec says "valid index in the BitSet". In Java BitSet, there is no explicit bound; get(i) works for any non-negative index, returning false for out of range. But typical spec would consider indices less than size() maybe. Let's look at other examples: they used \old(this.getCount()) etc. For array examples, they used 0 <= i && i < \old(this.getCount()). For BitSet, we can use 0 <= i && i < this.size()? But after clear, size may change? The size is number of bits of space actually in use, not logical length. Clearing may reduce wordsInUse and size perhaps. But we want "valid index in the BitSet" meaning within the range before operation? Probably 0 <= i && i < \old(this.size())? Because after operation size may shrink if last word cleared. So to assert unchanged for indices other than bitIndex that are still valid before operation.
+Thus we need an assert: if bitIndex >= 0 then for all int i; 0 <= i && i < this.size() && i != bitIndex => this.get(i) == \old(this.get(i)). The get method returns boolean.
 
-Thus spec: assert bitIndex >= 0 => \forall int i; 0 <= i && i < \old(this.size()) && i != bitIndex; this.get(i) == \old(this.get(i));
+So:
 
-We also need to ensure that i is a valid index after operation? The phrase "for every valid index in the BitSet that is not the specified bit index" after operation? but they say "remains unchanged after the operation". So we consider all indices that are valid before and after? Simpler: for all i where i >=0 && i != bitIndex && i < \old(this.size()), this.get(i) == \old(this.get(i)). That's fine.
+assert bitIndex >= 0 => \forall int i; 0 <= i && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i));
 
-Thus final assert:
+Make sure syntax: parentheses around implication maybe: assert (bitIndex >= 0) => (\forall int i; 0 <= i && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i)));
 
-<code>assert bitIndex >= 0 => \forall int i; 0 <= i && i < \old(this.size()) && i != bitIndex; this.get(i) == \old(this.get(i));</code>
+But note that \forall syntax is: \forall int i; cond; spec. So we embed inside implication: (bitIndex >= 0) => (\forall int i; 0 <= i && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i)));
 
-Check syntax: need parentheses around implication? Use => with lower precedence, but we want (bitIndex >=0) => (...). So we may write:
+Thus final answer.
 
-assert (bitIndex >= 0) => \forall int i; 0 <= i && i < \old(this.size()) && i != bitIndex; this.get(i) == \old(this.get(i));
+Check that we use this.get(i) which is observer method. It's public. Good.
 
-Make sure semicolon after assert statement inside code block.
+Thus output.
 
-Thus final answer.assistantfinal<code>assert (bitIndex >= 0) => \forall int i; 0 <= i && i < \old(this.size()) && i != bitIndex; this.get(i) == \old(this.get(i));</code>
+assistantfinal<code>assert (bitIndex >= 0) => (\forall int i; 0 <= i && i < this.size() && i != bitIndex; this.get(i) == \old(this.get(i)));</code>
+--------------------
+analysisWe need to produce an assert statement matching the comment. The comment: 
+"// @@@ If the bit index is non-negative, then for every valid index in the BitSet that is not the specified bit index, the value of the bit remains unchanged after the operation."
+
+We need to express: if bitIndex >=0 then for all valid indices i (i >=0 && i < something?) that are not equal to bitIndex, the bit value after operation equals before operation.
+
+We need to refer to old values: \old(this.get(i)). The method is within BitSet class, so we can use this.get(i). Need to define valid indices: "valid index in the BitSet". In BitSet, valid indices are those less than size()? The logical size maybe length()? The spec likely uses size() or length()? Typically BitSet's logical size is length(), but size() returns number of bits of space (implementation). In spec they might consider "valid index" as any index that is within the current logical size (i.e., less than this.length()). Since they say "valid index in the BitSet". I'd use this.length() as bound: 0 <= i && i < this.length(). However after clear, length may change if the cleared bit was the highest set bit; then length may decrease. The condition says "for every valid index ... that is not the specified bit index, the value remains unchanged". If clearing the highest set bit reduces length, then some indices beyond new length but less than old length may become invalid. The statement should refer to old valid indices? The phrase "valid index in the BitSet" after operation? Might be ambiguous. Use old valid indices: i >=0 && i < \old(this.length()). And i != bitIndex. Then after operation, this.get(i) == \old(this.get(i)). Also need premise: bitIndex >=0. So final assert: 
+assert bitIndex >= 0 => \forall int i; 0 <= i && i < \old(this.length()) && i != bitIndex; this.get(i) == \old(this.get(i));
+
+Make sure parentheses: assert (bitIndex >= 0) => (\forall int i; 0 <= i && i < \old(this.length()) && i != bitIndex; this.get(i) == \old(this.get(i)));
+
+That's a single assert statement.
+
+Check syntax: \forall int i; condition; spec. So we need parentheses around whole implication? According to examples, they wrote: assert index>=0 && index<=9 => \forall int i; 0<=i && i<index; ... So they didn't wrap parentheses. So we can write:
+
+assert bitIndex >= 0 => \forall int i; 0 <= i && i < \old(this.length()) && i != bitIndex; this.get(i) == \old(this.get(i));
+
+That's fine.
+
+Return final answer in code block.assistantfinal<code>assert bitIndex >= 0 => \forall int i; 0 <= i && i < \old(this.length()) && i != bitIndex; this.get(i) == \old(this.get(i));</code>
 --------------------

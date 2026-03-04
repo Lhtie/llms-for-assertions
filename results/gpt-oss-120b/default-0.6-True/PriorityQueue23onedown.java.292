@@ -1,82 +1,89 @@
-analysisWe need to output an assert statement matching the comment.
+analysisWe need to produce an assert statement reflecting the comment.
 
-The method toArray returns Object[] copy of queue up to size. The comment: "For every valid index i (from 0 to the size of the queue), if the element at index i in the queue is null, then the element at index i in the returned array is also null; otherwise, the element in the queue at index i is equal to the element at index i in the returned array."
+Comment: 
+"// @@@ For every valid index i (from 0 to the size of the queue), if the element at index i in the queue is null, then the element at index i in the returned array is also null; otherwise, the element in the queue at index i is equal to the element at index i in the returned array."
 
-We need to refer to the returned array. In assertion, we can use \result for return value. Need to quantify over i: 0 <= i && i < this.size()? Actually size is field, but accessible via size() method. Use this.size() maybe returns size. Use this.size() as method. So:
+We have method toArray() returns Object[].
 
-assert \forall int i; 0 <= i && i < this.size(); (\old(this.get(i)) == null) => \result[i] == null && (\old(this.get(i)) != null) => \result[i].equals(\old(this.get(i)));
+We need to assert after execution. Use \result to refer to returned array. Need to refer to queue internal array? The observer method to get element at index is get(int index). That's public. So we can use this.get(i) to get element at index i (which returns E). The internal queue array may have nulls.
 
-But need to refer to element at index i in queue before method. Since toArray copies current state; after method, size unchanged. Use \old(this.get(i)) to capture pre-state element. Use \result[i] to access array element. Use equals for non-null? The element type is Object, but we can use == for equality? In previous examples they used .equals. Use .equals for objects. So spec: For all i in range, (\old(this.get(i)) == null) => \result[i] == null && (\old(this.get(i)) != null) => \result[i].equals(\old(this.get(i)));
+We need to express: for all int i; 0 <= i && i < this.size(); (this.get(i) == null) => \result[i] == null ; else this.get(i).equals(\result[i])? Since elements are objects. Should use .equals for non-null elements. Could also use == if same reference. The spec says "equal to". Use .equals.
 
-Combine with &&.
+Thus:
 
-Thus final assert:
+assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null) => \result[i] == null && (this.get(i) != null) => this.get(i).equals(\result[i]);
 
-assert \forall int i; 0 <= i && i < this.size(); (\old(this.get(i)) == null => \result[i] == null) && (\old(this.get(i)) != null => \result[i].equals(\old(this.get(i))));
+But need parentheses to separate two implications combined with &&.
 
-Need parentheses correct: The quantifier's body is the conjunction of two implications. So:
+Better: assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => this.get(i).equals(\result[i]));
 
-assert \forall int i; 0 <= i && i < this.size(); (\old(this.get(i)) == null => \result[i] == null) && (\old(this.get(i)) != null => \result[i].equals(\old(this.get(i))));
+But note precedence: && lower than =>? Actually => lower priority than &&, so we need parentheses: (this.get(i) == null => \result[i] == null) && (this.get(i) != null => this.get(i).equals(\result[i]))
 
-That matches. Use this.size() method; but size field is private? size() method returns size. Use this.size().
+Wrap inside forall: \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => this.get(i).equals(\result[i]))
 
-Return array is Object[], so \result[i] is of type Object.
+That's the assert.
 
-Thus final answer.assistantfinal```java
-assert \forall int i; 0 <= i && i < this.size(); (\old(this.get(i)) == null => \result[i] == null) && (\old(this.get(i)) != null => \result[i].equals(\old(this.get(i))));
-```
---------------------
-analysisWe need to produce an assert statement that matches the comment.
+Make sure to use this.size() method, which returns int. So we can call this.size().
 
-We have code: toArray returns copy of queue array up to size. The comment:
-
-"For every valid index i (from 0 to the size of the queue), if the element at index i in the queue is null, then the element at index i in the returned array is also null; otherwise, the element in the queue at index i is equal to the element at index i in the returned array."
-
-We need to use observer methods: get(int index) returns element at index. Also size() returns size. The method toArray returns Object[]; we need to refer to result array: \result.
-
-We need to assert for all int i; 0 <= i && i < this.size()? The size before operation? Since toArray doesn't modify the queue, size unchanged. Use this.size() (or size()) after call same as before. Use \old? Not necessary because size unchanged. However to be safe we can use \old(this.size()) but not needed.
-
-Spec: forall i; 0 <= i && i < this.size(); (this.get(i) == null) => \result[i] == null && (this.get(i) != null) => this.get(i).equals(\result[i])? Since elements are objects, equality via equals. The comment says "equal to the element". Use .equals.
-
-Thus assert:
-
-assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null ? \result[i] == null : this.get(i).equals(\result[i]));
-
-We need to use conditional? Could use implication: (this.get(i) == null) => \result[i] == null && (this.get(i) != null) => this.get(i).equals(\result[i]).
-
-Combine with &&.
-
-Thus final code:
+Thus final answer:
 
 <code>assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => this.get(i).equals(\result[i]));</code>
 
-Make sure syntax: need parentheses around whole forall expression? Typically assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => this.get(i).equals(\result[i])); That's fine.
+Check syntax: Use \result[i] to index array. Should be okay.
 
-Return final.assistantfinal<code>assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => this.get(i).equals(\result[i]));</code>
---------------------
-analysisWe need to read the code and comment.
-
-Method toArray returns Arrays.copyOf(queue, size). The comment: "For every valid index i (from 0 to the size of the queue), if the element at index i in the queue is null, then the element at index i in the returned array is also null; otherwise, the element in the queue at index i is equal to the element at index i in the returned array."
-
-We need to produce an assert statement that captures this property.
-
-We have access to observer methods: get(int index) returns element at index; size() returns size; maybe also queue field is not accessible (private). Use this.get(i) to refer to element at index i in the priority queue. The returned array is the result of method, accessible via \result (since we need to refer to return value). The array is of type Object[]. So we can use \result[i] to refer to element at index i. In JML, we can use \result[i] syntax.
-
-We need to assert for all int i; 0 <= i && i < this.size(); (or maybe size() before call). Since we need old size? The method does not modify the queue, just returns copy. So size after call equals old size. But we can just use this.size() (post-state) which equals old size. However to be precise we could use \old(this.size()).
-
-The property: if this.get(i) == null then \result[i] == null else this.get(i).equals(\result[i])? Since elements may be objects, equality may be via equals. The comment says "element in the queue at index i is equal to the element at index i in the returned array." Could use == or equals? Usually for objects they refer to equality (equals). Use .equals. But need to handle null case separately because calling equals on null would cause NPE. So we use conditional: (this.get(i) == null) => \result[i] == null && (this.get(i) != null) => this.get(i).equals(\result[i]).
-
-We can combine with implication: (\old(this.get(i)) == null) => \result[i] == null && (\old(this.get(i)) != null) => \old(this.get(i)).equals(\result[i])? Since get(i) unchanged, we could use this.get(i). Use \old maybe not needed. Since method does not modify queue, old equals new. Use this.get(i) is fine.
-
-Thus assert: \forall int i; 0 <= i && i < this.size(); (this.get(i) == null) => \result[i] == null && (this.get(i) != null) => this.get(i).equals(\result[i]);
-
-Need parentheses to group correctly. Use && between two implications.
-
-Write:
-
+Return final.assistantfinal```java
 assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => this.get(i).equals(\result[i]));
+```
+--------------------
+analysisWe need to read the code and comment. The method toArray returns a copy of queue array up to size. The comment: "For every valid index i (from 0 to the size of the queue), if the element at index i in the queue is null, then the element at index i in the returned array is also null; otherwise, the element in the queue at index i is equal to the element at index i in the returned array."
 
-Make sure syntax: JML uses => as binary operator; need parentheses around each implication. The overall quantifier's body is a boolean expression; we have conjunction of two implications.
+We need to produce an assert statement that captures this specification.
+
+We have access to public methods: maybe get(int index) to retrieve element at index. Also size() returns size. The internal field queue is not public; we cannot refer to it directly. But we can refer to this.get(i) to get element at index i. The returned array is the result of toArray, we need to refer to \result (the returned array). So spec: For all int i; 0 <= i && i < this.size(); (this.get(i) == null) => \result[i] == null && (this.get(i) != null) => \result[i].equals(this.get(i))? Or equality of objects: maybe use .equals. In examples they used .equals for query. For null we must check null. So we can write:
+
+assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null ? \result[i] == null : \result[i].equals(this.get(i)));
+
+But syntax: need conditional? Could use implication: (this.get(i) == null) => \result[i] == null && (this.get(i) != null) => \result[i].equals(this.get(i))
+
+Combine with &&. So:
+
+assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => \result[i].equals(this.get(i)));
+
+But need parentheses for grouping: \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => \result[i].equals(this.get(i)));
+
+Check syntax: The forall quantifier expects a condition and a body. In examples: \forall int i; 0<=i && i<\old(this.getCount()); this.query(i).equals(\old(this.query(i)));
+
+So after semicolon we have the spec expression. So we need to combine both implications with && inside the body.
+
+Thus final answer:
+
+<code>assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => \result[i].equals(this.get(i)));</code>
+
+Make sure to use this.size() maybe size() method is public. So fine.
+
+Return final.assistantfinal<code>assert \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => \result[i].equals(this.get(i)));</code>
+--------------------
+analysisWe need to produce assert statement for comment.
+
+We have method toArray() returning Object[] copy of queue up to size. The comment: "For every valid index i (from 0 to the size of the queue), if the element at index i in the queue is null, then the element at index i in the returned array is also null; otherwise, the element in the queue at index i is equal to the element at index i in the returned array."
+
+We need to refer to the returned array: that's the method result, \result. Need to express for all i: 0 <= i < this.size() (size after method? size unchanged). The queue array internal field queue; we may need an observer to access element at index i in queue. There's get(int index) method that returns element at index. That method may be public, returns E. So we can use this.get(i). However get may throw exception if i out of bounds; but we restrict to valid indices.
+
+Thus spec: \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => this.get(i).equals(\result[i])).
+
+But need to use equality for objects: For null case, direct equality. For non-null, we can use .equals. However the elements are of type E, but to compare with Object in array, we can use \result[i].equals(this.get(i))? But if this.get(i) non-null, we can assert this.get(i).equals(\result[i]) (or \result[i].equals(this.get(i))) whichever.
+
+Spec uses "element in the queue at index i is equal to the element at index i in the returned array". Use .equals.
+
+Thus assert: \forall int i; 0 <= i && i < this.size(); (this.get(i) == null ? \result[i] == null : this.get(i).equals(\result[i]));
+
+But need to use logical operators: (this.get(i) == null => \result[i] == null) && (this.get(i) != null => this.get(i).equals(\result[i])).
+
+Combine with && inside forall? Actually we can write as: \forall int i; 0 <= i && i < this.size(); (this.get(i) == null => \result[i] == null) && (this.get(i) != null => this.get(i).equals(\result[i]));
+
+That matches.
+
+Make sure to use this.size() method (public) not field size; but size unchanged. Use this.size().
 
 Thus final answer code block.
 
