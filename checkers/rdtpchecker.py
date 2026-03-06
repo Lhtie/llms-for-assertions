@@ -287,7 +287,12 @@ def java_rdtpcheck(pfx, sfx, asrt):
         
         return gain >= config["threshold"]
 
-def rdtpcheck(langid, pfx, sfx, grnd_truth, asrt, cc, check):
+def rdtpcheck(langid, pfx, sfx, grnd_truth, asrt, cc, check, **config_overrides):
+    if langid in configs and config_overrides:
+        for key, value in config_overrides.items():
+            assert key in configs[langid], f"Unknown rdtp config key: {key}"
+            configs[langid][key] = value
+
     if(langid == "java"):
         result = java_rdtpcheck(pfx, sfx, asrt)
         os.makedirs("./results/logs", exist_ok=True)

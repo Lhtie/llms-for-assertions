@@ -5,6 +5,7 @@ import glob
 import subprocess
 import re
 import traceback
+import json
 
 import checkers.fuzzchecker as fuzzchecker
 import checkers.compilechecker as compilechecker
@@ -18,7 +19,7 @@ langmap = {
 }
 
 def check_gen(func):
-    def f(langid, pfx, sfx, grnd_truth, gen_asrts, cc, mask):
+    def f(langid, pfx, sfx, grnd_truth, gen_asrts, cc, mask, checker_kwargs):
         arr, dp = [], {}
         for i, asrt in enumerate(gen_asrts):
             if not mask[i]:
@@ -29,7 +30,7 @@ def check_gen(func):
                 continue
             print("!"*10 + f" Entry {i}", file=sys.stderr)
             try:
-                result = func(langid, pfx, sfx, grnd_truth, asrt, cc)
+                result = func(langid, pfx, sfx, grnd_truth, asrt, cc, **checker_kwargs)
             except Exception as e:
                 print(f"Error in entry {i}: error type - {type(e).__name__}; error msg - {e}", file=sys.stderr)
                 traceback.print_exc()
@@ -39,11 +40,23 @@ def check_gen(func):
         return arr
     return f
 
-null_check      = check_gen(lambda *args : args[-1].strip() != "")
-compile_check   = check_gen(compilechecker.cmplecheck)
-fuzz_check      = check_gen(lambda *args : fuzzchecker.fuzzcheck(*args, "soundness"))
-rdtp_check      = check_gen(lambda *args : rdtpchecker.rdtpcheck(*args, "equality"))
-equiv_check     = check_gen(equivchecker.equivcheck)
+CHECKERS = {
+    "null_check": check_gen(lambda *args, **kwargs: args[-2].strip() != ""),
+    "compile_check": check_gen(lambda *args, **kwargs: compilechecker.cmplecheck(*args)),
+    "fuzz_check": check_gen(lambda *args, check="soundness", **kwargs: fuzzchecker.fuzzcheck(*args, check)),
+    "rdtp_check": check_gen(lambda *args, check="equality", **kwargs: rdtpchecker.rdtpcheck(*args, check=check, **kwargs)),
+    "equiv_check": check_gen(lambda *args, **kwargs: equivchecker.equivcheck(*args)),
+}
+
+
+def parse_checker_kwargs(raw_json):
+    if not raw_json:
+        return {}
+    checker_kwargs = json.loads(raw_json)
+    assert isinstance(checker_kwargs, dict), "--checkerkwargs must be a JSON object"
+    for checker_name, kwargs in checker_kwargs.items():
+        assert isinstance(kwargs, dict), f"--checkerkwargs[{checker_name}] must be a JSON object"
+    return checker_kwargs
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -57,8 +70,10 @@ if __name__ == "__main__":
     parser.add_argument("--mask", nargs='+', default=[])
     parser.add_argument("--checklist", nargs='+', default=
         ["null_check", "compile_check", "fuzz_check", "equiv_check", "rdtp_check"])
+    parser.add_argument("--checkerkwargs", type=str, default="")
     
     args = parser.parse_args()
+    checker_kwargs_map = parse_checker_kwargs(args.checkerkwargs)
 
     if args.outname: outname = args.outname
     else: 
@@ -109,8 +124,8 @@ if __name__ == "__main__":
 
                 checks = []
                 for check in args.checklist:
-                    assert check in globals(), f"Check {check} not defined"
-                    checks.append(globals()[check])
+                    assert check in CHECKERS, f"Check {check} not defined"
+                    checks.append(CHECKERS[check])
                 
                 toprint = f"{'#'*10} {rdir}/{f}.check {'#'*10}\n"
 
@@ -125,7 +140,8 @@ if __name__ == "__main__":
 
                 for chk_name, chk in zip(args.checklist, checks):
                     print("!"*10 + f" Running {chk_name}", file=sys.stderr)
-                    resmask = chk(langid, pfx, sfx, grnd_truth, gen_asrts, cc, currmask)
+                    chk_kwargs = checker_kwargs_map.get(chk_name, {})
+                    resmask = chk(langid, pfx, sfx, grnd_truth, gen_asrts, cc, currmask, chk_kwargs)
                     toprint += f"{chk_name}: {str(resmask)} {sum(resmask)}/{len(resmask)}\n"
                 final = resmask
 
@@ -141,4 +157,3 @@ if __name__ == "__main__":
     toprint += f"Solved problems / Total problems = {solvedps}/{totalps}"
     if args.write: outfd.write(toprint)
     else: print(toprint)
-
