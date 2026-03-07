@@ -7,8 +7,9 @@ import re
 import traceback
 import json
 
-import checkers.fuzzchecker as fuzzchecker
+import checkers.nullchecker as nullchecker
 import checkers.compilechecker as compilechecker
+import checkers.fuzzchecker as fuzzchecker
 import checkers.rdtpchecker as rdtpchecker
 import checkers.equivchecker as equivchecker
 
@@ -41,7 +42,7 @@ def check_gen(func):
     return f
 
 CHECKERS = {
-    "null_check": check_gen(lambda *args, **kwargs: args[-2].strip() != ""),
+    "null_check": check_gen(lambda *args, **kwargs: nullchecker.nullcheck(*args)),
     "compile_check": check_gen(lambda *args, **kwargs: compilechecker.cmplecheck(*args)),
     "fuzz_check": check_gen(lambda *args, check="soundness", **kwargs: fuzzchecker.fuzzcheck(*args, check)),
     "rdtp_check": check_gen(lambda *args, check="equality", **kwargs: rdtpchecker.rdtpcheck(*args, check=check, **kwargs)),

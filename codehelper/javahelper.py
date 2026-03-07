@@ -61,7 +61,7 @@ def closing_paren(string, start):
         if string[end] == left: balance += 1
         elif string[end] == right: balance -= 1   
         end += 1
-    return end
+    raise AssertionError(f"Unmatched '{left}' in expression")
 
 def contains_var(expr, var_name):
     # Check if the expression contains the variable name
@@ -201,8 +201,12 @@ class javahelper(codehelper):
                 if not m:
                     break
                 start = m.span()[0]
+                if m.span()[1] >= len(asrt) or asrt[m.span()[1]] != "(":
+                    raise AssertionError(r"\\old must be followed by parenthesized expression")
                 end = closing_paren(asrt, m.span()[1])
                 old_expr = asrt[start + 5:end - 1]
+                if old_expr.strip() == "":
+                    raise AssertionError(r"\\old() cannot be empty")
 
                 if old_expr not in self.old_exprs:
                     replaced_asrt = recursive_replace(old_expr, cur)
@@ -241,14 +245,21 @@ class javahelper(codehelper):
             end = closing_paren(asrt[:start] + "(" + asrt[start+1:] + ")", start)
             forall_expr = asrt[start:end-1]
             match = re.match(r"\\forall\s*(.*?);(.*?);(.*)", forall_expr)
+            if match is None:
+                raise AssertionError(r"\\forall must have format '\\forall <type var>; <cond>; <spec>'")
 
             var_expr = match.group(1).strip()
             cond_expr = match.group(2).strip()
             spec_expr = match.group(3).strip()
+            if var_expr == "" or cond_expr == "" or spec_expr == "":
+                raise AssertionError(r"\\forall parts cannot be empty")
 
-            var_type, var_name = var_expr.split()
+            var_parts = var_expr.split()
+            if len(var_parts) != 2:
+                raise AssertionError(r"\\forall variable declaration must be '<type> <name>'")
+            var_type, var_name = var_parts
             if var_type != "int":
-                raise Exception("Only int type is supported for forall quantifier")
+                raise AssertionError("Only int type is supported for forall quantifier")
             
             lo, hi = find_bounds(cond_expr, var_name)
             old_addns_lo, lo = self.handle_old(lo)
@@ -327,21 +338,21 @@ class javahelper(codehelper):
         if len(self.funcs) > 0:
             return self.funcs[-1]["funcname"]
         else:
-            raise Exception("Function name not found")
+            raise AssertionError("Function name not found")
 
     def guessnamespace(self):
         for l in self.code.split("\n"):
             match = re.match(r".*public\s+class\s+(\w+).*", l.strip())
             if match:
                 return match.group(1)
-        raise Exception("Namespace not found")
+        raise AssertionError("Namespace not found")
         
     def guessclassname(self):
         for l in self.code.split("\n"):
             match = re.match(r".*public\s+class\s+(\w+\s*(<\w+(\s*,\s*\w+)*>)?).*", l.strip())
             if match:
                 return match.group(1)
-        raise Exception("Class name not found")
+        raise AssertionError("Class name not found")
 
     def extract_formula(self, asrt):
         match = re.match(r".*assert\s*(.*)\s*;.*", asrt.strip())
@@ -360,25 +371,37 @@ class javahelper(codehelper):
             stack, ret = [], []
             buff = ""
             idx = 0
+            seen_delimiter = False
             while idx < len(asrt):
                 if len(stack) == 0 and asrt[idx:idx+len(delimiter)] == delimiter:
-                    if buff.strip():
-                        ret.append(buff.strip())
+                    seen_delimiter = True
+                    if not buff.strip():
+                        raise AssertionError(f"Invalid formula around '{delimiter}'")
+                    ret.append(buff.strip())
                     buff = ""
                     idx += len(delimiter)
                     continue
                 if asrt[idx] == "(":
                     stack.append(idx)
                 if asrt[idx] == ")":
+                    if not stack:
+                        raise AssertionError("Unmatched ')' in formula")
                     stack.pop()
                 buff += asrt[idx]
                 idx += 1
+            if stack:
+                raise AssertionError("Unmatched '(' in formula")
+            if seen_delimiter and not buff.strip():
+                raise AssertionError(f"Invalid formula around '{delimiter}'")
             if buff.strip():
                 ret.append(buff.strip())
             return ret
                 
         def recursive_split(asrt, par):
-            while asrt[0] == "(" and asrt[-1] == ")":
+            asrt = asrt.strip()
+            if asrt == "":
+                raise AssertionError("Empty assertion formula")
+            while asrt and asrt[0] == "(" and asrt[-1] == ")":
                 balance = 0
                 for i, c in enumerate(asrt[1:-1]):
                     balance += (c == "(") - (c == ")")
@@ -386,6 +409,8 @@ class javahelper(codehelper):
                         break
                 if balance == 0:
                     asrt = asrt[1:-1]
+                    if asrt.strip() == "":
+                        raise AssertionError("Empty assertion formula")
                 else:
                     break
             cur = tr.add_node((asrt, None), par)
