@@ -1,7 +1,5 @@
-import torch
 import re
 import os
-from transformers import AutoTokenizer
 import argparse
 
 eg_py = [

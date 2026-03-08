@@ -1,5 +1,11 @@
 import os
 import pathlib
+os.environ.setdefault("USER", "chtc")
+os.environ.setdefault("LOGNAME", os.environ["USER"])
+os.environ.setdefault("USERNAME", os.environ["USER"])
+os.environ.setdefault("TORCHINDUCTOR_CACHE_DIR", os.path.abspath("./.torchinductor"))
+pathlib.Path(os.environ["TORCHINDUCTOR_CACHE_DIR"]).mkdir(parents=True, exist_ok=True)
+
 import torch
 from transformers import (
     AutoModelForCausalLM,
@@ -45,13 +51,7 @@ def load_model(mkey, modelpaths=None, task="causal_lm"):
             **k,
         )
         devices = None
-    elif is_vllm_model(mkey):
-        os.environ.setdefault("USER", "chtc")
-        os.environ.setdefault("LOGNAME", os.environ["USER"])
-        os.environ.setdefault("USERNAME", os.environ["USER"])
-        os.environ.setdefault("TORCHINDUCTOR_CACHE_DIR", os.path.abspath("./.torchinductor"))
-        pathlib.Path(os.environ["TORCHINDUCTOR_CACHE_DIR"]).mkdir(parents=True, exist_ok=True)
-        
+    elif is_vllm_model(mkey): 
         try:
             from vllm import LLM
         except ImportError as e:
