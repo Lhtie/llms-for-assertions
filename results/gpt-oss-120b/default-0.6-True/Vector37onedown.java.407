@@ -1,27 +1,33 @@
-analysisWe need to produce an assert statement for the comment.
+analysisWe need to produce an assert statement matching the comment.
 
 Comment: 
 ```
 // @@@ If the index is non-negative and less than the initial size of the vector, then for every valid index less than the specified index, the element at that position should either be null if it was originally null, or remain unchanged.
 ```
 
-We are in method removeElementAt(int index). It removes element at index, shifting elements down.
+We are in method removeElementAt(int index). It modifies the vector: removes element at index, shifting elements after index left by one, decreasing size.
 
-We need to express: If index >=0 && index < old size, then for all i such that 0 <= i < index, the element at position i after removal is either null if it was originally null, or unchanged (i.e., equals old element). Since removal shifts elements after index left, positions before index are unchanged. So we assert that for all i in [0, index), this.query? There's no query method but we have elementAt? There's elementAt(int index) which returns component at index. It's synchronized, but we can call this.elementAt(i). So we can refer to this.elementAt(i). Use \old(this.elementAt(i)) for old value.
+We need to assert that for every valid index i < index (i.e., before removal), the element at position i after removal is either null if it was originally null, or unchanged (i.e., equal to old element). This is basically: for all i where 0 <= i < index, ( \old(this.elementAt(i)) == null => this.elementAt(i) == null ) && ( \old(this.elementAt(i)) != null => this.elementAt(i).equals(\old(this.elementAt(i))) ). But we can just assert equality: this.elementAt(i).equals(\old(this.elementAt(i))) OR both null. In Java, .equals on null would cause NPE, so need to handle null case. Use ( \old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))) ). Or we can use Objects.equals.
 
-Spec: For each i where 0 <= i < index, either \old(this.elementAt(i)) == null && this.elementAt(i) == null OR this.elementAt(i).equals(\old(this.elementAt(i))) . But we need to express "either be null if originally null, or remain unchanged". That is: this.elementAt(i) == \old(this.elementAt(i)). Since if old was null, then new is also null (unchanged). So actually unchanged covers null case too. But they explicitly mention null case. Could just assert equality. However they may want to assert ( (\old(this.elementAt(i)) == null) => this.elementAt(i) == null ) && ( (\old(this.elementAt(i)) != null) => this.elementAt(i).equals(\old(this.elementAt(i))) ). Simpler: this.elementAt(i).equals(\old(this.elementAt(i))) works if null? equals would throw NullPointerException. So need null safe. Use ( (\old(this.elementAt(i)) == null) ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))) ). In JML, you can use == for objects reference equality; but we want logical equality via Objects.equals. Might use this.elementAt(i) == \old(this.elementAt(i)) . That works for null and reference equality. So assert that for all i in range, this.elementAt(i) == \old(this.elementAt(i)).
+We have observer method elementAt(int index) returns E. That's accessible. Use this.elementAt(i) etc.
 
-Thus final assert: index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; this.elementAt(i) == \old(this.elementAt(i));
+Premise: index >=0 && index < \old(this.size()) . The comment says "non-negative and less than the initial size of the vector". So we need to condition the assertion on that premise.
 
-Need to call size() method. It's synchronized int size(). Use this.size() after removal (new size). Old size is \old(this.size()). So condition: index>=0 && index<\old(this.size()).
+Thus: assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; (\old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))));
+
+Need to use proper syntax: \forall int i; 0 <= i && i < index; (\old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))))
+
+Wrap whole with parentheses.
 
 Thus final code:
 
-<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; this.elementAt(i) == \old(this.elementAt(i));</code>
+<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; (\old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))));</code>
 
-Check syntax: need parentheses around implication maybe. Use parentheses.
+Check: need semicolon at end. Yes.
 
-Return final.assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; this.elementAt(i) == \old(this.elementAt(i));</code>
+Make sure syntax: \forall int i; cond; spec. Good.
+
+Return final.assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; (\old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))));</code>
 --------------------
 analysisWe need to produce an assert statement for the comment.
 
@@ -30,53 +36,93 @@ Comment:
 // @@@ If the index is non-negative and less than the initial size of the vector, then for every valid index less than the specified index, the element at that position should either be null if it was originally null, or remain unchanged.
 ```
 
-We are inside method removeElementAt(int index). Need to refer to old size: \old(this.size()) or elementCount. Use public observer size().
+We are in method removeElementAt(int index). Need to refer to old state. Initial size = old(this.size()) or old(this.elementCount). Use this.size() after removal.
 
-Premise: index >=0 && index < \old(this.size()) . Actually "initial size of the vector" means size before removal, which is old size.
+Premise: index >=0 && index < \old(this.size()) . That's "non-negative and less than the initial size". The method also throws if not, but we assert premise.
 
-Conclusion: For every valid index i less than index, the element at that position after removal should either be null if it was originally null, or remain unchanged. So we need to assert that for all i with 0 <= i && i < index, either \old(this.elementAt(i)) == null && this.elementAt(i) == null, or \old(this.elementAt(i)) != null && this.elementAt(i).equals(\old(this.elementAt(i))) . But we can express as: this.elementAt(i).equals(\old(this.elementAt(i))) . However need to handle null safely: maybe use ( \old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))) ). Use ternary? In JML, we can use ( \old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))) ). That matches condition.
+Conclusion: For every int i; 0 <= i && i < index; the element at that position after removal (this.elementAt(i) maybe) should either be null if it was originally null, or remain unchanged. Since we need to refer to element at position i after removal: this.elementAt(i) (or this.get(i)). Use observer method elementAt or get. Both are synchronized and public. Use this.elementAt(i). Old value: \old(this.elementAt(i)). Condition: either \old(this.elementAt(i)) == null && this.elementAt(i) == null, or this.elementAt(i).equals(\old(this.elementAt(i))) (if not null). Simpler: (\old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i)))).
 
-Thus assert statement:
+Write universal quantifier.
 
-assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; (\old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))));
+Thus assert: index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; (\old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))));
 
-Need to ensure using public observer elementAt (synchronized). Yes.
+Need parentheses around implication.
 
-Return type void, so no \result.
+Full assert:
+
+assert (index >= 0 && index < \old(this.size())) => (\forall int i; 0 <= i && i < index; (\old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i)))));
+
+Make sure syntax: \forall int i; cond; spec.
+
+Spec is the conditional equality.
 
 Thus final answer.
 
-assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; (\old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))));</code>
+assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => (\forall int i; 0 <= i && i < index; (\old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i)))));</code>
 --------------------
-analysisWe need to produce assert statement for the comment. Let's parse comment:
+analysisWe need to produce assert statement for comment.
 
+We need to read method removeElementAt. The comment: 
+"@@@ If the index is non-negative and less than the initial size of the vector, then for every valid index less than the specified index, the element at that position should either be null if it was originally null, or remain unchanged."
+
+Interpretation: precondition: index >=0 && index < old size (elementCount before removal). Then for all i where 0 <= i < index, the element at position i after removal should be same as before, unless it was originally null (then remains null). Actually statement: "either be null if it was originally null, or remain unchanged." That's essentially: this.elementAt(i) equals \old(this.elementAt(i)). Since if original null, unchanged means still null. So we can just assert equality.
+
+But need to reference elementAt method maybe. Use this.elementAt(i) or this.get(i). Since elementAt is synchronized but accessible. Use this.elementAt(i). Use \old(this.elementAt(i)). Provide universal quantifier.
+
+Also need to ensure premise: index >=0 && index < \old(this.size()). Since size before removal.
+
+Thus assert: index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; this.elementAt(i).equals(\old(this.elementAt(i)));
+
+But elementAt returns E, could be null, so use == for null? Usually .equals may throw NPE. Better use (this.elementAt(i) == \old(this.elementAt(i))) because equality of references works for null and objects. Use ==.
+
+Thus final assert statement.
+
+Make sure syntax: assert (index>=0 && index<\old(this.size())) => \forall int i; 0<=i && i<index; this.elementAt(i) == \old(this.elementAt(i));
+
+Wrap in code block.
+
+assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; this.elementAt(i) == \old(this.elementAt(i));</code>
+--------------------
+analysisWe need to produce an assert statement reflecting the comment.
+
+Comment: 
 ```
 // @@@ If the index is non-negative and less than the initial size of the vector, then for every valid index less than the specified index, the element at that position should either be null if it was originally null, or remain unchanged.
 ```
 
-We are in method removeElementAt(int index). The method removes element at index, shifting elements left. The comment says: If index is non-negative and less than the initial size of the vector, then for every valid index less than the specified index, the element at that position should either be null if it was originally null, or remain unchanged.
+We are in method removeElementAt(int index). Need to refer to initial size (old size). Use \old(this.size()) maybe. Since size() returns elementCount. So initial size = \old(this.size()). The condition: index >=0 && index < \old(this.size()). Then for all i where 0 <= i < index, the element at that position after removal should either be null if it was originally null, or unchanged. So we need to assert: (index >=0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; ( (\old(this.elementAt(i)) == null) ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))) ). However we have only public observers: elementAt(int) is synchronized and returns E. That's accessible. So we can use this.elementAt(i). Also need to compare equality; we can use .equals for non-null case. But we need to express "remain unchanged". Could use this.elementAt(i).equals(\old(this.elementAt(i))) assuming non-null. However need to guard null. So expression: (\old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i)))).
 
-Essentially: For all i where 0 <= i < index, after removal, this.elementAt(i) (or get(i) maybe) is same as before, unless it was null originally, in which case remains null (i.e., unchanged). So we need to assert that for all i in [0, index), the element after operation equals the old element. Since null remains null anyway, we can just assert equality. But the comment emphasises "either be null if it was originally null, or remain unchanged". That's essentially equality.
+Thus final assert: 
+assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; (\old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))));
 
-Thus assert: index >=0 && index < \old(this.size()) => \forall int i; 0 <= i && i < index; this.elementAt(i).equals(\old(this.elementAt(i))) || (this.elementAt(i) == null && \old(this.elementAt(i)) == null). But equality with null is tricky; .equals would throw NPE if null. So we can use (this.elementAt(i) == \old(this.elementAt(i))) which works for null too. However elementAt returns E, could be object; equality semantics maybe Objects.equals. Use (java.util.Objects.equals(this.elementAt(i), \old(this.elementAt(i)))) but we may not have that method available. In earlier examples they used .equals on query(i) and .equals on old query. They assumed non-null? In earlier they used this.query(i).equals(\old(this.query(i))) . That would NPE if null. But they didn't worry. Here comment explicitly mentions null case. So we need to express condition: either both null or equal via .equals. Could write:
+Make sure parentheses correct.
 
-(this.elementAt(i) == null ? \old(this.elementAt(i)) == null : this.elementAt(i).equals(\old(this.elementAt(i))))
+Return statement? method returns void, so no \result.
 
-But typical spec style: (this.elementAt(i) == \old(this.elementAt(i))) || (this.elementAt(i) != null && this.elementAt(i).equals(\old(this.elementAt(i)))) but that's redundant.
+Thus final answer in code block.assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; (\old(this.elementAt(i)) == null ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))));</code>
+--------------------
+analysisWe need to produce an assert statement matching the comment.
 
-Simplify: (this.elementAt(i) == null && \old(this.elementAt(i)) == null) || (this.elementAt(i) != null && this.elementAt(i).equals(\old(this.elementAt(i))))
+Comment: 
+```
+// @@@ If the index is non-negative and less than the initial size of the vector, then for every valid index less than the specified index, the element at that position should either be null if it was originally null, or remain unchanged.
+```
 
-But perhaps they accept using Objects.equals: java.util.Objects.equals(this.elementAt(i), \old(this.elementAt(i))) . Not sure if allowed.
+We are in method removeElementAt(int index). Need to refer to initial size (old size). Use \old(this.size())? size() returns elementCount. So old size = \old(this.size()). Condition: index >=0 && index < \old(this.size()).
 
-Given earlier examples, they used .equals directly without null handling. So maybe they expect to just assert equality via .equals, but comment includes null nuance. Could reflect with equality operator == . In Java, for objects, == checks reference equality, not logical equality. But spec may treat it as value equality for null case. The earlier spec used .equals for non-null guarantee. Here they explicitly talk about null. So maybe we use (this.elementAt(i) == \old(this.elementAt(i))) . That's true if both null or same reference. Might be acceptable.
+Then for every valid index i less than index, the element at that position after removal should either be null if it was originally null, or remain unchanged. So we need to assert for all int i; 0 <= i && i < index; ( (\old(this.elementAt(i)) == null) => this.elementAt(i) == null ) && ( (\old(this.elementAt(i)) != null) => this.elementAt(i).equals(\old(this.elementAt(i))) ). But we can also combine: this.elementAt(i).equals(\old(this.elementAt(i))) or both null. Simpler: this.elementAt(i) == \old(this.elementAt(i)) . However need to account for null equality; equals can't be called on null. So we can use ( (\old(this.elementAt(i)) == null) ? this.elementAt(i) == null : this.elementAt(i).equals(\old(this.elementAt(i))) ). But spec language may allow using == for objects? In earlier examples they used .equals for objects. For null they used .equals? In earlier examples they used this.query(i).equals(\old(this.query(i))) which works if both non-null? Actually .equals on null would cause NPE. But they assume elements not null? Not sure. The comment explicitly says either be null if originally null, or remain unchanged. So we need to handle both.
 
-Let's craft final assert:
+We can express: (\old(this.elementAt(i)) == null => this.elementAt(i) == null) && (\old(this.elementAt(i)) != null => this.elementAt(i).equals(\old(this.elementAt(i)))).
 
-assert index >= 0 && index < \old(this.size()) => \forall int i; 0 <= i && i < index; this.elementAt(i) == \old(this.elementAt(i));
+Combine with forall.
 
-But need to refer to elementAt method; it's synchronized but accessible. Use this.elementAt(i). That's fine.
+Thus final assert:
 
-Thus final answer code block.
+assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; ((\old(this.elementAt(i)) == null) => this.elementAt(i) == null) && ((\old(this.elementAt(i)) != null) => this.elementAt(i).equals(\old(this.elementAt(i))));
 
-assistantfinal<code>assert index >= 0 && index < \old(this.size()) => \forall int i; 0 <= i && i < index; this.elementAt(i) == \old(this.elementAt(i));</code>
+Need parentheses correctly: (A => B) && (C => D) inside forall. Use parentheses.
+
+Thus final code.
+
+assistantfinal<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; 0 <= i && i < index; ((\old(this.elementAt(i)) == null) => this.elementAt(i) == null) && ((\old(this.elementAt(i)) != null) => this.elementAt(i).equals(\old(this.elementAt(i))));</code>
 --------------------

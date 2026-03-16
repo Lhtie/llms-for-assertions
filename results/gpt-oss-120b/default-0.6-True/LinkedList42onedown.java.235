@@ -1,3 +1,36 @@
+analysisWe need to produce an assert statement corresponding to the comment in remove() method.
+
+Comment: 
+```
+// @@@ If the list is initially not empty, then the returned element is either null and was null before removal, or is equal to the first element of the list before the removal.
+```
+
+We need to express: If initially not empty (i.e., \old(!this.isEmpty()) or \old(this.size()>0)), then the returned element (\result) satisfies: either \result == null && the first element before removal was null, or \result equals the first element before removal.
+
+We need to refer to the first element before removal. There is a method getFirst() that returns first element (or throws if empty). Since we need to refer to the element before removal, we can use \old(this.getFirst()) but careful: getFirst may throw if empty, but we are in case where old list not empty, so safe.
+
+Thus assertion: \old(!this.isEmpty()) => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst())) ) ). But we can also use equality of objects: \result == \old(this.getFirst())? but need to handle null equality. In JML, we can use (\result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst()))). However spec examples used simple equality for objects? In earlier examples they used .equals for query equality, not for return value. For element equality they used .equals. So we can use \result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst())).
+
+Thus final assert:
+
+assert \old(!this.isEmpty()) => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))) );
+
+But we can simplify using conditional expression: (\result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst()))). So:
+
+assert \old(!this.isEmpty()) => (\result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst())));
+
+That captures the statement.
+
+Make sure syntax: \old(!this.isEmpty()) is okay? \old takes an expression; we need to evaluate old state of isEmpty. So \old(this.isEmpty()) returns boolean old emptiness. We want old not empty: !\old(this.isEmpty()).
+
+Thus: assert !\old(this.isEmpty()) => ( ... );
+
+Thus final assert:
+
+assert !\old(this.isEmpty()) => (\result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst())));
+
+Wrap in <code> block.assistantfinal<code>assert !\old(this.isEmpty()) => (\result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst())));</code>
+--------------------
 analysisWe need to produce an assert statement for the comment in remove() method.
 
 Comment: 
@@ -5,81 +38,104 @@ Comment:
 // @@@ If the list is initially not empty, then the returned element is either null and was null before removal, or is equal to the first element of the list before the removal.
 ```
 
-We need to express: If initially not empty (i.e., \old(!this.isEmpty()) or \old(this.size()) > 0), then the returned element (\result) satisfies: either (\result == null && \old(this.peekFirst()) == null) OR (\result.equals(\old(this.getFirst()))). But need to use public observer methods: we have methods: getFirst(), peekFirst(), size(), isEmpty(). remove() returns the element removed, which is same as removeFirst() implementation (not shown). We can use \old(this.getFirst()) to get first element before removal. However, if first element could be null, then getFirst() would return null (but may throw NoSuchElementException if empty). Since we have precondition not empty, getFirst() is safe. So spec: \old(!this.isEmpty()) => (\result == null && \old(this.getFirst()) == null) || (\result.equals(\old(this.getFirst()))). Need to use .equals? For objects, equality should be Objects.equals. But we can use \old(this.getFirst()).equals(\result) but need null safe. Better to use Objects.equals(\result, \old(this.getFirst())) which handles null. But we don't have Objects.equals method accessible? It's a static method; but spec may allow using java.util.Objects.equals? The guidelines said use only publicly accessible observer methods provided in the test function. But we can use equality operator == for reference equality? The comment says "is equal to the first element". Usually they intend .equals. In previous examples they used .equals for query equality. So we can use \result.equals(\old(this.getFirst())) but need to guard null. They already have case for null: if returned element is null and was null before removal. So we can express: (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))). Or use Objects.equals.
+We need to express: If initially not empty (i.e., old size > 0), then the returned element (\result) either is null and previously the first element was null, or equals the first element before removal.
 
-Thus final assert:
+We have observer methods: size(), getFirst(), maybe peekFirst() but after removal the list changed. We need to refer to old state using \old.
 
-assert \old(!this.isEmpty()) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));
+We need to refer to old first element: \old(this.getFirst()) or \old(this.peekFirst())? getFirst() throws NoSuchElementException if empty, but we have precondition not empty, so safe.
 
-Need parentheses around implication: (\old(!this.isEmpty()) => ...). Use \old(this.isEmpty())? Actually we need old size >0. Use \old(this.size()) > 0. That might be simpler: \old(this.size()) > 0 => ... . Use size() method.
+Thus assertion: (\old(this.size()) > 0) => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst())) ) ). However need to use .equals for objects? In examples they used .equals for query(i).equals(\old(...)). For equality maybe use == for null and .equals for non-null. Simpler: (\result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst()))). But spec language may not support ternary. Use logical expression: (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))).
 
-Thus final code:
+Thus final assert: assert (\old(this.size()) > 0) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));
 
-<code>assert \old(this.size()) > 0 => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));</code>
+Need to ensure parentheses correct: assert (\old(this.size()) > 0) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));
 
-Check syntax: Use => binary, lower precedence than &&, so parentheses around left side optional but fine.
-
-Return final.assistantfinal<code>assert \old(this.size()) > 0 => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));</code>
---------------------
-analysisWe need to produce an assert statement reflecting the comment:
-
-```
-// @@@ If the list is initially not empty, then the returned element is either null and was null before removal, or is equal to the first element of the list before the removal.
-```
-
-Method remove() returns E, defined as:
-
-public E remove() {
-    return removeFirst();
-    // comment
-}
-
-We need to refer to old state: before removal. The condition "list is initially not empty". So if !\old(this.isEmpty()) then the returned element (\result) satisfies: either \result == null && \old(this.peekFirst()) == null? Actually "was null before removal". The first element before removal could be null. So condition: (\result == null && \old(this.getFirst()) == null) OR (\result.equals(\old(this.getFirst()))). But need to consider null equality safely: we can use \result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst())).
-
-Simplify: (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))).
-
-But we also need to ensure the premise: list initially not empty, i.e., !\old(this.isEmpty()).
-
-Thus assert: !\old(this.isEmpty()) => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))) );
-
-We need to use public observer methods only. getFirst() is public and returns first element, may throw NoSuchElementException if empty. Since we have premise that old list not empty, it's safe.
-
-Alternatively could use peekFirst() which returns null if empty. But we need old first element, could use \old(this.peekFirst()) which returns null if empty, but we have premise not empty, so peekFirst() returns element (maybe null). Using peekFirst() maybe simpler: \old(this.peekFirst()) gives the element (could be null). So condition: (\result == null && \old(this.peekFirst()) == null) || (\result != null && \result.equals(\old(this.peekFirst()))). However equality for null element: if both null, first part covers.
-
-Thus final assert:
-
-assert !\old(this.isEmpty()) => ( (\result == null && \old(this.peekFirst()) == null) || (\result != null && \result.equals(\old(this.peekFirst()))) );
-
-We need to ensure syntax: parentheses around implication left side, but we can write:
-
-assert !\old(this.isEmpty()) => ( (\result == null && \old(this.peekFirst()) == null) || (\result != null && \result.equals(\old(this.peekFirst()))) );
-
-That matches guidelines.
-
-Return final answer in code block.assistantfinal<code>assert !\old(this.isEmpty()) => ( (\result == null && \old(this.peekFirst()) == null) || (\result != null && \result.equals(\old(this.peekFirst()))) );</code>
---------------------
-analysisWe need to parse the comment. The method remove() returns E, calls removeFirst(). The comment: 
-"@@@ If the list is initially not empty, then the returned element is either null and was null before removal, or is equal to the first element of the list before the removal."
-
-We need to produce an assert statement for this method.
-
-We must refer to old state for precondition. The method remove() returns an element (maybe null). The spec says: If the list is initially not empty (i.e., old size >0), then the returned element is either null and was null before removal, or is equal to the first element of the list before removal.
-
-So we need to assert something like:
-
-assert !\old(this.isEmpty()) => (\result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst())) );
-
-But need to use observer methods that are publicly accessible. In this class we have methods: getFirst(), isEmpty(), maybe peekFirst? getFirst() throws NoSuchElementException if empty, but we are in pre-state where not empty, so safe. We can use this.getFirst() before removal via \old(this.getFirst()). For null check, we need to compare null. Use == null.
-
-Thus assert: (!\old(this.isEmpty())) => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst())) ) );
-
-But we can simplify: (\result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst()))). However need to ensure both sides are boolean.
-
-So final assert: assert !\old(this.isEmpty()) => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst())) ) );
-
-Make sure syntax: use && and || with parentheses.
+Return type is E, maybe could be null.
 
 Thus output code block.
 
-assistantfinal<code>assert !\old(this.isEmpty()) => ( (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst())) ) );</code>
+assistantfinal<code>assert (\old(this.size()) > 0) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));</code>
+--------------------
+analysisWe need to produce assert statement for comment in remove() method.
+
+Comment: 
+// @@@ If the list is initially not empty, then the returned element is either null and was null before removal, or is equal to the first element of the list before the removal.
+
+We need to express specification. The method remove() returns E (element removed). It calls removeFirst(). We need assert that if initially not empty (i.e., \old(!this.isEmpty())) then the returned element (\result) satisfies: either (\result == null && \old(this.peekFirst()) == null) ?? Actually "was null before removal" means the first element before removal was null. So either the returned element is null and the first element before removal was null, OR the returned element equals the first element before removal.
+
+Thus condition: \old(!this.isEmpty()) => (\result == null && \old(this.peekFirst()) == null) || (\result.equals(\old(this.peekFirst()))). Need to use equality: For objects, we can use \result == null etc. For equality of non-null, we can use \result.equals(\old(this.peekFirst())) maybe need to guard null. But spec says "or is equal to the first element of the list before the removal." So we can write (\result != null && \result.equals(\old(this.peekFirst()))). But if first element was null, then first case covers.
+
+Thus overall: assert \old(!this.isEmpty()) => ((\result == null && \old(this.peekFirst()) == null) || (\result != null && \result.equals(\old(this.peekFirst()))));
+
+We must reference peekFirst() as observer method. It is public. So okay.
+
+Make sure parentheses for implication.
+
+Thus final answer:
+
+<code>assert \old(!this.isEmpty()) => ((\result == null && \old(this.peekFirst()) == null) || (\result != null && \result.equals(\old(this.peekFirst()))));</code>
+
+Check syntax: \old(!this.isEmpty()) is okay? \old applies to expression; we need old of isEmpty result: \old(this.isEmpty())? Actually we need old of isEmpty, but we want old not empty: \old(!this.isEmpty()) is same as !\old(this.isEmpty()). But better: !\old(this.isEmpty()). So antecedent: !\old(this.isEmpty()) => ... So use !\old(this.isEmpty()).
+
+Thus assert: assert !\old(this.isEmpty()) => ((\result == null && \old(this.peekFirst()) == null) || (\result != null && \result.equals(\old(this.peekFirst()))));
+
+Yes.
+
+Return final.assistantfinal<code>assert !\old(this.isEmpty()) => ((\result == null && \old(this.peekFirst()) == null) || (\result != null && \result.equals(\old(this.peekFirst()))));</code>
+--------------------
+analysisWe need to produce assert statement for comment in remove() method.
+
+Comment: 
+// @@@ If the list is initially not empty, then the returned element is either null and was null before removal, or is equal to the first element of the list before the removal.
+
+Interpretation: For method remove() which returns E. It calls removeFirst(). The spec: If the list is initially not empty, then the returned element is either null and was null before removal, or is equal to the first element of the list before the removal.
+
+So condition: \old(!this.isEmpty()) => ( \result == null && \old(this.getFirst()) == null ) || (\result.equals(\old(this.getFirst())) )? Actually need to express "either null and was null before removal, or is equal to the first element of the list before the removal". If returned element is null, then before removal, first element was null. So we can express: (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))). But we can also use \result == \old(this.getFirst()) which works even if null? In Java equality with null? Need to use Objects.equals. But we have only observer methods; we can use \old(this.getFirst()) maybe returns element, can be null. Use (\result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst()))). But typical spec uses .equals, but need to guard null.
+
+Simplify using Objects.equals: but not available. Could use (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))).
+
+Thus final assert: \old(!this.isEmpty()) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));
+
+We need to reference this.isEmpty() before removal. Use \old(this.isEmpty()).
+
+So final code:
+
+<code>assert \old(!this.isEmpty()) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));</code>
+
+Check syntax: \old(!this.isEmpty()) is okay? Usually \old(expression) expects expression; we can write \old(this.isEmpty()) and then negate: !\old(this.isEmpty()). That's clearer. So:
+
+assert !\old(this.isEmpty()) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));
+
+Yes.
+
+Return final answer.assistantfinal<code>assert !\old(this.isEmpty()) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));</code>
+--------------------
+analysisWe need to produce an assert statement for the comment in remove() method: 
+```java
+public E remove() {
+    return removeFirst();
+    // @@@ If the list is initially not empty, then the returned element is either null and was null before removal, or is equal to the first element of the list before the removal.
+}
+```
+We need to refer to pre-state using \old, and result using \result. Also need to consider condition "If the list is initially not empty". So we need an implication: if !\old(this.isEmpty()) then ... result is either null and was null before removal, or equals first element before removal.
+
+We have observer methods: isEmpty(), getFirst()? There's getFirst() that returns first element, but throws NoSuchElementException if empty. We might use peekFirst() which returns null if empty. But we need pre-state first element. Since list not empty, getFirst() is safe. So we can use \old(this.getFirst()).
+
+The condition: !\old(this.isEmpty()) => (\result == null && \old(this.getFirst()) == null) || \result.equals(\old(this.getFirst()))? Actually if result is null and was null before removal (i.e., first element was null). Or result equals first element before removal (including possibly null?). The statement says "either null and was null before removal, or is equal to the first element of the list before the removal." If first element was null, then result could be null (which also equals first element). But they separate case. We'll follow exactly: (\result == null && \old(this.getFirst()) == null) || \result.equals(\old(this.getFirst())) . However need to handle possible null equality safely: use \result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst())) . But they want either null and was null before removal, or equal to first element. That can be expressed as (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))). Simpler: (\result == null && \old(this.getFirst()) == null) || \result.equals(\old(this.getFirst())) . However if result null, calling equals would NPE. So better to use the first pattern.
+
+Thus final assert:
+
+assert !\old(this.isEmpty()) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));
+
+Make sure parentheses correct. Use => operator. So:
+
+assert !\old(this.isEmpty()) => (\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst())));
+
+But need parentheses around whole RHS because => lower precedence than && and ||? Actually => has lower priority than && and ||, so we need parentheses around RHS to ensure grouping. So:
+
+assert !\old(this.isEmpty()) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));
+
+Return as code block.
+
+assistantfinal<code>assert !\old(this.isEmpty()) => ((\result == null && \old(this.getFirst()) == null) || (\result != null && \result.equals(\old(this.getFirst()))));</code>
 --------------------

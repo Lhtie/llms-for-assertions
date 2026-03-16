@@ -1,71 +1,103 @@
-analysisWe need to parse comment: "// @@@ If the index is between 0 and the initial size of the list inclusive, then if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element."
+analysisWe need to produce an assert statement corresponding to the comment.
 
-Interpretation: After insertion, for index within 0..initialSize inclusive (i.e., before insertion, size = old size). The comment says: if element is null, then the element at that index is also null, or the element at that index is equal to the inserted element. Actually wording: "if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element." Hmm maybe they mean: after operation, at position index, the element is either null (if inserted element null) or equal to inserted element. But they also mention "if the element is null" condition. Let's craft formal spec:
+Comment: "// @@@ If the index is between 0 and the initial size of the list inclusive, then if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element."
 
-Premise: 0 <= index && index <= \old(this.size()) (inclusive). Then after operation, at that index, either element is null (if element == null) OR element equals inserted element. But they want condition: if element is null, then element at that index is also null, else element at that index equals element. Actually "if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element." Could be interpreted as: (element == null) => (this.get(index) == null) || (this.get(index).equals(element)). But they also include "or the element at that index is equal to the inserted element" even when element is null? But equality with null is tricky. Simpler: after insertion, at that index, the element is either null (if inserted null) or equals inserted element. So we can express: 0 <= index && index <= \old(this.size()) => (element == null ? this.get(index) == null : this.get(index).equals(element)). But they want using logical OR perhaps: (element == null) => (this.get(index) == null) && (this.get(index).equals(element)). Actually if element null, equality check would be false. So they want "if element is null, the element at that index is also null, or the element at that index is equal to the inserted element." That is: (element == null) => (this.get(index) == null || this.get(index).equals(element)). But if element null, this.get(index).equals(element) would cause NPE, but spec wise it's okay.
+Interpretation: After insertion, for indices between 0 and old size inclusive? It says "between 0 and the initial size of the list inclusive". Initial size means size before insertion, i.e., old size. So condition: 0 <= index && index <= \old(this.size()).
 
-Better: assert (0 <= index && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));
+Then property: if the inserted element is null, then element at that index is also null; or the element at that index equals the inserted element. Actually phrase: "then if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element." Could be: after operation, at position index, either it's null (if inserted element null) OR equals inserted element. But if element is null, then element at index is also null (makes sense). So overall: after add, this.get(index) == element (or both null). So we can assert: (index >=0 && index <= \old(this.size())) => ( (element == null && this.get(index) == null) || (element != null && this.get(index).equals(element)) ). However they might use equality via == for null and .equals for non-null. In examples they used .equals for objects. For null they used == null. So we can write: assert (index >=0 && index <= \old(this.size())) => ( (element == null && this.get(index) == null) || (element != null && this.get(index).equals(element)) );
 
-But we need to use Java syntax inside assert; but spec language uses &&, ||, => etc. Use \old for old size.
-
-Thus final assert:
-
-assert (0 <= index && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));
-
-But we need to use possibly \result? Not needed.
-
-Make sure to reference this.get(index). The method get returns E.
-
-Thus final code block.
-
-assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));</code>
---------------------
-analysisWe need to produce assert statement for comment.
-
-Understanding: In add(int index, E element) inserts element at index, shifting others right. The comment: "If the index is between 0 and the initial size of the list inclusive, then if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element."
-
-Interpret: For any index satisfying 0 <= index <= old size (initial size before insertion) inclusive (i.e., allowed positions), after insertion, the element at that index (i.e., get(index)) is either null (if inserted element is null) or equals the inserted element. Actually statement: "if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element." Means: after operation, either element is null (when inserted element null) OR element equals inserted element. Probably they want: (element == null ? this.get(index) == null : this.get(index).equals(element)). Since they mention "or" maybe they want: (element == null && this.get(index) == null) || this.get(index).equals(element). But also condition on index range.
-
-Need to refer to old size: \old(this.size()).
-
-Thus assert: (0 <= index && index <= \old(this.size())) => ( (element == null && this.get(index) == null) || (element != null && this.get(index).equals(element)) ). But we can just write (element == null ? this.get(index) == null : this.get(index).equals(element)). Use java equality .equals? For generic E, may be null. Use \result? Not needed.
+But we need to use \old for size. Also need to refer to this.get(index) after operation. Use this.get(index). For element variable we have parameter 'element'.
 
 Thus final assert.
 
-Make sure to use this.get(index) observer method.
+Make sure parentheses correct. Use => operator.
 
-Thus code:
+Thus final answer as code block.
 
-<code>assert (0 <= index && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));</code>
-
-Check parentheses: (0 <= index && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));
-
-Yes.
-
-Return final.assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));</code>
+assistantfinal<code>assert (index >= 0 && index <= \old(this.size())) => ((element == null && this.get(index) == null) || (element != null && this.get(index).equals(element)));</code>
 --------------------
-analysisWe need to produce an assert statement reflecting the comment.
+analysisWe need to produce assert statement that matches comment.
 
 Comment: 
-"// @@@ If the index is between 0 and the initial size of the list inclusive, then if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element."
+// @@@ If the index is between 0 and the initial size of the list inclusive, then if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element.
 
-Interpretation: After add operation, for indices between 0 and old size inclusive? The comment says "initial size of the list inclusive". Probably meaning old size before insertion. So if index is between 0 and old size (inclusive), then after insertion, at that index we have either null (if element is null) or equal to element. Actually statement: "if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element." This seems to combine: if element is null, then element at that index is also null; otherwise element at that index equals inserted element. Equivalent to: (element == null ? this.get(index) == null : this.get(index).equals(element)). Use observer method get(index). Use \old for initial size? Need to refer to old size: \old(this.size()).
+Interpretation: After add operation, for index within [0, old size] inclusive (i.e., valid insertion positions), then at that index, the element is either null (if inserted element is null) or equals inserted element. Basically check that get(index) after addition matches element (or both null). In Java, equality for objects: they likely use Objects.equals. So we can assert: (0 <= index && index <= \old(this.size())) => (this.get(index) == null ? element == null : this.get(index).equals(element)). But we can use Objects.equals? Not an observer method. Use this.get(index).equals(element) may throw NPE if null. Safer: (this.get(index) == null && element == null) || this.get(index).equals(element). But need to refer to element variable (parameter). Use element.
 
-Premise: index >=0 && index <= \old(this.size()) . Actually inclusive of initial size (old size) meaning index can be at end (append). So condition: 0 <= index && index <= \old(this.size()).
+Thus assert: assert (0 <= index && index <= \old(this.size())) => ((this.get(index) == null && element == null) || this.get(index).equals(element));
 
-Then assertion: (element == null ? this.get(index) == null : this.get(index).equals(element)). Since we need Java assert statement using JML-like syntax? In examples they use assert (condition); with logical operators. Use \result not needed.
+Make sure parentheses correct. Use && for conjunction. Use => as implication.
 
-We need to access element variable (parameter) inside assert; that's fine.
+Thus final code:
 
-Equality: Use .equals for non-null? For null case we compare null directly.
+<code>assert (0 <= index && index <= \old(this.size())) => ((this.get(index) == null && element == null) || this.get(index).equals(element));</code>
+
+Check if need to ensure index inclusive of old size: insertion at end allowed. After insertion, get(index) should be element. Works.
+
+Return final.assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => ((this.get(index) == null && element == null) || this.get(index).equals(element));</code>
+--------------------
+analysisWe need to produce an assert statement for the comment.
+
+Comment: 
+```
+// @@@ If the index is between 0 and the initial size of the list inclusive, then if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element.
+```
+
+Interpretation: After add(index, element), if index is between 0 and old size inclusive, then at that index (after insertion) the element is either null (if element is null) or equals the inserted element.
+
+But also need to consider that after insertion, the element at that index should be the inserted element (or null if element null). Actually the condition: "if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element." Means: after operation, at position index, we have either null (if element null) OR equal to element. That's essentially: this.get(index) == element (or equals) or both null.
+
+We need to refer to old size: initial size before add. Use \old(this.size()).
+
+Premise: index >=0 && index <= \old(this.size()).
+
+Then assert: this.get(index) == null ? element == null? Actually we need to assert that (element == null && this.get(index) == null) || this.get(index).equals(element). In JML-like syntax we can use (element == null ? this.get(index) == null : this.get(index).equals(element)). But typical assert in examples uses .equals for objects. They used this.index_of(value) == ... etc.
+
+We can write:
+
+assert (index >=0 && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));
+
+But need to use Java assert statement syntax? In examples they used "assert ..." inside code. Use Java assert expression.
+
+Thus final code:
+
+<code>assert (index >= 0 && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));</code>
+
+Check if need parentheses around RHS due to => lower precedence than &&, but we have parentheses.
+
+Thus final answer.assistantfinal<code>assert (index >= 0 && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));</code>
+--------------------
+analysisWe need to produce a single assert statement reflecting the comment.
+
+Comment: 
+// @@@ If the index is between 0 and the initial size of the list inclusive, then if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element.
+
+Interpretation: After insertion, for indices between 0 and old size inclusive? Actually "initial size of the list inclusive" meaning the size before insertion? The index is between 0 and the initial size inclusive (so valid insert positions). Then condition: if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element. Wait: "if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element." That seems contradictory: if element is null, then element at that index is also null, or element at that index equals inserted element (which is null). So basically after insertion, at position index, the element equals the inserted element (including null). So we need to assert that when index is between 0 and old size inclusive, then this.get(index) == element (or equals). Use \old for old size.
+
+Thus assert: (0 <= index && index <= \old(this.size())) => ( (element == null) ? this.get(index) == null : this.get(index).equals(element) ). But we can combine: this.get(index) == element or (element == null && this.get(index) == null). In Java spec we can use == for reference equality; but we want Objects.equals semantics. Use (element == null ? this.get(index) == null : this.get(index).equals(element)). That's fine.
+
+Write in assert syntax: assert (0 <= index && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));
+
+Make sure parentheses: assert (0 <= index && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));
+
+Return type void, so no \result.
+
+Thus final answer.assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));</code>
+--------------------
+analysisWe need to produce assert statement reflecting comment.
+
+We have method add(int index, E element). The comment: "If the index is between 0 and the initial size of the list inclusive, then if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element."
+
+Interpretation: For initial size (old size) = \old(this.size()). Index between 0 and oldSize inclusive (i.e., index can be equal to oldSize, which corresponds to adding at end). After addition, at that index we have either null (if inserted element is null) or equal to inserted element. Actually the comment says: "if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element." Might be: if element is null then element at index is null else element at index equals element. That's basically element at index equals element (including null). So we can assert: (0 <= index && index <= \old(this.size())) => (this.get(index) == null ? this.get(index) == null : this.get(index).equals(element)). But we need to express using equality: if element == null then this.get(index) == null else this.get(index).equals(element). In JML style we can write: (0 <= index && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));
+
+But we need to refer to element variable: it's a parameter. Use element. Use this.get(index). Since get may throw, but after add it's valid.
 
 Thus final assert:
 
 assert (0 <= index && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));
 
-Need parentheses around implication? Use => operator.
+Make sure parentheses correct.
 
-Thus final answer in code block.
+Return as code block.
 
 assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => (element == null ? this.get(index) == null : this.get(index).equals(element));</code>
 --------------------

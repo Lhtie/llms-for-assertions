@@ -1,84 +1,141 @@
 analysisWe need to produce an assert statement reflecting the comment.
 
+We have method add(int index, E obj). The comment:
+
+"// @@@ If the index is between 0 and the initial size of the list inclusive, then for every valid index from this index to the old size of the list, the element at the next position is either null and the old element at this index is null, or the element at the next position equals the old element at this index."
+
+Interpretation: after insertion, elements from index to old size-1 shift one position right. For each i in [index, oldSize-1] (old size before addition), the element at position i+1 after addition is either null and the old element at i was null, or equals old element at i.
+
+We need to write assert using this.get(i) etc. Observers: get(int index) returns element. Also size() maybe.
+
+We need old size: \old(this.size()).
+
+Premise: index between 0 and old size inclusive. The method already checks interval index between 0 and size() (old size) inclusive. So premise: 0 <= index && index <= \old(this.size()).
+
+Then for all int i; index <= i && i < \old(this.size()); we need condition about element at i+1 after addition.
+
+After insertion, size increased by 1, so new size = \old(this.size()) + 1.
+
+After insertion, element at position i+1 (new index) is either null and old element at i is null, or equals old element at i.
+
+So assert:
+
+0 <= index && index <= \old(this.size()) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) );
+
+Need careful with null equality. Use (this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i)))) maybe.
+
+Simplify: (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i)))
+
+But need to avoid NullPointerException if this.get(i+1) is null and we call equals. The disjunction ensures first case covers null equality. In second case we assume not null; maybe use this.get(i+1) != null && this.get(i+1).equals(...). But spec says "either null and old element null, or element equals old element". So we can write as:
+
+( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) )
+
+Assuming we trust that if both null, the second part not evaluated? In spec language, it's okay.
+
+Thus final assert statement:
+
+assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) );
+
+Make sure parentheses for implication. Provide code block.
+
+assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) );</code>
+--------------------
+analysisWe need to read the comment and produce an assert statement.
+
 Comment: 
 ```
 // @@@ If the index is between 0 and the initial size of the list inclusive, then for every valid index from this index to the old size of the list, the element at the next position is either null and the old element at this index is null, or the element at the next position equals the old element at this index.
 ```
 
-We are in method add(int index, E obj). It inserts element at position index (before existing element at that index). After insertion, elements from index to old size-1 shift right by one. The spec: if index between 0 and old size inclusive, then for every valid i from index to old size-1? Actually "from this index to the old size of the list" inclusive? The original old size = \old(this.size()). After insertion size = oldsize+1. For each i in [index, oldsize] (oldsize is old size, after insertion there is new element at index, and the previous element at oldsize-1 moves to oldsize). The spec: element at next position (i+1 after insertion) is either null and old element at i is null, or element at next position equals old element at i. Means for each i in that range, this.get(i+1) equals \old(this.get(i)) unless both are null? Actually they say "either null and the old element at this index is null, or the element at the next position equals the old element at this index." That's essentially: this.get(i+1) == \old(this.get(i)) (including null case). So we can just assert equality.
+We need to refer to old size, old elements. The method is add(int index, E obj). It inserts element at index, shifting elements at and after index to the right by one. The comment says: If index is between 0 and initial size inclusive, then for every valid index from this index to the old size of the list, the element at the next position (i+1?) is either null and the old element at this index is null, or the element at the next position equals the old element at this index.
 
-But need premise: index between 0 and old size inclusive. Use \old(this.size()).
+Interpretation: For each i in [index, oldSize-1] (since old size is size before insertion), after insertion, element at position i+1 equals old element at i (or both null). So we need to assert: (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( this.get(i+1) == null && \old(this.get(i)) == null ) || this.get(i+1).equals(\old(this.get(i))) . Need to handle null equality.
 
-Thus assert: (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); this.get(i+1).equals(\old(this.get(i)));
+We can use .equals but need null-safe. In examples they used .equals for objects. Could use (this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i)))) . But spec can be expressed as: (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) . That is fine.
 
-Need to handle null equality: use (this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i)))) . But typical spec uses .equals which would NPE if null. Use (this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i)))).
+Also need to ensure index is between 0 and old size inclusive. Use condition: 0 <= index && index <= \old(this.size()).
 
-Simplify: we can use equality operator == for object references? In spec maybe they use .equals for non-null. Many examples used .equals. They didn't handle null case. In earlier example they used .equals for equality of elements. Might assume elements non-null? Not specified. But comment includes null case. So we need to include condition.
+Thus final assert:
 
-Thus:
+assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) );
 
-assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); (this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i))));
+Make sure parentheses for => lower priority than &&, so we need parentheses around the forall expression maybe: (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) );
 
-Make sure parentheses.
+Yes.
 
-Return final code block.
-
-assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); (this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i))));</code>
+Return final answer in code block.assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) );</code>
 --------------------
-analysisWe need to produce an assert statement matching the comment.
+analysisWe need to produce an assert statement reflecting the comment.
 
-We have method add(int index, E obj). It inserts element at index (before existing element at that index). The comment:
+The method add(int index, E obj) inserts element at position index (before existing element). The comment: "If the index is between 0 and the initial size of the list inclusive, then for every valid index from this index to the old size of the list, the element at the next position is either null and the old element at this index is null, or the element at the next position equals the old element at this index."
 
-"// @@@ If the index is between 0 and the initial size of the list inclusive, then for every valid index from this index to the old size of the list, the element at the next position is either null and the old element at this index is null, or the element at the next position equals the old element at this index."
+Interpretation: For all i where index <= i < oldSize, after insertion, element at position i+1 (next position) is either null and old element at i was null, or element at i+1 equals old element at i. Basically shift right.
 
-Interpretation: If index is between 0 and old size inclusive (i.e., index >=0 && index <= oldSize), then for each i in [index, oldSize-1]? Actually "from this index to the old size of the list" inclusive? Let's parse: "for every valid index from this index to the old size of the list, the element at the next position is either null and the old element at this index is null, or the element at the next position equals the old element at this index."
+We need to express using \old and this.query perhaps? The class extends AbstractList<E>, so get method is available: this.get(i). Use this.get(i) to retrieve element.
 
-We need to express: For all int i; index <= i && i < oldSize; (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i)))? But need to handle null safely. Use .equals only if not null. Could use (this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i)))).
+We also need to refer to old size: \old(this.size()).
 
-Thus assert: (index>=0 && index<=\old(this.size())) => \forall int i; i>=index && i<\old(this.size()); (this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i))));
+Premise: index between 0 and oldSize inclusive (i.e., 0 <= index && index <= \old(this.size())).
 
-Note need to refer to size before add: \old(this.size()).
+Then assert: for all int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) ).
 
-Also need to ensure i+1 is within new size (size after insertion = oldSize+1). Since i ranges up to oldSize-1, i+1 up to oldSize which is valid.
+But need to handle null equality: use == for null, and .equals for non-null. Could use (this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i)))).
 
-Thus final assert.
+Simplify: (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i)))).
 
-We must use this.get(i+1) and \old(this.get(i)). Use parentheses.
+But spec may allow using equals, assuming elements may be null? Use .equals only if not null.
 
-Return as code block.
-
-assistantfinal<code>assert (index >= 0 && index <= \old(this.size())) => 
-    \forall int i; i >= index && i < \old(this.size()); 
-        (this.get(i + 1) == null ? \old(this.get(i)) == null 
-                                 : this.get(i + 1).equals(\old(this.get(i))));</code>
---------------------
-analysisWe need to produce assert statement for comment.
-
-We need to parse: In add(int index, E obj) method. The comment:
-
-// @@@ If the index is between 0 and the initial size of the list inclusive, then for every valid index from this index to the old size of the list, the element at the next position is either null and the old element at this index is null, or the element at the next position equals the old element at this index.
-
-Interpretation: Precondition: index between 0 and old size inclusive (i.e., old size before insertion). Then for every i in [index, oldSize-1] (valid old indices), after insertion, the element at position i+1 (next position) is either null and the old element at i was null, or element at i+1 equals old element at i.
-
-We need to use this.get(i) after insertion? The method is void, but we can refer to this.get(...). Use \old for pre-state. The old size is \old(this.size()) or \old(this.getCount())? Here size() method returns size. So use \old(this.size()).
-
-We need to assert: (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) );
-
-But need to handle possible nulls; use == null for null checks, and .equals for non-null. Use appropriate parentheses.
-
-Java spec: this.get(i+1) may be null, can't call equals on null. So we need to write condition with null checks.
-
-Thus:
+We'll write:
 
 assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i)))) );
 
-But also need to consider case where old element null and new element not null? The spec says either both null, or new equals old. So if old null, new must be null. That's covered.
+Need to ensure parentheses correct with => lower priority than &&, so wrap left side in parentheses.
 
-Thus final assert statement.
+Thus final code:
 
-Make sure to use parentheses around the implication: assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i)))) );
+<code>assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i)))) );</code>
 
-Return final code block.
+Check syntax: \forall int i; cond; spec . Good.
 
-assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i)))) );</code>
+Return final.assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || (this.get(i+1) != null && this.get(i+1).equals(\old(this.get(i)))) );</code>
+--------------------
+analysisWe need to generate an assert statement matching the comment.
+
+Comment: 
+```
+// @@@ If the index is between 0 and the initial size of the list inclusive, then for every valid index from this index to the old size of the list, the element at the next position is either null and the old element at this index is null, or the element at the next position equals the old element at this index.
+```
+
+Interpretation: After add at index, elements from index to old size-1 shift right by one. For each i in [index, oldSize-1], the new element at i+1 equals old element at i. Also if old element was null then new element at i+1 is null (that's same as equality). But they also mention "either null and the old element at this index is null, or the element at the next position equals the old element at this index." That's just equality (including null). So we need to assert for each i where index <= i < oldSize: this.get(i+1).equals(\old(this.get(i)))? But need to handle null: we can use (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))). Could also use .equals with null safe? Usually .equals throws NPE. So need explicit null check.
+
+Premise: index between 0 and old size inclusive. Note "initial size of the list inclusive" means old size before insertion. So condition: 0 <= index && index <= \old(this.size()).
+
+Then for all int i; index <= i && i < \old(this.size()); (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))).
+
+Need to use this.get(i+1) method. Observers: get method is public. So fine.
+
+Thus final assert:
+
+assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i)));
+
+Make sure parentheses correct. Use => with premise.
+
+Return in <code> block.
+
+assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i)));</code>
+--------------------
+analysisWe need to read comment and produce assert statement. The method add(int index, E obj) inserts element before given index. The comment: 
+"// @@@ If the index is between 0 and the initial size of the list inclusive, then for every valid index from this index to the old size of the list, the element at the next position is either null and the old element at this index is null, or the element at the next position equals the old element at this index."
+
+Interpretation: When inserting at index (0 <= index <= oldSize), after insertion, for each i in [index, oldSize] (old size before insertion), the element at position i+1 (next position) after insertion is either null and the old element at i (before insertion) is null, or equals the old element at i. Essentially shift right.
+
+Need to express using assert with old values. Use this.get(i+1) after insertion, compare with \old(this.get(i)). Also need condition: index between 0 and oldSize inclusive. Use old size: \old(this.size()) maybe method size(). Since size() returns int. So condition: 0 <= index && index <= \old(this.size()).
+
+Then for all int i; index <= i && i < \old(this.size()); (i from index to oldSize-1). The spec: (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))). Need to handle null equality. Use .equals? In spec we can use == for null and .equals for non-null. Usually they use .equals. Use (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))). Might need to ensure null safe. So final assert:
+
+assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) );
+
+Make sure parentheses.
+
+Thus final answer.assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); ( (this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i))) );</code>
 --------------------

@@ -1,52 +1,95 @@
 analysisWe need to parse the comment: "If the index is non-negative and less than the initial size of the array, then the result is equal to the element at that index before the method was executed."
 
-Method remove(int i) returns element removed. The spec: if i >=0 && i < initial size (i.e., before removal), then \result == \old(this.unsafeGet(i))? But note that unsafeGet returns element at index without checking existence. At start, there is element at that index (since condition ensures index within initial size). However removal may fail if element null? But spec only says result equals element at that index before execution. So we can express: (i >=0 && i < \old(this.size())?) Wait "initial size of the array" likely refers to the size before removal, which is elements.size() before removal. The method uses n = elements.size(); So initial size = n. So condition i >=0 && i < n. So spec: (i >=0 && i < \old(this.size())) => \result.equals(\old(this.unsafeGet(i)))? Since E may be object, use equals? In earlier examples they used .equals for query, but for result they used equality? In example they used this.index_of(value) == ... for ints. For objects they used .equals. So use \result.equals(\old(this.unsafeGet(i))) maybe with null check? But they guarantee element exists, not null. So we can assert: assert (i >= 0 && i < \old(this.size())) => \result.equals(\old(this.unsafeGet(i)));
+We need assert statement after remove method. The method returns E (the removed element). The condition: if index is non-negative and less than the initial size of the array (i.e., before removal). initial size = elements.size() before changes. That's captured using \old(this.size())? Wait size() method returns number of elements (excluding nulls). But the comment says "initial size of the array". In remove, they use int n = elements.size(); That's the underlying arraylist size (including nulls). So we need to refer to that old size: \old(this.elements.size())? Not accessible; we must use public observer methods only. There is realSize() which returns "Real size of the array, counting elements that have been erased." That's likely same as elements.size(). So we can use \old(this.realSize()) as initial size. Or maybe size()? size() is number of elements (non-null). The comment says "initial size of the array", likely meaning the underlying array length, which includes nulls. So use realSize.
 
-But need to refer to size method of FixedArrayList. There's size() which returns number of elements in array (non-null?). Actually size() returns number of elements (non-null). But the "initial size of the array" might refer to elements.size() which includes null placeholders? The realSize maybe includes erased. But comment says "initial size of the array". In code, they set n = elements.size(); That's the internal array size (including nulls). So we need to use \old(this.elements.size())? But elements is protected field not accessible via observer. Not allowed; only publicly accessible observer methods. We have getLastIndex, getNextAddIndex, hasIndex, get, size, realSize, unsafeGet, etc. Which returns size? size() returns number of elements (non-null). That's not same as elements.size(). There's no observer for internal array size. But we can use \old(this.realSize())? realSize returns real size counting erased elements (including null positions). That likely equals elements.size(). So initial size = \old(this.realSize()). So condition i >=0 && i < \old(this.realSize()).
+Thus assertion: if (i >=0 && i < \old(this.realSize())) then \result equals \old(this.unsafeGet(i)). Since unsafeGet returns element without checking.
 
-Thus assert: (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));
+But need to ensure that before removal, there is an element at index i (i.e., not null). The method throws NullPointerException if element null. However the comment only specifies condition on i, not on element existence. But we can assert equality anyway; if element null would cause exception, not return. So we can assert under the premise that i is valid index (non-negative and less than initial size). Under that premise, result equals element before removal, which is \old(this.unsafeGet(i)). Use \old(this.get(i))? get checks existence; may throw. Use unsafeGet.
 
-Make sure parentheses. Use assert keyword.
+Thus assert: assert (i >= 0 && i < \old(this.realSize())) ==> \result.equals(\old(this.unsafeGet(i)));
 
-Thus final answer.
+But need to handle possibly null? Result type E could be null? But array cannot contain null values; they ensure no nulls stored. So result is non-null. Use \result == \old(this.unsafeGet(i)). In JML, equality for objects is .equals? Typically assert uses == for reference equality. Use .equals? In examples they used .equals for query equality. For generic E, better use .equals.
 
-assistantfinal<code>assert (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));</code>
+Thus final code:
+
+<code>assert (i >= 0 && i < \old(this.realSize())) ==> \result.equals(\old(this.unsafeGet(i)));</code>
+
+Make sure parentheses.
+
+Return final.assistantfinal<code>assert (i >= 0 && i < \old(this.realSize())) ==> \result.equals(\old(this.unsafeGet(i)));</code>
 --------------------
-analysisWe need to produce assert statement for the comment.
+analysisWe need to produce an assert statement reflecting the comment.
 
-Comment: "If the index is non-negative and less than the initial size of the array, then the result is equal to the element at that index before the method was executed."
+Comment: "// @@@ If the index is non-negative and less than the initial size of the array, then the result is equal to the element at that index before the method was executed."
 
-Method remove(int i) returns E. So we need assert about \result equals \old(this.unsafeGet(i))? But we have get method with check. The element at that index before method executed is elements.get(i) before removal (assuming not null). Since precondition: i >=0 && i < initial size (size before removal). Also need to ensure that element existed (not null). But comment only says if index is non-negative and less than the initial size of the array, then result equals element at that index before method executed. So we can write:
+We are inside method remove(int i). Need to refer to result: \result is the removed element.
 
-assert (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));
+Premise: i >= 0 && i < \old(this.realSize()? Actually initial size of the array: before removal, the size of elements list (including nulls?) The method uses elements.size() as n, which is the current list size (including null entries). That's the "initial size of the array". So condition: i >= 0 && i < \old(this.elements.size())? But we cannot refer to fields directly; we can use public observer methods. There's method realSize() that returns real size counting elements that have been erased (i.e., number of entries including nulls?). Not sure. There's size() returns number of elements (non-null). realSize() returns size of underlying array (including null). Since elements list includes nulls for removed positions, its size is the "initial size". There's no public observer for that directly, but we have getLastIndex(), getNextAddIndex(), hasIndex(i), maybe realSize() gives the length of elements list. The comment says "initial size of the array". Likely refers to elements.size() before removal, which matches realSize() before removal? The realSize() method description: "Real size of the array, counting elements that have been erased." That sounds like the underlying array length (including nulls). So we can use \old(this.realSize()).
 
-But need to refer to initial size of the array. Which size? The array's size includes nulls? The method uses elements.size() which is total length of internal array list, includes nulls for removed positions. That's the "initial size of the array". So we can use \old(this.realSize())? realSize counts elements including erased? Actually realSize counts elements counting erased? Let's check comment: realSize() returns real size counting elements that have been erased. So that's the total number of slots (including nulls). That's equal to elements.size(). So we can use \old(this.realSize()).
+Thus assert: (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)))? Need equality of elements. Since elements are generic, use .equals maybe. In examples they used .equals for objects. So we can write: assert (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));
 
-Thus assert: i >= 0 && i < \old(this.realSize()) => \result.equals(\old(this.unsafeGet(i)));
+But need to ensure result could be null? Actually removal only allowed if element present, else throws NullPointerException. So result is non-null. Use \result == \old(this.get(i))? get(i) checks existence maybe throws. But we can use unsafeGet because it doesn't check. Use unsafeGet to get element before removal.
 
-But need to ensure that result may be null? Actually remove throws NullPointerException if element at i is null. So precondition also requires that element is present; but comment doesn't mention that. However the implication only requires i in range, then result equals element before. If element is null, the method would throw before returning, so the postcondition is vacuously true because method doesn't return. But we can still assert that condition implies equality, but the method would not terminate normally, so the implication is fine.
+Thus final code:
 
-Thus final assert statement.
+<code>assert (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));</code>
 
-Make sure syntax: assert (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));
+Check syntax: need parentheses around premise? Use (i >= 0 && i < \old(this.realSize())) => ...
 
-Wrap in <code> tags.
+Yes.
 
-assistantfinal<code>assert (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));</code>
+Return final.assistantfinal<code>assert (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));</code>
 --------------------
-analysisWe need to produce an assert statement for the comment.
+analysisWe need to generate an assert statement for the comment.
 
-The method remove(int i) returns the removed element. The comment: "If the index is non-negative and less than the initial size of the array, then the result is equal to the element at that index before the method was executed."
+We have method remove(int i). The comment: "If the index is non-negative and less than the initial size of the array, then the result is equal to the element at that index before the method was executed."
 
-We need to refer to initial size: before method execution, size of elements (or maybe realSize?). In code, they compute int n = elements.size(); That's the current size (including nulls?). The comment says "initial size of the array". That is n before removal. So premise: i >= 0 && i < \old(this.size())? Actually size() returns number of elements (non-null). But they use elements.size() which includes null placeholders for removed elements? In this class, elements is an ArrayList<E> where removed elements are set to null but not removed (except when last). So size of elements (ArrayList) is the real capacity length, maybe called realSize? There's method realSize() maybe returns elements.size(). So "initial size of the array" likely means elements.size() before removal, which is \old(this.realSize()) or \old(this.elements.size()) but we cannot access fields directly. Use public observer methods: there is realSize() method. So we can use \old(this.realSize()). The result should be equal to the element at that index before method execution: that is \old(this.unsafeGet(i))? Since unsafeGet returns element without checking null. But before removal, element at that index exists (non-null). The observer methods available: get(int i) which checks existence, unsafeGet(int i) which returns element regardless, but if null maybe null. Since we want element before removal, we can use \old(this.get(i))? But get may throw if no element, but premise ensures index is within initial size, but element could be null if previously removed? But they say "result is equal to the element at that index before the method was executed." If index is within initial size, the element existed (since removal will succeed). In code they check if elements.get(i) == null then throw NullPointerException. So premise i >=0 && i < \old(this.realSize()) and also element not null. But comment only mentions non-negative and less than initial size; maybe assume element existed.
+We need to refer to the result (\result) and old element at that index (\old(this.unsafeGet(i))? Actually get(i) checks hasIndex maybe; but we have observer methods: get(int i) returns element at index i, but may throw if not present? Not sure. There's also unsafeGet(int i) which returns element without checking existence. Since we need the element at that index before method executed, we can use \old(this.unsafeGet(i)) (since we want element regardless of null?). The method remove may throw if index invalid. The assert should be conditional on i >=0 && i < \old(this.realSize())? Wait "initial size of the array" refers to size before removal. The array's size before removal is elements.size()? That's the "real size"? There's method realSize() counts elements including null? Actually realSize counts elements including erased? The comment says "initial size of the array". In remove, they compute int n = elements.size(); That's the current size (including null positions). So "initial size" = n before removal. So condition: i >=0 && i < \old(this.realSize())? But realSize may count nulls as well? In code, elements is an ArrayList<E>. When they remove at end, they call elements.remove(i) which reduces size. When they set null, they keep size same. So before removal, elements.size() equals realSize()? Probably realSize returns elements.size() maybe? Let's assume realSize() returns elements.size(). So we can use \old(this.realSize()) as old size.
 
-Thus assert: (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)))? Need equality: result == element before. Since generic type E may be object, we use .equals? In earlier examples they used .equals for objects. For generic type, they used this.query(i).equals(...). So we can use \result.equals(\old(this.unsafeGet(i))) . However if E is primitive? Not possible. Use .equals.
+Thus assert: (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)))? But result is E, may be null? Actually they guarantee element exists, else they throw NullPointerException. So result should be equal to old element. Use == or .equals? For generic type E, we can use ==? In examples they used .equals for objects: this.query(i).equals(\old(this.query(i))). For result we can use \result.equals(...). Safer: \result == \old(this.unsafeGet(i))? Since generic maybe reference equality. Use ==? In spec examples they used .equals for objects. We'll use \result.equals(\old(this.unsafeGet(i))) if we assume result not null. But result could be null? Not allowed because they throw NullPointerException if element null. So result non-null.
 
 Thus final assert: assert (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));
 
-Make sure parentheses: (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));
+Need to ensure syntax: parentheses around implication.
 
-Return as code block.
+Return final.assistantfinal<code>assert (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));</code>
+--------------------
+analysisWe need to produce an assert statement matching the comment.
+
+The method remove(int i) returns the removed element. The comment: "If the index is non-negative and less than the initial size of the array, then the result is equal to the element at that index before the method was executed."
+
+We need to refer to initial size: before execution, size of elements? Probably elements.size() before removal. That's \old(this.size())? But size() returns number of elements in the array (excluding nulls?) Actually size() returns number of elements (non-null). But the comment says "initial size of the array". Could be elements.size() (the internal list length). However we have a method realSize() maybe counts all positions including nulls? Not needed. The condition is i >=0 && i < initial size. So we need to assert that if that holds, then \result equals \old(this.get(i))? Since get(i) checks existence; but before removal, element existed at that index (since removal will succeed). The method throws if element null. So precondition includes that element at i is not null. But comment only says index non-negative and less than initial size, then result equals element at that index before execution. However if element was null, removal would throw NullPointerException, not return. So maybe we also need that element existed. But comment only about index within bounds; maybe assume that element existed (since else exception). We'll assert: (i >=0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)))? Actually before removal, the element at that index is accessible via unsafeGet(i) (does not check). Or get(i) checks hasIndex. Since we know it existed, get(i) works. Safer to use unsafeGet to avoid precondition. Use \old(this.unsafeGet(i)). The result type E, need equality: \result.equals(\old(this.unsafeGet(i)))? For objects, use .equals. In examples they used this.index_of(value) == ... for ints, and this.query(i).equals(\old(this.query(i))) for objects. So we should use .equals.
+
+Thus assert: (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));
+
+But need to refer to i variable inside method; it's a parameter. So we can just use i.
+
+Thus final code:
+
+<code>assert (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));</code>
+
+Check if need parentheses: (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)))
+
+Yes.
+
+Return final.assistantfinal<code>assert (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));</code>
+--------------------
+analysisWe need to parse the comment: 
+```
+// @@@ If the index is non-negative and less than the initial size of the array, then the result is equal to the element at that index before the method was executed.
+```
+
+We are in method remove(int i). The method returns the removed element. The comment says: If i >=0 and i < initial size of the array, then result equals element at that index before execution.
+
+We need to refer to initial size: before method execution. So we need \old(this.size())? Wait size() returns number of elements (non-null?). But "initial size of the array" likely means the size of elements list before removal, i.e., elements.size() (the underlying list) before removal. Since we have method realSize() maybe but not needed. Use \old(this.realSize())? The comment says "initial size of the array". In context of remove, the array is the FixedArrayList. The size before removal is the number of elements (including nulls?) The underlying list length includes null placeholders for removed elements? The remove method checks n = elements.size(); So "initial size of the array" likely refers to n before removal, i.e., elements.size() before removal. So condition: i >=0 && i < \old(this.realSize())? But realSize counts elements including erased? Actually realSize counts elements counting erased? The comment says "initial size of the array". In remove method they compute n = elements.size(); So we should use \old(this.realSize())? However realSize is defined as "Real size of the array, counting elements that have been erased." That's the size of elements list, i.e., number of slots. That's exactly elements.size(). So use \old(this.realSize()).
+
+We need to assert: (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)))? The method returns E, may be null? But they guarantee non-null element at index before removal, else throw NullPointerException. So result should be equal to that element. Use equality: \result == \old(this.unsafeGet(i)). However for objects we might use .equals. In earlier examples they used .equals for query. But here they may use ==? In earlier example they used .equals for query results. So we should use .equals. However result may be null? Not allowed. So we can assert \result.equals(\old(this.unsafeGet(i))) . But \result may be null? Not here. Use \result.equals(\old(this.unsafeGet(i))) . Or we can assert \result == \old(this.unsafeGet(i)). Usually specification uses == for reference equality. Let's follow pattern: they used .equals for objects from query. So we will use .equals.
+
+Thus assert: (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));
+
+Need to ensure we use \old(this.get(i))? get checks hasIndex maybe throws. But unsafeGet returns element without check. Since we want element before removal, unsafeGet works even if null? But before removal, element is non-null. So fine.
+
+Thus final answer code block.
 
 assistantfinal<code>assert (i >= 0 && i < \old(this.realSize())) => \result.equals(\old(this.unsafeGet(i)));</code>
 --------------------

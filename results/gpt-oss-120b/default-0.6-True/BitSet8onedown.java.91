@@ -1,70 +1,94 @@
-analysisWe need to produce assert statement for the comment. Let's parse the method and comment.
+analysisWe need to produce an assert statement reflecting the comment.
 
-Method andNot(BitSet set): performs logical (a & !b) on words in common. Then recalculateWordsInUse(); checkInvariants();
+The method andNot(BitSet set) performs logical (a & !b) on words in common, then recalculateWordsInUse and checkInvariants. The comment: "For every index i from 0 up to the length of this BitSet, the bit at index i is set to the result of the logical AND operation between the old value of the bit at index i and the negation of the bit at index i in the specified BitSet."
 
-Comment: "@@@ For every index i from 0 up to the length of this BitSet, the bit at index i is set to the result of the logical AND operation between the old value of the bit at index i and the negation of the bit at index i in the specified BitSet."
+We need to express: for all i such that 0 <= i < this.length()? Actually length() returns logical size: index of highest set bit +1. After operation, bits beyond length may be cleared? The comment says "up to the length of this BitSet". Likely meaning up to old length? Since after operation length may shrink. Use old length. So: \forall int i; 0 <= i && i < \old(this.length()); this.get(i) == (\old(this.get(i)) && !set.get(i));
 
-We need to write assert statement reflecting that.
+Need to use set.get(i) but set is a parameter. Use this? Actually set is a BitSet argument; we can call set.get(i). That's allowed as public observer method. So assert: \forall int i; 0 <= i && i < \old(this.length()); this.get(i) == (\old(this.get(i)) && !set.get(i));
 
-We have observer methods: get(int bitIndex) returns boolean value of bit. length() returns logical size: index of highest set bit + 1. But comment says "up to the length of this BitSet". So we need to assert for all i where 0 <= i < this.length() (the new length after operation? It says up to the length of this BitSet (after operation). Probably after operation length may have changed (bits cleared). The logical operation may clear bits, length may shrink. The description: "For every index i from 0 up to the length of this BitSet, the bit at index i is set to the result of the logical AND operation between the old value of the bit at index i and the negation of the bit at index i in the specified BitSet."
+Make sure parentheses: this.get(i) == (\old(this.get(i)) && !set.get(i))
 
-Thus we need to assert: for all int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));
+Return type boolean. Use && logical and.
 
-But we need to refer to old value of this.get(i) and set.get(i) before operation. For set, we need old value as well. Use \old(set.get(i)). That's allowed: we can refer to old of set's method.
+Thus final code:
 
-So assert: \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !\old(set.get(i)));
+<code>assert \forall int i; 0 <= i && i < \old(this.length()); this.get(i) == (\old(this.get(i)) && !set.get(i));</code>
 
-But we must ensure we use parentheses correctly. Also note that old of set may be needed because set may be mutated? Not in this method; set is not mutated. But we still use old for clarity.
+Check syntax: need parentheses around whole implication? Not needed. Use ; at end.
 
-Thus final assert:
+Thus final answer.assistantfinal<code>assert \forall int i; 0 <= i && i < \old(this.length()); this.get(i) == (\old(this.get(i)) && !set.get(i));</code>
+--------------------
+analysisWe need to produce assert statement for the comment. The method andNot(BitSet set) modifies this BitSet: for each word index i up to min(wordsInUse, set.wordsInUse)-1, bits[i] &= ~set.words[i]; then recalculateWordsInUse, checkInvariants.
+
+The comment: "For every index i from 0 up to the length of this BitSet, the bit at index i is set to the result of the logical AND operation between the old value of the bit at index i and the negation of the bit at index i in the specified BitSet."
+
+We need to express this using observers: get(int bitIndex) returns boolean; also we have set? Not needed. We need to refer to old values: \old(this.get(i)) and \old(set.get(i)). The result after operation: this.get(i). The expression: this.get(i) == (\old(this.get(i)) && !\old(set.get(i))). That's the logical AND of old this bit and NOT old set bit.
+
+But note the comment says "up to the length of this BitSet". Length is logical size: length() returns index of highest set bit +1. After operation, length may change (maybe reduce). But we need to consider up to old length? It says "up to the length of this BitSet". Probably after operation? ambiguous. Usually spec uses old length for iteration over all bits that could be affected, but we can use old length. However we need to ensure quantifier includes all indices i where 0 <= i < this.length()? But after operation length may be less (bits cleared). The spec states "for every index i from 0 up to the length of this BitSet, the bit at index i is set to ...". If we interpret after operation, then length may be smaller, but still holds for those indices. Using this.length() after operation is okay. But we need to refer to old values of both bits. So:
 
 assert \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !\old(set.get(i)));
 
-Make sure to use && inside parentheses. Also need to ensure boolean equality; we can use ==.
+But need to ensure set.get(i) is defined; set may have length shorter; get(i) for out-of-range? get(i) returns false for indices beyond its size? Implementation of get: it checks bounds? In java BitSet, get(i) returns false for out-of-range bits (since bits beyond size are implicitly false). So it's okay.
 
-Thus final answer.assistantfinal<code>assert \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !\old(set.get(i)));</code>
+Thus final assert.
+
+Make sure to use parentheses correctly. Use && for logical and. Use ! for negation. Use == for boolean equality.
+
+Thus final answer:
+
+<code>assert \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !\old(set.get(i)));</code>
+
+Check syntax: Need parentheses around whole quantifier? The format: assert \forall int i; cond; spec; So we have cond = 0 <= i && i < this.length(); spec = this.get(i) == (\old(this.get(i)) && !\old(set.get(i)));
+
+Thus final.
+
+assistantfinal<code>assert \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !\old(set.get(i)));</code>
 --------------------
-analysisWe need to produce an assert statement for the comment. The method andNot(BitSet set) modifies this BitSet: for each word index i in common, words[i] &= ~set.words[i]; then recalculateWordsInUse() etc. The comment: "For every index i from 0 up to the length of this BitSet, the bit at index i is set to the result of the logical AND operation between the old value of the bit at index i and the negation of the bit at index i in the specified BitSet."
-
-We need to express using public observer methods: we have get(int bitIndex) to get a bit value, length() returns logical size (index of highest set bit +1). Also maybe we need to refer to set (parameter) methods: we can call set.get(i) to get its bit. So assert: for all int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i)). But careful: the comment says "up to the length of this BitSet". Length after operation? The length could change due to bits cleared. But the spec says "up to the length of this BitSet" likely after operation (new length). However the logical expression uses old value of this bit, and set's bit (current, unchanged). The length after operation may be less than old length if highest set bit cleared. But we need to quantify over indices that exist after operation. Use this.length() after operation (current). So assert: \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));
-
-But need to ensure set.get(i) refers to current set (unchanged). That's fine.
-
-Also need to consider indices beyond this.length() maybe old bits that were cleared? The spec only mentions up to length after operation, so fine.
-
-Thus final assert statement:
-
-assert \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));
-
-We need to ensure parentheses: (\old(this.get(i)) && !set.get(i))
-
-Return boolean.
-
-Thus output code block.
-
-assistantfinal<code>assert \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));</code>
---------------------
-analysisWe need to write an assert statement for the comment.
+analysisWe need to write an assert statement reflecting the comment.
 
 Comment: "For every index i from 0 up to the length of this BitSet, the bit at index i is set to the result of the logical AND operation between the old value of the bit at index i and the negation of the bit at index i in the specified BitSet."
 
-We have method andNot(BitSet set). Inside, after operation, we need to assert property.
+Method: andNot(BitSet set). After operation, each bit i (0 <= i < this.length()) equals old(this.get(i)) && !set.get(i). Note: length() is logical size: index of highest set bit +1. But after operation bits may be cleared, length may shrink. The spec says up to the length of this BitSet (presumably after operation). But we need to reflect that. Use \old for old values. Use this.get(i) after operation, \old(this.get(i)) before. Use set.get(i) after? set unchanged, we can use set.get(i) (no old needed). Also need bound: i >=0 && i < this.length().
 
-We need to use this.get(i) to get bit after, and \old(this.get(i)) for old value, and set.get(i) for the other BitSet's current value (set is unchanged). The operation: new bit = old this bit AND (NOT set bit). So assert for all i: 0 <= i && i < this.length()? Actually "up to the length of this BitSet". length() returns logical size (index of highest set bit +1). After operation, length may change (bits may be cleared). But specification says up to the length of this BitSet (presumably after operation?). Could be up to old length? Usually spec for andNot: For each i, new bit = old bit && !set bit. If old bit was true and set's bit true, result false. So length may shrink. The quantifier should be over all i such that 0 <= i && i < this.length()? But old bits beyond new length are false anyway. Safer: quantify over all i where 0 <= i && i < \old(this.length())? The comment says "up to the length of this BitSet". ambiguous. I'd choose old length to capture all bits that could have been true before. But after operation, bits beyond new length are false, but property still holds (old false). Using old length ensures we talk about bits that existed before. Let's reflect comment: "up to the length of this BitSet" after operation maybe. But they refer to "the bit at index i is set to the result of the logical AND operation between the old value of the bit at index i and the negation of the bit at index i in the specified BitSet." So we need old value of this, and set's current value (unchanged). So quantifier over i from 0 to this.length()-1 after operation? The old value may be false for indices beyond old length; still property holds. Either is fine.
+Thus assert: \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));
 
-We'll write:
+Make sure boolean equality =. In JML style, we can write this.get(i) == (\old(this.get(i)) && !set.get(i)). That's fine.
 
-assert \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));
+Return statement? method returns void, so we just assert.
 
-But need parentheses: this.get(i) == (\old(this.get(i)) && !set.get(i))
+Thus final answer code block.
 
-In Java boolean equality uses ==. So final assert:
+assistantfinal<code>assert \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));</code>
+--------------------
+analysisWe need to produce a single assert statement that matches the comment.
 
-assert \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));
+Comment: "// @@@ For every index i from 0 up to the length of this BitSet, the bit at index i is set to the result of the logical AND operation between the old value of the bit at index i and the negation of the bit at index i in the specified BitSet."
 
-Make sure syntax: \forall int i; cond; spec.
+We need to express: For all i, 0 <= i < this.length() (after operation) ??? Actually "up to the length of this BitSet" likely means up to the new length after operation (which may be same as old length). Use this.length() after operation. The old value is \old(this.get(i)). The specified set's bit at i is set.get(i) (the argument set). The result after operation is this.get(i). So assert: \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));
 
-Thus final answer.
+But need to use logical AND operation between old value and negation of set's bit. In Java boolean, we can use && and !.
+
+Thus assert: assert \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));
+
+Check syntax: Use parentheses for implication? Not needed. Use =>? No.
+
+Thus final answer: <code>assert \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));</code>
+
+Make sure to reference set correctly: it's the parameter named set. Use this? No, it's just set. It's accessible.
+
+Thus final.assistantfinal<code>assert \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));</code>
+--------------------
+analysisWe need to produce an assert statement reflecting the comment: "For every index i from 0 up to the length of this BitSet, the bit at index i is set to the result of the logical AND operation between the old value of the bit at index i and the negation of the bit at index i in the specified BitSet."
+
+We need to use observers: get(int bitIndex), length()? length returns logical size (index of highest set bit +1). For indices up to length (maybe inclusive? "up to the length" probably means 0 <= i < this.length()? length is current logical size after operation? The spec should refer to old length? The comment: "up to the length of this BitSet". After operation, length may change. The operation is andNot, which can only clear bits, not set new ones, so length may decrease. The spec: For each i from 0 up to length of this BitSet (presumably after operation), the bit at i equals old(this.get(i)) && !set.get(i). So we need to express: \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));
+
+But also need to consider bits beyond length? Not required.
+
+Thus assert: assert \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));
+
+Make sure to use parentheses: this.get(i) == (\old(this.get(i)) && !set.get(i))
+
+Thus final answer code block.
 
 assistantfinal<code>assert \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) && !set.get(i));</code>
 --------------------
