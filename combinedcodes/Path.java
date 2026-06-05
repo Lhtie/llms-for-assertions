@@ -122,7 +122,7 @@ public class Path implements Structure {
         // @@@ The path contains the added edge after the operation.
         // assert this.contains(edge);
         // @@@ If the edge is null, then the last element in the path is null; if the edge is not null, then the last element in the path is the added edge.
-        // assert edge==null && this.get(this.size()-1)==null || edge!=null && edge.equals(this.get(this.size()-1));
+        // assert edge==null && this.getEdgePath().get(this.size()-1)==null || edge!=null && edge.equals(this.getEdgePath().get(this.size()-1));
 	}
 
 	/**

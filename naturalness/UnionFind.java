@@ -204,7 +204,7 @@ public class UnionFind<T>
         }
         count = parentMap.size();
         // @@@ the size of the data structure should remain the same.
-        // assert this.size==\old(this.size());
+        // assert this.size()==\old(this.size());
         // @@@ the number of sets should be equal to the total number of elements after reset.
         // assert this.numberOfSets()==this.size();
     }

@@ -115,18 +115,18 @@ public class FuzzTest{3}{{
             throw new RuntimeException("Exceptional Postcondition Violated");
     }}
     
-    public static class Pair<A, B> {{
-        public final A first;
-        public final B second;
+    private static class Pair<A, B> {{
+        private final A first;
+        private final B second;
 
-        public Pair(A first, B second) {{
+        private Pair(A first, B second) {{
             this.first = first;
             this.second = second;
         }}
     }}
     
     @SuppressWarnings("unchecked")
-	public static <T> T get_from_array(Object arr, int index, T ex_val){{
+	private static <T> T get_from_array(Object arr, int index, T ex_val){{
 		try {{
 			return (T) Array.get(arr, index);
 		}} catch (Exception fuzzexception) {{
@@ -134,7 +134,7 @@ public class FuzzTest{3}{{
 		}}
 	}}
     
-    public static <T> T exec(Supplier<T> supplier){{
+    private static <T> T exec(Supplier<T> supplier){{
 		try {{
 			return supplier.get();
 		}} catch (Exception fuzzexception) {{
@@ -142,7 +142,7 @@ public class FuzzTest{3}{{
 		}}
 	}}
  
-    public static <T> Pair<T, String> func_call_supplier(Supplier<T> supplier){{
+    private static <T> Pair<T, String> func_call_supplier(Supplier<T> supplier){{
         try {{
             return new Pair<>(supplier.get(), null);
         }} catch (Exception fuzzexception){{
@@ -151,7 +151,7 @@ public class FuzzTest{3}{{
         }}
     }}
     
-    public static String func_call_runnable(Runnable runnable){{
+    private static String func_call_runnable(Runnable runnable){{
         try {{
             runnable.run();
             return null;

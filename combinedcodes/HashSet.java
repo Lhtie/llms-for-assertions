@@ -201,7 +201,7 @@ public class HashSet<E>
         // @@@ The result of cloning is equal to the original set.
         // assert \result.equals(this);
         // @@@ The size of the cloned set is the same as the size of the original set.
-        // assert \result.size()==this.size();
+        // assert ((HashSet<E>) \result).size()==this.size();
         // @@@ The result of cloning the HashSet is never null.
         // assert \result!=null;
     }

@@ -109,8 +109,8 @@ public class LinkedList<E>
         addAll(c);
         // @@@ If the collection 'c' is not null, then the size of the list is equal to the size of the collection 'c'.
         // assert c!=null => this.size()==c.size();
-        // @@@ If the collection 'c' is not null, then for every valid index 'i' in this list, the element at index 'i' in this list is equal to the element at index 'i' in the collection 'c'.
-        // assert c!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==c.get(i);
+        // @@@ If the collection 'c' is not null, then for every valid index 'i' in this list, the element at index 'i' in this list is equal to the element at index 'i' in the collection's iteration order.
+        // assert c!=null => \forall int i; 0<=i&&i<this.size(); this.get(i).equals(c.toArray()[i]);
         // @@@ If the collection is not null, then the list is equal to the collection after all its elements have been added.
         // assert c!=null => this.equals(c);
     }
@@ -1236,8 +1236,8 @@ public class LinkedList<E>
             a[size] = null;
 
         return a;
-        // @@@ If the input array is not null, then the resulting array is also not null.
-        // assert a!=null => \result!=null;
+        // @@@ If the input array is not null and can store every element in the list, then the resulting array is also not null.
+        // assert a!=null && (\forall int i; 0<=i&&i<this.size(); a.getClass().getComponentType().isInstance(this.toArray()[i])) => \result!=null;
     }
 
     /**

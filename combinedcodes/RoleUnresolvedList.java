@@ -339,8 +339,8 @@ public class RoleUnresolvedList extends ArrayList<Object> {
         }
 
         super.set(index, role);
-        // @@@ If the index is non-negative, less than the initial size of the list, and the role is not null, then the result is the same as the old value at that index.
-        // assert index>=0 && index<\old(this.size()) && role!=null => \result==\old(this.get(index));
+        // @@@ If the index is non-negative, less than the initial size of the list, and the role is not null, then the value at that index is the same as role.
+        // assert index>=0 && index<\old(this.size()) && role!=null => this.get(index).equals(role);
         // @@@ If the index is within bounds and the role is not null, then for every index i less than the specified index, the element at i remains unchanged if it was not null before the operation.
         // assert index>=0 && index<\old(this.size()) && role!=null => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
         // @@@ If the index is within valid range (greater than or equal to 0 and less than the initial size of the list) and the role is not null, then for every position greater than the index and within the list size, the element at that position remains unchanged or continues to be null if it was originally null.

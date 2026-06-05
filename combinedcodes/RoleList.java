@@ -342,8 +342,8 @@ public class RoleList extends ArrayList<Object> {
         }
 
         super.set(index, role);
-        // @@@ If the index is valid, within the list's range, and the role is not null, then the result is the same as the old value at that index.
-        // assert index>=0 && index<\old(this.size()) && role!=null => \result==\old(this.get(index));
+        // @@@ If the index is valid, within the list's range, and the role is not null, then the value at that index is the same as role.
+        // assert index>=0 && index<\old(this.size()) && role!=null => this.get(index).equals(role);
         // @@@ If the index is within bounds and the role is not null, then for every index i less than the given index, if the element at i was null before, it remains null, otherwise it remains unchanged.
         // assert index>=0 && index<\old(this.size()) && role!=null => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
         // @@@ If the index is valid, within the list's bounds, and the role is not null, then for every position greater than the index and within the list's bounds, either the element at that position is null and was null before, or it remains unchanged from its previous state.

@@ -57,10 +57,10 @@ def closing_paren(string, start):
     right = {"[":"]", "(":")", "{":"}"}[left]
     end, balance = start + 1, 1
     while end < len(string):
-        if balance == 0: return end
         if string[end] == left: balance += 1
         elif string[end] == right: balance -= 1   
         end += 1
+        if balance == 0: return end
     raise AssertionError(f"Unmatched '{left}' in expression")
 
 def contains_var(expr, var_name):
@@ -282,11 +282,12 @@ class javahelper(codehelper):
             if old_addns_arr != []:
                 for old_var_name, old_expr in old_addns_arr:
                     ex = re.sub(rf'\b{re.escape(var_name)}\b', lo, old_expr)[11:-1]
+                    sample_name = f"{old_var_name}_sample"
                     old_addns += [
+                        f"var {sample_name} = exec(() -> {ex});",
                         f"var {old_var_name} = exec(() -> {{",
                         f"\tint capacity = ({hi}) - ({lo}) + 1;",
-                        f"\tObject ex = {ex};",
-                        f"\tvar ret = Array.newInstance(ex.getClass(), capacity);",
+                        f"\tvar ret = Array.newInstance({sample_name}.getClass(), capacity);",
                         f"\tint cur_idx = 0;",
                         f"\tfor ({var_type} {var_name} = {lo}; {var_name} <= {hi}; {var_name} += 1) {{",
                         f"\t\tArray.set(ret, cur_idx, {old_expr[11:-1]});",
@@ -296,11 +297,11 @@ class javahelper(codehelper):
                         f"}});",
                     ]
                 for old_var_name, old_expr in old_addns_arr:
-                    ex = re.sub(rf'\b{re.escape(var_name)}\b', lo, old_expr)[11:-1]
+                    sample_name = f"{old_var_name}_sample"
                     cond_expr = cond_expr.replace(
-                        old_var_name.split("_forallidx")[0], f"get_from_array({old_var_name}, cur_idx, {ex})")
+                        old_var_name.split("_forallidx")[0], f"get_from_array({old_var_name}, cur_idx, {sample_name})")
                     spec_expr = spec_expr.replace(
-                        old_var_name.split("_forallidx")[0], f"get_from_array({old_var_name}, cur_idx, {ex})")
+                        old_var_name.split("_forallidx")[0], f"get_from_array({old_var_name}, cur_idx, {sample_name})")
 
             forall_addns += [
                 f"Boolean forall_holds_forallidx{self.forall_idx} = Boolean.TRUE.equals(exec(() -> {{",

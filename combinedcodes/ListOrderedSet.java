@@ -103,14 +103,6 @@ public class ListOrderedSet<E>
             return true;
         }
         return false;
-        // @@@ If the index is between 0 and the initial size of the set inclusive, then the set contains the object.
-        // assert index>=0 && index<=\old(this.size()) => this.contains(object);
-        // @@@ If the index is valid (between 0 and the initial size of the set inclusive), then if the object is null, the element at that index is also null, or the element at that index equals the object.
-        // assert index>=0 && index<=\old(this.size()) => object==null&&this.get(index)==null||this.get(index).equals(object);
-        // @@@ If the index is valid (between 0 and the initial size of the set inclusive), then for every valid index up to the specified index, each element at that index either remains null if it was initially null, or remains unchanged compared to its initial state.
-        // assert index>=0 && index<=\old(this.size()) => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is between 0 and the initial size of the set, then for every index i from the given index to the old size minus one, the element at position i+1 is either null and the element at position i was null, or the element at position i+1 is equal to the element at position i in the old set.
-        // assert index>=0 && index<=\old(this.size()) => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
     /**
@@ -124,9 +116,20 @@ public class ListOrderedSet<E>
      */
     public void add(final int index, final E object) {
         if (!contains(object)) {
+            if (index < 0 || index > setOrder.size()) {
+                throw new IndexOutOfBoundsException();
+            }
             decorated().add(object);
             setOrder.add(index, object);
         }
+        // @@@ If the index is between 0 and the initial size of the set inclusive, then the set contains the object.
+        // assert index>=0 && index<=\old(this.size()) => this.contains(object);
+        // @@@ If the index is valid and the object was not already contained in the set, then if the object is null, the element at that index is also null, or the element at that index equals the object.
+        // assert index>=0 && index<=\old(this.size()) && !\old(this.contains(object)) => object==null&&this.get(index)==null||this.get(index).equals(object);
+        // @@@ If the index is valid (between 0 and the initial size of the set inclusive), then for every valid index up to the specified index, each element at that index either remains null if it was initially null, or remains unchanged compared to its initial state.
+        // assert index>=0 && index<=\old(this.size()) => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
+        // @@@ If the index is valid and the object was not already contained in the set, then for every index i from the given index to the old size minus one, the element at position i+1 is either null and the element at position i was null, or the element at position i+1 is equal to the element at position i in the old set.
+        // assert index>=0 && index<=\old(this.size()) && !\old(this.contains(object)) => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
     @Override

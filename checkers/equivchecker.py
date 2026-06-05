@@ -113,7 +113,7 @@ public class FuzzTest{3}{{
             throw new RuntimeException("Exceptional Postcondition Violated");
     }}
     
-    public static <T> T exec(Supplier<T> supplier){{
+    private static <T> T exec(Supplier<T> supplier){{
 		try {{
 			return supplier.get();
 		}} catch (Exception fuzzexception) {{
@@ -122,7 +122,7 @@ public class FuzzTest{3}{{
 	}}
  
     @SuppressWarnings("unchecked")
-	public static <T> T get_from_array(Object arr, int index, T ex_val){{
+	private static <T> T get_from_array(Object arr, int index, T ex_val){{
 		try {{
 			return (T) Array.get(arr, index);
 		}} catch (Exception fuzzexception) {{
@@ -318,4 +318,3 @@ def equivcheck(langid, pfx, sfx, grnd_truth, asrt, cc):
         assert False, "Incorrect language id: " + langid
 
     return result
-

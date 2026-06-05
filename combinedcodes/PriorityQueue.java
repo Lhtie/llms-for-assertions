@@ -187,7 +187,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         // @@@ If the collection 'c' is not null, then the size of this priority queue is equal to the size of 'c'.
         // assert c!=null => this.size()==c.size();
         // @@@ If the collection is not null, then every element in the collection is contained in this priority queue after initialization.
-        // assert c!=null => \forall int i; 0<=i && i<c.size(); this.contains(c.get(i));
+        // assert c!=null => \forall int i; 0<=i && i<c.size(); this.contains(c.toArray()[i]);
     }
 
     /**
@@ -509,8 +509,8 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         // assert e!=null => this.contains(e);
         // @@@ If the element is not null, then for every valid index before adding the element, the priority queue contains the element at that index.
         // assert e!=null => \forall int i; 0<=i && i<\old(this.size()); this.contains(\old(this.get(i)));
-        // @@@ If the element is not null, then the element at the head of the queue after adding is less than or equal to the element that was at the head before adding.
-        // assert e!=null => this.comparator().compare(this.peek(), \old(this.peek()))<=0;
+        // @@@ If a non-null element is added to a non-empty priority queue, then the new head is less than or equal to the old head according to the queue's ordering.
+        // assert e!=null && \old(this.size())>0 => (this.comparator()!=null && this.comparator().compare(this.peek(), \old(this.peek()))<=0) || (this.comparator()==null && ((Comparable) this.peek()).compareTo(\old(this.peek()))<=0);
     }
 
     public E peek() {
@@ -541,8 +541,8 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         // assert \old(this.size())==0 => \result==null;
         // @@@ If the queue size was greater than 0 before the operation, then the size of the queue after the operation is one less than before.
         // assert \old(this.size())>0 => this.size()==\old(this.size())-1;
-        // @@@ If the queue is not empty, the element at the head of the queue after the operation is greater than or equal to the element that was at the head before the operation.
-        // assert this.size()>0 => this.comparator().compare(this.peek(), \old(this.peek()))>=0;
+        // @@@ If the queue is still non-empty after polling, then the new head is greater than or equal to the old head according to the queue's ordering.
+        // assert this.size()>0 => (this.comparator()!=null && this.comparator().compare(this.peek(), \old(this.peek()))>=0) || (this.comparator()==null && ((Comparable) this.peek()).compareTo(\old(this.peek()))>=0);
     }
 
     /**
@@ -570,8 +570,8 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         // assert \old(this.contains(o)) => \result==true;
         // @@@ If the queue initially contains the specified element, then the size of the queue after removal is one less than the initial size.
         // assert\old(this.contains(o)) => this.size()==\old(this.size())-1;
-        // @@@ If the queue is not empty, the element at the head of the queue after removal is greater than or equal to the element that was at the head before removal.
-        // assert this.size()>0 => this.comparator().compare(this.peek(), \old(this.peek()))>=0;
+        // @@@ If the queue is still non-empty after removal, then the new head is greater than or equal to the old head according to the queue's ordering.
+        // assert this.size()>0 => (this.comparator()!=null && this.comparator().compare(this.peek(), \old(this.peek()))>=0) || (this.comparator()==null && ((Comparable) this.peek()).compareTo(\old(this.peek()))>=0);
     }
 
     /**
@@ -821,7 +821,7 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         if (a.length > size)
             a[size] = null;
         return a;
-        // @@@ If the array 'a' is not null, then the result is also not null.
-        // assert a!=null => \result!=null;
+        // @@@ If the array 'a' is not null and can store every element in the queue, then the result is also not null.
+        // assert a!=null && (\forall int i; 0<=i&&i<this.size(); a.getClass().getComponentType().isInstance(this.toArray()[i])) => \result!=null;
     }
 }

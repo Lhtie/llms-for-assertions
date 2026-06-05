@@ -208,8 +208,8 @@ public class AttributeList
       {
     throw new RuntimeOperationsException(e, "Invalid index.");
       }
-    // @@@ If the index is valid (non-negative and less than the initial size of the list), then the result is the same as the old value at that index.
-    // assert index>=0 && index<\old(this.size()) => \result==\old(this.get(index));
+    // @@@ If the index is valid (non-negative and less than the initial size of the list), then the value at that index is the same as attribute.
+    // assert index>=0 && index<\old(this.size()) => this.get(index).equals(attribute);
     // @@@ if the index is valid (non-negative and less than the initial size of the list), then for every valid index i less than the specified index, either both the current and old values at i are null, or the current value at i equals the old value at i.
     // assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     // @@@ If the index is valid (between 0 and the initial size of the list), then for every position greater than the index up to the end of the list, either both the current and old values at that position are null, or the current value is equal to the old value.

@@ -712,7 +712,7 @@ public class TreeList<E> extends AbstractList<E> {
         // @@@ If the collection is not null, then the size of the TreeList equals the size of the collection.
         // assert coll!=null => this.size()==coll.size();
         // @@@ If the collection is not null, then for every valid index from 0 to the size of this list, the element at that index in this list is the same as the element at that index in the collection.
-        // assert coll!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==coll.get(i);
+        // assert coll!=null => \forall int i; 0<=i&&i<this.size(); this.get(i).equals(coll.toArray()[i]);
         // @@@ If the collection is not null, then this list is equal to the collection.
         // assert coll!=null => this.equals(coll);
     }

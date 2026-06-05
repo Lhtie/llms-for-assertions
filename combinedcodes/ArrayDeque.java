@@ -763,8 +763,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public E poll() {
         return pollFirst();
-        // @@@ If the deque is empty, then the result is null.
-        // assert this.isEmpty() => \result==null;
+        // @@@ If the deque is initially empty, then the result is null.
+        // assert \old(this.isEmpty()) => \result==null;
     }
 
     public E pollFirst() {
@@ -776,8 +776,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             head = inc(h, es.length);
         }
         return e;
-        // @@@ If the deque is empty, then the result is null.
-        // assert this.isEmpty() => \result==null;
+        // @@@ If the deque is initially empty, then the result is null.
+        // assert \old(this.isEmpty()) => \result==null;
     }
 
     public E pollLast() {
@@ -787,8 +787,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         if (e != null)
             es[tail = t] = null;
         return e;
-        // @@@ If the deque is empty, then the result is null.
-        // assert this.isEmpty() => \result==null;
+        // @@@ If the deque is initially empty, then the result is null.
+        // assert \old(this.isEmpty()) => \result==null;
     }
 
     /**
@@ -1167,8 +1167,8 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         if (size < a.length)
             a[size] = null;
         return a;
-        // @@@ If the input array 'a' is not null, then the result array will also not be null.
-        // assert a!=null => \result!=null;
+        // @@@ If the input array 'a' is not null and can store every element in the deque, then the result array will also not be null.
+        // assert a!=null && (\forall int i; 0<=i&&i<this.size(); a.getClass().getComponentType().isInstance(this.toArray()[i])) => \result!=null;
     }
 
     private static final long serialVersionUID = 2340985798034038923L;

@@ -261,8 +261,8 @@ public class TreeSet<E> extends AbstractSet<E>
         // assert o!=null && \old(this.contains(o)) => \result==true;
         // @@@ it returns false if the specified element is not null and it is not contained in the set.
         // assert o!=null && !\old(this.contains(o)) => \result==false;
-        // @@@ the specified element should not be present after the operation if it is not null.
-        // assert o!=null => !this.contains(o);
+        // @@@ the specified element should not be present after the operation if the operation is successful.
+        // assert \result==true => !this.contains(o);
     }
 
     /**
@@ -416,8 +416,6 @@ public class TreeSet<E> extends AbstractSet<E>
     public E pollFirst() {
         Map.Entry<E,?> e = m.pollFirstEntry();
         return (e == null) ? null : e.getKey();
-        // @@@ the set should initially contain the polled element if the returned value is not null.
-        // assert \result!=null => \old(this.contains(\result));
         // @@@ the returned value is null if and only if the set is initially empty.
         // assert (\result==null) == \old(this.isEmpty());
         // @@@ the returned value should be the first element in the set if it is not null.
@@ -432,8 +430,6 @@ public class TreeSet<E> extends AbstractSet<E>
     public E pollLast() {
         Map.Entry<E,?> e = m.pollLastEntry();
         return (e == null) ? null : e.getKey();
-        // @@@ the set should initially contain the polled element if the returned value is not null.
-        // assert \result!=null => \old(this.contains(\result));
         // @@@ the returned value is null if and only if the set is initially empty.
         // assert (\result==null) == \old(this.isEmpty());
         // @@@ the returned value should be the last element in the set if it is not null.

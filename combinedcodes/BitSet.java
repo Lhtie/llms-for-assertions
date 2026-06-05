@@ -169,7 +169,7 @@ public class BitSet implements Cloneable, java.io.Serializable {
         recalculateWordsInUse();
         checkInvariants();
         // @@@ For every index i from 0 up to the length of this BitSet, the bit at index i is set to the result of the logical AND operation between the old value of the bit at index i and the negation of the bit at index i in the specified BitSet.
-        // assert \forall int i; 0<=i && i<this.length(); this.get(i)==(\old(this.get(i)) & (~set.get(i)));
+        // assert \forall int i; 0<=i && i<this.length(); this.get(i)==(\old(this.get(i)) & (!set.get(i)));
     }
 
     /**
@@ -1096,8 +1096,8 @@ public class BitSet implements Cloneable, java.io.Serializable {
         for (n = longs.length; n > 0 && longs[n - 1] == 0; n--)
             ;
         return new BitSet(Arrays.copyOf(longs, n));
-        // @@@ The returned BitSet is not null and its long array representation is equal to the input long array.
-        // assert \result!=null && Arrays.equals(\result.toLongArray(), longs);
+        // @@@ The returned BitSet is not null and every word in its long array representation matches the corresponding input word.
+        // assert \result!=null && \forall int i; 0<=i && i<\result.toLongArray().length; \result.toLongArray()[i]==longs[i];
     }
 
     /**
@@ -1145,8 +1145,8 @@ public class BitSet implements Cloneable, java.io.Serializable {
      */
     public static BitSet valueOf(byte[] bytes) {
         return BitSet.valueOf(ByteBuffer.wrap(bytes));
-        // @@@ The returned BitSet is not null and its byte array representation is equal to the input byte array.
-        // assert \result!=null && Arrays.equals(\result.toByteArray(), bytes);
+        // @@@ The returned BitSet is not null and every byte in its byte array representation matches the corresponding input byte.
+        // assert \result!=null && \forall int i; 0<=i && i<\result.toByteArray().length; \result.toByteArray()[i]==bytes[i];
     }
 
     /**

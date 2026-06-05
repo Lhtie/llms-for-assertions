@@ -84,8 +84,8 @@ public class CircularFifoQueue<E> extends AbstractCollection<E>
         addAll(coll);
         // @@@ If the collection is not null, then the size of the queue equals the size of the collection.
         // assert coll!=null => this.size()==coll.size();
-        // @@@ If the collection is not null, then for every index i from 0 to the size of this queue minus one, the element at index i in this queue is the same as the element at index i in the collection.
-        // assert coll!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==coll.get(i);
+        // @@@ If the collection is not null, then for every index i from 0 to the size of this queue minus one, the element at index i in this queue is equal to the element at index i in the collection's iteration order.
+        // assert coll!=null => \forall int i; 0<=i&&i<this.size(); Objects.equals(this.get(i), coll.toArray()[i]);
         // @@@ If the collection is not null, then this queue is equal to the collection.
         // assert coll!=null => this.equals(coll);
     }

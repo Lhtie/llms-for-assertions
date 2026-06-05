@@ -138,7 +138,7 @@ public class Trie {
         // @@@ the trie should not contain the removed word after the operation if the word is not null.
         // assert word!=null => !this.contains(word);
         // @@@ when the word is not null, the result is true if and only if the word is initially contained.
-        // assert word!=null => (\results==true) == \old(this.contains(word));
+        // assert word!=null => (\result==true) == \old(this.contains(word));
         // @@@ when the word is not null and present in the trie, the resulting trie should have its size decrease by 1.
         // assert word!=null&&\old(this.contains(word)) => this.size()==\old(this.size())-1;
         // @@@ when the word is not null but not present the trie, the size of the trie should remain the same.
@@ -211,7 +211,7 @@ public class Trie {
         // @@@ the size of the resulting list should be equal to the number of strings contained in the trie that start with the prefix if the prefix is not null.
         // assert prefix!=null => \result.size()==this.countPrefix(prefix);
         // @@@ if the prefix is not null, each element of the resulting list should be a member of the trie and start with the prefix.
-        // assert prefix!=null => \forall int i; 0<=i&&i<\result.size(); this.contains(\result[i])&&\result[i].startsWith(prefix);
+        // assert prefix!=null => \forall int i; 0<=i&&i<\result.size(); this.contains(\result.get(i))&&\result.get(i).startsWith(prefix);
     }
 
     /**

@@ -56,7 +56,7 @@ public class ArrayList<E> extends AbstractList<E>
         // @@@ If the collection 'c' is not null, then the size of this list is equal to the size of 'c'.
         // assert c!=null => this.size()==c.size();
         // @@@ If the collection c is not null, then for every valid index i (from 0 to the size of this list), the element at index i in this list is equal to the element at index i in the collection c.
-        // assert c!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==c.get(i);
+        // assert c!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==c.toArray()[i];
         // @@@ If the collection 'c' is not null, then this list is equal to 'c'.
         // assert c!=null => this.equals(c);
     }
@@ -826,7 +826,7 @@ public class ArrayList<E> extends AbstractList<E>
         if (a.length > size)
             a[size] = null;
         return a;
-        // @@@ If the array 'a' is not null, then the result is also not null.
-        // assert a!=null => \result!=null;
+        // @@@ If the array 'a' is not null and can store every element in the list, then the result is also not null.
+        // assert a!=null && (\forall int i; 0<=i&&i<this.size(); a.getClass().getComponentType().isInstance(this.toArray()[i])) => \result!=null;
     }
 }
