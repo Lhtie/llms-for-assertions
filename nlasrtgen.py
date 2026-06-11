@@ -113,7 +113,7 @@ eg_java = [
     }
 }""",
 "// assert \\result >= 0;",
-"// @@@ size of the array is always greater than or equal to 0"
+"// @@@ Result is always non-negative."
 ),
 #1
 ("""public class Array<T> {
@@ -135,7 +135,7 @@ eg_java = [
     }
 }""", 
 "// assert this.contains(value);",
-"// @@@ array contains the added value after the operation"
+"// @@@ The array contains the added value after add."
 ),
 #2
 ("""public class Array<T> {
@@ -157,7 +157,7 @@ eg_java = [
     }
 }""", 
 "// assert \\old(this.contains(value)) => this.indexOf(value) == \\old(this.indexOf(value));",
-"// @@@ first index of value in the array remains the same if value was already in the list"
+"// @@@ First index of value in the array remains the same if value was already in the list."
 ),
 #3
 ("""public class Array<T> {
@@ -179,7 +179,7 @@ eg_java = [
     }
 }""",
 "// assert \\forall int i; 0<=i && i<\\old(this.size()-1); this.get(i)==\\old(this.get(i));",
-"// @@@ All the valid indices (between 0 and old size) in the array before add have the same element after add."
+"// @@@ Every element that was in the array before add remains unchanged after add."
 )
 ]
 
@@ -199,9 +199,9 @@ def prompt_transform(code, langid):
 
     assert sum([i != -1 for i in cmnt_idx]) == 1, "too few or many assertions to work on"
 
-    msg = f"Your task is to read {lang} code, and write a natural language assertion that describes a specific assertion in the code.\n"
+    msg = f"Your task is to read {lang} code, and write a natural language assertion that describes a specific logical specification in the code.\n"
     if lang == "java":
-        msg += f"Here are some rules and tips:\n"
+        msg += f"Here are descriptions for some of syntactic symbols in JML logic:\n"
         msg += f"1. If the assertion is composed by \"=>\" or \"==>\", such as \"A => B\", that means \"A\" implies \"B\".\n"
         msg += f"2. \\old(expression) means the value of expression before the method is executed.\n"
         msg += f"3. \\result means the return value of the method.\n"
@@ -210,8 +210,12 @@ def prompt_transform(code, langid):
         raise NotImplementedError
     
     msg += f"Please try to make your translation as consistent as possible. Your translation should be equivalent to the original assertion. Do not include anything extra, and also do not leave anything out.\n"
-    msg += f"Please try to make your translation as precise as possible. Include any details that are implied by the original assertion (e.g. bounds, constraints, quantifiers)."
-    msg += f"Also try to make your translation sound natural. For example, to translate \"A => B\", prefer to say if A happens, then B, rather than A implies B. Another example is, to translate \"\\forall\", prefer to say for each or for every, rather than for all.\n"
+    msg += f"Also write the translation as if you were a careful human engineer writing contract specifications for this code in plain English: follow the logic of the code naturally, make the statement fluent, clear, and easy to read, and prefer ordinary human phrasing over formal logical wording.\n"
+    msg += f"Do not translate the formal assertion too literally; prioritize natural, smooth wording, and feel free to adjust word order or phrasing when that helps the specification read more like something a human would write.\n"
+    if lang == "java":
+        msg += f"For example, to translate \"A => B\", prefer to say if \"A happens, then B\", rather than \"A implies B\". Another example is, to translate \"\\forall\", prefer to say for each or for every, rather than for all.\n"
+    else:
+        raise NotImplementedError 
     msg += f"Your output should be one single line starting with \"{cmnt_tkn} @@@ \"\n"
     msg += f"Here are several examples for your reference:\n"
     for i, (eg, asrt, nl_asrt) in enumerate(eg_lang):
@@ -265,6 +269,7 @@ if __name__ == "__main__":
             if(len(args.codelist) != 0 and f.split('.')[-1] not in args.codelist):
                 continue
 
+            print("Generating assertion for file: " + f)
             fd = open(os.path.join(args.codedir, f), "r")
             code = fd.read()
             fd.close()
