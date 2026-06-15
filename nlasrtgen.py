@@ -209,13 +209,11 @@ def prompt_transform(code, langid):
     else:
         raise NotImplementedError
     
-    msg += f"Please try to make your translation as consistent as possible. Your translation should be equivalent to the original assertion. Do not include anything extra, and also do not leave anything out.\n"
+    msg += f"Please try to make your translation as consistent as possible. Your translation should be equivalent to the original assertion. Do not include anything extra, and also do not leave anything out, especially premises.\n"
     msg += f"Also write the translation as if you were a careful human engineer writing contract specifications for this code in plain English: follow the logic of the code naturally, make the statement fluent, clear, and easy to read, and prefer ordinary human phrasing over formal logical wording.\n"
     msg += f"Do not translate the formal assertion too literally; prioritize natural, smooth wording, and feel free to adjust word order or phrasing when that helps the specification read more like something a human would write.\n"
-    if lang == "java":
-        msg += f"For example, to translate \"A => B\", prefer to say if \"A happens, then B\", rather than \"A implies B\". Another example is, to translate \"\\forall\", prefer to say for each or for every, rather than for all.\n"
-    else:
-        raise NotImplementedError 
+    msg += f"In general, prioritize the main contract logic over low-level implementation details when the meaning is the same. Do not include detailed implementation aspects, but summarize them in high-level logic.\n"
+    msg += f"For example, if an assertion says something like \"index>=0 && index<=size\", prefer to summarize that as \"index is valid\" instead of translating the numeric bounds literally. Likewise, if an assertion uses a null-safe equality pattern like \"a==null && b==null || a.equals(b)\", prefer to say simply that \"a and b are equal\".\n"
     msg += f"Your output should be one single line starting with \"{cmnt_tkn} @@@ \"\n"
     msg += f"Here are several examples for your reference:\n"
     for i, (eg, asrt, nl_asrt) in enumerate(eg_lang):
