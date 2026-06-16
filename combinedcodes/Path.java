@@ -66,7 +66,7 @@ public class Path implements Structure {
 	public Path() {
 		edgePath = new Stack<Edge>();
 		nodePath = new Stack<Node>();
-        // @@@ the path is empty immediately after it is created
+        // @@@ The path is empty immediately after it is created.
         // assert this.empty();
         // @@@ The size of the path is zero when a new path is created.
         // assert this.size()==0;
@@ -121,7 +121,7 @@ public class Path implements Structure {
 		}
         // @@@ The path contains the added edge after the operation.
         // assert this.contains(edge);
-        // @@@ If the edge is null, then the last element in the path is null; if the edge is not null, then the last element in the path is the added edge.
+        // @@@ The last element in the edge path after adding is equal to the added edge.
         // assert edge==null && this.getEdgePath().get(this.size()-1)==null || edge!=null && edge.equals(this.getEdgePath().get(this.size()-1));
 	}
 

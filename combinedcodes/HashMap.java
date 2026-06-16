@@ -196,7 +196,7 @@ public class HashMap<K,V>
         threshold = (int)(capacity * loadFactor);
         table = new Entry[capacity];
         init();
-        // @@@ If the initial capacity is non-negative and the load factor is positive, then the HashMap is empty.
+        // @@@ If the initial capacity is non-negative and the load factor is positive, the newly constructed HashMap is empty.
         // assert initialCapacity>=0 && loadFactor>0 => this.isEmpty();
         // @@@ If the initial capacity is non-negative and the load factor is positive, then the size of the map is zero.
         // assert initialCapacity>=0 && loadFactor>0 => this.size()==0;
@@ -226,7 +226,7 @@ public class HashMap<K,V>
         this(Math.max((int) (m.size() / DEFAULT_LOAD_FACTOR) + 1,
                       DEFAULT_INITIAL_CAPACITY), DEFAULT_LOAD_FACTOR);
         putAllForCreate(m);
-        // @@@ If the map 'm' is not null, then the size of this HashMap equals the size of 'm'.
+        // @@@ After construction, the size of this HashMap equals the size of the source map.
         // assert m!=null => this.size()==m.size();
     }
 
@@ -311,9 +311,9 @@ public class HashMap<K,V>
                 return e.value;
         }
         return null;
-        // @@@ If the map does not contain the specified key, then the result is null.
+        // @@@ If the map does not contain the specified key, the returned value is null.
         // assert !this.containsKey(key) => \result==null;
-        // @@@ If the map contains the specified key, then it also contains the value returned by the get method.
+        // @@@ If the map contains the specified key, then the returned value is also contained in the map.
         // assert this.containsKey(key) => this.containsValue(\result);
     }
 
@@ -395,11 +395,11 @@ public class HashMap<K,V>
         return null;
         // @@@ If the return value is null, then either the key was not present in the map before this operation, or it was explicitly mapped to null.
         // assert \result==null => !\old(this.containsKey(key)) || \old(this.get(key))==null;
-        // @@@ The map contains the specified key and the corresponding value after the operation.
+        // @@@ After put, the map contains the specified key and the specified value.
         // assert this.containsKey(key) && this.containsValue(value);
-        // @@@ If the result is not null, then the key was already present in the map before the operation.
+        // @@@ If a previous value is returned, the key was already present in the map before the put.
         // assert \result!=null => \old(this.containsKey(key));
-        // @@@ If the result is not null, then the previous value associated with the key is equal to the result.
+        // @@@ If a previous mapping existed for the key, the returned value equals the value that was associated with the key before the put.
         // assert \result!=null => \old(this.get(key)).equals(\result);
     }
 
@@ -536,7 +536,7 @@ public class HashMap<K,V>
 
         for (Map.Entry<? extends K, ? extends V> e : m.entrySet())
             put(e.getKey(), e.getValue());
-        // @@@ If the input map is not null, then the size of this map after putAll is equal to the size of the input map.
+        // @@@ If the input map is not null, the size of this map after putAll equals the size of the input map.
         // assert m!=null => this.size()==m.size();
     }
 
@@ -552,13 +552,13 @@ public class HashMap<K,V>
     public V remove(Object key) {
         Entry<K,V> e = removeEntryForKey(key);
         return (e == null ? null : e.value);
-        // @@@ If the return value is null, then either the key was not present in the map originally, or the original value associated with the key was null.
+        // @@@ If the returned value is null, then either the key was not in the map before the removal, or the value previously mapped to the key was null.
         // assert \result==null => !\old(this.containsKey(key)) || \old(this.get(key))==null;
-        // @@@ If the result is not null, then the key was present in the map before the operation.
+        // @@@ If a non-null value is returned, the key was present in the map before the removal.
         // assert \result!=null => \old(this.containsKey(key));
-        // @@@ the map does not contain the specified key after removal.
+        // @@@ The map no longer contains the specified key after it has been removed.
         // assert !this.containsKey(key);
-        // @@@ If the key was previously in the map, then the value returned by the remove operation is not present in the map afterwards.
+        // @@@ If the key was previously in the map, the value that was associated with it is no longer present in the map after removal.
         // assert \old(this.containsKey(key)) => !this.containsValue(\result);
     }
 
@@ -639,7 +639,7 @@ public class HashMap<K,V>
         size = 0;
         // @@@ The map is empty after this operation.
         // assert this.isEmpty();
-        // @@@ The size of the map is zero after clearing it.
+        // @@@ The map is empty after clearing it.
         // assert this.size()==0;
     }
 
@@ -696,9 +696,9 @@ public class HashMap<K,V>
         result.putAllForCreate(this);
 
         return result;
-        // @@@ The result of the clone method is not the same instance as the original HashMap.
+        // @@@ The returned clone is a distinct object from the original map.
         // assert \result!=this;
-        // @@@ The size of the cloned HashMap is equal to the size of the original HashMap.
+        // @@@ The cloned map has the same number of key-value mappings as the original map.
         // assert ((HashMap<K,V>) \result).size()==this.size();
     }
 

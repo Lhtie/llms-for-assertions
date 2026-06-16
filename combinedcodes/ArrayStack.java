@@ -50,9 +50,9 @@ public class ArrayStack<E> extends ArrayList<E> {
      */
     public ArrayStack(final int initialSize) {
         super(initialSize);
-        // @@@ If the initial size is greater than or equal to 0, then the stack is empty.
+        // @@@ If the initial size is non-negative, the stack is empty after construction.
         // assert initialSize>=0 => this.empty();
-        // @@@ If the initial size is greater than or equal to 0, then the size of the stack is 0.
+        // @@@ If the initial size is non-negative, the stack is empty after construction.
         // assert initialSize>=0 => this.size()==0;
     }
 
@@ -112,7 +112,7 @@ public class ArrayStack<E> extends ArrayList<E> {
             throw new EmptyStackException();
         }
         return remove(n - 1);
-        // @@@ If the stack is initially not empty, then the result is either null and the old top item is null, or the result is equal to the old top item.
+        // @@@ If the stack was not empty before the pop, the returned value equals the item that was previously on top of the stack.
         // assert !\old(this.empty()) => (\result==null && \old(this.peek())==null) || (\result!=null && \result.equals(\old(this.peek())));
     }
 
@@ -128,7 +128,7 @@ public class ArrayStack<E> extends ArrayList<E> {
         return item;
         // @@@ The stack contains the pushed item after the operation.
         // assert this.contains(item);
-        // @@@ If the pushed item is null, then the last item in the stack is also null; otherwise, the last item in the stack is equal to the pushed item.
+        // @@@ The top of the stack equals the pushed item after push.
         // assert item==null && this.get(this.size()-1)==null || item!=null && item.equals(this.get(this.size()-1));
     }
 

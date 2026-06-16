@@ -53,11 +53,11 @@ public class ArrayList<E> extends AbstractList<E>
             // replace with empty array.
             elementData = EMPTY_ELEMENTDATA;
         }
-        // @@@ If the collection 'c' is not null, then the size of this list is equal to the size of 'c'.
+        // @@@ If the collection c is not null, the size of this list equals the size of c after construction.
         // assert c!=null => this.size()==c.size();
         // @@@ If the collection c is not null, then for every valid index i (from 0 to the size of this list), the element at index i in this list is equal to the element at index i in the collection c.
         // assert c!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==c.toArray()[i];
-        // @@@ If the collection 'c' is not null, then this list is equal to 'c'.
+        // @@@ If the collection c is not null, the constructed list contains exactly the same elements as c.
         // assert c!=null => this.equals(c);
     }
 
@@ -77,9 +77,9 @@ public class ArrayList<E> extends AbstractList<E>
             throw new IllegalArgumentException("Illegal Capacity: "+
                                                initialCapacity);
         }
-        // @@@ If the initial capacity is greater than or equal to 0, then the list is empty.
+        // @@@ If the initial capacity is valid (non-negative), the newly constructed list is empty.
         // assert initialCapacity>=0 => this.isEmpty();
-        // @@@ If the initial capacity is greater than or equal to 0, then the size of the list is 0.
+        // @@@ If the initial capacity is non-negative, the list is empty after construction.
         // assert initialCapacity>=0 => this.size()==0;
     }
 
@@ -105,11 +105,11 @@ public class ArrayList<E> extends AbstractList<E>
         modCount++;
         add(e, elementData, size);
         return true;
-        // @@@ The list contains the specified element after it has been added.
+        // @@@ The list contains the added element after add.
         // assert this.contains(e);
         // @@@ The result of adding an element is always true.
         // assert \result==true;
-        // @@@ If the appended element is null, the last element in the list is also null; otherwise, the appended element equals the last element in the list.
+        // @@@ The last element in the list equals the appended element after add.
         // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
     }
 
@@ -134,11 +134,11 @@ public class ArrayList<E> extends AbstractList<E>
                          s - index);
         elementData[index] = element;
         size = s + 1;
-        // @@@ If the index is between 0 and the initial size of the list inclusive, then the list contains the inserted element.
+        // @@@ If the index is valid, the list contains the inserted element after the operation.
         // assert index>=0 && index<=\old(this.size()) => this.contains(element);
-        // @@@ If the index is between 0 and the initial size of the list inclusive, then if the element is null, the element at that index is also null, or the element at that index is equal to the inserted element.
+        // @@@ If the index is valid, the element at that index equals the inserted element after the insertion.
         // assert index>=0 && index<=\old(this.size()) => element==null&&this.get(index)==null || this.get(index).equals(element);
-        // @@@ If the index is between 0 and the initial size of the list inclusive, then for every valid index less than the specified index, each element at these indices remains unchanged or is null both before and after the operation.
+        // @@@ If the index is valid, every element before the insertion point remains unchanged after the operation.
         // assert index>=0 && index<=\old(this.size()) => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
         // @@@ If the index is between 0 and the initial size of the list inclusive, then for every valid index from the insertion point to the old size of the list, the element at each subsequent index in the updated list is either null and was null in the old list, or is equal to the element at the previous index in the old list.
         // assert index>=0 && index<=\old(this.size()) => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
@@ -249,9 +249,9 @@ public class ArrayList<E> extends AbstractList<E>
         final Object[] es = elementData;
         for (int to = size, i = size = 0; i < to; i++)
             es[i] = null;
-        // @@@ The list is empty after this operation.
+        // @@@ The list is empty after clear.
         // assert this.isEmpty();
-        // @@@ The size of the list is zero after clearing it.
+        // @@@ The list is empty after clearing it.
         // assert this.size()==0;
     }
 
@@ -271,13 +271,13 @@ public class ArrayList<E> extends AbstractList<E>
             // this shouldn't happen, since we are Cloneable
             throw new InternalError(e);
         }
-        // @@@ The result of the clone method is not the same object as the original ArrayList instance.
+        // @@@ The returned clone is a distinct object from the original ArrayList instance.
         // assert \result!=this;
-        // @@@ The result of cloning this ArrayList instance is equal to the original instance.
+        // @@@ The cloned ArrayList is equal to the original.
         // assert \result.equals(this);
-        // @@@ The size of the cloned ArrayList is equal to the size of the original ArrayList.
+        // @@@ The cloned ArrayList has the same size as the original.
         // assert ((ArrayList<?>) \result).size()==this.size();
-        // @@@ For every valid index i (from 0 up to the size of this list), the element at index i in the cloned list is the same as the element at index i in the original list.
+        // @@@ Every element in the cloned list matches the corresponding element in the original list at the same index.
         // assert \forall int i; 0<=i && i<this.size(); ((ArrayList<?>) \result).get(i)==this.get(i);
         // @@@ The result of cloning this ArrayList instance is never null.
         // assert \result!=null;
@@ -627,11 +627,11 @@ public class ArrayList<E> extends AbstractList<E>
         fastRemove(es, index);
 
         return oldValue;
-        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size of the list), then the result is the element that was at that index before the removal.
+        // @@@ If the index is valid, the returned value is the element that was at that index before the removal.
         // assert index>=0 && index<\old(this.size()) => \result==\old(this.get(index));
-        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size of the list), then for every valid index before the specified index, either both the current and old values at that index are null, or the current value at that index equals the old value at that index.
+        // @@@ If the index is valid, every element before the removed index remains unchanged after the removal.
         // assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size of the list), then for every position i greater than the index and less than the old size minus one, either both the current and the next elements in the old list are null, or the element at position i in the updated list is equal to the element at position i+1 in the old list.
+        // @@@ If the index is valid, every element after the removed position is shifted left by one, preserving the original order.
         // assert index>=0 && index<\old(this.size()) => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
@@ -666,7 +666,7 @@ public class ArrayList<E> extends AbstractList<E>
         }
         fastRemove(es, i);
         return true;
-        // @@@ If the list originally contained the element 'o', then the result of the removal operation is true.
+        // @@@ If the list originally contained the element, the method returns true.
         // assert \old(this.contains(o)) => \result==true;
     }
 
@@ -745,11 +745,11 @@ public class ArrayList<E> extends AbstractList<E>
         E oldValue = elementData(index);
         elementData[index] = element;
         return oldValue;
-        // @@@ If the index is non-negative and less than the initial size of the list, then the returned value is the same as the element that was at that position before the update.
+        // @@@ If the index is valid, the returned value is the element that was at that position before the update.
         // assert index>=0 && index<\old(this.size()) => \result==\old(this.get(index));
-        // @@@ If the index is valid (non-negative and less than the initial size of the list), then for every valid index i before the specified index, either both the current and old values at i are null, or the current value at i is equal to its old value.
+        // @@@ If the index is valid, every element before the specified index remains unchanged after set.
         // assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is valid (non-negative and less than the initial size of the list), then for every position greater than the index and within the list size, the element at that position remains unchanged if it was null before, or it is equal to its old value if it was not null.
+        // @@@ If the index is valid, every element after the replaced position remains unchanged.
         // assert index>=0 && index<\old(this.size()) => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
@@ -787,9 +787,9 @@ public class ArrayList<E> extends AbstractList<E>
         return Arrays.copyOf(elementData, size);
         // @@@ The returned array is never null.
         // assert \result!=null;
-        // @@@ The length of the returned array is equal to the size of the list.
+        // @@@ The length of the returned array equals the number of elements in the list.
         // assert \result.length==this.size();
-        // @@@ For every valid index i (from 0 to the size of the list), if the element at index i in the list is null, then the element at index i in the returned array is also null; otherwise, the element in the list at index i is equal to the element at index i in the returned array.
+        // @@@ Every element in the list equals the corresponding element at the same index in the returned array.
         // assert \forall int i; 0<=i && i<this.size(); this.get(i)==null && \result[i]==null || this.get(i).equals(\result[i]);
     }
 

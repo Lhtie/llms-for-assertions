@@ -81,11 +81,11 @@ public class FixedArrayList<E>
 		}
 
 		return true;
-        // @@@ If the element is not null, then the array contains the added element after the operation
+        // @@@ If the element is not null, then the array contains the added element after the operation.
         // assert element!=null => this.contains(element);
-        // @@@ If the element is not null, then the method returns true.
+        // @@@ If the element is not null, the method always returns true.
         // assert element!=null => \result==true;
-        // @@@ If the element is not null, then the last element in the array is equal to the added element.
+        // @@@ If the element is not null, it is stored at its assigned index after insertion.
         // assert element!=null => element.equals(this.get(this.size()-1));
 	}
 
@@ -355,11 +355,11 @@ public class FixedArrayList<E>
 		}
 
 		throw new ArrayIndexOutOfBoundsException("index "+i+" does not exist");
-        // @@@ If the index is non-negative and less than the initial size of the array, then the result is equal to the element at that index before the method was executed.
+        // @@@ If the index is valid, the returned value is the element that was at that index before the removal.
         // assert i>=0 && i<\old(this.size()) => \result==\old(this.get(i));
-        // @@@ If the index i is within valid bounds, then for each index j less than i, the element at j either remains null if it was null before, or remains unchanged.
+        // @@@ If the index i is within valid bounds, then for each index j before i, the element at j is unchanged after the removal.
         // assert i>=0 && i<\old(this.size()) => \forall int j; 0<=j && j<i; this.get(j)==null && \old(this.get(j))==null || this.get(j).equals(\old(this.get(j)));
-        // @@@ If the index is valid (between 0 and the initial size of the array), then for every index greater than the specified index and less than the previous size minus one, the element at that index should either be null and the next element should also be null, or it should be equal to the next element.
+        // @@@ If the index is valid, then every element after the removed index (up to the second-to-last position) is unchanged after the removal.
         // assert i>=0 && i<\old(this.size()) => \forall int j; i<j && j<\old(this.size()-1); this.get(j)==null && \old(this.get(j+1))==null || this.get(j).equals(\old(this.get(j+1)));
 	}
 

@@ -115,7 +115,7 @@ public class Vector<E>
      */
     public Vector() {
         this(10);
-        // @@@ the vector is empty after it is created
+        // @@@ The vector is empty after it is created.
         // assert this.isEmpty();
         // @@@ The size of the vector is zero after initialization.
         // assert this.size()==0;
@@ -138,11 +138,11 @@ public class Vector<E>
         // (see e.g. https://bugs.openjdk.java.net/browse/JDK-6260652)
         if (elementData.getClass() != Object[].class)
             elementData = Arrays.copyOf(elementData, elementCount, Object[].class);
-        // @@@ If the collection 'c' is not null, then the size of the vector is equal to the size of the collection 'c'.
+        // @@@ If the collection c is not null, the size of the vector equals the size of c after construction.
         // assert c!=null => this.size()==c.size();
-        // @@@ If the collection 'c' is not null, then for every valid index 'i' from 0 to the size of this vector, the element at index 'i' in this vector is equal to the element at index 'i' in the collection 'c'.
+        // @@@ If the collection c is not null, every element in the vector matches the corresponding element from c in the same order.
         // assert c!=null => \forall int i; 0<=i&&i<this.size(); this.get(i).equals(c.toArray()[i]);
-        // @@@ If the collection 'c' is not null, then this vector is equal to the collection 'c'.
+        // @@@ If the collection c is not null, the vector contains exactly the same elements in the same order as c.
         // assert c!=null => this.equals(c);
     }
 
@@ -156,9 +156,9 @@ public class Vector<E>
      */
     public Vector(int initialCapacity) {
         this(initialCapacity, 0);
-        // @@@ If the initial capacity is greater than or equal to 0, then the vector is empty.
+        // @@@ If the initial capacity is valid (non-negative), the newly constructed vector is empty.
         // assert initialCapacity>=0 => this.isEmpty();
-        // @@@ If the initial capacity is greater than or equal to 0, then the size of the vector is 0.
+        // @@@ If the initial capacity is valid (non-negative), the vector starts out empty.
         // assert initialCapacity>=0 => this.size()==0;
     }
 
@@ -179,9 +179,9 @@ public class Vector<E>
                                                initialCapacity);
         this.elementData = new Object[initialCapacity];
         this.capacityIncrement = capacityIncrement;
-        // @@@ If both initial capacity and capacity increment are non-negative, then the vector is empty.
+        // @@@ If both the initial capacity and capacity increment are non-negative, the newly constructed vector is empty.
         // assert initialCapacity>=0 && capacityIncrement>=0 => this.isEmpty();
-        // @@@ If both initial capacity and capacity increment are non-negative, then the size of the vector is zero.
+        // @@@ If both the initial capacity and capacity increment are non-negative, the vector is empty after construction.
         // assert initialCapacity>=0 && capacityIncrement>=0 => this.size()==0;
     }
 
@@ -200,7 +200,7 @@ public class Vector<E>
         // assert this.contains(e);
         // @@@ The result of adding an element is always true.
         // assert \result==true;
-        // @@@ If the appended element is null, the last element in the vector is also null; otherwise, the appended element is equal to the last element in the vector.
+        // @@@ The last element in the vector equals the appended element after add.
         // assert e==null && this.get(this.size()-1)==null || e!=null && e.equals(this.get(this.size()-1));
     }
 
@@ -217,13 +217,13 @@ public class Vector<E>
      */
     public void add(int index, E element) {
         insertElementAt(element, index);
-        // @@@ If the index is greater than or equal to 0 and less than or equal to the initial size of the vector, then the vector contains the inserted element.
+        // @@@ If the index is valid, the vector contains the inserted element after add.
         // assert index>=0 && index<=\old(this.size()) => this.contains(element);
-        // @@@ If the index is greater than or equal to 0 and less than or equal to the initial size of the vector, then if the element is null, the element at that index in the vector is also null, or the element at that index equals the specified element.
+        // @@@ If the index is valid, the element at that index in the vector equals the inserted element after insertion.
         // assert index>=0 && index<=\old(this.size()) => element==null&&this.get(index)==null||this.get(index).equals(element);
-        // @@@ If the index is between 0 and the initial size of the vector inclusive, then for every valid index less than the specified index, the element at that position remains unchanged or is null if it was originally null.
+        // @@@ If the index is valid for insertion, every element before the specified index remains unchanged after the insertion.
         // assert index>=0 && index<=\old(this.size()) => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is greater than or equal to 0 and less than or equal to the initial size of the vector, then for every valid index i from the insertion index to the old size of the vector, the element at position i+1 in the updated vector is either null and the old element at i was null, or it is equal to the old element at i.
+        // @@@ If the index is valid, then every element that was at or after the insertion point has been shifted one position to the right.
         // assert index>=0 && index<=\old(this.size()) => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
@@ -384,7 +384,7 @@ public class Vector<E>
         removeAllElements();
         // @@@ The vector is empty after clearing all elements.
         // assert this.isEmpty();
-        // @@@ The size of the vector is zero after this operation.
+        // @@@ The vector is empty after clear.
         // assert this.size()==0;
     }
 
@@ -406,9 +406,9 @@ public class Vector<E>
             // this shouldn't happen, since we are Cloneable
             throw new InternalError(e);
         }
-        // @@@ The result of the clone method is not the same instance as the original object.
+        // @@@ The returned clone is a distinct object from the original vector.
         // assert \result!=this;
-        // @@@ The returned object from the method is equal to the original object.
+        // @@@ The cloned vector is equal to the original vector.
         // assert \result.equals(this);
         // @@@ The size of the cloned vector is equal to the size of the original vector.
         // assert ((Vector<E>) \result).size()==this.size();
@@ -690,13 +690,13 @@ public class Vector<E>
                          s - index);
         elementData[index] = obj;
         elementCount = s + 1;
-        // @@@ If the index is between 0 and the initial size of the vector, then the vector contains the inserted object.
+        // @@@ If the index is valid, the vector contains the inserted object after the insertion.
         // assert index>=0 && index<=\old(this.size()) => this.contains(obj);
-        // @@@ If the index is between 0 and the initial size of the vector, then either the object is null and the element at the index is null, or the element at the index is equal to the object.
+        // @@@ If the index is valid, the element at that index equals the inserted object after insertion.
         // assert index>=0 && index<=\old(this.size()) => obj==null&&this.get(index)==null||this.get(index).equals(obj);
-        // @@@ If the index is between 0 and the initial size of the vector, then for every index i less than the given index, the element at i is either null and was null before the operation, or it remains unchanged.
+        // @@@ If the index is valid, every element before the insertion point remains unchanged after the insertion.
         // assert index>=0 && index<=\old(this.size()) => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is greater than or equal to 0 and less than or equal to the initial size of the vector, then for every valid index i from the insertion point to the previous size of the vector, the element at position i+1 in the updated vector is either null and the corresponding old element at position i is null, or it is equal to the old element at position i.
+        // @@@ If the index is valid, then every element that was at or after the insertion point before the insert is shifted up by one position, preserving its value.
         // assert index>=0 && index<=\old(this.size()) => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
     private static boolean isClear(long[] bits, int i) {
@@ -984,11 +984,11 @@ public class Vector<E>
         elementData[--elementCount] = null; // Let gc do its work
 
         return oldValue;
-        // @@@ If the index is greater than or equal to 0 and less than the initial size of this vector, then the result is equal to the value at the specified index before the method was executed.
+        // @@@ If the index is valid, the returned element is the value that was at that index before the removal.
         // assert index>=0 && index<\old(this.size()) => \result==\old(this.get(index));
-        // @@@ If the index is within the valid range (greater or equal to 0 and less than the initial size of the vector), then for every index i less than the given index, the element at i remains unchanged and is either null or equal to its previous value.
+        // @@@ If the index is valid, every element before the given index remains unchanged after the removal.
         // assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size), then for every index from this index to the old size minus one, either both the current and the next old elements are null, or the current element equals the next old element.
+        // @@@ If the index is valid, every element after the removed position is shifted left by one, matching the element that was originally one position ahead of it.
         // assert index>=0 && index<\old(this.size()) => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
@@ -1005,7 +1005,7 @@ public class Vector<E>
      */
     public boolean remove(Object o) {
         return removeElement(o);
-        // @@@ If the element was originally in the vector, then the result of the removal is true.
+        // @@@ If the element was present in the vector before removal, the method returns true.
         // assert \old(this.contains(o)) => \result==true;
     }
 
@@ -1042,7 +1042,7 @@ public class Vector<E>
         for (int to = elementCount, i = elementCount = 0; i < to; i++)
             es[i] = null;
         modCount++;
-        // @@@ the vector is empty after all elements are removed
+        // @@@ The vector is empty after all elements are removed.
         // assert this.isEmpty();
         // @@@ The size of the vector is zero after removing all elements.
         // assert this.size()==0;
@@ -1071,7 +1071,7 @@ public class Vector<E>
             return true;
         }
         return false;
-        // @@@ If the vector initially contains the object, then the result of the removal is true.
+        // @@@ If the vector contained the object before removal, the method returns true.
         // assert \old(this.contains(obj)) => \result==true;
     }
 
@@ -1109,9 +1109,9 @@ public class Vector<E>
         modCount++;
         elementCount--;
         elementData[elementCount] = null; /* to let gc do its work */
-        // @@@ If the index is non-negative and less than the initial size of the vector, then for every valid index less than the specified index, the element at that position should either be null if it was originally null, or remain unchanged.
+        // @@@ If the index is valid, every element before the removed index remains unchanged after the removal.
         // assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size of the vector), then for every position i greater than the index and less than the previous size minus one, the element at position i in the vector after the operation is either null if the old element at position i+1 was null, or it equals the old element at position i+1.
+        // @@@ If the index is valid, then every element after the removed position is shifted down by one, matching what was previously at the next higher index.
         // assert index>=0 && index<\old(this.size()) => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
@@ -1194,11 +1194,11 @@ public class Vector<E>
         E oldValue = elementData(index);
         elementData[index] = element;
         return oldValue;
-        // @@@ If the index is greater than or equal to 0 and less than the initial size of the vector, then the result is equal to the old value at that index.
+        // @@@ If the index is valid, the returned value is the element that was previously at that position in the vector.
         // assert index>=0 && index<\old(this.size()) => \result==\old(this.get(index));
-        // @@@ If the index is non-negative and less than the initial size of the vector, then for every valid index up to but not including the specified index, each element at these indices remains unchanged or continues to be null if it was initially null.
+        // @@@ If the index is valid, all elements before the specified index remain unchanged after the replacement.
         // assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is non-negative and less than the initial size of the vector, then for every index greater than the specified index and less than the size of the vector, the element at that position remains unchanged or continues to be null if it was originally null.
+        // @@@ If the index is valid, every element after the specified index remains unchanged after the replacement.
         // assert index>=0 && index<\old(this.size()) => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
     private static void setBit(long[] bits, int i) {
@@ -1231,9 +1231,9 @@ public class Vector<E>
                                                      elementCount);
         }
         elementData[index] = obj;
-        // @@@ If the index is non-negative and less than the initial size of the vector, then for every valid index from 0 up to (but not including) the specified index, the element at that position remains unchanged if it was not null, or remains null if it was originally null.
+        // @@@ If the index is valid, all elements before the specified index remain unchanged after the set operation.
         // assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size of the vector), then for every position greater than the index and within the size of the vector, the element at that position is either null if it was null before, or remains unchanged.
+        // @@@ If the index is valid, every element after that index remains unchanged.
         // assert index>=0 && index<\old(this.size()) => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
@@ -1330,9 +1330,9 @@ public class Vector<E>
         return Arrays.copyOf(elementData, elementCount);
         // @@@ The returned array is never null.
         // assert \result!=null;
-        // @@@ The length of the returned array is equal to the size of the vector.
+        // @@@ The length of the returned array equals the number of elements in the vector.
         // assert \result.length==this.size();
-        // @@@ For every valid index i from 0 to the size of this vector, if the element at index i in the vector is null, then the element at index i in the resulting array is also null; otherwise, the element at index i in the resulting array is equal to the element at index i in the vector.
+        // @@@ Every element in the returned array matches the corresponding element in the vector at the same index.
         // assert \forall int i; 0<=i && i<this.size(); this.get(i)==null && \result[i]==null || this.get(i).equals(\result[i]);
     }
 

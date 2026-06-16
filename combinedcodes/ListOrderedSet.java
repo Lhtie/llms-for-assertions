@@ -122,13 +122,13 @@ public class ListOrderedSet<E>
             decorated().add(object);
             setOrder.add(index, object);
         }
-        // @@@ If the index is between 0 and the initial size of the set inclusive, then the set contains the object.
+        // @@@ If the index is valid, the set contains the object after the operation.
         // assert index>=0 && index<=\old(this.size()) => this.contains(object);
-        // @@@ If the index is valid and the object was not already contained in the set, then if the object is null, the element at that index is also null, or the element at that index equals the object.
+        // @@@ If the index is valid and the object was not already in the set, then after insertion the element at that index equals the inserted object.
         // assert index>=0 && index<=\old(this.size()) && !\old(this.contains(object)) => object==null&&this.get(index)==null||this.get(index).equals(object);
-        // @@@ If the index is valid (between 0 and the initial size of the set inclusive), then for every valid index up to the specified index, each element at that index either remains null if it was initially null, or remains unchanged compared to its initial state.
+        // @@@ If the index is valid, every element before that index remains unchanged after the insertion.
         // assert index>=0 && index<=\old(this.size()) => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is valid and the object was not already contained in the set, then for every index i from the given index to the old size minus one, the element at position i+1 is either null and the element at position i was null, or the element at position i+1 is equal to the element at position i in the old set.
+        // @@@ If the index is valid and the object was not already in the set, every element from the insertion point onward is shifted one position to the right.
         // assert index>=0 && index<=\old(this.size()) && !\old(this.contains(object)) => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
     }
 
@@ -334,11 +334,11 @@ public class ListOrderedSet<E>
         final E obj = setOrder.remove(index);
         remove(obj);
         return obj;
-        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size of the set), then the result is the element that was at that index before the operation.
+        // @@@ If the index is valid, the returned element is the one that was at that index before removal.
         // assert index>=0 && index<\old(this.size()) => \result==\old(this.get(index));
-        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size of the set), then for every valid index less than the specified index, the element at that position remains unchanged or continues to be null after the removal.
+        // @@@ If the index is valid, every element before the removed index remains unchanged after the removal.
         // assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ If the index is valid (greater than or equal to 0 and less than the initial size of the set), then for every position i greater than the index and less than the old size minus one, either both the current and the next old elements are null, or the current element equals the next old element.
+        // @@@ If the index is valid, every element after the removed position shifts left by one — that is, each element at position i now equals what was at position i+1 before the removal.
         // assert index>=0 && index<\old(this.size()) => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 

@@ -76,7 +76,7 @@ public class Stack<E> extends Vector<E> {
         removeElementAt(len - 1);
 
         return obj;
-        // @@@ If the stack is initially not empty, then the result is either null and the old top item is null, or the result is equal to the old top item.
+        // @@@ If the stack is not empty before pop, the returned value equals the item that was at the top of the stack.
         // assert !\old(this.empty()) => (\result==null && \old(this.peek())==null) || (\result!=null && \result.equals(\old(this.peek())));
     }
 
@@ -96,7 +96,7 @@ public class Stack<E> extends Vector<E> {
         return item;
         // @@@ The stack contains the pushed item after the operation.
         // assert this.contains(item);
-        // @@@ If the pushed item is null, the last element in the stack is also null; otherwise, the last element in the stack is equal to the pushed item.
+        // @@@ The last element in the stack equals the pushed item after push.
         // assert item==null && this.get(this.size()-1)==null || item!=null && item.equals(this.get(this.size()-1));
     }
 

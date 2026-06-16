@@ -30,8 +30,8 @@ configs = {
     }
 }
 nli_instr = """You are performing a **roundtrip conformance check** between:
-(1) a natural-language post-condition (the “premise”), and
-(2) a second natural-language statement (the “hypothesis”) that is intended to reflect the semantics/structure of a generated post-condition formula.
+(1) a natural-language post-condition (the "premise"), and
+(2) a second natural-language statement (the "hypothesis") that is a natural-language translation of a generated post-condition formula.
 
 Your job is to judge how well the hypothesis conforms to the premise under the following responsibility:
 
@@ -39,21 +39,21 @@ Conformance responsibility
 1) Completeness: The hypothesis must not omit any component that the premise intends.
    - Every component mentioned or implied as an intended constraint in the premise should be present in, or entailed by, the hypothesis.
 2) Soundness: The hypothesis should not introduce unrelated or unjustified components.
-   - Ideally, every component in the hypothesis should be traceable to the premise’s intention.
+   - Ideally, every component in the hypothesis should be traceable to the premise's intention.
    - In practice, *minor reasonable supplementation* is allowed (e.g., explicit bounds/ranges, type conversions, edge-case handling) as long as it does not change the intended structure or meaning.
 
-What counts as a “component” (treat these as the primary comparison units)
-- Variables / terms: \\result, method parameters, fields, local/loop variables, \\old(…)
-- Quantifiers: \\forall, \\exists, and their quantified variables
-- Bounds / ranges: index ranges, quantified ranges, numeric bounds, inclusive/exclusive endpoints
-- Predicate relations: ==, !=, <, <=, >, >=, membership/containment, function calls used as predicates
-- Logical connectives / structure: &&, ||, !, => (implication), grouping/precedence
+What counts as a "component" (treat these as the primary comparison units)
+- Entities / terms: the return value or result, method parameters, object fields, collection elements, indices, sizes, old/pre-state values, and new/post-state values
+- Quantification / scope: statements about all items, any item, no item, a particular item, or a restricted subset of items
+- Bounds / ranges: valid index ranges, quantified ranges, numeric limits, and whether endpoints are included or excluded
+- Predicate relations: equality, inequality, ordering/comparison, containment/membership, nullness, type/compatibility requirements, and method-call properties
+- Logical structure: conditions ("if/when/only if"), conjunctions ("and"), alternatives ("or/either"), negation ("not/no"), implications, case splits, and grouping/precedence implied by the sentence
 
 Evaluation principle
 - This is a *structure- and alignment-focused* check: prioritize whether the hypothesis preserves the overall logical skeleton and aligns each segment/component to the premise.
 - Ignore superficial wording differences and synonyms of technical terms.
 - Ignore fine-grained details; focus on whether the same structural components are present and aligned, and whether their logical relationships (quantifiers, bounds, predicates, connectives) match.
-- The hypothesis may be imperfectly phrased or not fully “compilable” as a formula; still score based on whether the intended components/structure match.
+- The hypothesis may be imperfectly phrased or not fully "compilable" as a formula; still score based on whether the intended components/structure match.
 - Do not purely evaluate on literal text similarity; Instead, reason about semantic and structure in the context of target code behavior. (the context information is given below)
 
 Scoring (real value in [-1.0, 1.0])
@@ -65,16 +65,16 @@ Interpret the score as a combined measure of:
 Use these anchor points (you may output intermediate values like 0.8, 0.2, -0.3):
 +1.0 Perfect Conformance:
   - Hypothesis preserves all components and the logical structure of the premise (may rephrase wording).
+  - Hypothesis may add minor, clearly reasonable supplementation (e.g., explicit bounds/ranges, type conversions, edge-case handling) as long as it does not change the intended structure or meaning.
 +0.5 Mostly Conformant / Minor Loss:
   - Hypothesis is consistent with the premise but omits some non-trivial components, weakens constraints, or only covers a subset of cases.
-  - Or adds only minor, clearly reasonable supplementation that does not change intent.
-  - (Typical: one missing bound, a weakened quantifier range, or missing a secondary conjunct.)
+  - Or adds some unrelated or unjustified content while the core structure still mostly aligns with the premise.
 0.0 Neutral / Not Established:
-  - The hypothesis is largely unrelated to the premise’s components/structure, OR
+  - The hypothesis is largely unrelated to the premise's components/structure, OR
   - The hypothesis introduces new requirements not supported by the premise, OR
   - The hypothesis omits essential segments such that conformance cannot be verified from it.
 -0.5 Partially Conflicting:
-  - Some aligned components exist, but at least one important segment contradicts the premise (e.g., flipped inequality, negation, wrong \old usage, implication reversed, incompatible bound).
+  - Some aligned components exist, but at least one important segment contradicts the premise (e.g., flipped inequality, negation, wrong old/pre-state reference, implication reversed, incompatible bound).
 -1.0 Completely Conflicting:
   - The core structure/meaning contradicts the premise and cannot hold simultaneously.
 
@@ -213,7 +213,7 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
             pfx.split("\n")[:-1] + [cmnt_prefix + " natural language assertion here"])
         
         code = new_pfx + "\n" + cmnt_prefix[:-3] + x + "\n" + sfx
-        prompt = prompt_transform(code, langid)
+        prompt = prompt_transform(code, langid, mode="precise")
             
         tot = 0
         args = ", ".join([f"{typ} {var}" for var, typ in helper.funcs[-1]["args"].items()])
@@ -280,12 +280,12 @@ def java_rdtpcheck(pfx, sfx, asrt):
     
     config = configs["java"]
     if config["use_nli"]:
-        return rtc_calc(asrt, pfx, sfx, "java", config, nli=True) >= config["threshold"]
+        return rtc_calc(asrt, pfx, sfx, "java", config, nli=True)
     else:
         rtc, fdlft = rtc_calc(asrt, pfx, sfx, "java", config, nli=False)
         gain = (rtc - fdlft) / fdlft
         
-        return gain >= config["threshold"]
+        return gain
 
 def rdtpcheck(langid, pfx, sfx, grnd_truth, asrt, cc, check, **config_overrides):
     if langid in configs and config_overrides:

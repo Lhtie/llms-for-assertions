@@ -32,9 +32,9 @@ public class AttributeList
   public AttributeList()
   {
     super();
-    // @@@ the list is empty after creation
+    // @@@ The list is empty after construction.
     // assert this.isEmpty();
-    // @@@ The size of the list is zero when it is initially created.
+    // @@@ The list is empty when initially created.
     // assert this.size()==0;
   }
 
@@ -49,11 +49,11 @@ public class AttributeList
   public AttributeList(AttributeList list)
   {
     super(list);
-    // @@@ If the list is not null, then the size of this list is equal to the size of the provided list.
+    // @@@ If the provided list is not null, the size of this list equals the size of the provided list after construction.
     // assert list!=null => this.size()==list.size();
     // @@@ If the list is not null, then for every valid index in this list, the element at that index is the same as the element at the same index in the original list.
     // assert list!=null => \forall int i; 0<=i&&i<this.size(); this.get(i)==list.get(i);
-    // @@@ If the list is not null, then this list is equal to the provided list.
+    // @@@ If the provided list is not null, then this list equals the provided list after construction.
     // assert list!=null => this.equals(list);
   }
 
@@ -66,9 +66,9 @@ public class AttributeList
   public AttributeList(int initialCapacity)
   {
     super(initialCapacity);
-    // @@@ If the initial capacity is greater than or equal to 0, then the list is empty.
+    // @@@ If the initial capacity is valid (non-negative), the newly constructed list is empty.
     // assert initialCapacity>=0 => this.isEmpty();
-    // @@@ If the initial capacity is greater than or equal to 0, then the size of the list is 0.
+    // @@@ If the initial capacity is valid (non-negative), the list is empty after construction.
     // assert initialCapacity>=0 => this.size()==0;
   }
 
@@ -83,7 +83,7 @@ public class AttributeList
     super.add(attribute);
     // @@@ The list contains the specified attribute after it is added.
     // assert this.contains(attribute);
-    // @@@ If the attribute is null, then the last element in the list is also null; if the attribute is not null, then it equals the last element in the list.
+    // @@@ The attribute added is now the last element in the list.
     // assert attribute==null && this.get(this.size()-1)==null || attribute!=null && attribute.equals(this.get(this.size()-1));
   }
 
@@ -121,13 +121,13 @@ public class AttributeList
       {
     throw new RuntimeOperationsException(e, "Invalid index.");
       }
-    // @@@ If the index is valid (between 0 and the initial size of the list inclusive), then the list contains the added attribute.
+    // @@@ If the index is valid, the list contains the added attribute after the operation.
     // assert index>=0 && index<=\old(this.size()) => this.contains(attribute);
-    // @@@ If the index is valid (between 0 and the initial size of the list inclusive), then if the attribute is null, the attribute at that index is also null, or the attribute at that index equals the added attribute.
+    // @@@ If the index is valid, the attribute at that index after insertion equals the added attribute.
     // assert index>=0 && index<=\old(this.size()) => attribute==null&&this.get(index)==null||this.get(index).equals(attribute);
-    // @@@ If the index is valid (between 0 and the initial size of the list inclusive), then for every valid index before the specified index, each element at that position remains unchanged or is null both before and after the operation.
+    // @@@ If the index is valid, every element before the specified index remains unchanged after the add.
     // assert index>=0 && index<=\old(this.size()) => \forall int i; 0 <= i&&i < index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-    // @@@ If the index is within the valid range (from 0 to the initial size of the list), then for every position from the index to the old size of the list, the element at each position plus one is either both null or equal to the element at that position before the addition.
+    // @@@ If the index is valid, every element that was at or after the insertion point has been shifted up by one position after the addition.
     // assert index>=0 && index<=\old(this.size()) => \forall int i; index <= i&&i <\old(this.size()); this.get(i+1) == null&&\old(this.get(i)) == null||this.get(i+1).equals(\old(this.get(i)));
   }
 
@@ -208,11 +208,11 @@ public class AttributeList
       {
     throw new RuntimeOperationsException(e, "Invalid index.");
       }
-    // @@@ If the index is valid (non-negative and less than the initial size of the list), then the value at that index is the same as attribute.
+    // @@@ If the index is valid, the element at that index is replaced with the given attribute.
     // assert index>=0 && index<\old(this.size()) => this.get(index).equals(attribute);
-    // @@@ if the index is valid (non-negative and less than the initial size of the list), then for every valid index i less than the specified index, either both the current and old values at i are null, or the current value at i equals the old value at i.
+    // @@@ If the index is valid, all elements before it remain unchanged after the set operation.
     // assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-    // @@@ If the index is valid (between 0 and the initial size of the list), then for every position greater than the index up to the end of the list, either both the current and old values at that position are null, or the current value is equal to the old value.
+    // @@@ If the index is valid, every element after the given index remains unchanged.
     // assert index>=0 && index<\old(this.size()) => \forall int i; index<i && i<this.size(); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i))); 
   }
 

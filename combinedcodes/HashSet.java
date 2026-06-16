@@ -96,7 +96,7 @@ public class HashSet<E>
      */
     public HashSet() {
         map = new HashMap<>();
-        // @@@ the set is empty after creation
+        // @@@ The set is empty after construction.
         // assert this.isEmpty();
         // @@@ The set is empty immediately after initialization.
         // assert this.size()==0;
@@ -114,7 +114,7 @@ public class HashSet<E>
     public HashSet(Collection<? extends E> c) {
         map = new HashMap<>(Math.max((int) (c.size()/.75f) + 1, 16));
         addAll(c);
-        // @@@ If the collection 'c' is not null, then the size of this set equals the size of the collection 'c'.
+        // @@@ If the collection c is not null, the size of this set equals the size of c after construction.
         // assert c!=null => this.size()==c.size();
     }
 
@@ -128,9 +128,9 @@ public class HashSet<E>
      */
     public HashSet(int initialCapacity) {
         map = new HashMap<>(initialCapacity);
-        // @@@ If the initial capacity is greater than or equal to 0, then the set is empty.
+        // @@@ If the initial capacity is valid (non-negative), the newly constructed set is empty.
         // assert initialCapacity>=0 => this.isEmpty();
-        // @@@ If the initial capacity is greater than or equal to zero, then the size of the set is zero.
+        // @@@ If the initial capacity is valid (non-negative), the newly constructed set is empty.
         // assert initialCapacity>=0 => this.size()==0;
     }
 
@@ -145,9 +145,9 @@ public class HashSet<E>
      */
     public HashSet(int initialCapacity, float loadFactor) {
         map = new HashMap<>(initialCapacity, loadFactor);
-        // @@@ If the initial capacity is greater than or equal to 0 and the load factor is greater than 0, then the set is empty.
+        // @@@ If the initial capacity and load factor are valid, the newly constructed set is empty.
         // assert initialCapacity>=0 && loadFactor>0 => this.isEmpty();
-        // @@@ If the initial capacity is greater than or equal to 0 and the load factor is greater than 0, then the size of the set is 0.
+        // @@@ If the initial capacity and load factor are valid, the newly constructed set is empty.
         // assert initialCapacity>=0 && loadFactor>0 => this.size()==0;
     }
 
@@ -175,7 +175,7 @@ public class HashSet<E>
      */
     public void clear() {
         map.clear();
-        // @@@ the set is empty after the clear operation
+        // @@@ The set is empty after the clear operation.
         // assert this.isEmpty();
         // @@@ The set is empty after this method is called.
         // assert this.size()==0;
@@ -196,11 +196,11 @@ public class HashSet<E>
         } catch (CloneNotSupportedException e) {
             throw new InternalError(e);
         }
-        // @@@ The result of the clone method is not the same object as the original set.
+        // @@@ The returned clone is a distinct object from the original set.
         // assert \result!=this;
-        // @@@ The result of cloning is equal to the original set.
+        // @@@ The cloned set is equal to the original set.
         // assert \result.equals(this);
-        // @@@ The size of the cloned set is the same as the size of the original set.
+        // @@@ The cloned set has the same size as the original set.
         // assert ((HashSet<E>) \result).size()==this.size();
         // @@@ The result of cloning the HashSet is never null.
         // assert \result!=null;
@@ -253,9 +253,9 @@ public class HashSet<E>
      */
     public boolean remove(Object o) {
         return map.remove(o)==PRESENT;
-        // @@@ If the set originally contained the specified element, then the result of the removal operation is true.
+        // @@@ If the set originally contained the specified element, then the removal returns true.
         // assert \old(this.contains(o)) => \result==true;
-        // @@@ the set does not contain the specified element after the removal operation.
+        // @@@ The set does not contain the specified element after the removal operation.
         // assert !this.contains(o);
     }
 
