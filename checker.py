@@ -111,8 +111,6 @@ if __name__ == "__main__":
     parser.add_argument("--write", default=False, action="store_true")
     parser.add_argument("--outname", type=str, default="")
     parser.add_argument("--mask", nargs='+', default=[])
-    parser.add_argument("--checklist", nargs='+', default=
-        ["null_check", "compile_check", "fuzz_check", "equiv_check", "rdtp_check"])
     parser.add_argument("--checkerkwargs", type=str, default="")
     
     args = parser.parse_args()
