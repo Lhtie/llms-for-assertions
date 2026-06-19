@@ -1,0 +1,133 @@
+analysisWe need to produce an assert statement for the comment in the constructor.
+
+Comment: "// @@@ If the collection c is not null, the vector contains exactly the same elements in the same order as c."
+
+We need to express that after construction, for all indices i from 0 to c.size()-1, the vector's element at i equals c's element at i, and size equals c.size(). Also "If the collection c is not null" precondition. Since c is a parameter, we can use condition c != null => ... . Use observer methods: vector has size() and get(int). Collection c may not have an observer method defined here; but we can use c.toArray maybe? However rule: only publicly accessible observer methods provided in the test function. Since this is the class code, we can refer to c's methods? Usually we can use c.iterator() and get elements, but spec may allow using c.toArray? In examples earlier they used this.contains(value) etc. For collection, we can use c.toArray() which returns Object[]. That's an observer method. So we can say: c != null => (\forall int i; 0 <= i && i < c.size(); this.get(i).equals(((Object[])c.toArray())[i])) && this.size() == c.size(). But we need to express c.size() maybe via c.toArray().length. Since we can call c.toArray() which returns Object[]. So size = ((Object[])c.toArray()).length.
+
+Thus assert: assert c != null => (\forall int i; 0 <= i && i < ((Object[])c.toArray()).length; this.get(i).equals(((Object[])c.toArray())[i])) && this.size() == ((Object[])c.toArray()).length;
+
+Note: need parentheses for implication: (c != null) => ( ... ). Also need to ensure use of this.get(i).equals(...). Might need cast to E? but equals works.
+
+Thus final answer.
+
+assistantfinal<code>assert (c != null) => (\forall int i; 0 <= i && i < ((Object[])c.toArray()).length; this.get(i).equals(((Object[])c.toArray())[i])) && this.size() == ((Object[])c.toArray()).length;</code>
+--------------------
+analysisWe need to produce an assert statement for the comment in the constructor. The comment: "If the collection c is not null, the vector contains exactly the same elements in the same order as c."
+
+We need to express that after constructing Vector from collection c (assuming c not null), the vector's elements correspond to c's iteration order. Use observer methods: we have methods size(), get(int index) (or elementAt). Use toArray? but we can use get and size. Since we need to refer to collection c; but we cannot call methods on c directly because only public observer methods are allowed? The rule says "Use only publicly accessible observer methods provided in the test function. (Use \result instead of calling the observer method that is being tested) All function calls in the test function should be of the format this.func_name(args_list)." The test function is the constructor? The observer methods we can call are those defined in class: size(), get(int), etc. But we also need to refer to collection c's elements. Since c is a parameter, it's a java.util.Collection; we can call its iterator and get elements? Not sure if allowed. The rule says use only publicly accessible observer methods provided in the test function. The test function is this constructor; we can refer to c directly? Usually in specification we can use c as a variable and its methods like iterator, toArray, etc. Since c is a Collection, we can use c.toArray() or c.iterator(). Usually spec language allows using c as a model variable. In similar examples earlier, they used this.contains(value) etc. They didn't reference external objects. But there is no prior example referencing collection param. Let's think: we can express: \forall int i; 0 <= i && i < this.size(); this.get(i).equals(\old(((Object[])c.toArray())[i])); But need old? c is not changed, but we can refer to c directly. No need old.
+
+Simplify: assert \forall int i; 0 <= i && i < this.size(); this.get(i).equals(((java.util.List) c).get(i)); But c is Collection, not List. Could use c.toArray().
+
+So: assert \forall int i; 0 <= i && i < this.size(); this.get(i).equals(((Object[])c.toArray())[i]);
+
+But c.toArray() returns Object[]. So cast.
+
+Also need to assert size equals c.size(): assert this.size() == c.size();
+
+Combine: assert c != null => (this.size() == c.size() && \forall int i; 0 <= i && i < this.size(); this.get(i).equals(((Object[])c.toArray())[i]));
+
+But comment says "If the collection c is not null, the vector contains exactly the same elements in the same order as c." So we need implication: c != null => ... . However constructor precondition may guarantee c not null? The comment says "If the collection c is not null". So include implication.
+
+Thus final assert:
+
+assert c != null => (this.size() == c.size() && \forall int i; 0 <= i && i < this.size(); this.get(i).equals(((Object[])c.toArray())[i]));
+
+Make sure syntax correct: use && inside parentheses.
+
+Return as code block.
+
+assistantfinal<code>assert c != null => (this.size() == c.size() && \forall int i; 0 <= i && i < this.size(); this.get(i).equals(((Object[])c.toArray())[i]));</code>
+--------------------
+analysisWe need to produce an assert statement for the comment in the constructor:
+
+```java
+public Vector(Collection<? extends E> c) {
+    elementData = c.toArray();
+    elementCount = elementData.length;
+    // defend against c.toArray (incorrectly) not returning Object[]
+    // (see e.g. https://bugs.openjdk.java.net/browse/JDK-6260652)
+    if (elementData.getClass() != Object[].class)
+        elementData = Arrays.copyOf(elementData, elementCount, Object[].class);
+    // @@@ If the collection c is not null, the vector contains exactly the same elements in the same order as c.
+}
+```
+
+We need to write an assert statement that expresses: If c is not null, then the vector contains exactly the same elements in the same order as c.
+
+We can use observer methods: we have methods like size(), get(int), maybe toArray? There is a toArray() method defined. But the constructor is not static; after constructing, we can refer to this object's methods. We can also use c's methods? According to rule: Use only publicly accessible observer methods provided in the test function. The test function is the constructor itself. The only observer methods we can call are methods of this class (Vector) that are public. Also we might use c's methods? c is a Collection, we can use its iterator, size, toArray, etc. But rule says "only publicly accessible observer methods provided in the test function." I think that means we can call any public method on this object, not on c? However they previously used methods like this.contains(value) etc. They used this methods only. In examples they didn't call methods on other objects. So better to express using this.size(), this.get(i) and c's order.
+
+But we need to refer to c's elements. Since we can't call c directly maybe we can use c.toArray()? That's a public method on Collection. But is it allowed? The rule says "Use only publicly accessible observer methods provided in the test function. (Use \result instead of calling the observer method that is being tested) All function calls in the test function should be of the format this.func_name(args_list)." So they restrict calls to this. So we cannot call c methods. So we need to express equality using this's methods only, but referencing c's elements is tricky. However we could use the fact that elementCount = elementData.length = c.toArray().length, and that elementData equals c's array after possibly copying. But we cannot directly refer to elementData as it's protected field, not an observer method. So we need to use public methods: size() returns elementCount, get(i) returns element at index i, maybe toArray() returns array of elements. So we could assert that for all i in range 0 <= i < c.size() (but we can't call c.size()), we could use this.size() equals c.toArray().length? But we can't call c.toArray().
+
+Maybe we can assert that this.toArray() equals c.toArray()? But toArray() is a method of this, returning Object[]. We can compare arrays element-wise using equals? In JML we might assert that \forall int i; 0<=i && i<this.size(); this.get(i).equals(\old(c.toArray())[i])? Not allowed.
+
+But perhaps the spec allows using c directly, as it's a parameter. The comment says "If the collection c is not null, the vector contains exactly the same elements in the same order as c." So we can write: assert c != null => (\forall int i; 0 <= i && i < this.size(); this.get(i).equals(((java.util.List<?>)c).toArray()[i])) && this.size() == c.size(); However need to use only public methods, but c.size() is a public method of Collection. Might be allowed as it's a parameter. The rule about only using this methods might be for test functions where the method being specified is observed. But I'm not entirely sure. In earlier examples they didn't have external parameters besides value, etc. They used this.contains(value). They didn't need to call external object's methods. But they could have used value but that's a parameter.
+
+Thus using c.size() is allowed.
+
+We'll produce an assertion:
+
+```
+assert c != null => (this.size() == c.size() && (\forall int i; 0 <= i && i < this.size(); this.get(i).equals(((java.util.List<?>)c).toArray()[i])));
+```
+
+But using c.toArray() each time may be heavy. Could use c.iterator() but not needed.
+
+Simplify: we can use c.toArray() once: let arr = c.toArray(); but in JML you can use \old? Not needed. Use c.toArray() directly.
+
+Thus final assert:
+
+<code>assert c != null => (this.size() == c.size() &&
+--------------------
+analysisWe need to produce an assert statement for the comment in the constructor:
+
+```java
+public Vector(Collection<? extends E> c) {
+    elementData = c.toArray();
+    elementCount = elementData.length;
+    // defend...
+    if (elementData.getClass() != Object[].class)
+        elementData = Arrays.copyOf(elementData, elementCount, Object[].class);
+    // @@@ If the collection c is not null, the vector contains exactly the same elements in the same order as c.
+}
+```
+
+We need to express that after construction, if c != null, then the vector's elements (accessible via get(i) or elementAt?) are equal to the collection's iteration order.
+
+We have observer methods: size(), get(int index) (synchronized), maybe elementAt but we can use get.
+
+We need to refer to collection c's elements. Since we cannot call methods on c directly except maybe using iterator? The rule: Use only publicly accessible observer methods provided in the test function. The test function is this constructor. We can use c's methods as they are accessible: c is a Collection, we can call c.iterator() etc. But spec likely expects using c.toArray()? We have elementData = c.toArray() earlier. But spec wants "contains exactly the same elements in the same order as c". So we can assert: \forall int i; 0 <= i && i < this.size(); this.get(i).equals(\old(c.toArray()[i]))? But we cannot use old on c because c is not changed; we can just use c.toArray() after construction (same as before). However c may be mutable after; we assume not changed. Use \old(c.toArray()) maybe.
+
+Better: assert c != null => (\forall int i; 0 <= i && i < this.size(); this.get(i).equals(((Object[])c.toArray())[i])) && this.size() == c.size();
+
+But need to cast to Object[]. c.toArray() returns Object[]. So we can write ((Object[])c.toArray())[i]. Use old? Not needed because c not modified. Use c != null as premise.
+
+Thus final assert:
+
+assert c != null => (\forall int i; 0 <= i && i < this.size(); this.get(i).equals(((Object[])c.toArray())[i])) && this.size() == c.size();
+
+Make sure parentheses: (c != null) => ( ... ). Use => syntax.
+
+Thus final answer in code block.assistantfinal<code>assert (c != null) => (\forall int i; 0 <= i && i < this.size(); this.get(i).equals(((Object[])c.toArray())[i])) && this.size() == c.size();</code>
+--------------------
+analysisWe need to produce assert statement for comment in constructor: "// @@@ If the collection c is not null, the vector contains exactly the same elements in the same order as c."
+
+We need to refer to observer methods: we have methods: size(), get(int index), maybe elementAt, but we can use get. Also we have to use c, but c is a parameter of type Collection<? extends E>. We can use c.iterator() perhaps, but rule says use only publicly accessible observer methods provided in the test function. In this context, the test function is the constructor? Actually we are writing specification for this method; we can refer to c (the argument). We can use c.iterator() as observer? Not sure. Usually they allow using c.toArray() maybe. But we need to assert that for all i from 0 to c.size()-1, this.get(i).equals(c.toArray()[i])? But c is a Collection, not necessarily having get. But we can use c.iterator() to compare order. However specification language may not support iterators. Simpler: assert \forall int i; 0 <= i && i < c.size(); this.get(i).equals(\old(((java.util.List) c).get(i)))? But c is a Collection, not necessarily List. Can't assume get.
+
+Better: use toArray: c.toArray() returns Object[]. The vector's toArray() returns Object[]. So we can assert that Arrays.equals(this.toArray(), c.toArray()). But we cannot call static method Arrays.equals? Not allowed maybe only observer methods. But we can compare elementwise using forall.
+
+We can use this.size() equals c.size() and for all i, this.get(i).equals(((Object[])c.toArray())[i])? But we need to cast.
+
+Spec syntax may allow using c.toArray() directly. Use \old? Not needed because c is not changed. So:
+
+assert this.size() == c.size() && (\forall int i; 0 <= i && i < c.size(); this.get(i).equals(((Object[])c.toArray())[i]));
+
+But need to cast to Object[]; maybe we can write c.toArray()[i] as ((Object[])c.toArray())[i].
+
+Thus final assert:
+
+<code>assert this.size() == c.size() && (\forall int i; 0 <= i && i < c.size(); this.get(i).equals(((Object[])c.toArray())[i]));</code>
+
+Make sure parentheses correct.
+
+Return final.assistantfinal<code>assert this.size() == c.size() && (\forall int i; 0 <= i && i < c.size(); this.get(i).equals(((Object[])c.toArray())[i]));</code>
+--------------------

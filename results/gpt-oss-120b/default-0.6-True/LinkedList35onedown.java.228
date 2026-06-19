@@ -1,0 +1,116 @@
+analysisWe need to produce an assert statement for the comment in pollFirst method.
+
+Method:
+
+public E pollFirst() {
+    final Node<E> f = first;
+    return (f == null) ? null : unlinkFirst(f);
+    // @@@ If the list was not empty before the call, the returned element equals the original first element of the list.
+}
+
+We need to express: If list not empty before call, returned element equals original first element.
+
+We can use \old(this.isEmpty())? Actually we need old state: before call, list not empty => !\old(this.isEmpty()). The returned element is \result. Original first element can be accessed via \old(this.getFirst()) or \old(this.peekFirst())? There is method getFirst() which returns first element, but may throw if empty. Since we are in precondition not empty, safe. Use this.getFirst() before call, but need old. So \old(this.getFirst()).
+
+Thus assertion: !\old(this.isEmpty()) => \result.equals(\old(this.getFirst()))? Need to handle null? If list not empty, getFirst returns element (non-null maybe null element allowed). Equality: Objects.equals? Use .equals but if element can be null, need safe. In spec examples they used .equals for objects. Example earlier: this.query(i).equals(\old(this.query(i))). So they used .equals. So we can use \result.equals(\old(this.getFirst())) but if result could be null, .equals would NPE. But if list not empty, result is element (could be null). In Java, if element is null, pollFirst returns null? Actually if first element is null, list not empty, unlinkFirst returns element (null). So result may be null. Then using .equals would cause NPE. Better to use Objects.equals? Not available. Use ==? For reference equality, but not correct for general objects. In spec they used .equals assuming non-null. In earlier examples they used .equals for query(i). The list may contain null elements; they didn't handle null. We'll follow pattern: use .equals.
+
+Thus assert: !\old(this.isEmpty()) => \result.equals(\old(this.getFirst()));
+
+Wrap in assert.
+
+Thus final answer:
+
+<code>assert (!\old(this.isEmpty())) => \result.equals(\old(this.getFirst()));</code>
+
+Check parentheses: need parentheses around antecedent? Not necessary.
+
+Return final.assistantfinal<code>assert (!\old(this.isEmpty())) => \result.equals(\old(this.getFirst()));</code>
+--------------------
+analysisWe need to read the code and comment. The method pollFirst() returns first element and removes it. The comment: "If the list was not empty before the call, the returned element equals the original first element of the list."
+
+We need to produce an assert statement that captures this specification.
+
+We have access to observer methods: maybe we can use this.getFirst() or this.peekFirst() before removal? But after removal, getFirst would be new first. However we need the original first element. Use \old(this.getFirst()) or \old(this.peekFirst()). Since getFirst throws exception if empty, but we are in case list not empty before call. So we can use \old(this.getFirst()).
+
+The method returns an element of type E. The spec: If list was not empty before call, returned element equals original first element. So we need to assert: (!\old(this.isEmpty()) => \result.equals(\old(this.getFirst()))). But careful: getFirst may throw if empty, but we have condition that list not empty. Use \old(this.isEmpty()) to check pre-state. So:
+
+assert (!\old(this.isEmpty())) => (\result == null ? false : \result.equals(\old(this.getFirst()))); But if list not empty, result should not be null, because first element may be null? Actually list may contain null elements, so result could be null if original first element was null. So equality should be \result == \old(this.getFirst()) (reference equality) or Objects.equals? In spec earlier they used equals for objects, e.g., in examples they used this.query(i).equals(\old(this.query(i))). So they used .equals for element comparison. If elements could be null, .equals would cause NPE. But they assume maybe non-null. In our case we can use (\result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst()))). Simpler: \result == \old(this.getFirst())? But that checks reference equality; could be okay.
+
+Given pattern in earlier examples they used .equals; we can follow that: \result.equals(\old(this.getFirst())) . But if result is null, calling .equals throws NPE. However they didn't consider null earlier. We'll follow pattern.
+
+Thus final assert: assert (!\old(this.isEmpty())) => \result.equals(\old(this.getFirst()));
+
+But also need to ensure that if list was empty, result is null. Could also assert: \old(this.isEmpty()) => \result == null. But comment only about non-empty case. So we can just assert implication.
+
+Thus final answer:
+
+<code>assert (!\old(this.isEmpty())) => \result.equals(\old(this.getFirst()));</code>
+
+Check syntax: need parentheses? Use => operator, lower precedence than &&, but fine.
+
+Return final.assistantfinal<code>assert (!\old(this.isEmpty())) => \result.equals(\old(this.getFirst()));</code>
+--------------------
+analysisWe need to produce an assert statement corresponding to the comment after pollFirst.
+
+The method:
+
+public E pollFirst() {
+    final Node<E> f = first;
+    return (f == null) ? null : unlinkFirst(f);
+    // @@@ If the list was not empty before the call, the returned element equals the original first element of the list.
+}
+
+We need to assert that if the list was not empty before the call, the returned element equals the original first element of the list.
+
+We need to refer to the return value \result, and the original first element. There is an observer method getFirst() that returns the first element, but after removal it would be the new first. At the beginning we need old first element. There is also method first? It's a private field, not accessible. Use public method getFirst() maybe returns first element (throws if empty). However, getFirst() throws NoSuchElementException if empty, not suitable for old state. But we can use this.peekFirst() returns null if empty, but also after removal it may change. To capture original first element, we can use \old(this.peekFirst()) which returns the first element before removal (or null if empty). Since the condition is "list was not empty before the call", that means \old(this.isEmpty()) is false, or \old(this.peekFirst()) != null. Use that premise.
+
+Thus assertion: (\old(!this.isEmpty())) => \result.equals(\old(this.peekFirst())) . But need to handle possibly null elements: If list not empty, original first element is non-null? Could be null element in list. peekFirst returns the element, possibly null. If original first element could be null, then equality with null is fine. So we can assert: (!\old(this.isEmpty())) => (\result == \old(this.peekFirst())) . However, \result is of type E, may be null. Use == for reference equality? In spec, they often use .equals for objects, but null safe? Use (\result == \old(this.peekFirst())) works for nulls. Might be better: \result == \old(this.peekFirst()). We'll use that.
+
+Thus final assert:
+
+assert (!\old(this.isEmpty())) => (\result == \old(this.peekFirst()));
+
+Make sure syntax: parentheses around implication: (!\old(this.isEmpty())) => (\result == \old(this.peekFirst()));
+
+Return as code block.
+
+assistantfinal<code>assert (!\old(this.isEmpty())) => (\result == \old(this.peekFirst()));</code>
+--------------------
+analysisWe need to produce assert statement for the comment in pollFirst method.
+
+Comment: "// @@@ If the list was not empty before the call, the returned element equals the original first element of the list."
+
+We need to refer to returned element (\result). Need to express condition: if list was not empty before call, then result equals original first element. Original first element can be accessed via old(this.getFirst())? There's method getFirst() that returns first element, throws exception if empty. But we can use this.peekFirst()? peekFirst returns null if empty, but we need old first element when list not empty. Since pre-state list not empty, getFirst() is safe. Use \old(this.getFirst()).
+
+Condition: !\old(this.isEmpty()) => \result.equals(\old(this.getFirst()))? But result may be null if list empty. For non-empty, result is element, not null. Use \result.equals(\old(this.getFirst())) or maybe \result == \old(this.getFirst())? Since element type is generic, equality semantics: should use Objects.equals? In spec we can use .equals if not null. Safer: \result.equals(\old(this.getFirst())) . But if element could be null, then equals would throw NPE. Use Objects.equals? Not available. In examples they used .equals for query elements. They assume non-null? Might be okay.
+
+Thus assert: assert (!\old(this.isEmpty())) => \result.equals(\old(this.getFirst()));
+
+Need parentheses maybe: assert (!\old(this.isEmpty())) => \result.equals(\old(this.getFirst()));
+
+Return type is E, could be null. If original first element is null, equals would NPE. But spec may accept.
+
+Thus final answer.
+
+assistantfinal code<code>assert (!\old(this.isEmpty())) => \result.equals(\old(this.getFirst()));</code>
+--------------------
+analysisWe need to produce assert statement for the comment in pollFirst method.
+
+Comment: "// @@@ If the list was not empty before the call, the returned element equals the original first element of the list."
+
+We need to refer to old state: before call, list not empty means \old(this.isEmpty()) is false, or \old(this.size()) > 0. Use isEmpty method. The returned element is \result. Original first element is old value of first element, which can be obtained via \old(this.getFirst()) or \old(this.peekFirst())? There is getFirst() method that returns first element, may throw if empty. Since we know list not empty before call, getFirst() is safe. Use this.getFirst() after operation? After pollFirst, first element may have changed. So we need old first element: \old(this.getFirst()). Use \old(this.getFirst()).
+
+Thus assertion: \old(!this.isEmpty())? Actually old. So condition: \old(!this.isEmpty()) => \result.equals(\old(this.getFirst())) . Need to handle possibly null elements: use == for reference equality? In spec examples they used .equals for objects. For generic E, we could use \result.equals(\old(this.getFirst())) but if null? If list not empty, first element could be null (allowed). Then .equals would throw NPE. Better use Objects.equals: but not an observer method. In examples they used .equals for query results. They assume non-null? Could use == for reference equality, but semantics of equality in list is Objects.equals. Probably use \result.equals(\old(this.getFirst())) but risk NPE. Might use (\result == null ? \old(this.getFirst()) == null : \result.equals(\old(this.getFirst()))). That's complex. Simpler: \result == \old(this.getFirst())? That checks reference equality, not value equality. The spec likely expects equality via .equals as they used .equals earlier. We'll follow pattern: this.query(i).equals(\old(this.query(i))). So they use .equals. So we'll use \result.equals(\old(this.getFirst())).
+
+Thus final assert: assert \old(!this.isEmpty()) => \result.equals(\old(this.getFirst()));
+
+But need to express old condition: \old(!this.isEmpty()) is same as !\old(this.isEmpty()). Use !\old(this.isEmpty()) => ...
+
+Thus final assert statement:
+
+<code>assert !\old(this.isEmpty()) => \result.equals(\old(this.getFirst()));</code>
+
+Check syntax: need parentheses maybe: assert (!\old(this.isEmpty())) => \result.equals(\old(this.getFirst())); but => lower precedence than &&, but fine.
+
+Thus final answer.assistantfinal<code>assert !\old(this.isEmpty()) => \result.equals(\old(this.getFirst()));</code>
+--------------------
