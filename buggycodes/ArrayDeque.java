@@ -1,4 +1,4 @@
-package combinedcodes;
+package buggycodes;
 
 import java.util.*;
 import java.io.Serializable;

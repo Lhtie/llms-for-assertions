@@ -22,9 +22,11 @@ third_party = [
 ]
 
 def drop(typ):
-    # drop extended types
+    # drop final, static, synchronized keywords from type
     typ = re.sub(r"\s*\b(?:final|static|synchronized)\b", "", typ)
-    return typ
+    # drop extended types from generics, e.g., "? extends E" -> "E"
+    typ = re.sub(r"\?\s+extends\s+([\w$]+)", r"\1", typ)
+    return typ.strip()
 
 def split_args_outside_generics(s: str):
     res, buf = [], []

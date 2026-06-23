@@ -1,0 +1,112 @@
+analysisWe need to produce assert spec for comment: "Elements at and after the insertion point remain at the same indices as before."
+
+We are in add(int index, E element). After insertion, elements at and after insertion point? Wait insertion point is index where new element placed. In list insertion, elements at index and after shift right by one, so their indices increase by 1. But comment says "remain at the same indices as before." That seems contradictory. Maybe they mean elements before insertion point remain same indices, and elements after insertion point shift? But comment says "at and after the insertion point remain at the same indices as before." Actually after insertion, the new element occupies index, previous element at that index moves to index+1, so its index changes. So maybe they think "elements at and after the insertion point *before* insertion remain at same indices after*"? That would be false. Let's interpret: maybe they refer to "elements at and after the insertion point *in the original array* remain at the same indices as before* after the operation"? That would be false. Could be they meant "Elements before the insertion point remain at the same indices as before." But comment says "at and after". Let's check earlier examples: they used similar phrasing: "All the valid indices (between 0 and old size) in the array before add have the same element after add". That was for append. For insertion they used earlier example: "If the insert position is valid (between 0 and 9), all the indices before the insert position in the array before add have the same element after the addition". So for insertion they used "before". Here they wrote "Elements at and after the insertion point remain at the same indices as before." Might be a mistake but we must follow comment literally.
+
+Thus spec: For all i such that index <= i < old size, the element at i after insertion equals the element at i before insertion? That would be false because they shift. But we just produce assert as per comment.
+
+Thus we need to express: for all int i; index <= i && i < \old(this.size()); this.get(i).equals(\old(this.get(i))) . However after insertion size increased by 1, so old size = s. After operation size = s+1. The range index.. old size-1 corresponds to original elements that were at those indices before insertion. After operation, they have shifted to i+1. So the element at i after insertion is actually the element that was at i-1 before insertion (except for i = index). But comment says remain same, so we follow.
+
+Thus assert: \forall int i; index <= i && i < \old(this.size()); this.get(i).equals(\old(this.get(i)));
+
+But need to ensure we have access to size before. Use this.size() after operation. Use \old(this.size()) for old size.
+
+Thus final assert.
+
+Edge: need to include condition index valid? The method already checks rangeCheckForAdd(index). So index is between 0 and old size inclusive. So we can assume.
+
+Thus output code.
+
+assistantfinal<code>assert \forall int i; index <= i && i < \old(this.size()); this.get(i).equals(\old(this.get(i)));</code>
+--------------------
+analysisWe need to produce an assert statement matching the comment.
+
+Comment: "// @@@ Elements at and after the insertion point remain at the same indices as before."
+
+We need to express that after insertion, elements that were at indices >= index before insertion now are at same indices as before? Wait insertion shifts elements at and after insertion point to the right by one, so their indices increase by 1. But comment says "remain at the same indices as before". That seems contradictory. Let's read code: In Java ArrayList.add(int index, E element): it shifts elements from index to end to the right by one, then places element at index. So elements that were at index and after move to index+1, etc. The comment "Elements at and after the insertion point remain at the same indices as before." maybe they refer to "Elements at and after the insertion point (i.e., the element being inserted) remain at the same indices as before"? Actually after insertion, the new element occupies index, and the previous element at that index moves to index+1, so it's not same index. So perhaps the comment intends: "Elements before the insertion point remain at same indices". But they wrote at and after. Might be mistake. Let's interpret: we need to assert that for all i where i < index, the element at i after operation equals old element at i. That matches typical spec. But comment says "at and after". Could be they mean "Elements at and after the insertion point (i.e., the new element) remain at the same indices as before." Not sure.
+
+Let's examine earlier examples: they had similar spec: "All the valid indices (between 0 and old size) in the array before add have the same element after add" which they expressed as forall i; 0<=i && i<old size; query(i) equals old query(i). For insertion they gave example: "If the insert position is valid (between 0 and 9), all the indices before the insert position in the array before add have the same element after the addition" and they produced: assert index>=0 && index<=9 => \forall int i; 0<=i && i<index; this.query(i).equals(\old(this.query(i)));
+
+So for this add(int index, E element) we need similar but also need to assert for indices after insertion point? The comment says "Elements at and after the insertion point remain at the same indices as before." That would be false; maybe they intend "Elements before the insertion point remain at the same indices as before." Let's assume they made a mistake and we follow typical spec: elements before insertion point unchanged.
+
+Thus assert: \forall int i; 0 <= i && i < index; this.get(i).equals(\old(this.get(i)));
+
+But we also might need to assert that elements after insertion point have shifted by one: for i >= index and i < old size, this.get(i+1) equals old get(i). However comment didn't mention that, but could be implied "remain at the same indices as before" meaning they keep same relative order, but indices changed? ambiguous.
+
+Given pattern, they usually assert unchanged part before insertion. So produce that.
+
+Also need to include premise that index is within valid range (0 <= index && index <= old size). But rangeCheckForAdd ensures index between 0 and size inclusive. So we can assert: assert 0 <= index && index <= \old(this.size()) => \forall int i; 0 <= i && i < index; this.get(i).equals(\old(this.get(i)));
+
+But we cannot call this.size() inside spec? size() is public method. Use this.size(). Use \old(this.size()) for old size.
+
+Thus final assert:
+
+<code>assert 0 <= index && index <= \old(this.size()) => \forall int i; 0 <= i && i < index; this.get(i).equals(\old(this.get(i)));</code>
+
+Check syntax: need parentheses around implication? Use "=>" lower priority than &&, so we need parentheses: (0 <= index && index <= \old(this.size())) => \forall ...
+
+Thus final.
+
+assistantfinal<code>assert (0 <= index && index <= \old(this.size())) => \forall int i; 0 <= i && i < index; this.get(i).equals(\old(this.get(i)));</code>
+--------------------
+analysisWe need to produce an assert statement reflecting the comment.
+
+Comment: "Elements at and after the insertion point remain at the same indices as before."
+
+We are in method add(int index, E element). After insertion, elements at and after the insertion point (i.e., indices >= index) remain at the same indices as before? Wait insertion shifts elements at and after insertion point to the right by one, so they change indices. But comment says "remain at the same indices as before". Perhaps they mean elements after insertion point (i.e., after the inserted element) keep same relative order but indices increase by 1? Let's parse: "Elements at and after the insertion point remain at the same indices as before." That seems contradictory to typical behavior. Maybe they meant "Elements before the insertion point remain at same indices". However comment says "at and after". Let's interpret literal: For all i where i >= index, after insertion, element at index i+1 is the old element at i. That means old element at i moves to i+1, not same index. So maybe they intend to assert that for all i where i >= index, the element that was at i before is now at i+1 after. But phrase "remain at the same indices as before" could be misworded. Let's look at previous examples: they used similar phrase "All the valid indices (between 0 and old size) in the array before add have the same element after add". That assert was: forall i; 0<=i && i<old(getCount()); query(i) equals old(query(i)). That matches unchanged indices for all old indices. For insertion, we need a more complex spec.
+
+The comment: "Elements at and after the insertion point remain at the same indices as before." If we take it literally, then for any i >= index, after insertion, element at i is same as before. But after insertion, new element occupies index, shifting others. So the only way that holds is if we consider the element at i after insertion equals old element at i (i.e., the element that was at i before stays at i). That would mean the insertion overwrites element at index, not shift. That's not what code does. So maybe they meant "Elements before the insertion point remain at the same indices as before." But they wrote "at and after". Let's examine code: System.arraycopy(elementData, index, elementData, index+1, s-index); This copies elements from index..s-1 to index+1..s, shifting them right. So elements at and after insertion point move to index+1.. . So they do NOT remain at same indices. So spec should capture shift: For all i such that i >= index && i < oldSize, after insertion, element at i+1 equals old element at i. Also elements before index unchanged: for i < index, element at i unchanged.
+
+But comment says "remain at same indices". Might be a mistake, but we must generate assert that matches comment's meaning (maybe they intend "remain at the same relative order" but indices shift). However typical spec for insertion is: elements before index unchanged; elements at and after index shift by one.
+
+Let's craft assert: \forall int i; 0 <= i && i < index; this.get(i).equals(\old(this.get(i))) && \forall int i; index <= i && i < \old(this.size()); this.get(i+1).equals(\old(this.get(i)));
+
+But need to use size() observer. Use this.size() after insertion; old size is \old(this.size()). After insertion size = old+1.
+
+Thus assert:
+
+assert (\forall int i; 0 <= i && i < index; this.get(i).equals(\old(this.get(i)))) && (\forall int i; index <= i && i < \old(this.size()); this.get(i+1).equals(\old(this.get(i))));
+
+We also might need to assert new element at index equals element argument: this.get(index).equals(element). But not required by comment. Only about other elements.
+
+Thus final answer code block.
+
+assistantfinal<code>assert (\forall int i; 0 <= i && i < index; this.get(i).equals(\old(this.get(i)))) && (\forall int i; index <= i && i < \old(this.size()); this.get(i + 1).equals(\old(this.get(i))));</code>
+--------------------
+analysisWe need to translate comment: "Elements at and after the insertion point remain at the same indices as before."
+
+Wait, after insertion, the elements that were at index >= insertion point before insertion shift? Actually typical behavior: inserting at index shifts elements at that index and after to the right by one, so their indices increase by 1. But comment says they remain at same indices as before. That seems contradictory. Maybe they mean elements before insertion point remain same, and elements after insertion point shift? Let's read comment exactly: "Elements at and after the insertion point remain at the same indices as before." That suggests after insertion, elements that were at index >= index (insertion point) keep same index, which is not true. Could be a mistake; maybe they intend "Elements before the insertion point remain at the same indices as before." But we must follow comment literally.
+
+Thus we need assert that for all i such that i >= index, the element after insertion at same index i equals the old element at same index i. That's what comment says. So formal spec: For all int i; i >= index && i < \old(this.size()); this.get(i).equals(\old(this.get(i))) . However size increased by 1, so old size = s. After insertion size = s+1. For i >= index && i < s (old size), we assert equality. Also for i == s (new last element) it's the new element? Not needed.
+
+Thus assert: \forall int i; i >= index && i < \old(this.size()); this.get(i).equals(\old(this.get(i)));
+
+Need to use this.get(i). Might need to cast to Object? but fine.
+
+Make sure to include bounds: i >= index && i < \old(this.size()).
+
+Thus final answer.
+
+assistantfinal<code>assert \forall int i; i >= index && i < \old(this.size()); this.get(i).equals(\old(this.get(i)));\</code>
+--------------------
+analysisWe need to produce assert statement for comment:
+
+"Elements at and after the insertion point remain at the same indices as before."
+
+We need to formalize: after insertion, elements that were at positions >= index before shift? Wait insertion shifts elements at and after insertion point to the right, so their indices increase by 1. But comment says "remain at the same indices as before." That seems contradictory. Let's read code: they shift elements from index to right by one, then set element at index. After operation, elements that were originally at positions >= index are now at positions +1. So they do not remain same indices. Maybe the comment intends "Elements before the insertion point remain at same indices as before." But comment says "at and after". Might be mis-specified. Let's assume they want to assert that elements before insertion point stay same indices. However we must follow comment literally: "Elements at and after the insertion point remain at the same indices as before." That would be false. But we must produce assert that matches comment. Could be they intend to assert that elements after insertion point have same element values as before at index+1? Actually "remain at the same indices as before" could be interpreted as after insertion, the elements that were at and after the insertion point are still at those positions (i.e., unchanged). But code changes them. So maybe they meant "Elements before the insertion point remain at same indices". Let's check earlier examples: they used similar phrasing: "All the valid indices (between 0 and old size) in the array before add have the same element after add" which they expressed as forall i; 0<=i && i<old size; query(i) equals old query(i). For insertion they might want similar but for indices before insertion point. Let's craft assert: for all i where 0 <= i < index, this.get(i).equals(\old(this.get(i))). Also for indices after insertion point (i >= index+1) they correspond to old i-1. But comment only states "Elements at and after the insertion point remain at the same indices as before." That would be: for all i; i >= index && i < \old(this.size()); this.get(i+1).equals(\old(this.get(i)))? Wait after insertion, element that was at index i before is now at i+1. So to say they remain at same indices, we need to assert something else. Maybe they want to assert that elements at and after insertion point (i.e., old indices) are still present somewhere after insertion, but not same index. The phrase ambiguous.
+
+Given typical specification for insertion: elements before index unchanged; elements at and after shift right by one. So we can express both: for i in [0, index) unchanged; for i in [index, oldSize) after insertion, element at i+1 equals old element at i.
+
+But comment only mentions "remain at the same indices". Could be they want to assert that elements after insertion point (i.e., those that were after) stay at same index (i.e., they are not moved). That would be wrong, but we follow comment.
+
+Better to produce assert reflecting typical correct behavior: elements before insertion point unchanged, and elements after shift right. Let's produce combined assert:
+
+assert (\forall int i; 0 <= i && i < index; this.get(i).equals(\old(this.get(i)))) && (\forall int i; index <= i && i < \old(this.size()); this.get(i+1).equals(\old(this.get(i))));
+
+But we also need to consider that after insertion size = old size +1. So range for second part: i from index to oldSize-1. After insertion, i+1 <= newSize-1. That's fine.
+
+Thus final assert.
+
+Let's produce code block.
+
+assistantfinal<code>assert (\forall int i; 0 <= i && i < index; this.get(i).equals(\old(this.get(i)))) && (\forall int i; index <= i && i < \old(this.size()); this.get(i + 1).equals(\old(this.get(i))));</code>
+--------------------

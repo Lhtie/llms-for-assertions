@@ -1,0 +1,100 @@
+analysisWe need to produce an assert statement for the comment at end of previousClearBit method:
+
+```java
+// @@@ Every bit from the returned index through the starting index has the skipped value.
+```
+
+We need to interpret: In previousClearBit, we find the index of previous clear bit (value false) before fromIndex inclusive. The comment says: "Every bit from the returned index through the starting index has the skipped value."
+
+What does "skipped value" mean? Probably the value that is false (clear). So from the returned index up to the starting index, all bits are false (i.e., cleared). So specification: For all i such that returnedIndex <= i && i <= fromIndex, this.get(i) == false.
+
+But need to use \result for return value, and fromIndex is a parameter.
+
+Thus assert: \forall int i; \result <= i && i <= fromIndex; !this.get(i)
+
+But careful: If \result == -1 (no clear bit), then maybe condition? The comment still holds? If result == -1, then "Every bit from the returned index through the starting index has the skipped value." Not sure. If result == -1, there is no previous clear bit, maybe the range is empty? Usually for i such that -1 <= i <= fromIndex? That includes many indices, not correct. So we need to incorporate condition that result != -1. So: (\result != -1) => (\forall int i; \result <= i && i <= fromIndex; !this.get(i))
+
+If result == -1, statement vacuously true? Could also assert that if result == -1 then there is no clear bit in [0, fromIndex]; but not required by comment.
+
+Thus final assert:
+
+assert (\result != -1) => \forall int i; \result <= i && i <= fromIndex; !this.get(i);
+
+Make sure syntax: parentheses correct. Use && precedence lower than =>, so need parentheses: (\result != -1) => (\forall int i; \result <= i && i <= fromIndex; !this.get(i));
+
+Thus output in code block.
+
+assistantfinal<code>assert (\result != -1) => (\forall int i; \result <= i && i <= fromIndex; !this.get(i));</code>
+--------------------
+analysisWe need to read the method previousClearBit and comment: "// @@@ Every bit from the returned index through the starting index has the skipped value."
+
+We need to produce an assert statement reflecting that specification.
+
+Interpretation: previousClearBit returns the index of the nearest bit that is clear (false) occurring on or before fromIndex. The spec: Every bit from the returned index through the starting index has the skipped value. "skipped value" likely means the value that was skipped, i.e., the bits that are clear? The method returns an index of a clear bit. The spec says: Every bit from the returned index through the starting index has the skipped value. Means that for all i between returned index and fromIndex (inclusive), the bits are false (clear). Since it's previousClearBit, we are searching for a clear bit. The returned index is the first clear bit when moving backwards. So bits between returned index+1 and fromIndex are set (true) maybe? Wait typical semantics: previousClearBit returns index of nearest clear bit <= fromIndex. So bits between returned+1 and fromIndex are set (true). But spec says "has the skipped value". Could be ambiguous: "skipped value" maybe refers to the value that was skipped over while searching (i.e., the opposite value?). Let's examine previousSetBit spec: "Returns the index of the nearest bit that is set to true that occurs on or before the specified starting index." Typically, there is also a spec comment for previousSetBit maybe similar: "Every bit from the returned index through the starting index has the skipped value." Not present. But for previousClearBit, the "skipped value" would be the value that was skipped (i.e., true bits) because we are looking for clear bits, skipping over set bits. However they say "has the skipped value". The returned index is a clear bit, the bits from returned index up to starting index (i.e., inclusive) are the bits we examined; the skipped bits are the ones we passed over (i.e., true bits). But the phrase "has the skipped value" could mean they all have the value that was being skipped (i.e., they are true). Let's think: If we are searching for clear bit, we skip over set bits. So the bits from the returned index (clear) up to starting index (maybe inclusive) include the clear bit at the lower end and then set bits until we reach fromIndex. But the phrase "Every bit from the returned index through the starting index has the skipped value." If we interpret "skipped value" as the value we skipped (i.e., true), then the clear bit itself wouldn't have that value. So maybe they mean "has the value that was skipped over" meaning the bits we passed over (excluding the returned index) have the opposite value (true). But they say "from the returned index through the starting index", inclusive both ends. That would include the returned index which is clear, not true. So maybe they define "skipped value" as the value that was being searched for (clear). So all bits from returned index up to starting index are clear (false). That would be wrong for previousClearBit typical semantics, but maybe this implementation returns the first clear bit, but also ensures that all bits between returned index and fromIndex are clear (i.e., there are no set bits). Let's examine the algorithm: It computes u = wordIndex(fromIndex). If u >= wordsInUse, return fromIndex (meaning if fromIndex beyond used words, treat as clear?). Then word = ~words[u] & (WORD_MASK >>> -(fromIndex+1)); This takes complement of words[u] (so bits that are clear become 1) and masks bits up to fromIndex inclusive (since shift right with negative?). Then while loop: if word != 0 return (u+1)*BITS_PER_WORD -1 - Long.numberOfLeadingZeros(word); This returns the index of highest set bit in word (which corresponds to highest clear bit <= fromIndex). If none, decrement u and set word = ~words[u]; So they are scanning earlier words for any clear bits. So they are indeed finding a clear bit. The bits between that clear bit and fromIndex may be set (true) or clear? Actually if there were any clear bits between, they'd have been found earlier (higher index). So the returned clear bit is the highest clear bit <= fromIndex. Therefore bits between returned+1 and fromIndex are all set (true). So spec "Every bit from the returned index through the starting index has the skipped value." The "skipped value" would be true (set). But they say "has the skipped value" maybe meaning the bits that were skipped (i.e., that caused us to keep searching) have the value true. However the phrase "from the returned index through the starting index" includes the returned index, which is clear, not true. Could be a mistake
+--------------------
+analysisWe need to produce an assert statement matching the comment at end of previousClearBit method: 
+
+```java
+// @@@ Every bit from the returned index through the starting index has the skipped value.
+```
+
+We need to understand method: previousClearBit(int fromIndex) returns the index of the nearest bit set to false (clear) that occurs on or before fromIndex. If none exists, returns -1. The comment: "Every bit from the returned index through the starting index has the skipped value." Means that for all indices i between returned index and fromIndex (inclusive), the bits are clear? Wait "skipped value" meaning the value we were searching for, which is clear (false). So bits from returned index up to fromIndex are false (i.e., get(i) == false). Also note that if returned index is -1, then there is no such clear bit before fromIndex, but the property may be vacuously true? The phrase "Every bit from the returned index through the starting index has the skipped value." If result = -1, there is no returned index; but we can state that if result != -1 then for all i between result and fromIndex inclusive, get(i) == false. Also maybe also that result is the first such clear bit from the start (i.e., result is the greatest such index). But comment only about bits between result and starting index have skipped value (i.e., false). So we need assert: (\result != -1) => \forall int i; \result <= i && i <= fromIndex; !this.get(i); Also need handle case result == -1 maybe no guarantee. Could also include that result == -1 => for all i between 0 and fromIndex inclusive, get(i) == true? Actually if there is no clear bit, it means all bits from 0..fromIndex are true. But comment not mention that. So we only assert the property for indices between result and fromIndex when result != -1.
+
+We need to use observer methods of class: get(int). That's public. So we can use this.get(i). Also we need to refer to the argument fromIndex; it's in scope.
+
+Thus final assert:
+
+assert (\result == -1) || (\forall int i; \result <= i && i <= fromIndex; !this.get(i));
+
+But need ensure correct precedence: we can write:
+
+assert (\result != -1) => (\forall int i; \result <= i && i <= fromIndex; !this.get(i));
+
+Either is fine. Use implication.
+
+Thus final answer:
+
+<code>assert (\result != -1) => (\forall int i; \result <= i && i <= fromIndex; !this.get(i));</code>
+
+Check syntax: Use !this.get(i) returns boolean; ok.
+
+Return final.assistantfinal<code>assert (\result != -1) => (\forall int i; \result <= i && i <= fromIndex; !this.get(i));</code>
+--------------------
+analysisWe need to produce an assert statement for the comment at end of previousClearBit method.
+
+Comment: "@@@ Every bit from the returned index through the starting index has the skipped value."
+
+Interpretation: For the method previousClearBit(int fromIndex), it returns the index of the nearest clear bit (false) at or before fromIndex. The comment says: "Every bit from the returned index through the starting index has the skipped value." "skipped value" likely means the value that is being searched for, i.e., clear (false). So the assertion: For all i such that returnedIndex <= i <= fromIndex, the bit at i is false (i.e., get(i) == false). Also need to handle case when returned index is -1? If returned -1, then there is no clear bit before fromIndex, so the property vacuously holds? Might need to condition on \result != -1.
+
+Thus assert: (\result != -1) => (\forall int i; \result <= i && i <= fromIndex; !this.get(i));
+
+But also need to consider case when result == -1: then there is no clear bit, so maybe all bits from 0 to fromIndex are true. Could add: (\result == -1) => (\forall int i; 0 <= i && i <= fromIndex; this.get(i));
+
+But comment only says "Every bit from the returned index through the starting index has the skipped value." If result is -1, the range is -1 through fromIndex? Not meaningful. Might not need extra clause.
+
+Thus final assert: assert (\result != -1) => (\forall int i; \result <= i && i <= fromIndex; !this.get(i));
+
+Make sure syntax: use !this.get(i) or this.get(i) == false. Use && for conjunction.
+
+Thus output code block.
+
+assistantfinal<code>assert (\result != -1) => (\forall int i; \result <= i && i <= fromIndex; !this.get(i));</code>
+--------------------
+analysisWe need to write an assert statement for the comment at end of previousClearBit method: "// @@@ Every bit from the returned index through the starting index has the skipped value."
+
+Interpretation: The method returns the index of the previous clear bit (i.e., a bit set to false) before or equal to fromIndex. The comment says: "Every bit from the returned index through the starting index has the skipped value." Skipped value likely means the opposite? Wait: previousClearBit returns previous clear bit. So the bits from the returned index up to the starting index are all set to true? Actually they are "skipped value" meaning the bits that are not clear (i.e., set to true) are skipped over. So bits between returned index+1 and fromIndex are set to true (i.e., have the opposite value of clear). Let's think: previousClearBit returns the index i such that bit i is false, and for all j where i < j <= fromIndex, bit j is true. That matches typical semantics: find previous clear bit, skipping over set bits. So the assertion: For all int j; returnedIndex < j && j <= fromIndex => this.get(j) == true. Also the returned index itself must be clear (or -1). If result is -1, then there is no clear bit up to fromIndex, meaning all bits from 0..fromIndex are true? Actually semantics: if fromIndex >=0 and no clear bits, returns -1. So condition: if \result != -1 then this.get(\result) == false, and for all j; \result < j && j <= fromIndex => this.get(j) == true. If \result == -1, then for all j; 0 <= j && j <= fromIndex => this.get(j) == true. Also need to handle case fromIndex <0? The method throws for negative except -1 returns -1. In spec we can assume fromIndex >=0 (since method call likely). But we can include condition: fromIndex >=0 => ...; else fromIndex==-1 => \result == -1.
+
+We need to use only public observer methods: get(int) is public. Also we can use \result. Use \old? Not needed because we refer to same state after method execution; method doesn't modify BitSet. So we can assert about state after call relative to result and fromIndex.
+
+Thus assert: ( \result == -1 => (\forall int j; 0 <= j && j <= fromIndex; this.get(j))) && ( \result != -1 => (!this.get(\result) && (\forall int j; \result < j && j <= fromIndex; this.get(j))) );
+
+But need to express true condition: this.get(j) == true. In JML, we can just write this.get(j) (since boolean). So:
+
+assert (\result == -1 => (\forall int j; 0 <= j && j <= fromIndex; this.get(j))) && (\result != -1 => (!this.get(\result) && (\forall int j; \result < j && j <= fromIndex; this.get(j))));
+
+Also need to ensure fromIndex >=0? Could add premise fromIndex >=0 => ... but not required.
+
+Thus final answer code block.
+
+assistantfinal<code>assert (\result == -1 => (\forall int j; 0 <= j && j <= fromIndex; this.get(j))) && (\result != -1 => (!this.get(\result) && (\forall int j; \result < j && j <= fromIndex; this.get(j))));</code>
+--------------------

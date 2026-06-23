@@ -1,0 +1,132 @@
+analysisWe need to produce assert statement for comment after removal method.
+
+We have method remove(Object o) that returns boolean. The comment: "After removing from a non-empty priority queue, the new head is no greater than the old head."
+
+Interpretation: If the queue was non-empty before removal, after removal (if removal succeeded?) new head element (peek) is <= old head element according to ordering. Since priority queue head is least element. Removing an element (maybe not the head) could cause new head to be same or larger? Actually removing arbitrary element could cause heap restructure; but new head should be no greater than old head? Wait "no greater than the old head" means new head <= old head (since ordering is natural/comparator where less is better). Removing any element cannot increase the minimum? Actually if you remove the minimum element (head), new head will be the next smallest, which is >= old head. That's greater or equal, not less. So statement maybe "new head is no greater than the old head" meaning new head <= old head? That seems contradictory. Maybe they meant "no less than the old head"? Let's read: "new head is no greater than the old head" means new head <= old head. Example: old head = 5, new head could be 3 (if you removed a larger element, min stays same or could become smaller? Actually removing a non-min element cannot make min smaller, because min already smallest. So new head must be same as old head. So new head <= old head holds (equal). So statement is true.
+
+Thus we need assert: if old size > 0 (non-empty) then after removal (regardless of success?) the new head (this.peek()) is <= old head (\old(this.peek())).
+
+But need to consider that removal may fail (element not found) then queue unchanged, still holds. If removal succeeded, still holds. So condition: \old(this.size()) > 0 => (this.peek() == null ? true? Actually after removal, queue could become empty. If old size was 1 and we removed that element, new queue empty, peek returns null. In that case, the statement about new head being no greater than old head is vacuously true? Probably we need to ensure if new size >0 then compare; else maybe ignore. The comment says "After removing from a non-empty priority queue, the new head is no greater than the old head." If after removal queue becomes empty, there is no new head, maybe the condition is vacuously true. So we can assert: \old(this.size()) > 0 => (this.size() == 0 || this.peek().compareTo(\old(this.peek())) <= 0). Need to use comparator if present. Use public method comparator() returns Comparator<? super E>. So we need to compare elements using either comparator if not null else natural ordering. Use expression: (comparator()!=null ? comparator().compare(this.peek(), \old(this.peek())) <= 0 : ((Comparable<E>)this.peek()).compareTo(\old(this.peek())) <= 0). However we may not be able to cast. Simpler: use this.peek().compareTo(\old(this.peek())) if E extends Comparable? Not guaranteed. But spec may use comparator method.
+
+We can write: (this.comparator() == null ? ((java.lang.Comparable)this.peek()).compareTo(\old(this.peek())) <= 0 : this.comparator().compare(this.peek(), \old(this.peek())) <= 0). Use fully qualified.
+
+But also need to handle case this.peek() may be null (empty). So we can include condition: this.size() == 0 || ... comparison.
+
+Thus final assert:
+
+assert \old(this.size()) > 0 => (this.size() == 0 || (this.comparator() == null ? ((java.lang.Comparable)this.peek()).compareTo(\old(this.peek())) <= 0 : this.comparator().compare(this.peek(), \old(this.peek())) <= 0));
+
+Make sure syntax correct.
+
+Wrap in code block.
+
+assistantfinal<code>assert \old(this.size()) > 0 => (this.size() == 0 || (this.comparator() == null ? ((java.lang.Comparable)this.peek()).compareTo(\old(this.peek())) <= 0 : this.comparator().compare(this.peek(), \old(this.peek())) <= 0));</code>
+--------------------
+analysisWe need to produce an assert statement for the comment in remove method.
+
+Comment: "// @@@ After removing from a non-empty priority queue, the new head is no greater than the old head."
+
+We need to write an assertion that captures: after removal, if the queue was non-empty before removal, then the new head (peek after removal) is <= the old head (peek before removal). Since it's a priority queue where "head" is least element according to ordering (natural or comparator). So "no greater than" means new head <= old head (i.e., not larger). So we need to express using this.peek() after removal, and \old(this.peek()) before removal.
+
+But need to consider case when queue becomes empty after removal: then new head is undefined? In Java, peek returns null if empty. So we need to handle that maybe: If after removal size > 0 then compare; else maybe no condition. The comment says "After removing from a non-empty priority queue, the new head is no greater than the old head." If original queue non-empty, after removal may become empty (size could become 0). In that case new head is null, but we could say condition only when new size > 0. Or we could state that either new size is 0, or new head <= old head. Use implication: (\old(this.size) > 0) => (this.size == 0 || this.peek() <= \old(this.peek())).
+
+But we need to compare elements using comparator or natural ordering. There is a comparator() method that returns Comparator<? super E>. For ordering, we could use either comparator or Comparable. In JML-like assert, we might just use compareTo or comparator. However typical spec uses .compareTo for Comparable. Since generic E may not be Comparable, but presumably queue ensures elements comparable. For spec we can use (this.comparator() != null ? this.comparator().compare(this.peek(), \old(this.peek())) <= 0 : ((Comparable<E>) this.peek()).compareTo(\old(this.peek())) <= 0). That's complex.
+
+But earlier examples used methods like this.index_of etc. They didn't need ordering. For simplicity maybe they assume natural ordering and use <= operator. In Java, <= not defined for objects. But spec language may treat it abstractly. In examples they used .equals for objects, not <=. However they didn't have ordering examples. We need to produce assert statement in Java syntax? The earlier examples used assert this.contains(value); which is a boolean expression using methods. For ordering, we could use something like:
+
+assert (\old(this.size()) > 0) => (this.size() == 0 || ((this.comparator() != null) ? this.comparator().compare(this.peek(), \old(this.peek())) <= 0 : ((Comparable<E>)this.peek()).compareTo(\old(this.peek())) <= 0));
+
+But we need to use method size() not field size? There's size() method returning int. So use this.size().
+
+Also peek() returns E, may be null if empty. So need to guard null.
+
+Simplify: assert (\old(this.size()) > 0) => (this.size() == 0 || ( (this.comparator()!=null) ? this.comparator().compare(this.peek(), \old(this.peek())) <= 0 : ((Comparable<E>)this.peek()).compareTo(\old(this.peek())) <= 0) );
+
+We need to ensure no null deref: if this.size()==0 then peek() returns null, but we short-circuit.
+
+Thus final answer inside <code> tags.
+
+assistantfinal<code>assert (\old(this.size()) > 0) => (this.size() == 0 || (this.comparator() != null ? this.comparator().compare(this.peek(), \old(this.peek())) <= 0 : ((Comparable<E>) this.peek()).compareTo(\old(this.peek())) <= 0));</code>
+--------------------
+analysisWe need to produce assert statement for the comment after remove method.
+
+Comment: "// @@@ After removing from a non-empty priority queue, the new head is no greater than the old head."
+
+We need to express: If the queue was non-empty before removal, then after removal (assuming removal succeeded?), the new head (peek()) is no greater than the old head (peek before removal). Also removal may or may not succeed depending if element present; but comment says "After removing from a non-empty priority queue". So precondition: old size > 0. Also removal is performed (method called). The method returns boolean indicating if removal happened. If removal didn't happen (element not found), then queue unchanged, but comment maybe still holds vacuously? It says after removing from a non-empty priority queue, the new head is no greater than the old head. If removal didn't happen, then head unchanged, so property holds (equal). But we can incorporate condition that removal succeeded (i.e., result == true) maybe. However phrase "after removing" suggests removal took place (i.e., an element was removed). So we can assert: \old(this.size) > 0 => (\result ? this.peek() <= \old(this.peek()) : true). But we need to use observer methods: peek() returns E (Comparable). Need to compare using compareTo? Since E is generic, but we can assume they are Comparable. In spec we can use this.comparator()? Might be null. For simplicity, we can express as: (\old(this.size) > 0 && \result) => (this.peek() == null || this.comparator()!=null ? ...). That's messy.
+
+Simplify: Use the natural ordering comparison: this.peek().compareTo(\old(this.peek())) <= 0 . But we need to call compareTo on E. Use \old(this.peek()).compareTo(this.peek())? Actually want new head <= old head, i.e., newHead.compareTo(oldHead) <= 0. So assert: (\old(this.size) > 0 && \result) => (this.peek() == null || this.peek().compareTo(\old(this.peek())) <= 0). However if after removal queue becomes empty, peek() may return null (or throw?). In PriorityQueue, peek() returns null if empty. So need to handle that case: If size after removal is 0, then new head is null, which can be considered no greater than old head? Probably property vacuously holds. So we can assert: (\old(this.size) > 0 && \result) => (this.peek() == null || this.peek().compareTo(\old(this.peek())) <= 0).
+
+But we also need to reference size after removal maybe: this.size()? Use this.size() method. So condition: (\old(this.size()) > 0 && \result) => (this.peek() == null || this.peek().compareTo(\old(this.peek())) <= 0).
+
+Need to use this.size() method (public). Use this.size() for post-state.
+
+Thus final assert:
+
+assert (\old(this.size()) > 0 && \result) => (this.peek() == null || this.peek().compareTo(\old(this.peek())) <= 0);
+
+Make sure syntax: \old(this.size()) maybe need parentheses: \old(this.size()) . Also need to reference this.peek() as E, compareTo method. Use .compareTo.
+
+Thus final answer in code block.
+
+assistantfinal<code>assert (\old(this.size()) > 0 && \result) => (this.peek() == null || this.peek().compareTo(\old(this.peek())) <= 0);</code>
+--------------------
+analysisWe need to produce an assert statement reflecting the comment.
+
+The comment: "// @@@ After removing from a non-empty priority queue, the new head is no greater than the old head."
+
+We need to write an assert that uses observers: likely peek() returns head (least element). Need to express that after removal, the new head <= old head. Need to consider that after removal, the queue may become empty? The comment says "non-empty priority queue". The removal method removes an element if present, and returns true/false. The comment is after removal from a non-empty priority queue. So precondition: old size >0. Also after removal, maybe size could become zero (if original size was 1). In that case there is no new head. The statement "new head is no greater than the old head" only makes sense if after removal the queue is still non-empty. So we need to condition on old size >1? Actually if old size was 1, after removal size becomes 0, there is no new head, so the property is vacuously true? Could assert in that case not needed. So we may state: (\old(this.size) > 0) => ( (\old(this.size) == 1) => \result == false? Wait remove returns boolean. But we are focusing on head ordering. Use peek().
+
+We can use: (\old(this.size) > 0 && this.size() > 0) => this.peek().compareTo(\old(this.peek())) <= 0. Need to use comparator? The queue may have comparator. We can use either natural ordering or comparator. Since we cannot directly call compareTo on generic E. But we can use this.comparator() maybe null. However spec: we can use this.peek() and \old(this.peek()) and rely on the fact that they are comparable via natural ordering or comparator. For assertion we can use .compareTo if comparator null else comparator.compare.
+
+Simplify: assert (\old(this.size()) > 0 && this.size() > 0) => ((\old(this.comparator()) == null) ? ((Comparable<E>)this.peek()).compareTo((Comparable<E>)\old(this.peek())) <= 0 : this.comparator().compare(this.peek(), \old(this.peek())) <= 0);
+
+But we may not need to handle comparator; maybe they accept using compareTo assuming natural ordering. Many earlier examples used .equals for objects; they didn't worry about comparator. For ordering we could use .compareTo if E extends Comparable. But generic not bound. However spec may allow using comparator().
+
+Simplify: assert (\old(this.size()) > 0 && this.size() > 0) => ((\old(this.comparator()) == null) ? ((Comparable)this.peek()).compareTo(\old(this.peek())) <= 0 : this.comparator().compare(this.peek(), \old(this.peek())) <= 0);
+
+Need to use this.size() method (size()) not field. Use this.size()? There is method size(). So use this.size().
+
+Also need to refer to old size: \old(this.size()).
+
+Thus final assert.
+
+Make sure parentheses for implication.
+
+Write:
+
+assert (\old(this.size()) > 0 && this.size() > 0) => ((\old(this.comparator()) == null) ? ((Comparable)this.peek()).compareTo(\old(this.peek())) <= 0 : this.comparator().compare(this.peek(), \old(this.peek())) <= 0);
+
+That seems good.
+
+Return just code block.
+
+assistantfinal<code>assert (\old(this.size()) > 0 && this.size() > 0) => ((\old(this.comparator()) == null) ? ((Comparable)this.peek()).compareTo(\old(this.peek())) <= 0 : this.comparator().compare(this.peek(), \old(this.peek())) <= 0);</code>
+--------------------
+analysisWe need to produce an assert statement for the comment after remove method.
+
+The comment: "After removing from a non-empty priority queue, the new head is no greater than the old head."
+
+Interpretation: If we call remove(Object o) on a non-empty priority queue (size > 0 before removal), after removal the element at the head (i.e., peek()) should be <= old head (according to ordering). Need to express using comparator or natural ordering.
+
+We have methods: peek() returns E (head), size() returns int, comparator() returns Comparator<? super E>. Also maybe we can use compareTo if natural ordering.
+
+We need to write an assert statement using \old to capture old head. Condition: precondition size > 0 (non-empty) and removal succeeded? The comment says "After removing from a non-empty priority queue". It doesn't specify whether removal succeeded (i.e., element existed). The method returns boolean; but spec: after removing (i.e., after the method finishes) the new head is no greater than the old head. If removal removed the head element, new head could be larger? Actually property: after removal, the new head should be no greater than the old head. Since we removed some element (maybe not head), the heap property ensures that the smallest element (head) after removal is >=? Wait "no greater than the old head" means new head <= old head. Since old head is minimal element before removal, after removal the minimal element cannot be smaller than old head (since old head was minimal). Actually if we remove some other element, the head remains same, so new head equals old head (<=). If we remove the head itself, the new head will be the next smallest, which is >= old head? Wait old head is smallest; after removing it, the new smallest will be larger (or equal if duplicate). So new head >= old head. The comment says "new head is no greater than the old head" which is new <= old, which seems opposite. Let's double-check: maybe they think after removal, the new head is no greater than the old head (i.e., not larger). But if we remove head, new head will be greater (or equal). So maybe they meant the heap property ensures that new head is not greater than any other element, but relative to old head maybe the property is new head >= old head? Let's check typical spec: after removal, the new head is no greater than the old head? Actually if you remove arbitrary element, the heap property ensures that the new head is <= old head? No, because old head is minimum; after removal, the new minimum must be >= old head, not <=. So comment may be erroneous but we must follow it.
+
+But we must produce assert reflecting comment: "new head is no greater than the old head". So assert: if \old(this.size()) > 0 then (this.peek() <= \old(this.peek())).
+
+Need to compare elements using comparator if not null, else natural ordering. Use a helper: if comparator != null, then comparator.compare(newHead, oldHead) <= 0; else ((Comparable<E>)newHead).compareTo(oldHead) <= 0.
+
+But we only have access to methods: comparator() returns Comparator<? super E>. So we can write: (\old(this.size()) > 0) => ( (this.comparator() != null) ? (this.comparator().compare(this.peek(), \old(this.peek())) <= 0) : (((java.lang.Comparable<E>)this.peek()).compareTo(\old(this.peek())) <= 0) ).
+
+However spec language may not support ternary. Usually assert statements allow logical operators, but we can use implication with conjunction: (\old(this.size()) > 0) => ( (this.comparator() != null && this.comparator().compare(this.peek(), \old(this.peek())) <= 0) || (this.comparator() == null && ((java.lang.Comparable<E>)this.peek()).compareTo(\old(this.peek())) <= 0) ).
+
+Better to write: (\old(this.size()) > 0) => ( (this.comparator() != null ? this.comparator().compare(this.peek(), \old(this.peek())) <= 0 : ((java.lang.Comparable<E>)this.peek()).compareTo(\old(this.peek())) <= 0) );
+
+But not sure if ternary allowed; maybe okay.
+
+Simplify: Use a helper method? Not allowed.
+
+Thus produce assert with two cases.
+
+Also need to consider if after removal queue may become empty; then peek() may be null? peek returns null if empty per Java's PriorityQueue? Actually peek returns null if empty. So we need to ensure size after removal >0 to compare. The comment says after removing from a non-empty priority queue, new head is no greater than old head. If after removal size becomes 0, there is no new head; maybe condition includes that case? The property vacuously holds? Could
+--------------------

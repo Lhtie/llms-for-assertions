@@ -112,8 +112,16 @@ if __name__ == "__main__":
     parser.add_argument("--outname", type=str, default="")
     parser.add_argument("--mask", nargs='+', default=[])
     parser.add_argument("--checkerkwargs", type=str, default="")
+    parser.add_argument("--checklist", nargs='+', default=["default"], choices=["default", "valid", "conf", "equiv"])
     
     args = parser.parse_args()
+    checker_groups = {"default", "valid", "conf", "equiv"}
+    unknown_checkers = [checker for checker in args.checklist if checker not in checker_groups]
+    assert not unknown_checkers, f"Unknown checker groups in --checklist: {unknown_checkers}"
+    run_default = "default" in args.checklist
+    run_valid = run_default or "valid" in args.checklist
+    run_conf = run_default or "conf" in args.checklist
+    run_equiv = run_default or "equiv" in args.checklist
     checker_kwargs_map = parse_checker_kwargs(args.checkerkwargs)
 
     if args.outname: outname = args.outname
@@ -174,62 +182,53 @@ if __name__ == "__main__":
                     currmask = [True]*len(gen_asrts)
 
                 print("!"*10 + f" {rdir}/{f}", file=sys.stderr)
+                
+                if run_valid:
+                    valid_checks = ["null_check", "compile_check", "fuzz_check"]
+                    valid_mask = currmask
+                    for check_name in valid_checks:
+                        print("!"*10 + f" Running {check_name}", file=sys.stderr)
+                        result = CHECKERS[check_name](
+                            langid, pfx, sfx, grnd_truth, gen_asrts, cc, valid_mask,
+                            checker_kwargs_map.get(check_name, {})
+                        )
+                        toprint += f"{check_name}: {str(result)} {sum(bool(x) for x in result)}/{len(args.mask)}\n"
+                        valid_mask = and_mask(valid_mask, bool_mask(result))
 
-                print("!"*10 + " Running null_check", file=sys.stderr)
-                null_res = CHECKERS["null_check"](
-                    langid, pfx, sfx, grnd_truth, gen_asrts, cc, currmask,
-                    checker_kwargs_map.get("null_check", {})
-                )
+                    validity_scores = [int(x) for x in valid_mask]
+                    toprint += f"validity_scores: {str(validity_scores)} {sum(validity_scores)}/{len(args.mask)}\n"
 
-                compile_mask = and_mask(currmask, bool_mask(null_res))
-                print("!"*10 + " Running compile_check", file=sys.stderr)
-                compile_res = CHECKERS["compile_check"](
-                    langid, pfx, sfx, grnd_truth, gen_asrts, cc, compile_mask,
-                    checker_kwargs_map.get("compile_check", {})
-                )
+                if run_conf:
+                    print("!"*10 + " Running rdtp_check", file=sys.stderr)
+                    conformance_scores = CHECKERS["rdtp_check"](
+                        langid, pfx, sfx, grnd_truth, gen_asrts, cc, currmask,
+                        checker_kwargs_map.get("rdtp_check", {})
+                    )
+                    toprint += f"conformance_scores: {[format_score(x) for x in conformance_scores]}\n"
+                
+                if run_equiv:
+                    print("!"*10 + " Running equiv_check", file=sys.stderr)
+                    equiv_res = CHECKERS["equiv_check"](
+                        langid, pfx, sfx, grnd_truth, gen_asrts, cc, currmask,
+                        checker_kwargs_map.get("equiv_check", {})
+                    )
+                    toprint += f"equiv_res: {str(equiv_res)} {sum(bool(x) for x in equiv_res)}/{len(args.mask)}\n"
+                else:
+                    equiv_res = [0]*len(gen_asrts)
 
-                fuzz_mask = and_mask(compile_mask, bool_mask(compile_res))
-                print("!"*10 + " Running fuzz_check", file=sys.stderr)
-                fuzz_res = CHECKERS["fuzz_check"](
-                    langid, pfx, sfx, grnd_truth, gen_asrts, cc, fuzz_mask,
-                    checker_kwargs_map.get("fuzz_check", {})
-                )
-
-                print("!"*10 + " Running equiv_check", file=sys.stderr)
-                equiv_res = CHECKERS["equiv_check"](
-                    langid, pfx, sfx, grnd_truth, gen_asrts, cc, currmask,
-                    checker_kwargs_map.get("equiv_check", {})
-                )
-
-                valid_mask = and_mask(fuzz_mask, bool_mask(fuzz_res))
-                validity_scores = [int(x) for x in valid_mask]
-
-                print("!"*10 + " Running rdtp_check", file=sys.stderr)
-                conformance_scores = CHECKERS["rdtp_check"](
-                    langid, pfx, sfx, grnd_truth, gen_asrts, cc, currmask,
-                    checker_kwargs_map.get("rdtp_check", {})
-                )
-
-                best_invalid = select_best(gen_asrts, validity_scores, conformance_scores, equiv_res, 0)
-                best_valid = select_best(gen_asrts, validity_scores, conformance_scores, equiv_res, 1)
-
-                toprint += f"null_check: {str(null_res)} {sum(bool(x) for x in null_res)}/{len(args.mask)}\n"
-                toprint += f"compile_check: {str(compile_res)} {sum(bool(x) for x in compile_res)}/{len(args.mask)}\n"
-                toprint += f"fuzz_check: {str(fuzz_res)} {sum(bool(x) for x in fuzz_res)}/{len(args.mask)}\n"
-                toprint += f"equiv_check: {str(equiv_res)} {sum(bool(x) for x in equiv_res)}/{len(args.mask)}\n"
-                toprint += f"validity_scores: {str(validity_scores)} {sum(validity_scores)}/{len(args.mask)}\n"
-                toprint += f"conformance_scores: {[format_score(x) for x in conformance_scores]}\n"
-                toprint += format_best_candidate("best_validity_0", best_invalid)
-                toprint += format_best_candidate("best_validity_1", best_valid)
-                final = validity_scores
+                if run_default:
+                    best_invalid = select_best(gen_asrts, validity_scores, conformance_scores, equiv_res, 0)
+                    best_valid = select_best(gen_asrts, validity_scores, conformance_scores, equiv_res, 1)
+                    toprint += format_best_candidate("best_validity_0", best_invalid)
+                    toprint += format_best_candidate("best_validity_1", best_valid)
 
                 toprint += "#"*20 + "\n"
 
                 if args.write: outfd.write(toprint)
                 else: print(toprint, end="")
 
-                succs, tries = succs + sum(final), tries + len(final)
-                solvedps, totalps = solvedps + (sum(final) > 0), totalps + 1 
+                succs, tries = succs + sum(equiv_res), tries + len(args.mask)
+                solvedps, totalps = solvedps + (sum(equiv_res) > 0), totalps + 1 
     
     toprint = f"Successful tries / Total tries = {succs}/{tries}\n"
     toprint += f"Solved problems / Total problems = {solvedps}/{totalps}"

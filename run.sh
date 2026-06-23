@@ -10,6 +10,7 @@ fi
 
 # python main.py --codedir javacodes --modellist qw32 --nsamples 3 --codelist {1..418} --resultdir ./results --write
 
-python checker.py --codedir javacodes --codelist 62 --combinedcodes ./combinedcodes --resultlist ./results/Qwen2.5-Coder-32B-Instruct/* \
+python checker.py --codedir javacodes_buggyasrts --codelist 1 --combinedcodes ./buggyasrts --resultlist ./results/buggyasrts/gpt-oss-120b/* \
     --mask 0 \
+    --checklist valid \
     # --write

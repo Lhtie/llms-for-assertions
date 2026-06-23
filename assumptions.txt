@@ -1,20 +1,37 @@
-only one line asserts
-only one line comments
-one input to LLM has only one assert to work on
-asserts are in standalone functions, or functions inside classes
-all relevant code (input to llm) is just in one file
-code file does not have too many comments (so that llm does not confuse what to do)
-only functions that have @@@ comments are expanded, all others are squashed to signatures
+# Input and Assertion Format
 
-z3checker.py works for all LLM generated formulas
-nunit vs microsoft.unittest are the same for pex
-the settings in pex (Properties/PexAssembly.cs) are correct
-assuming pex.choose isnt that important
-why are there so many comments in the factories of ContractSubjects
-assuming that the factory (Class/ClassTest/Factories/ClassFactory.cs) is correct and sufficient
-.testsettings and .vsmdi files dont matter
-all the subjects in aastorg2/ContractsSubjects are overall similar to each other - helped writing a general PUT generation script
-aastorg2/ContractsSubjects is mostly correct
-fuzzchecker.py only works on angello type codes - obj.operation(args) : this format and relies on existence of class factory
+- Each input file contains exactly one assertion line to check.
+- Each input file contains exactly one natural-language assertion comment line.
+- Each LLM prompt contains only one assertion task.
+- The assertion target is either a standalone function or a method inside a class.
 
-removed unnecessary code from file so that it fits GPU memory - assuming thats ok
+# Code Scope and Prompt Construction
+
+- All code relevant to the assertion is contained in a single source file.
+- Source files should not contain excessive comments, so the LLM is not distracted by unrelated text.
+- Only functions with `@@@` assertion comments are expanded in the prompt; all other functions are compressed to signatures.
+- Some unnecessary code may be removed from the prompt to fit GPU memory limits. This assumes the removed code is irrelevant to the checked assertion.
+
+# Java Code Structure Assumptions
+
+- Class declarations should appear on a single line.
+- Java classes are expected to be declared as `public class`; other top-level declarations such as interfaces, enums, records, or non-public classes may not be recognized.
+- Classes cannot be declared inside methods.
+- Method and constructor signatures must be simple enough for the regex-based parser: annotations, throws clauses, complex generic bounds, varargs, and unusual formatting may not be handled correctly.
+- Classes should define a `hashCode` method whenever needed to preserve the standard `equals`/`hashCode` contract.
+
+# Assertion Semantics and Translation
+
+- In `\old(expr)`, every value inside `expr` is interpreted from the old object state. For example, `\old(this.get(\old(this.size()-1)))` is treated as equivalent to `\old(this.get(this.size()-1))`.
+- An assertion that adds a semantically redundant `\old(...)` may still fail the equivalence check, because the equivalence checker does not, and should not, execute the method under test.
+- `\forall` quantification is supported only over integer variables.
+- Bounds for `\forall` loops are inferred only from simple top-level comparisons connected by `&&`, such as `0 <= i && i < this.size()`. If no bound can be inferred, the checker falls back to a broad default range.
+- `\forall` ranges are translated to inclusive Java loops from the inferred lower bound to the inferred upper bound.
+- Equality checks using `==` are translated to `Object.equals(...)`, except for null checks such as `x == null`.
+
+# Checker-Specific Assumptions
+
+- `fuzzchecker.py` currently works only for Angello-style object-operation code, where methods are called in the form `obj.operation(args)`.
+- `fuzzchecker.py` relies on the existence of a suitable class factory for generating test objects.
+- Java bounded wildcard generic types such as `? extends E` are simplified to `E`, because Randoop has limited support for generating useful inputs for these wildcard types.
+- Java modifiers in parsed type strings, such as `final`, `static`, and `synchronized`, are removed before checker test code is generated.
