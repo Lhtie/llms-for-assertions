@@ -130,12 +130,6 @@ public class DefaultListenableGraph<V, E>
         }
 
         return added;
-        // @@@ The graph contains the source vertex after attempting to add an edge.
-        // assert this.containsVertex(sourceVertex);
-        // @@@ The graph contains the target vertex after attempting to add an edge.
-        // assert this.containsVertex(targetVertex);
-        // @@@ The graph contains edge e after addEdge.
-        // assert this.containsEdge(e);
     }
 
     @Override
@@ -168,8 +162,6 @@ public class DefaultListenableGraph<V, E>
         }
 
         return modified;
-        // @@@ The graph always contains vertex v after addVertex is called.
-        // assert this.containsVertex(v);
     }
 
     @Override

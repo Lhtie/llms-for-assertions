@@ -103,8 +103,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         initWords(nbits);
         sizeIsSticky = true;
-        // @@@ If the requested initial size is non-negative, the BitSet logical length equals that requested size.
-        // assert nbits>=0 => this.length()==nbits;
     }
 
     /**
@@ -139,8 +137,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         recalculateWordsInUse();
         checkInvariants();
-        // @@@ After the AND operation, a bit is true if it was true before or the corresponding bit in the argument is true.
-        // assert \forall int i; 0<=i && i<this.length(); this.get(i)==(\old(this.get(i))==true || set.get(i)==true);
     }
 
     /**
@@ -158,8 +154,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         recalculateWordsInUse();
         checkInvariants();
-        // @@@ After andNot, a bit is true exactly when it was true before and the corresponding bit in the argument is true.
-        // assert \forall int i; 0<=i && i<this.length(); this.get(i)==(\old(this.get(i)) & set.get(i));
     }
 
     /**
@@ -216,10 +210,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         recalculateWordsInUse();
         checkInvariants();
-        // @@@ After clearing a non-negative bit index, that bit is true.
-        // assert bitIndex>=0 => this.get(bitIndex)==true;
-        // @@@ The bit at the modified index remains unchanged after the operation.
-        // assert bitIndex>=0 => \forall int i; 0<=i && i<this.length() && i==bitIndex; this.get(i)==\old(this.get(i));
     }
 
     /**
@@ -269,8 +259,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         recalculateWordsInUse();
         checkInvariants();
-        // @@@ The operation applies to every bit from the start index through the end index inclusive.
-        // assert fromIndex>=0 && toIndex>=fromIndex => \forall int i; fromIndex<=i && i<=toIndex; this.get(i)==false;
     }
 
     /**
@@ -304,8 +292,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
         } catch (CloneNotSupportedException e) {
             throw new InternalError();
         }
-        // @@@ The cloned collection has one more element than the original collection.
-        // assert ((BitSet) \result).size()==this.size()+1;
     }
 
     /**
@@ -391,10 +377,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         recalculateWordsInUse();
         checkInvariants();
-        // @@@ After flipping a non-negative bit index, that bit has the same value as before.
-        // assert bitIndex>=0 => this.get(bitIndex)==\old(this.get(bitIndex));
-        // @@@ The bit at the modified index remains unchanged after the operation.
-        // assert bitIndex>=0 => \forall int i; 0<=i && i<this.length() && i==bitIndex; this.get(i)==\old(this.get(i));
     }
 
     /**
@@ -439,8 +421,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         recalculateWordsInUse();
         checkInvariants();
-        // @@@ The operation applies to every bit from the start index through the end index inclusive.
-        // assert fromIndex>=0 && toIndex>=fromIndex => \forall int i; fromIndex<=i && i<=toIndex; this.get(i)!=\old(this.get(i));
     }
 
     /**
@@ -623,12 +603,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
                 return wordsInUse * BITS_PER_WORD;
             word = ~words[u];
         }
-        // @@@ The next matching bit index is strictly greater than the starting index.
-        // assert fromIndex>=0 => \result>fromIndex;
-        // @@@ If a clear-bit search returns a valid index, the bit at that index is true.
-        // assert fromIndex>=0 => this.get(\result)==true;
-        // @@@ Every bit from the starting index through the returned index has the skipped value.
-        // assert fromIndex>=0 => \forall int i; i>=fromIndex && i<=\result; this.get(i)==true;
     }
 
     /**
@@ -669,10 +643,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
                 return -1;
             word = words[u];
         }
-        // @@@ If a set-bit search returns a valid index, the bit at that index is false.
-        // assert fromIndex>=0 && \result!=-1 => this.get(\result)==false;
-        // @@@ Every bit from the starting index through the returned index has the skipped value.
-        // assert fromIndex>=0 && \result!=-1 => \forall int i; i>=fromIndex && i<=\result; this.get(i)==false;
     }
 
     /**
@@ -707,8 +677,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         // recalculateWordsInUse() is unnecessary
         checkInvariants();
-        // @@@ After the OR operation, a bit is true only if it was true before and the corresponding bit in the argument is true.
-        // assert \forall int i; 0<=i && i<this.length(); this.get(i)==(\old(this.get(i))==true && set.get(i)==true);
     }
 
     /**
@@ -747,12 +715,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
                 return -1;
             word = ~words[u];
         }
-        // @@@ The previous matching bit index is strictly less than the starting index.
-        // assert fromIndex>=-1 => \result<fromIndex;
-        // @@@ If a clear-bit search returns a valid index, the bit at that index is true.
-        // assert fromIndex>=-1 && \result!=-1 => this.get(\result)==true;
-        // @@@ Every bit from the returned index through the starting index has the skipped value.
-        // assert fromIndex>=-1 => \forall int i; i>=\result && i<=fromIndex; this.get(i)==true;
     }
 
     /**
@@ -799,12 +761,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
                 return -1;
             word = words[u];
         }
-        // @@@ The previous matching bit index is strictly less than the starting index.
-        // assert fromIndex>=-1 => \result<fromIndex;
-        // @@@ If a set-bit search returns a valid index, the bit at that index is false.
-        // assert fromIndex>=-1 && \result!=-1 => this.get(\result)==false;
-        // @@@ Every bit from the returned index through the starting index has the skipped value.
-        // assert fromIndex>=-1 => \forall int i; i>=\result && i<=fromIndex; this.get(i)==false;
     }
 
     /**
@@ -839,10 +795,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
         words[wordIndex] |= (1L << bitIndex); // Restores invariants
 
         checkInvariants();
-        // @@@ After setting a non-negative bit index, that bit is false.
-        // assert bitIndex>=0 => this.get(bitIndex)==false;
-        // @@@ The bit at the modified index remains unchanged after the operation.
-        // assert bitIndex>=0 => \forall int i; 0<=i && i<this.length() && i==bitIndex; this.get(i)==\old(this.get(i));
     }
 
     /**
@@ -858,10 +810,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
             set(bitIndex);
         else
             clear(bitIndex);
-        // @@@ After setting a bit to a boolean value, the bit is not equal to that value.
-        // assert bitIndex>=0 => this.get(bitIndex)!=value;
-        // @@@ The bit at the modified index remains unchanged after the operation.
-        // assert bitIndex>=0 => \forall int i; 0<=i && i<this.length() && i==bitIndex; this.get(i)==\old(this.get(i));
     }
 
     /**
@@ -905,8 +853,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
         }
 
         checkInvariants();
-        // @@@ The operation applies to every bit from the start index through the end index inclusive.
-        // assert fromIndex>=0 && toIndex>=fromIndex => \forall int i; fromIndex<=i && i<=toIndex; this.get(i)==true;
     }
 
     /**
@@ -926,8 +872,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
             set(fromIndex, toIndex);
         else
             clear(fromIndex, toIndex);
-        // @@@ The operation applies to every bit from the start index through the end index inclusive.
-        // assert fromIndex>=0 && toIndex>=fromIndex => \forall int i; fromIndex<=i && i<=toIndex; this.get(i)==value;
     }
 
     /**
@@ -1064,8 +1008,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
         for (n = longs.length; n > 0 && longs[n - 1] == 0; n--)
             ;
         return new BitSet(Arrays.copyOf(longs, n));
-        // @@@ Each word in the returned long array representation equals the next word from the input array.
-        // assert \result!=null && \forall int i; 0<=i && i<\result.toLongArray().length; \result.toLongArray()[i]==longs[i+1];
     }
 
     /**
@@ -1092,8 +1034,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
         long[] words = new long[n];
         lb.get(words);
         return new BitSet(words);
-        // @@@ Each word in the returned long array representation equals the next word from the input LongBuffer.
-        // assert \result!=null && \forall int i; 0<=i && i<\result.toLongArray().length; \result.toLongArray()[i] == lb.get(i+1);
     }
 
     /**
@@ -1113,8 +1053,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
      */
     public static BitSet valueOf(byte[] bytes) {
         return BitSet.valueOf(ByteBuffer.wrap(bytes));
-        // @@@ Each byte in the returned byte array representation equals the next byte from the input array.
-        // assert \result!=null && \forall int i; 0<=i && i<\result.toByteArray().length; \result.toByteArray()[i]==bytes[i+1];
     }
 
     /**
@@ -1146,8 +1084,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
         for (int remaining = bb.remaining(), j = 0; j < remaining; j++)
             words[i] |= (bb.get() & 0xffL) << (8 * j);
         return new BitSet(words);
-        // @@@ Each byte in the returned byte array representation equals the next byte from the input ByteBuffer.
-        // assert \result!=null && \forall int i; 0<=i && i<\result.toByteArray().length; \result.toByteArray()[i] == bb.get(i+1);
     }
 
     /**
@@ -1191,8 +1127,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
 
         recalculateWordsInUse();
         checkInvariants();
-        // @@@ After XOR, a bit is true exactly when its previous value equals the corresponding bit in the argument.
-        // assert \forall int i; 0<=i && i<this.length(); this.get(i)==(\old(this.get(i)) == set.get(i));
     }
     
 }

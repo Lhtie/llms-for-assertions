@@ -326,7 +326,7 @@ def cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check):
     
     return passing_tests == total_tests
 
-def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, combinedcodes, check):
+def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, combinedcodes, check, time_limit=30):
     jh = javahelper(pfx + '\n' + sfx)
     asrt = jh.extract_formula(asrt)
     asrt, old_addns, forall_addns, split_addns = jh.trans_formula(asrt)
@@ -383,7 +383,7 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, combinedcodes, check):
         "randoop.main.Main", "gentests",
         "--testclass=fuzztests.FuzzTest",
         "--unchecked-exception=ERROR",
-        "--time-limit=30",
+        f"--time-limit={time_limit}",
         "--no-error-revealing-tests=false",
         "--no-regression-tests=true",
         "--output-limit=100",
@@ -401,7 +401,7 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, combinedcodes, check):
             return True
         return False
 
-def fuzzcheck(langid, pfx, sfx, grnd_truth, asrt, cc, check):
+def fuzzcheck(langid, pfx, sfx, grnd_truth, asrt, cc, check, time_limit=30):
     if(langid == "py"):
         result = True
 
@@ -409,7 +409,7 @@ def fuzzcheck(langid, pfx, sfx, grnd_truth, asrt, cc, check):
         result = cs_fuzzcheck(pfx, sfx, grnd_truth, asrt, check)
 
     elif(langid == "java"):
-        result = java_fuzzcheck(pfx, sfx, grnd_truth, asrt, cc, check)
+        result = java_fuzzcheck(pfx, sfx, grnd_truth, asrt, cc, check, time_limit=time_limit)
 
     else: 
         assert False, "Incorrect language id: " + langid

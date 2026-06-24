@@ -383,8 +383,6 @@ public class HashMap<K,V>
         modCount++;
         addEntry(hash, key, value, i);
         return null;
-        // @@@ After put, the map contains the specified key and the specified value.
-        // assert this.containsKey(key) && this.containsValue(value);
     }
 
     /**
@@ -542,10 +540,6 @@ public class HashMap<K,V>
             put((K) key, e.value);
         }
         return (e == null ? null : e.value);
-        // @@@ The map no longer contains the specified key after it has been removed.
-        // assert !this.containsKey(key);
-        // @@@ If the key was previously in the map, the value that was associated with it is no longer present in the map after removal.
-        // assert \old(this.containsKey(key)) => !this.containsValue(\result);
     }
 
     /**

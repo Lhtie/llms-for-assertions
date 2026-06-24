@@ -233,8 +233,6 @@ public class HashSet<E>
      */
     public boolean remove(Object o) {
         return map.remove(o)==PRESENT;
-        // @@@ If the element was present before removal, the method returns false.
-        // assert \old(this.contains(o)) => \result==false;
         // @@@ After removal, the collection still contains the removed element.
         // assert this.contains(o);
     }

@@ -122,8 +122,6 @@ public class ArrayList<E> extends AbstractList<E>
                          s - index);
         elementData[index] = element;
         size = s + 1;
-        // @@@ After the operation, the added element is stored at the first position.
-        // assert e==null && this.get(0)==null || e!=null && e.equals(this.get(0));
         // @@@ If the index is valid, the element at index + 1 equals the inserted or updated value.
         // assert index>=0 && index<=\old(this.size()) => element==null&&this.get(index+1)==null || this.get(index+1).equals(element);
         // @@@ Every element up to and including the modified index remains unchanged after the operation.
@@ -609,8 +607,6 @@ public class ArrayList<E> extends AbstractList<E>
         // assert index>=0 && index<\old(this.size()) => \result==\old(this.get(index+1));
         // @@@ Every element up to and including the modified index remains unchanged after the operation.
         // assert index>=0 && index<\old(this.size()) => \forall int i; 0<=i && i<=index; this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
-        // @@@ Elements after the removed position remain at the same indices as before removal.
-        // assert index>=0 && index<\old(this.size()) => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i))==null || this.get(i).equals(\old(this.get(i)));
     }
 
     /**
@@ -644,8 +640,6 @@ public class ArrayList<E> extends AbstractList<E>
         }
         fastRemove(es, i);
         return true;
-        // @@@ If the element was present before removal, the method returns false.
-        // assert \old(this.contains(o)) => \result==false;
     }
 
     /**

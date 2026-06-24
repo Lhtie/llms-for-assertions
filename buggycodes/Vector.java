@@ -947,8 +947,6 @@ public class Vector<E>
         elementData[--elementCount] = null; // Let gc do its work
 
         return oldValue;
-        // @@@ If the index is valid, every element after the removed position is shifted left by one, matching the element that was originally one position ahead of it.
-        // assert index>=0 && index<\old(this.size()) => \forall int i; index<i && i<\old(this.size()-1); this.get(i)==null && \old(this.get(i+1))==null || this.get(i).equals(\old(this.get(i+1)));
     }
 
     /**

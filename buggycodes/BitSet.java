@@ -799,8 +799,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
         words[wordIndex] |= (1L << (bitIndex + 1)); // Restores invariants
 
         checkInvariants();
-        // @@@ If the bit index is non-negative, then the bit at that index is set to true after the operation.
-        // assert bitIndex>=0 => this.get(bitIndex)==true;
     }
 
     /**
@@ -816,10 +814,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
             set(bitIndex);
         else
             clear(bitIndex);
-        // @@@ If the bit index is non-negative, then the value of the bit at that index must be equal to the specified value.
-        // assert bitIndex>=0 => this.get(bitIndex)==value;
-        // @@@ If the bit index is non-negative, then every bit in the BitSet other than the one at the specified index remains unchanged after the operation.
-        // assert bitIndex>=0 => \forall int i; 0<=i && i<this.length() && i!=bitIndex; this.get(i)==\old(this.get(i));
     }
 
     /**
@@ -867,8 +861,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
         }
 
         checkInvariants();
-        // @@@ If the range is valid, all bits outside the range [fromIndex, toIndex) remain unchanged after the operation.
-        // assert fromIndex>=0 && toIndex>=fromIndex => \forall int i; 0<=i && i<this.length() && (i<fromIndex || i>=toIndex); this.get(i)==\old(this.get(i));
     }
 
     /**
@@ -888,8 +880,6 @@ public class BitSet implements Cloneable, java.io.Serializable {
             set(fromIndex, toIndex);
         else
             clear(fromIndex, toIndex);
-        // @@@ If the index range is valid, every bit outside the range [fromIndex, toIndex) remains unchanged after the operation.
-        // assert fromIndex>=0 && toIndex>=fromIndex => \forall int i; 0<=i && i<this.length() && (i<fromIndex || i>=toIndex); this.get(i)==\old(this.get(i));
     }
 
     /**

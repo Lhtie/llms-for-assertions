@@ -242,8 +242,6 @@ public class HashSet<E>
             map.put((E) o, PRESENT);
         }
         return removed;
-        // @@@ The set does not contain the specified element after the removal operation.
-        // assert !this.contains(o);
     }
 
     /**

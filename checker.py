@@ -41,7 +41,7 @@ def check_gen(func, failure_result=False, skipped_result=False):
 CHECKERS = {
     "null_check": check_gen(lambda *args, **kwargs: nullchecker.nullcheck(*args)),
     "compile_check": check_gen(lambda *args, **kwargs: compilechecker.cmplecheck(*args)),
-    "fuzz_check": check_gen(lambda *args, check="soundness", **kwargs: fuzzchecker.fuzzcheck(*args, check)),
+    "fuzz_check": check_gen(lambda *args, check="soundness", **kwargs: fuzzchecker.fuzzcheck(*args, check, **kwargs)),
     "rdtp_check": check_gen(lambda *args, check="equality", **kwargs: rdtpchecker.rdtpcheck(*args, check=check, **kwargs),
                             failure_result=None, skipped_result=None),
     "equiv_check": check_gen(lambda *args, **kwargs: equivchecker.equivcheck(*args)),

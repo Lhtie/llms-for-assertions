@@ -218,8 +218,6 @@ public class HashMap<K,V>
         this(Math.max((int) (m.size() / DEFAULT_LOAD_FACTOR) + 1,
                       DEFAULT_INITIAL_CAPACITY), DEFAULT_LOAD_FACTOR);
         putAllForCreate(m);
-        // @@@ If the source collection is not null, the new collection has one more element than the source collection.
-        // assert m!=null => this.size()==m.size()+1;
     }
 
     // internal utilities
@@ -303,10 +301,6 @@ public class HashMap<K,V>
                 return e.value;
         }
         return null;
-        // @@@ After removal, the map still contains the removed key.
-        // assert this.containsKey(key) => \result==null;
-        // @@@ If the map contains the key, the returned value is not contained in the map.
-        // assert this.containsKey(key) => !this.containsValue(\result);
     }
 
     /**
@@ -385,14 +379,6 @@ public class HashMap<K,V>
         modCount++;
         addEntry(hash, key, value, i);
         return null;
-        // @@@ If the method returns null, the key was present in the map before the operation.
-        // assert \result==null => \old(this.containsKey(key)) || \old(this.get(key))==null;
-        // @@@ After put, the map contains the key and does not contain the specified value.
-        // assert this.containsKey(key) && !this.containsValue(value);
-        // @@@ If the method returns a non-null value, the key was not present before the operation.
-        // assert \result!=null => !\old(this.containsKey(key));
-        // @@@ If put returns a non-null value, that returned value equals the newly supplied value.
-        // assert \result!=null => value.equals(\result);
     }
 
     /**
@@ -528,8 +514,6 @@ public class HashMap<K,V>
 
         for (Map.Entry<? extends K, ? extends V> e : m.entrySet())
             put(e.getKey(), e.getValue());
-        // @@@ If the source collection is not null, the new collection has one more element than the source collection.
-        // assert m!=null => this.size()==m.size()+1;
     }
 
     /**
@@ -544,14 +528,6 @@ public class HashMap<K,V>
     public V remove(Object key) {
         Entry<K,V> e = removeEntryForKey(key);
         return (e == null ? null : e.value);
-        // @@@ If the method returns null, the key was present in the map before the operation.
-        // assert \result==null => \old(this.containsKey(key)) || \old(this.get(key))==null;
-        // @@@ If the method returns a non-null value, the key was not present before the operation.
-        // assert \result!=null => !\old(this.containsKey(key));
-        // @@@ After removal, the map still contains the removed key.
-        // assert this.containsKey(key);
-        // @@@ If the key was present before removal, the value returned by remove is still contained in the map afterward.
-        // assert \old(this.containsKey(key)) => this.containsValue(\result);
     }
 
     /**
@@ -683,8 +659,6 @@ public class HashMap<K,V>
         result.putAllForCreate(this);
 
         return result;
-        // @@@ The cloned collection has one more element than the original collection.
-        // assert ((HashMap<K,V>) \result).size()==this.size()+1;
     }
 
     static class Entry<K,V> implements Map.Entry<K,V> {
