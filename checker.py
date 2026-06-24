@@ -13,11 +13,8 @@ import checkers.fuzzchecker as fuzzchecker
 import checkers.rdtpchecker as rdtpchecker
 import checkers.equivchecker as equivchecker
 
-langmap = {
-        "py": ("#",     ),
-        "cs": ("//",    ),
-        "java": ("//",    ),
-}
+from active import run_active
+from utils.problemreader import langmap, read_problem
 
 def check_gen(func, failure_result=False, skipped_result=False):
     def f(langid, pfx, sfx, grnd_truth, gen_asrts, cc, mask, checker_kwargs):
@@ -73,10 +70,13 @@ def format_score(score):
         return "None"
     return f"{score:.6g}"
 
-def select_best(gen_asrts, validity_scores, conformance_scores, equivalence_scores, target_validity):
+def select_best(gen_asrts, validity_scores, conformance_scores, equivalence_scores,
+                target_validity, candidate_mask=None):
     best = None
     for i, (asrt, validity, conformance, equivalence) in enumerate(
             zip(gen_asrts, validity_scores, conformance_scores, equivalence_scores)):
+        if candidate_mask is not None and not candidate_mask[i]:
+            continue
         if validity != target_validity or conformance is None:
             continue
         if best is None or conformance > best["conformance"]:
@@ -100,6 +100,11 @@ def format_best_candidate(label, candidate):
         f"  equivalence: {candidate['equivalence']}\n"
         f"  assert: {candidate['assert']}\n"
     )
+
+def format_candidate_assertion(label, candidate):
+    if candidate is None:
+        return f"{label}: None\n"
+    return f"{label}: {candidate['assert']}\n"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -150,16 +155,7 @@ if __name__ == "__main__":
 
                 langid = f.split('.')[-2]
 
-                cmnt_tkn = langmap[langid][0]
-
-                lines = code.split("\n")
-                cmnt_idx = [i if "@@@" in l and l.strip().startswith(cmnt_tkn) else -1 for (i,l) in enumerate(lines)]
-                asrtlno = max(cmnt_idx) + 1
-                assert sum([i != -1 for i in cmnt_idx]) == 1, "too few or many assertions to work on"
-                
-                grnd_truth = lines[asrtlno].strip()
-                if grnd_truth.startswith(cmnt_tkn):
-                    grnd_truth = grnd_truth.strip(cmnt_tkn).strip()
+                pfx, sfx, grnd_truth = read_problem(code, langid)
 
                 try:
                     fd = open(os.path.join(rdir, f + ".extract"), "r")
@@ -168,7 +164,6 @@ if __name__ == "__main__":
                 except:
                     continue # result extract file doesnt exist
 
-                pfx, sfx = "\n".join(lines[:asrtlno]), "\n".join(lines[asrtlno+1:])
                 cc = args.combinedcodesdir
 
                 toprint = f"{'#'*10} {rdir}/{f}.check {'#'*10}\n"
@@ -183,6 +178,7 @@ if __name__ == "__main__":
 
                 print("!"*10 + f" {rdir}/{f}", file=sys.stderr)
                 
+                valid_results = {}
                 if run_valid:
                     valid_checks = ["null_check", "compile_check", "fuzz_check"]
                     valid_mask = currmask
@@ -192,6 +188,7 @@ if __name__ == "__main__":
                             langid, pfx, sfx, grnd_truth, gen_asrts, cc, valid_mask,
                             checker_kwargs_map.get(check_name, {})
                         )
+                        valid_results[check_name] = result
                         toprint += f"{check_name}: {str(result)} {sum(bool(x) for x in result)}/{len(args.mask)}\n"
                         valid_mask = and_mask(valid_mask, bool_mask(result))
 
@@ -217,10 +214,44 @@ if __name__ == "__main__":
                     equiv_res = [0]*len(gen_asrts)
 
                 if run_default:
-                    best_invalid = select_best(gen_asrts, validity_scores, conformance_scores, equiv_res, 0)
-                    best_valid = select_best(gen_asrts, validity_scores, conformance_scores, equiv_res, 1)
-                    toprint += format_best_candidate("best_validity_0", best_invalid)
-                    toprint += format_best_candidate("best_validity_1", best_valid)
+                    compiled_candidate_mask = and_mask(
+                        currmask,
+                        bool_mask(valid_results["null_check"]),
+                        bool_mask(valid_results["compile_check"]),
+                    )
+                    best_fail = select_best(
+                        gen_asrts, validity_scores, conformance_scores, equiv_res, 0,
+                        compiled_candidate_mask,
+                    )
+                    best_pass = select_best(
+                        gen_asrts, validity_scores, conformance_scores, equiv_res, 1,
+                        compiled_candidate_mask,
+                    )
+                    toprint += format_candidate_assertion("validity_fail_best_conf", best_fail)
+                    toprint += format_candidate_assertion("validity_pass_best_conf", best_pass)
+
+                    final_candidate = None
+                    if best_fail is not None and best_pass is not None:
+                        active_decision = run_active(
+                            pfx + "\n" + sfx,
+                            grnd_truth,
+                            cc,
+                            best_fail["assert"],
+                            best_pass["assert"],
+                            rounds=2,
+                            outdir="./checktmp/active",
+                        )
+                        if active_decision == "invalid":
+                            final_candidate = best_fail
+                        elif active_decision == "valid":
+                            final_candidate = best_pass
+                        toprint += f"active_decision: {active_decision}\n"
+                    elif best_fail is not None:
+                        final_candidate = best_fail
+                    elif best_pass is not None:
+                        final_candidate = best_pass
+
+                    toprint += format_best_candidate("final_best_candidate", final_candidate)
 
                 toprint += "#"*20 + "\n"
 
