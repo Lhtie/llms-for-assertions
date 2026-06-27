@@ -1,0 +1,255 @@
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If the input map is not null, the size of this map after putAll equals the size of the input map.
+
+We are to write an `assert` statement that captures this condition.
+
+### Step-by-step breakdown:
+
+1. The method is `putAll(Map<? extends K, ? extends V> m)`.
+2. The comment says: **If the input map is not null**, then after the operation, **the size of this map equals the size of the input map**.
+3. Note: The method throws `NullPointerException` if `m` is null, so the condition "if the input map is not null" effectively means "in all normal execution cases", but we still need to guard the assertion with `m != null` because the comment specifies a conditional.
+4. After adding all entries from `m`, and assuming no overlapping keys caused replacements (but even with replacements, the size is based on number of entries added — note: `putAll` adds each entry in `m`, possibly overwriting), the final size of `this` map is not necessarily equal to `m.size()` **unless** the map was initially empty.
+
+Wait — this is critical.
+
+Actually, the comment says: *"the size of this map after putAll equals the size of the input map"*, which would **only be true if this map was initially empty**.
+
+But that’s not guaranteed.
+
+Looking at the code:
+- `putAll` adds all entries from `m` to `this` map.
+- It does **not** clear the map first.
+- So unless `this` map was empty, the new size will be at least `old_size + (number of new keys not already present)`.
+
+But the comment says: **"the size of this map after putAll equals the size of the input map"** — that contradicts the actual behavior unless the map was empty.
+
+Wait — perhaps the comment is **incorrect**, or we are misreading.
+
+But our job is **not** to correct the comment — it is to **write an assert that reflects the natural language assertion in the comment**.
+
+So regardless of whether it's logically correct or not, we must encode:
+
+> If the input map is not null, then after `putAll`, `this.size()` equals `m.size()`.
+
+But wait — that can't be right in general.
+
+Let’s re-read: The comment says:
+> "If the input map is not null, the size of this map after putAll equals the size of the input map."
+
+This is only plausible **if** the map was empty before, or if the comment is mistaken.
+
+But again — our task is to **reflect the comment**, not reality.
+
+So we write:
+
+```java
+assert m != null => this.size() == m.size();
+```
+
+But wait — `m.size()` is a method call on the parameter `m`. Is that allowed?
+
+Yes — `m` is a `Map`, and `size()` is a public method.
+
+Also, note: we are not using `\old(...)` for `this.size()` because we want the **after** value.
+
+We are comparing the **final** size of `this` map to the size of `m`.
+
+So the assertion is:
+
+If `m != null`, then after `putAll`, `this.size() == m.size()`.
+
+But note: the method already requires that `m != null` (throws NPE otherwise), so in any successful execution, `m != null`. So the premise holds.
+
+But the conclusion — `this.size() == m.size()` — is **only true if this map was empty before**.
+
+But again — the comment says so, so we must assert it.
+
+Therefore, the correct translation is:
+
+<code>assert m != null => this.size() == m.size();</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the `putAll` method:
+
+> // @@@ If the input map is not null, the size of this map after putAll equals the size of the input map.
+
+We are to generate an `assert` statement that captures this condition.
+
+### Step-by-step breakdown:
+
+1. **Premise**: The input map `m` is not null.
+   - The method already throws `NullPointerException` if `m` is null, so we can assume `m != null` holds when execution reaches the loop.
+   - But the comment says "if the input map is not null", so we use implication: `m != null => ...`
+
+2. **Conclusion**: After `putAll`, the size of `this` map equals the size of the input map `m`.
+   - The size of `this` map after the method is `this.size()`.
+   - The size of the input map is `m.size()`.
+
+3. **Important note**: The comment says "the size of this map after putAll equals the size of the input map", **but** this is only true if the original map was empty. However, the specification comment seems to ignore the original contents — but that would be incorrect in general, because `putAll` *adds* or *overwrites* entries, so the final size depends on overlap.
+
+But wait: the comment says: "the size of this map after putAll equals the size of the input map" — **only if** the original map was empty? Or is it assuming replacement?
+
+Looking at the actual behavior of `putAll` in `HashMap`: it adds all entries from `m` to `this`, replacing any existing entries with the same keys. So the final size is:
+> `size_after = size_before + (num_keys_in_m - num_common_keys)`
+
+So unless `this` was initially empty and there were no overlapping keys, the size won't equal `m.size()`.
+
+But the comment says: "the size of this map after putAll equals the size of the input map" — **this is only true if this map was initially empty and no structural changes occurred otherwise**.
+
+However, the comment does **not** include such premises. It simply says: if `m` is not null, then after `putAll`, `this.size() == m.size()`.
+
+But that is **not correct** in general. So either the comment is wrong, or it implies a context where `this` map was empty.
+
+But we are told to **trust the comment** and generate an assert that reflects it **as written**.
+
+So despite the logical inaccuracy, we must output what the comment says.
+
+Hence:
+> If the input map is not null, then after `putAll`, `this.size() == m.size()`
+
+So the assert should be:
+```java
+assert m != null => this.size() == m.size();
+```
+
+But note: in the method, `m` is the parameter. We are allowed to use `this.func_name(args)` for observer calls. `size()` is a public method, so we can call `this.size()`.
+
+Also, we are not told that `m` might be null at this point — but the method throws `NullPointerException` if `m == null`, so by the time we reach the `@@@` comment, `m != null` is guaranteed. However, the comment includes the condition anyway.
+
+We follow the comment exactly.
+
+### Final Answer:
+<code>assert m != null => this.size() == m.size();</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If the input map is not null, the size of this map after putAll equals the size of the input map.
+
+We are to generate an assert statement that captures this condition.
+
+Key points:
+- The method is `putAll(Map<? extends K, ? extends V> m)`
+- The comment says: **If the input map is not null**, then **after** the operation, the size of this map (`this.size()`) should equal the size of the input map (`m.size()`).
+- Note: The method throws `NullPointerException` if `m` is null, so the premise "if the input map is not null" ensures we are in a valid execution.
+
+We are to express:
+> if `m != null`, then after `putAll`, `this.size() == m.size()`
+
+But wait — this is **not** generally true. The method `putAll` **adds** all mappings from `m` to `this`, but does **not** clear `this` first. So the final size would be `old(this.size()) + (number of new keys not already in the map)` — but if there are overlapping keys, only values are updated (no new size increase).
+
+However, the comment says: "the size of this map after putAll equals the size of the input map" — that would only be true **if this map was initially empty**, but that is not stated.
+
+But wait — re-reading the comment: it says **"the size of this map after putAll equals the size of the input map"**, which contradicts the actual behavior unless this map was empty.
+
+But the comment is likely **incorrect or imprecise** — however, our job is **not** to correct it, but to **translate the natural language assertion** into a formal assert statement, regardless of whether it's logically correct.
+
+So, despite potential logical flaws, we must output the assert as per the comment.
+
+Thus:
+> If the input map is not null, then after `putAll`, `this.size()` equals `m.size()`
+
+So:
+```java
+assert m != null => this.size() == m.size();
+```
+
+But note: `m.size()` is a method call on the parameter. Since `m` is not `this`, and assuming no interference (and that `m` is not modified during `putAll`), it's safe to use.
+
+Also, we are not using `\old` on `m.size()` because the comment refers to the size of the input map — presumably its size at call time, and we assume it's not changed during `putAll`.
+
+Thus, the correct assert statement is:
+
+<code>assert m != null => this.size() == m.size();</code>
+--------------------
+The comment `@@@ If the input map is not null, the size of this map after putAll equals the size of the input map.` specifies a condition that holds when the input map `m` is not null. Since the method throws a `NullPointerException` if `m` is null, we can assume `m != null` in the postcondition. The specification states that after `putAll`, the size of the current map (`this.size()`) should equal the size of the input map (`m.size()`).
+
+We express this using an assert statement with `\result` not needed here since we're not referring to a return value (the method is `void`), and we directly refer to `this.size()` after the operation and compare it with `m.size()`.
+
+<code>assert m != null => this.size() == m.size();</code>
+--------------------
+Let's analyze the comment marked with "@@@":
+
+> // @@@ If the input map is not null, the size of this map after putAll equals the size of the input map.
+
+We are to generate an `assert` statement that captures this condition.
+
+Step-by-step:
+
+1. The method is `putAll(Map<? extends K, ? extends V> m)`.
+2. The comment says: **If the input map is not null**, then after the operation, the size of `this` map equals the size of the input map `m`.
+3. However, note that `putAll` adds all mappings from `m` to `this` map, but it **replaces** any existing mappings for keys already present. So the size of `this` after `putAll` is **not** simply `old_size + m.size()`, because of possible key overlaps.
+4. But the comment says: **"the size of this map after putAll equals the size of the input map"** — that would only be true **if this map was initially empty** and all keys in `m` are distinct (which they are, since it's a map), and assuming no prior keys in `this`.
+
+But wait — that interpretation seems **incorrect** in general. For example, if `this` map already has 5 mappings, and `m` has 3 new keys, then after `putAll`, `this.size()` would be 8, not 3.
+
+But the comment says: "the size of this map after putAll equals the size of the input map".
+
+That can't be generally true unless the original map was empty.
+
+Wait — re-read the comment carefully:
+
+> "If the input map is not null, the size of this map after putAll equals the size of the input map."
+
+This is **only** true **if the original map was empty** and all keys in `m` are new. But the comment doesn't say that.
+
+But looking at the code: there's a special case:
+
+```java
+if (numKeysToBeAdded == 0)
+    return;
+```
+
+And then it proceeds to add entries.
+
+But the comment is likely **incorrectly phrased**, or we are missing context.
+
+Wait — actually, no. The method is `putAll`, which **adds** all entries from `m` to `this`. It does **not** clear `this` first. So unless `this` was empty, the size after will be at least `old_size + (new_keys_in_m)`.
+
+So the only way the size of `this` after `putAll` equals `m.size()` is if `this` was empty before and all keys from `m` are added.
+
+But the comment says nothing about `this` being empty.
+
+However, looking at the **actual code behavior**, the comment seems **wrong**.
+
+But our job is **not** to correct the comment — it's to **write an assert statement that reflects what the comment says**, assuming it's intended.
+
+So the comment says:
+
+> If the input map is not null, then after `putAll`, `this.size() == m.size()`
+
+But wait — the method throws `NullPointerException` if `m` is null (as per `@throws NullPointerException if the specified map is null`), so `m` is guaranteed to be non-null.
+
+So the premise "if the input map is not null" is **always true** — because otherwise the method would have thrown an exception.
+
+But the code doesn't show the null check. However, the Javadoc says it throws `NullPointerException` if `m` is null.
+
+So we can assume `m != null`.
+
+But the comment says: "If the input map is not null, the size of this map after putAll equals the size of the input map."
+
+So the assert should be:
+
+```java
+assert this.size() == m.size();
+```
+
+But that would only be true if `this` was empty before and all keys in `m` are new — which is not generally true.
+
+Wait — perhaps the comment is **wrong**, but again, our job is to **reflect the comment**, not the code.
+
+But let's double-check: the comment says the size of `this` after `putAll` equals the size of the input map.
+
+But that's **not correct** unless `this` was empty.
+
+But perhaps the comment meant: the **number of keys added** is equal to `m.size()`, but that's not what it says.
+
+Alternatively, maybe it's a **mistake**, and it should say: "the size of this map after putAll is at least the size of the input map" or something.
+
+But again — we must follow the **comment**, not fix it.
+
+So the natural reading is:
+
+After `putAll(m)` is called, if `m != null`, then `this.size() == m.size()`.
+
+But that's only true if `
+--------------------

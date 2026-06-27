@@ -1,0 +1,189 @@
+Let's analyze the comment:
+
+> // @@@ If the bit index is non-negative, then every bit in the BitSet other than the one at the specified index remains unchanged after the operation.
+
+This means:
+- Premise: `bitIndex >= 0` (non-negative index)
+- Consequence: For all bits at positions `i` where `i != bitIndex`, the value of the bit at `i` after the operation is the same as before.
+
+We can express this using:
+- `\old(this.get(i))` to refer to the value of bit `i` before the method call.
+- `this.get(i)` to refer to the value after.
+- A universal quantifier `\forall int i; ...` to say "for all bits not at `bitIndex`".
+
+We must ensure that `i` is a valid non-negative index. Since `BitSet` supports non-negative indices, and the method throws an exception for negative `bitIndex`, we assume valid indices.
+
+So the assertion should be:
+
+If `bitIndex >= 0`, then for all `i >= 0` where `i != bitIndex`, `this.get(i) == \old(this.get(i))`.
+
+Using the syntax rules:
+- Use `=>` for implication.
+- Use `\forall int i; condition; specification`.
+- Avoid referring to internal fields; use public observer methods like `this.get(i)`.
+
+Final assert statement:
+
+<code>assert bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i));</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the given code:
+
+```java
+// @@@ If the bit index is non-negative, then every bit in the BitSet other than the one at the specified index remains unchanged after the operation.
+```
+
+We need to write an `assert` statement that captures this specification.
+
+### Step-by-step breakdown:
+
+1. **Premise**: The condition under which the assertion holds is that `bitIndex` is non-negative.
+   - This means: `bitIndex >= 0`
+
+2. **Consequence**: All bits **other than** the one at `bitIndex` remain unchanged.
+   - For all indices `i` such that `i >= 0` and `i != bitIndex`, the value of the bit at `i` after the operation is the same as before.
+   - We can use `\old(...)` to refer to the value before the operation.
+   - The method to get a bit's value is `this.get(i)`.
+
+3. **Quantification**: We must express that for all valid bit indices `i` (i.e., `i >= 0`) where `i != bitIndex`, `this.get(i)` after the operation equals `\old(this.get(i))`.
+
+4. **Note**: Since `BitSet` can theoretically grow to accommodate any non-negative index, and we don't have a fixed upper bound, we must consider that only bits that were previously "in use" or affected by expansion might need consideration. However, the specification says "every bit ... other than the one at the specified index remains unchanged", which implies **all bits** in the universe of non-negative integers except `bitIndex`.
+
+   But in practice, for efficiency, we assume that bits outside the current logical range are `false` by default, and setting a bit may extend the logical size, but all bits not touched remain the same.
+
+   However, the comment says "every bit ... remains unchanged", so we must assert that for **all** `i >= 0` where `i != bitIndex`, the bit value is preserved.
+
+   But we cannot quantify over all `i >= 0` up to infinity. However, in formal specifications (like JML), `\forall int i; cond; spec` is used symbolically.
+
+   So we write:
+   ```
+   \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i))
+   ```
+
+5. **Implication**: This should only be asserted **if** `bitIndex >= 0`. So we use implication:
+   ```
+   bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i))
+   ```
+
+6. **Correct syntax**: Use proper parentheses to group the implication and the quantifier.
+
+### Final assert statement:
+
+<code>assert bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i));</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the given code:
+
+```java
+// @@@ If the bit index is non-negative, then every bit in the BitSet other than the one at the specified index remains unchanged after the operation.
+```
+
+We are to generate an `assert` statement that captures this specification.
+
+### Step-by-step breakdown:
+
+1. **Premise**: The condition under which the assertion holds is that `bitIndex` is non-negative.
+   - This means: `bitIndex >= 0`
+
+2. **Conclusion**: All bits **other than** the one at `bitIndex` remain unchanged.
+   - For every bit index `i` such that `i != bitIndex`, we must have:
+     - `this.get(i)` after the operation equals `\old(this.get(i))`
+
+3. **Quantification**: We need to express that for **all** valid bit indices `i` where `i != bitIndex`, the value remains the same.
+
+4. **Unbounded nature of BitSet**: The `BitSet` can grow arbitrarily, but we only care about bits that were in use before or might be affected. However, the comment says "every bit in the BitSet", so we interpret this as: for all `i >= 0`, if `i != bitIndex`, then the bit remains unchanged.
+
+   But note: in practice, we cannot quantify over all integers `i >= 0`. However, in specification languages like JML (which this seems to mimic), `\forall int i; cond; spec` is used, and it's acceptable to bound `i` to a reasonable range — but here, the specification should reflect the intent.
+
+   However, observe: the method `set(int bitIndex, boolean value)` only affects one bit. The implementation (via `set` or `clear`) ensures that only the bit at `bitIndex` is modified. So the rest should remain the same.
+
+   But how to express "all bits except the one at bitIndex"?
+
+   We can write:
+   ```
+   \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i))
+   ```
+
+5. **Implication**: This should only be asserted if `bitIndex >= 0`, because otherwise an exception is thrown and no state change is assumed (but the comment doesn't care about negative case).
+
+   So we use:
+   ```
+   bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i))
+   ```
+
+6. **Correct syntax**: Use parentheses to ensure correct grouping, since `=>` has lower precedence than `&&`.
+
+   So:
+   ```
+   (bitIndex >= 0) => (\forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i)))
+   ```
+
+7. **Use of `this.get(i)`**: This is a publicly accessible observer method, so allowed.
+
+### Final Answer:
+
+<code>assert (bitIndex >= 0) => (\forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i)));</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the given code:
+
+```java
+// @@@ If the bit index is non-negative, then every bit in the BitSet other than the one at the specified index remains unchanged after the operation.
+```
+
+We need to convert this natural language assertion into a formal `assert` statement using the specified syntax rules.
+
+### Step-by-step breakdown:
+
+1. **Premise**: The condition under which the assertion holds is that `bitIndex` is non-negative, i.e., `bitIndex >= 0`.
+
+2. **Conclusion**: For all bits in the BitSet **except** the one at `bitIndex`, their values remain unchanged after the operation.
+
+3. To express "all bits except the one at `bitIndex`", we can use `\forall int i; ...` where `i >= 0 && i != bitIndex`.
+
+4. For each such `i`, we want: `this.get(i) == \old(this.get(i))`.
+
+5. Since the conclusion only applies **if** the premise holds, we use implication:  
+   `bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i))`
+
+6. However, we cannot quantify over all integers `i >= 0` because that would be infinite. But logically, a BitSet has a finite "logical size" (up to `length()`), and beyond that, all bits are `false`. But the specification says "every bit in the BitSet", and since `get(i)` is defined for all non-negative `i`, we must consider all `i >= 0`.
+
+   But in practice, for formal specifications, we can still write `\forall int i; i >= 0 && i != bitIndex; ...` — this is acceptable in specification languages like JML.
+
+7. So the final assert statement is:
+
+<code>assert bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i));</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If the bit index is non-negative, then every bit in the BitSet other than the one at the specified index remains unchanged after the operation.
+
+We need to translate this into a formal assert statement.
+
+### Step-by-step breakdown:
+1. **Premise**: The bit index is non-negative → `bitIndex >= 0`
+2. **Consequence**: For all bits in the BitSet **except** the one at `bitIndex`, their values remain unchanged after the operation.
+3. To express "for all bits except the one at `bitIndex`", we can use `\forall int i; i >= 0 && i != bitIndex; ...`
+4. The value of a bit at index `i` is given by `this.get(i)`
+5. The old value (before the method call) is `\old(this.get(i))`
+6. So, for all valid indices `i` where `i != bitIndex`, we must have: `this.get(i) == \old(this.get(i))`
+7. However, we must be careful: the BitSet can have an unbounded number of bits, but logically, we only care about bits that were previously set or within the logical range. But the specification says "every bit... remains unchanged", which implies **all** bits except the one being modified.
+
+But note: in practice, we cannot iterate over all non-negative integers. However, in formal specifications (like JML), `\forall int i; cond; spec` is allowed with appropriate conditions.
+
+But observe: if a bit was false before and we don't touch it, it remains false. So we must assert that for **all** `i >= 0` where `i != bitIndex`, the bit value remains the same.
+
+However, this is an infinite set. But in specification languages like JML, such quantification over unbounded integers is syntactically allowed (though not executable). Since the problem asks for a specification, not an executable assertion, we can use it.
+
+But a more practical and equivalent approach (and what is typically done) is to say: for all `i >= 0`, if `i != bitIndex`, then `this.get(i) == \old(this.get(i))`.
+
+So the assert statement becomes:
+
+```java
+assert bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i));
+```
+
+This precisely captures:
+- If `bitIndex` is non-negative, then for all bit indices `i` that are not equal to `bitIndex`, the bit value remains unchanged.
+
+This matches the comment exactly.
+
+<code>assert bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i));</code>
+--------------------

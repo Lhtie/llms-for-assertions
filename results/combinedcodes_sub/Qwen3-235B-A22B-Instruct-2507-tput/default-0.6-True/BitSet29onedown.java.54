@@ -1,0 +1,155 @@
+Let's analyze the comment starting with "@@@":
+
+> // @@@ The returned BitSet is not null and every byte in its byte array representation matches the corresponding input byte.
+
+We need to write an `assert` statement that captures two conditions:
+1. The returned `BitSet` (i.e., `\result`) is not `null`.
+2. For every valid index `i` in the input `bytes` array, the byte at position `i` in the byte array representation of the returned `BitSet` (i.e., `\result.toByteArray()[i]`) is equal to `bytes[i]`.
+
+We must use `\result` to refer to the return value, and we can access the `toByteArray()` method on it. The input parameter is `bytes`, which is publicly accessible.
+
+We need to ensure that for all indices `i` such that `0 <= i < bytes.length`, the equality holds.
+
+Also, since `toByteArray()` returns a little-endian representation consistent with the specification, and the comment says "every byte... matches", we directly compare the arrays element-wise.
+
+Thus, the assert statement should be:
+
+<code>assert \result != null && \forall int i; 0 <= i && i < bytes.length; \result.toByteArray()[i] == bytes[i];</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the given code:
+
+```java
+// @@@ The returned BitSet is not null and every byte in its byte array representation matches the corresponding input byte.
+```
+
+This comment specifies two things about the `valueOf(byte[] bytes)` method:
+1. The returned `BitSet` is **not null**.
+2. For **every byte** in the input array `bytes`, the corresponding byte in the **byte array representation** of the returned `BitSet` (i.e., `this.toByteArray()`) must **match** the input.
+
+We need to express this as a single `assert` statement using the specified syntax rules.
+
+- The method is `public static BitSet valueOf(byte[] bytes)`, so the return value is referred to as `\result`.
+- We must assert that `\result != null`.
+- We must also assert that for all valid indices `i` in the input `bytes`, the byte at position `i` in `\result.toByteArray()` equals `bytes[i]`.
+
+However, note that the length of the resulting byte array from `toByteArray()` may not be exactly the same as `bytes.length` due to padding (as per the specification: `toByteArray()` returns a byte array of length `(s.length()+7)/8`, which may be shorter or longer depending on trailing zero bytes). But according to the specification of `toByteArray()` and `valueOf`, the meaningful bits (and hence bytes) up to the logical length are preserved.
+
+But the comment says: "**every byte in its byte array representation matches the corresponding input byte**".
+
+Wait — this is ambiguous. Does it mean that the output's `toByteArray()` matches the input `bytes`? Or that the input bytes are preserved in the result's internal state?
+
+Looking at the specification of `valueOf(byte[] bytes)`:
+> `BitSet.valueOf(bytes).get(n) == ((bytes[n/8] & (1<<(n%8))) != 0)` for all `n < 8 * bytes.length`.
+
+This means only the bits corresponding to the input bytes are defined. But trailing zero bytes in the input may affect the result — however, the `BitSet` may trim unnecessary words.
+
+But the comment says: "every byte in its byte array representation matches the corresponding input byte".
+
+This implies:
+- Let `result = BitSet.valueOf(bytes)`
+- Then `result.toByteArray()` should be equal to `bytes`, **element-wise**, for all indices in `bytes`.
+
+But wait — that can't be guaranteed if `bytes` has trailing zeros, because `BitSet` may not preserve them. However, the specification of `toByteArray()` says:
+> `bytes.length == (s.length()+7)/8`
+
+So the length depends on `s.length()`, which is the index of the highest set bit + 1.
+
+Therefore, if `bytes` ends with zero bytes that don't contain any set bits, they may be **truncated** in the result.
+
+Hence, the documentation of `valueOf` and `toByteArray` implies that **only bits up to the last set bit are preserved**, so full byte-by-byte round-trip equality is **not** guaranteed.
+
+But the comment says: "**every byte in its byte array representation matches the corresponding input byte**" — this seems to refer to the **input** bytes that are actually **represented** in the output.
+
+Wait — no. It says: "every byte in **its** (the returned BitSet's) byte array representation matches the corresponding input byte".
+
+So if the returned BitSet's `toByteArray()` has length `L`, then for `i` from `0` to `L-1`, we must have:
+`result.toByteArray()[i] == bytes[i]`
+
+But what if `bytes` is longer? Then the output may be shorter, so we can only compare up to `min(bytes.length, result.toByteArray().length)`?
+
+But the specification of `valueOf` and `toByteArray` ensures that:
+- `result.toByteArray().length == (result.length() + 7)/8`
+- And `result.length()` is the index of the highest set bit + 1.
+
+So if the input `bytes` has trailing zero bytes beyond the last set bit, they are **not** preserved.
+
+Therefore, the output byte array may be **shorter** than the input.
+
+But the comment says: "**every byte in its byte array representation**" — meaning the output byte array — "matches the corresponding input byte".
+
+So for all `i` in `[0, result.toByteArray().length)`, we must have:
+`result.toByteArray()[i] == bytes[i]`
+
+But note: `bytes` might be shorter than the output? No — because the output length depends on the highest set bit in `bytes`. So if `bytes` has a set bit beyond `bytes.length * 8`, that's impossible. So the output length is at most `bytes.length`, or possibly less.
+
+Actually, from the specification:
+>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> The returned BitSet is not null and every byte in its byte array representation matches the corresponding input byte.
+
+We need to write an assert statement that captures two things:
+1. The result (returned BitSet) is not null.
+2. For every valid index `i` in the input `bytes` array, the byte at position `i` in the result's byte array representation (`\result.toByteArray()[i]`) equals the corresponding byte in the input `bytes[i]`.
+
+We are writing a postcondition, so we can use `\result` to refer to the returned BitSet.
+
+Steps:
+- `\result != null`
+- `\forall int i; 0 <= i && i < bytes.length; \result.toByteArray()[i] == bytes[i]`
+
+We combine these with `&&`.
+
+Note: Since `toByteArray()` is a publicly accessible observer method, we can call it on `\result`.
+
+Final assert statement:
+
+<code>assert \result != null && \forall int i; 0 <= i && i < bytes.length; \result.toByteArray()[i] == bytes[i];</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the given code:
+
+```java
+// @@@ The returned BitSet is not null and every byte in its byte array representation matches the corresponding input byte.
+```
+
+This comment specifies two things about the `valueOf(byte[] bytes)` method:
+1. The returned `BitSet` is **not null**.
+2. For every byte in the input `bytes` array, the corresponding byte in the **byte array representation** of the returned `BitSet` (i.e., `result.toByteArray()`) must **match** the input.
+
+We can use:
+- `\result` to refer to the returned `BitSet`.
+- `toByteArray()` to get the byte array representation of the `BitSet`.
+- A universal quantifier `\forall int i; ...` to express that for all valid indices in the input array, the byte values are preserved.
+
+Also, we must ensure:
+- The result is not null.
+- The condition applies only to indices within the bounds of the input `bytes` array.
+
+So the formal assert statement becomes:
+
+<code>assert \result != null && \forall int i; 0 <= i && i < bytes.length; \result.toByteArray()[i] == bytes[i];</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the given code:
+
+```java
+// @@@ The returned BitSet is not null and every byte in its byte array representation matches the corresponding input byte.
+```
+
+This comment specifies two things about the `valueOf(byte[] bytes)` method:
+1. The returned `BitSet` is not `null`.
+2. For every byte in the input `bytes` array, the corresponding byte in the byte array representation of the returned `BitSet` must match.
+
+To express this in an assert statement:
+- The method returns a value, which we refer to using `\result`.
+- We need to check that `\result` is not `null`.
+- We also need to ensure that for all valid indices `i` in the input `bytes` array, the byte at position `i` in the result's byte array (obtained via `toByteArray()`) equals `bytes[i]`.
+
+We use `\forall int i; cond; spec` to express that the condition holds for all indices `i` in the range `[0, bytes.length)`.
+
+Also, since `toByteArray()` is a publicly accessible observer method, we can call it on `\result`.
+
+Putting it all together:
+
+<code>assert \result != null && \forall int i; 0 <= i && i < bytes.length; \result.toByteArray()[i] == bytes[i];</code>
+--------------------

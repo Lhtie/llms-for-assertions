@@ -1,0 +1,187 @@
+The comment `// @@@ After put, the map contains the specified key and the specified value.` specifies that after the `put` operation, the map must contain the given key and it must be associated with the given value.
+
+This means:
+- `containsKey(key)` should return `true`
+- `get(key)` should return `value`
+
+We express this in a single assert statement using the `\result` variable (which refers to the return value of the method, i.e., the old value), but the postcondition is about the state after the method.
+
+We do **not** need to refer to `\old(...)` for the key/value containment, because we are asserting the final state.
+
+So the correct assertion is:
+
+<code>assert this.containsKey(key) && this.get(key).equals(value);</code>
+--------------------
+The comment `// @@@ After put, the map contains the specified key and the specified value.` specifies that after the `put` operation, the map must contain the given key-value mapping.
+
+This means:
+- The map should contain the key (`containsKey(key)` returns `true`)
+- The value associated with the key should be the one just put in (`get(key)` returns `value`)
+
+We express this using the `\result` variable (which refers to the return value of the method) and the `this` object's state after the method execution.
+
+Note: Since the comment does not refer to the previous state or conditional behavior, it's a simple postcondition.
+
+<code>assert this.containsKey(key) && this.get(key).equals(value);</code>
+--------------------
+The comment `// @@@ After put, the map contains the specified key and the specified value.` specifies that after the `put` operation, the map must contain the given key mapped to the given value.
+
+To express this:
+- We need to assert that `this.containsKey(key)` is true.
+- And that `this.get(key)` returns `value`.
+
+Note: Since `get` might return `null` either because the key is not present or because the value was explicitly set to `null`, we cannot rely solely on `get`. However, the comment says the key-value pair is present after `put`, regardless of whether the value is `null`.
+
+But since `put` associates the key with the value (even if `null`), and the specification says "the map contains the specified key and the specified value", we interpret this as: the key is mapped to the value, which can be checked via `get(key)` returning `value`.
+
+So the correct assertion is:
+
+<code>assert this.containsKey(key) && this.get(key).equals(value) || (this.get(key) == null && value == null);</code>
+
+But wait: we must be careful. The `equals` check fails if `value` is `null`. So we should handle `null` properly.
+
+Actually, the Java `Map` contract allows `null` values, and `get` returns `null` if the key is not present or if the value is `null`. But in this case, we just `put` the key-value pair, so if `key` is `null`, we go to `putForNullKey`, and otherwise it's inserted. So after `put`, the key is definitely associated with the value.
+
+Thus, the correct way to assert that the mapping exists is:
+
+`this.get(key) == value || (this.get(key) != null && this.get(key).equals(value))` — no, that's messy.
+
+Actually, the standard way to compare possibly `null` values is:
+
+`(value == null ? this.get(key) == null : value.equals(this.get(key)))`
+
+But we also know that `containsKey(key)` will be true after `put`, even if `key` is `null`.
+
+So we can simplify: `this.containsKey(key)` ensures the key is present, and then we require the value to match.
+
+So:
+
+<code>assert this.containsKey(key) && (value == null ? this.get(key) == null : value.equals(this.get(key)));</code>
+
+But we can write it more cleanly using `Objects.equals(a, b)`, but we are not told we can use `Objects`. So stick to ternary.
+
+Alternatively, note that `this.get(key) == value` handles the `null` case correctly: if both are `null`, it's true; if one is `null`, false. But if both are non-null, we need `.equals`.
+
+Wait: no. `==` is not sufficient for non-null objects. We need `.equals`.
+
+So the correct comparison is:
+
+`(value == null ? this.get(key) == null : value.equals(this.get(key)))`
+
+But we can also write:
+
+`Objects.equals(this.get(key), value)` — but again, no `Objects` mentioned.
+
+So we must use the ternary.
+
+Alternatively, since the `put` method just set `e.value = value`, and we're not in a concurrent context, we can assume that `this.get(key)` will return exactly `value` if the key is present — but only if the `equals` and `hashCode` are respected. But the specification is behavioral.
+
+But the comment says "the map contains the specified key and the specified value", which means `get(key)` should return `value`, using the standard map semantics.
+
+So the correct assert is:
+
+<code>assert this.containsKey(key) && (value == null ? this.get(key) == null : value.equals(this.get(key)));</code>
+
+But wait: what if `value` is not null, but `this.get(key)` returns a different object that is equal? That's acceptable per `equals`. But the `put` just stored `value`, so `this.get(key)` should return `value` itself, unless there was an existing entry and we are replacing — but even then, we set `e.value = value`, so it should return the same reference.
+
+So actually, `this.get(key) == value` would suffice? Not necessarily: the map might have been modified by another thread, but we assume single-threaded.
+
+But the specification is about logical content: does the map associate the key with a value equal to `value`?
+
+Yes, and the Javadoc says "associates the specified value", so it should be `value`.
+
+But in Java, `==` is not used for value comparison. So we must use `.equals`.
+
+However, there's a problem: if `value` is a custom object and `.equals` is not reflexive, but that's broken.
+
+We assume
+--------------------
+The comment `// @@@ After put, the map contains the specified key and the specified value.` specifies that after the `put` operation, the map must contain the given key mapped to the given value.
+
+To express this:
+- We can use `this.containsKey(key)` to check the presence of the key.
+- We can use `this.get(key)` to retrieve the current value associated with the key and compare it to `value`.
+- We must ensure that after the method executes, `this.get(key)` returns `value`.
+
+Note: Since `get` can return `null` either because the key is not present or because the value was explicitly set to `null`, but here we are setting it to `value`, and we want to assert that the mapping is correct, we rely on the fact that after `put(key, value)`, the value must be retrievable as `value`.
+
+Thus, the correct assertion is:
+
+<code>assert this.containsKey(key) && this.get(key).equals(value) || (value == null && this.get(key) == null);</code>
+
+However, note that if `value` is `null`, then `this.get(key)` must be `null`, but we cannot call `.equals(null)` safely. So we must handle `null` explicitly.
+
+But observe: the comment says "the map contains the specified key and the specified value". This means:
+- The key is present (`containsKey(key)` is true)
+- The value associated with the key is `value`, which, when `value` is `null`, means `get(key) == null`.
+
+So we can write:
+
+<code>assert this.containsKey(key) && (this.get(key) == value || (this.get(key) != null && this.get(key).equals(value)));</code>
+
+Wait — this is overcomplicated and incorrect in structure.
+
+Actually, the standard way to compare possibly null values in Java is:
+`(a == null ? b == null : a.equals(b))`
+
+But we are writing an assert, and we know that after `put(key, value)`, `get(key)` should be equal to `value` under the map's equality semantics.
+
+However, note that the `put` method's contract says it associates the specified value with the key. So we can simply assert that `get(key)` returns `value` — and the `Map` contract allows `null` as a value.
+
+But caution: `get(key)` returns `null` if the key is not present OR if the value is `null`. But we just put it, so the key is present. So if `value` is `null`, then `get(key)` must be `null`. If `value` is not `null`, then `get(key)` must be equal to `value`.
+
+So the correct condition is:
+- `this.containsKey(key)` must be true
+- `this.get(key) == value` if `value` is `null`
+- `this.get(key).equals(value)` if `value` is not `null`
+
+But we can simplify: since `put` just set it, and we don't have threading issues in spec, we can rely on reference equality for `null`, and `.equals` otherwise.
+
+But actually, the cleanest way is to use:
+`Objects.equals(this.get(key), value)`
+
+But we cannot assume `Objects` is available in the assertion language.
+
+Alternatively, we write:
+`(value == null ? this.get(key) == null : value.equals(this.get(key)))`
+
+But note: `this.get(key)` might be null, so calling `value.equals(...)` is safe if `value` is not null.
+
+But the natural and correct way is:
+
+<code>assert this.containsKey(key) && (value == null ? this.get(key) == null : value.equals(this.get(key)));</code>
+
+But wait — the comment does **not** require us to use `value.equals(...)`, it just says the map contains the key and the value. The `Map` interface uses `equals` for value comparison, so this is correct.
+
+However, note that the assertion should be simple and reflect the intent.
+
+But there's a simpler and standard idiom: just say `this.get(key) == value || (this.get(key) != null && this.get(key).equals(value))` — but that's not right either.
+
+Actually, the correct null-safe equality is:
+`a == b || (a != null && a.equals(b))`
+
+But here `a = this.get(key)`, `b = value`.
+
+So:
+`this.get(key) == value || (this.get(key) != null && this.get(key).equals(value))`
+
+But this is equivalent to `Objects.equals(this.get(key), value)`.
+
+But we can write it directly.
+
+However, note: the `Map` interface specification says that two values are equal if they are equal according to `equals`, with `null` handled specially.
+
+But in this context, since we just put `value`, and `
+--------------------
+The comment `@@@ After put, the map contains the specified key and the specified value.` specifies that after the `put` operation, the map must contain the given key and it must be associated with the given value.
+
+To express this:
+- We need to assert that `this.containsKey(key)` is true.
+- And also that `this.get(key)` returns `value`.
+
+Since we are referring to parameters `key` and `value` passed to the method, and we are asserting a post-condition, we can directly use them.
+
+Thus, the correct assert statement is:
+
+<code>assert this.containsKey(key) && this.get(key).equals(value);</code>
+--------------------

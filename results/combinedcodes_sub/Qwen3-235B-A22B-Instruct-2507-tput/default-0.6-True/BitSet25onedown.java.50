@@ -1,0 +1,168 @@
+The comment `@@@ If the range is valid, all bits outside the range [fromIndex, toIndex) remain unchanged after the operation.` specifies that when the `set(int fromIndex, int toIndex)` method is called with a valid range, every bit that is not within the interval `[fromIndex, toIndex)` must have the same value after the operation as it had before.
+
+To express this:
+- We need to assert that for all bit indices `i`, if `i` is outside the range `[fromIndex, toIndex)`, then the value of `get(i)` after the call is equal to `\old(get(i))`.
+- The condition "outside the range" means `i < fromIndex || i >= toIndex`.
+
+We use `\forall int i; cond; spec` to express that for all bits outside the range, their values remain unchanged.
+
+<code>assert \forall int i; i < fromIndex || i >= toIndex; this.get(i) == \old(this.get(i));</code>
+--------------------
+The comment `@@@ If the range is valid, all bits outside the range [fromIndex, toIndex) remain unchanged after the operation.` specifies that when the `set(int fromIndex, int toIndex)` method is called with a valid range, any bit that is not within the interval `[fromIndex, toIndex)` should have the same value after the operation as it had before.
+
+To express this:
+- We need to assert that for all bit indices `i` that are either less than `fromIndex` or greater than or equal to `toIndex`, the value of the bit at `i` remains unchanged.
+- We use `\old(this.get(i))` to refer to the value before the method call.
+- The condition only needs to hold if the range is valid, i.e., `fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex`. But note that the method throws an exception if the range is invalid (as per its Javadoc), so we can assume the range is valid upon reaching the comment. However, since the comment says "if the range is valid", we should guard the assertion with that condition.
+
+Thus, the correct assertion is:
+
+<code>assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => \forall int i; (i >= 0 && i < fromIndex) || (i >= toIndex); this.get(i) == \old(this.get(i));</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If the range is valid, all bits outside the range [fromIndex, toIndex) remain unchanged after the operation.
+
+We are to generate an assert statement that captures this specification.
+
+### Step-by-step breakdown:
+
+1. **Condition**: "If the range is valid" — this refers to the condition that `fromIndex` and `toIndex` are within acceptable bounds. However, the method already calls `checkRange(fromIndex, toIndex)` which presumably enforces validity (and throws if invalid). So in the context of the assert, we can assume that the range has been checked, but the comment specifies the behavior **if** the range is valid.
+
+   But note: the method throws on invalid input, so execution only continues if the range is valid. However, to match the pattern in previous examples, when the comment says "if the range is valid", we use implication (`=>`) with the validity condition as the premise.
+
+   Validity here means: `fromIndex >= 0`, `toIndex >= 0`, and `fromIndex <= toIndex`. But since the method throws otherwise, and the comment says "if", we still model it as a conditional.
+
+2. **Specification**: "all bits outside the range [fromIndex, toIndex) remain unchanged"
+
+   - For all bit indices `i` such that `i < fromIndex` OR `i >= toIndex`, the value of `get(i)` after the operation equals the value of `get(i)` before the operation.
+   - We must use `\old(...)` to refer to the value before the method call.
+   - We use `\forall int i; cond; spec` to express "for all i".
+
+3. **How to express "outside [fromIndex, toIndex)"**:
+   - `i < fromIndex || i >= toIndex`
+
+4. **Putting it together**:
+   - Premise: the range is valid → `fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex`
+     (Note: the method checks this via `checkRange`, but we reflect the comment's condition.)
+   - Conclusion: for all `i` outside `[fromIndex, toIndex)`, `this.get(i)` is unchanged.
+
+5. **Use of `\forall`**:
+   - We must quantify over all non-negative integers `i` that are outside the interval. But note: bits are indexed by nonnegative integers, and `get(i)` is defined for all `i >= 0`.
+   - So: `\forall int i; i >= 0 && (i < fromIndex || i >= toIndex); this.get(i) == \old(this.get(i))`
+
+6. **Final structure**:
+   - `(fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => \forall int i; i >= 0 && (i < fromIndex || i >= toIndex); this.get(i) == \old(this.get(i))`
+
+But note: the method throws if the range is invalid, so the assertion only needs to hold when execution proceeds. However, the comment says "If the range is valid", so we follow the pattern and use implication.
+
+Also, in the previous examples, when a condition is checked and then behavior is described conditionally, the implication is used.
+
+### Final Assert Statement:
+
+<code>assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => \forall int i; i >= 0 && (i < fromIndex || i >= toIndex); this.get(i) == \old(this.get(i));</code>
+--------------------
+Let's analyze the comment marked with "@@@" in the `set(int fromIndex, int toIndex)` method:
+
+```
+// @@@ If the range is valid, all bits outside the range [fromIndex, toIndex) remain unchanged after the operation.
+```
+
+We need to convert this natural language assertion into a formal `assert` statement using the specified syntax rules.
+
+### Step-by-step breakdown:
+
+1. **Premise**: The condition "if the range is valid" refers to the precondition of the method, which is checked by `checkRange(fromIndex, toIndex)`. However, since we are writing a postcondition, and the method throws an exception on invalid ranges, we can assume that by the time we reach the assert, the range is valid. But to be safe and explicit, we should guard the assertion with the validity of the range.
+
+   Validity of the range means: `fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex`.
+
+2. **Conclusion**: "All bits outside the range [fromIndex, toIndex) remain unchanged."
+
+   This means:
+   - For all bit indices `i` such that `0 <= i < fromIndex`, the value of `this.get(i)` after the operation equals `\old(this.get(i))`.
+   - For all bit indices `i` such that `i >= toIndex`, the value of `this.get(i)` after the operation equals `\old(this.get(i))`.
+
+   We can combine these two cases as:
+   ```
+   \forall int i; (i >= 0 && i < fromIndex) || i >= toIndex; this.get(i) == \old(this.get(i))
+   ```
+
+3. **Use of `\old`**: We are comparing current state to the state at method entry.
+
+4. **Implication**: Use `=>` to say: if the indices are valid, then all bits outside remain unchanged.
+
+5. **Final structure**:
+   ```
+   assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => 
+           \forall int i; (i >= 0 && i < fromIndex) || i >= toIndex; 
+           this.get(i) == \old(this.get(i));
+   ```
+
+But note: `i` is a bit index, and in principle unbounded above. However, for practical purposes and given that `BitSet` grows as needed, we must consider that bits beyond the current logical size may still be `false` by default. But the specification says "remain unchanged", and since the method only modifies bits in `[fromIndex, toIndex)`, bits outside should be unchanged regardless of their position.
+
+However, in practice, we cannot quantify over all integers `i >= 0`. But in formal specifications (like JML), `\forall int i; cond; spec` is allowed even with unbounded `i`, assuming the implementation handles infinite sets abstractly.
+
+But note: the `get(i)` method is defined for all nonnegative `i`, and returns `false` if the bit is not set (i.e., beyond current `wordsInUse`). So the assertion is still meaningful.
+
+Thus, the correct formal assertion is:
+
+<code>assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => \forall int i; (i >= 0 && i < fromIndex) || i >= toIndex; this.get(i) == \old(this.get(i));</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the given code:
+
+```java
+// @@@ If the range is valid, all bits outside the range [fromIndex, toIndex) remain unchanged after the operation.
+```
+
+We are to generate an `assert` statement that captures this specification.
+
+### Step-by-step breakdown:
+
+1. **Condition**: The statement says "If the range is valid", which refers to the condition that `fromIndex` and `toIndex` are within acceptable bounds. The method `checkRange(fromIndex, toIndex)` is called at the beginning, which ensures `fromIndex >= 0`, `toIndex >= 0`, and `fromIndex <= toIndex`. So, the premise is that this range is valid — but since the method throws an exception otherwise, within the body we can assume the range is valid. However, the assertion is about behavior **when** the range is valid.
+
+   But note: the comment is placed **after** the `checkRange` call and inside the method body, so we are already in the case where the range is valid. However, the assertion should reflect the **specification**: if the range is valid, then bits outside remain unchanged.
+
+   So we use implication: if the range is valid, then bits outside remain unchanged.
+
+2. **What should remain unchanged?** All bits with index `< fromIndex` or `>= toIndex` should have the same value after the operation as before.
+
+3. **How to express "for all bits outside [fromIndex, toIndex)"?**
+   - We need to use `\forall int i; ...` where `i` is the bit index.
+   - The condition is: `i < fromIndex || i >= toIndex`
+   - The specification is: `this.get(i) == \old(this.get(i))`
+
+4. **But note**: `BitSet` can dynamically grow, so bits beyond the original size might be affected? However, the method `set(int fromIndex, int toIndex)` only sets bits in the given range and expands capacity only if needed for that range. Bits outside the range should not be modified — even if the array is expanded, the logical values of bits outside `[fromIndex, toIndex)` should remain as they were.
+
+   The method `expandTo(endWordIndex)` may increase the size of the `words` array, but it initializes new words to 0, which corresponds to `false`. However, if those bits were previously `false` (due to being beyond the previous logical size), then they remain effectively unchanged. But if they were explicitly set to `true` before, and now get zeroed? No — the `expandTo` method only adds zeroed words if expanding, but only when `wordsInUse` increases. However, the `checkRange` and `expandTo` are designed to preserve existing bits.
+
+   But the comment says "all bits outside the range remain unchanged", so we assume this is part of the contract.
+
+5. **Final assertion structure**:
+   - If the range is valid (`fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex`), then for all bit indices `i` such that `i < fromIndex || i >= toIndex`, we must have `this.get(i) == \old(this.get(i))`.
+
+6. **Use of `\old`**: We are comparing current `get(i)` with the value of `get(i)` at the start of the method.
+
+7. **Quantification over all bit indices**: But we cannot quantify over infinite integers. However, in practice, only a finite number of bits are "in use". But the specification says "all bits", so we must consider all nonnegative integers.
+
+   But in formal specifications (like JML), `\forall int i; cond; spec` allows unbounded quantification, assuming the system can reason about it.
+
+   So we write:
+   ```
+   assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) =>
+          (\forall int i; (i >= 0) && (i < fromIndex || i >= toIndex); this.get(i) == \old(this.get(i)));
+   ```
+
+   However, note that the method throws `IndexOutOfBoundsException` if the range is invalid. So the implication is only relevant when no exception is thrown — i.e., when the range is valid.
+
+   But the comment says "If the range is valid", so we include the condition.
+
+8. **Can we simplify?** Since the method already checks the range, we know that when execution reaches the comment, the range is valid. But the specification is still conditional: **if** the inputs form a valid range, then bits outside are unchanged.
+
+   So we keep the implication.
+
+9. **Bit indices are nonnegative**, so `i >= 0` is necessary.
+
+### Final assert statement:
+
+<code>assert (fromIndex >= 0 &&
+--------------------

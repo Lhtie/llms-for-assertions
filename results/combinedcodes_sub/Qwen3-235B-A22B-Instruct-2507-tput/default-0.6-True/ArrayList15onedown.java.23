@@ -1,0 +1,148 @@
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If the index is valid, every element after the replaced position remains unchanged.
+
+This means:
+- The condition is that the index is valid (i.e., within bounds).
+- If that condition holds, then for all positions `i` greater than `index`, the element at position `i` after the operation is the same as it was before.
+
+We can use:
+- `\old(...)` to refer to the state before the method call.
+- `this.get(i)` to observe the element at index `i` (public observer method).
+- A universal quantifier `\forall` to express "every element after the replaced position".
+- The implication `=>` to express "if index is valid, then ...".
+
+Note: The method `Objects.checkIndex(index, size)` will throw an exception if the index is invalid, so by the time we reach the assert (assuming normal execution), the index is valid. However, the specification comment is still conditional: "if the index is valid".
+
+But in JML-style assertions, we often write postconditions that are only required to hold when the precondition holds. Since the method throws `IndexOutOfBoundsException` for invalid indices (enforced by `checkIndex`), the postcondition only needs to hold when the index is valid.
+
+So the assert should express:
+> If the index is valid, then for all i such that `index < i < this.size()`, the element at i remains unchanged.
+
+But note: the size of the list does not change in `set`, so `\old(this.size())` equals `this.size()`.
+
+Also, since `index` must be in bounds (due to `checkIndex`), we can assume `0 <= index < size`.
+
+We want to say: for all `i` where `index < i < size`, `this.get(i)` is unchanged.
+
+Final assert:
+
+<code>assert \forall int i; index < i && i < this.size(); this.get(i).equals(\old(this.get(i)));</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the given code:
+
+```java
+// @@@ If the index is valid, every element after the replaced position remains unchanged.
+```
+
+We are to write an assert statement that captures this natural language assertion.
+
+### Step-by-step breakdown:
+
+1. **Premise**: The index is valid.  
+   From the code, we see that `Objects.checkIndex(index, size)` is called, which ensures the index is in the range `[0, size)`. So, the validity of the index is already checked.
+
+2. **Consequence**: Every element **after** the replaced position (i.e., at indices greater than `index`) remains unchanged after the `set` operation.
+
+3. **How to express "remains unchanged"**?  
+   We compare the value at each position `i` after `index` in the current state with its value before the method call using `\old(...)`.
+
+4. **Quantification**: For all indices `i` such that `index < i < size`, the element at `i` should be equal to what it was before the method call.
+
+5. **Accessing elements**: The method `get(i)` is publicly accessible and returns the element at position `i`.
+
+6. **Use of `\old`**: We need to compare `this.get(i)` with `\old(this.get(i))`.
+
+7. **Implication**: The entire assertion only applies **if** the index is valid. But since the method throws an exception otherwise, and we're reasoning about normal postconditions, we can assume the index is valid (as the comment says "if the index is valid"). However, to be safe and match the structure of previous examples, we use implication.
+
+But note: in the context of postconditions, if an exception is thrown, the normal postcondition doesn't hold. Since the method returns normally only when the index is valid, we could write the assertion unconditionally. However, the comment says "if", so we follow the pattern from earlier examples and use implication.
+
+But actually, in the previous examples, when a precondition like index validity was checked, the assert used implication. For example:
+```java
+assert index>=0 && index<=9 => \forall int i; 0<=i && i<index; ...
+```
+
+So we follow that pattern.
+
+### Final assert statement:
+
+We want:
+- If the index is valid (`0 <= index < size`), then for all `i` such that `index < i < size`, `this.get(i)` equals `\old(this.get(i))`.
+
+Note: At the time of the postcondition, `size` may have changed? But in this method, `size` does **not** change — we are replacing an element, not adding or removing. So `size` remains the same.
+
+But to be precise, we should use `\old(this.size())` or `this.size()`? Since `size` doesn't change, both are same. But to emphasize that the upper bound is the same as before, and to avoid any confusion, using `\old(this.size())` is safer.
+
+However, the method does not modify `size`, so `this.size()` == `\old(this.size())`.
+
+But in the loop, we are iterating from `index+1` to `size-1`.
+
+So:
+
+```java
+assert 0 <= index && index < this.size() => \forall int i; index < i && i < this.size(); this.get(i).equals(\old(this.get(i)));
+```
+
+But wait — is `this.size()` changed? No. So we can use `this.size()`.
+
+Alternatively, to be consistent with the use of `\old` for pre-state values, and since the comment refers to "after the replaced position" in the context of the original array, it's clearer to use `\old(this.size())` for the upper bound.
+
+But again, it's unchanged.
+
+We'll use `this.size()` for simplicity and correctness.
+
+Also, note that `this.size()` returns the current size, which equals the old size.
+
+So final assertion:
+
+<code>assert 0 <= index && index < this.size() => \forall int i; index < i && i < this.size(); this.get(i).equals(\old(this.get(i)));</code>
+--------------------
+The comment states: "If the index is valid, every element after the replaced position remains unchanged."
+
+This means that for all indices greater than the given `index`, the elements in the list after the `set` operation should be the same as they were before the operation.
+
+We can express this using the `\forall` quantifier for indices `i` such that `i > index` and `i < this.size()`, and we compare the current value at `i` with its old value.
+
+Also, the condition "if the index is valid" corresponds to the precondition checked by `Objects.checkIndex(index, size)`, which ensures `0 <= index < size`. Since this check is performed, we can rely on `index` being valid in the assert context.
+
+Thus, the assertion should state that **if the index is within bounds (which it will be, due to the check), then all elements at positions after `index` remain unchanged**.
+
+Final assert statement:
+
+<code>assert \forall int i; index < i && i < this.size(); this.get(i).equals(\old(this.get(i)));</code>
+--------------------
+The comment states:  
+"@@@ If the index is valid, every element after the replaced position remains unchanged."
+
+This means that for all indices greater than the given `index`, the elements in the list remain the same after the `set` operation.
+
+We can express this using:
+- A conditional implication: if the index is valid (which is checked by `Objects.checkIndex`, i.e., `0 <= index < size`), then for all positions `i` such that `i > index` and `i < size`, the element at `i` remains unchanged.
+- We compare the current value at `i` with the old value at `i` using `\old(this.get(i))`.
+
+Note: Since `get(i)` is a public observer method, we can use `this.get(i)` in the assertion.
+
+Final assert statement:
+
+<code>assert 0 <= index && index < size => \forall int i; index < i && i < size; this.get(i).equals(\old(this.get(i)));</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If the index is valid, every element after the replaced position remains unchanged.
+
+This means:
+- The condition is that the index is valid (which is already checked by `Objects.checkIndex(index, size)` in the code).
+- If that holds, then for all positions `i` greater than `index` and within the bounds of the list, the element at position `i` after the operation should be equal to what it was before the operation.
+
+We need to express:
+- For all `i` such that `index < i < this.size()`, the element at `i` remains unchanged.
+- Use `\old(this.get(i))` to refer to the value before the method call.
+- Use `this.get(i)` for the value after.
+- Since the method modifies only the element at `index`, all elements at positions after `index` should be equal to their old values.
+
+Also, note that `size` does not change in `set`, so `\old(this.size())` equals `this.size()`.
+
+Thus, the correct assertion is:
+
+<code>assert index >= 0 && index < this.size() => \forall int i; index < i && i < this.size(); this.get(i).equals(\old(this.get(i)));</code>
+--------------------

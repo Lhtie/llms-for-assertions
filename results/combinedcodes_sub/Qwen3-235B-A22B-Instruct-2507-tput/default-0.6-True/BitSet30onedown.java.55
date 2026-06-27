@@ -1,0 +1,288 @@
+Let's analyze the comment starting with "@@@":
+
+> For every valid bit index in this BitSet, the bit's value after the XOR operation equals the XOR of its original value and the corresponding bit in the argument set.
+
+We need to express this as a formal `assert` statement using the JML-style syntax.
+
+### Step-by-step breakdown:
+
+1. **Quantifier**: The statement says "for every valid bit index", so we need a universal quantifier: `\forall int i; ...`.
+
+2. **Valid bit index**: What is the range of valid bit indices?
+   - The "valid" bits are those less than the logical size of the BitSet.
+   - The logical size is given by the `length()` method, which returns "the index of the highest set bit plus one", or zero if no bits are set.
+   - So valid indices are from `0` to `this.length() - 1`, inclusive.
+   - However, note that the `xor` operation may affect bits beyond the current `length()` if the argument `set` has a larger `length()`. The result should reflect the XOR of bits up to the maximum of both lengths.
+
+   But observe: the specification says "every valid bit index in this BitSet". After the operation, the BitSet may have a new length. However, the meaningful bits are those that are within the logical range affected by the operation.
+
+   Looking at the implementation and the comment, it's clear that the operation modifies bits up to `set.wordsInUse`, which may extend the length.
+
+   But the comment says "in this BitSet" — and after the operation, the BitSet includes all bits up to the new length.
+
+   So we should consider all bit indices `i` such that `i < this.length()` **after** the operation, but also note that bits beyond the original length were implicitly `false`.
+
+   However, the comment says "valid bit index in this BitSet" — and after the operation, the valid range is up to `this.length()`.
+
+   But actually, the `length()` method returns the logical length — so any bit beyond `length()` is considered `false`.
+
+   However, to be safe and complete, the specification should cover **all bits that are logically present**, i.e., all bits that are in use after the operation.
+
+   But the comment says "in this BitSet", so we interpret that as all indices `i` for which `i < this.length()` **after** the operation.
+
+   However, note that `length()` may increase. So we need to quantify over all `i` such that `i < this.length()`.
+
+   But also, bits that are beyond the old `length()` but in the new one were `false` before.
+
+   So for **all** `i >= 0`, we could say:
+   ```
+   this.get(i) == (\old(this.get(i)) ^ set.get(i))
+   ```
+   But we can't quantify over infinite integers.
+
+   However, note the invariant: all bits beyond `length()` are `false`. So it suffices to quantify up to `this.length()` after the operation, and also ensure that beyond that, both sides are `false`.
+
+   But the comment says "for every valid bit index in this BitSet", and `valid` likely means `i < this.length()`.
+
+   So we can write:
+   ```
+   \forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) ^ set.get(i))
+   ```
+
+   But wait: what if `set` has bits set beyond the old `this.length()`? Then `this` may now have bits set beyond the old length, so `this.length()` increases. But for those bits, `\old(this.get(i))` is `false` (since they were not set), so `false ^ set.get(i)` = `set.get(i)`, and after XOR, `this.get(i)` should equal `set.get(i)` — which is correct.
+
+   Also, for bits within the old range, it's the XOR of old value and `set`'s bit.
+
+   So this quantification over `i < this.length()` **after** the operation is sufficient? Not quite: what about bits that are now `false` and beyond the new `length()`? They are not "valid" indices, so we don't care.
+
+   But actually, the `length()` is defined as the highest set bit + 1. So if a bit was set and then cleared by XOR, the `length()` may decrease. So we must also consider that some bits that were in the old `length()` range may now be beyond the new `length()`.
+
+   But the comment says "valid bit index in this BitSet" — meaning **after** the operation. So we only care about `i < this.length()`.
+
+   However, that misses the point: the XOR operation affects **all** bits in the union of the two
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> For every valid bit index in this BitSet, the bit's value after the XOR operation equals the XOR of its original value and the corresponding bit in the argument set.
+
+We need to express this as a formal `assert` statement using the specified syntax rules.
+
+### Step-by-step breakdown:
+
+1. **Quantification**: The statement says "for every valid bit index", so we need a universal quantifier `\forall`.
+
+2. **Range of indices**: A "valid bit index" means an index that is within the logical range of bits that could be set. Since the `BitSet` has a `length()` method that returns the logical size (index of highest set bit + 1), valid indices go from `0` to `this.length() - 1`. However, the XOR operation may extend the logical size (since `set` could have higher bits), so we must consider up to the maximum of the two lengths.
+
+   But note: the method modifies `this` BitSet, and after `recalculateWordsInUse()`, the `length()` reflects the new state. So to be safe, we should consider all indices up to the maximum of the original `this.length()` and `set.length()`, but since we can't refer to variables outside, and we want to express correctness for all bits that are meaningful.
+
+   However, the specification says "every valid bit index in this BitSet" — but after modification, "this BitSet" includes bits from the argument. So actually, we should consider all non-negative integers up to the effective length post-operation.
+
+   But note: `get(i)` is defined for all non-negative `i`, returning `false` if beyond current set bits. So we can consider all `i >= 0`, but that’s infinite. Instead, we rely on the fact that beyond `length()`, all bits are `false`.
+
+   So it's sufficient to say: for all `i >= 0`, the new value of bit `i` is equal to the XOR of the old value of bit `i` in `this` and the value of bit `i` in `set`.
+
+   However, since `BitSet` is conceptually infinite, but only tracks up to `length()`, we can use the fact that `get(i)` returns `false` for unset bits.
+
+   Therefore, we can quantify over all `i >= 0`, but that's not feasible in practice. Instead, we rely on the specification of `get(i)` and express the property for all `i`.
+
+   But in JML-style assertions, we often use bounded reasoning. However, the comment says "every valid bit index", which likely means every index that is relevant — i.e., where either `this` or `set` has a bit set.
+
+   But to be precise and safe, and since `get(i)` is defined for all `i`, we can write:
+
+   `\forall int i; i >= 0; ...`
+
+   But this is not computable. However, in formal specifications, this is acceptable.
+
+   Alternatively, we can bound it to a sufficiently large number, but the specification doesn't suggest that.
+
+   Looking at the method's behavior: it operates on `words` arrays, and the effective length is determined by the highest set bit. But the specification should be logical, not implementation-bound.
+
+   The natural interpretation is: for all bit indices `i`, the resulting bit is the XOR of the original bits.
+
+3. **Expression**:
+   - After operation: `this.get(i)`
+   - Before operation: `\old(this.get(i))`
+   - From argument: `set.get(i)`
+   - XOR of boolean values: in Java, we can't XOR booleans directly, but logically, `a XOR b` is `(a && !b) || (!a && b)`, or equivalently `a != b`
+
+   So: `this.get(i)` should equal `\old(this.get(i)) != set.get(i)`
+
+4. **Final assert**:
+   We write:
+   ```
+   \forall int i; i >= 0; this.get(i) == (\old(this.get(i)) != set.get(i))
+   ```
+
+   But is `i >= 0` necessary? Yes, because `get(i)` throws exception if `i < 0`, but the method `xor` doesn't call `get` on negative indices. However, our specification should only consider valid indices. The `get` method throws `IndexOutOfBoundsException` for negative indices, so we must restrict `i >= 0`.
+
+   So the domain is `i >= 0`.
+
+   However, in practice, `BitSet` allows any non-negative index, so we quantify over all `i >= 0`.
+
+   But note: the method does not modify bits at negative indices (they don't exist), so we are safe.
+
+5. **Use of `\old`**: We must capture the state of `
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> For every valid bit index in this BitSet, the bit's value after the XOR operation equals the XOR of its original value and the corresponding bit in the argument set.
+
+We need to express this as a formal `assert` statement using the specified syntax rules.
+
+### Step-by-step breakdown:
+
+1. **Quantification**: The statement says "for every valid bit index", so we need a universal quantifier: `\forall int i; cond; spec`.
+
+2. **Valid bit index**: What is a "valid bit index"?  
+   - The valid bits are those less than the logical size of the BitSet.
+   - The logical size is defined by the `length()` method, which returns "the index of the highest set bit plus one", or zero if no bits are set.
+   - So valid indices are `0 <= i < this.length()`.
+
+   However, note that after the XOR operation, the length may change. But the comment refers to "every valid bit index in this BitSet" — this likely means all indices that are relevant either before or after. But to be safe and consistent with the specification, we consider all indices up to the maximum of the two lengths? 
+
+   But the comment says "in this BitSet", and we're modifying `this`. Also, the operation may extend the size (since `wordsInUse` is updated and capacity may have been increased). However, the `length()` method reflects the logical length.
+
+   But note: the `get(i)` method is defined for all nonnegative `i`, returning `false` if the bit is not set. So technically, all nonnegative integers are valid indices, but only up to `length()` are potentially `true`.
+
+   However, the comment says "valid bit index in this BitSet". Given the context, and the fact that `length()` defines the logical size, it's reasonable to interpret "valid" as `i >= 0 && i < this.length()` **after** the operation? Or before?
+
+   But the operation can set new bits beyond the old length. So the new `length()` might be larger.
+
+   The key is: the XOR operation affects bits up to `set.wordsInUse * 64`, and we are copying all those words. So the resulting BitSet may have a longer `length()`.
+
+   The correct interpretation: for **all** bit indices `i` that are in the logical domain affected by the operation — but the comment says "in this BitSet", and after the operation, the logical size is `this.length()`.
+
+   However, the specification in the comment does **not** restrict to only up to `length()` — it says "every valid bit index in this BitSet", which after the operation is `0 <= i < this.length()`.
+
+   But wait: what about bits beyond the old `length()` but set by the XOR? They are now part of the BitSet.
+
+   Actually, the most precise interpretation is: for **all nonnegative integers `i`**, the result of `this.get(i)` after the operation should be equal to `old(this.get(i)) ^ set.get(i)`.
+
+   But the comment says "valid bit index in this BitSet". The Javadoc says: "The bits of a BitSet are indexed by nonnegative integers." So all `i >= 0` are valid.
+
+   However, the `length()` method returns the logical size. But the `get(i)` method supports any `i >= 0`.
+
+   So "valid bit index" means `i >= 0`.
+
+   But we cannot quantify over all `i >= 0` (infinite). However, in practice, only bits up to `max(this.length(), set.length())` can differ. But the comment does not specify a bound.
+
+   But observe: for `i >= max(this.length(), set.length())`, both `this.get(i)` and `set.get(i)` are `false`, so `false ^ false = false`, and after XOR, it should still be `false`. And since we don't touch higher words, it remains `false`.
+
+   But the `xor` method only processes up to `set.wordsInUse`, and ensures capacity. But if `set` has higher `wordsInUse`, we copy those words. So bits beyond the old `this.length()` but within `set`'s range are now set accordingly.
+
+   The key is: the operation is defined for all bits. But we can't write an infinite quantifier.
+
+   However, in formal specifications, we often write `\forall int i; i >= 0; ...` even if not computable — it's a logical assertion.
+
+   But in practice, for such BitSet implementations, the specification is usually given for all `i >= 0`.
+
+   Looking at the `toLongArray` and `toByteArray` specs, they use `n < 8 * bytes.length`, so they bound it.
+
+   But here, the comment does not bound
+--------------------
+Let's analyze the comment marked with "@@@":
+
+> For every valid bit index in this BitSet, the bit's value after the XOR operation equals the XOR of its original value and the corresponding bit in the argument set.
+
+We need to express this as a formal assert statement.
+
+### Step-by-step breakdown:
+
+1. **Quantification**: The statement says "for every valid bit index", so we need a universal quantifier: `\forall int i; ...`.
+
+2. **Valid bit index**: What is a "valid bit index"?  
+   - The valid bits are those less than the logical size of the BitSet, which is given by `this.length()`.  
+   - So the condition is: `i >= 0 && i < this.length()` (but note: `length()` returns the index of the highest set bit + 1, so it's the logical size).
+
+3. **Bit value after XOR**:  
+   - After the operation, the bit at index `i` is `this.get(i)`.
+
+4. **Original value of the bit**:  
+   - Before the operation, it's `\old(this.get(i))`.
+
+5. **Corresponding bit in the argument set**:  
+   - The argument is `set`, so we use `set.get(i)`.
+
+6. **XOR of original value and argument bit**:  
+   - In boolean logic, XOR is `!=`, because:
+     - `true != true` → `false`
+     - `true != false` → `true`
+     - etc.
+   - So the XOR of two booleans `a` and `b` is `a != b`.
+
+7. **Final condition**:  
+   - After the operation: `this.get(i)` should equal `\old(this.get(i)) != set.get(i)`.
+
+8. **Putting it all together**:
+   - Use `\forall int i;` with the range `i >= 0 && i < this.length()`
+   - Then assert that for each such `i`, the new bit value equals the XOR of the old bit and the argument bit.
+
+Note: We must be cautious — `set` is a parameter, and we assume it's not null (as per class contract). We don't need to check that.
+
+Also, the `length()` method returns the logical size, so indices from `0` to `length()-1` cover all potentially set bits. But note: bits beyond the current `wordsInUse` are implicitly `false`, and `get(i)` handles that correctly.
+
+So the assert statement is:
+
+<code>assert \forall int i; i >= 0 && i < this.length(); this.get(i) == (\old(this.get(i)) != set.get(i));</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> For every valid bit index in this BitSet, the bit's value after the XOR operation equals the XOR of its original value and the corresponding bit in the argument set.
+
+We need to translate this into a formal assert statement.
+
+### Step-by-step breakdown:
+1. **"For every valid bit index"** → This suggests a universal quantifier: `\forall int i; ...`
+2. **"in this BitSet"** → The valid bit indices are from `0` up to the logical size of the BitSet. The logical size is given by `this.length()`, which returns the index of the highest set bit plus one. So valid indices are `0 <= i < this.length()`.
+3. **"the bit's value after the XOR operation"** → This is `this.get(i)` after the method executes.
+4. **"equals the XOR of its original value and the corresponding bit in the argument set"** → 
+   - Original value: `\old(this.get(i))`
+   - Corresponding bit in `set`: `set.get(i)` (note: `set` is the parameter, and we assume it's accessible)
+   - XOR in boolean logic: `(a && !b) || (!a && b)` is equivalent to `a != b` (since `true != false` is true, etc.)
+
+So, the condition becomes:
+```
+this.get(i) == (\old(this.get(i)) != set.get(i))
+```
+
+But note: the method modifies `this`, and we're comparing each bit in `this` after modification to the XOR of its old value and the corresponding bit in `set`.
+
+Also, we must consider that the argument `set` might be `null`, but the class comment says: "passing a null parameter to any of the methods in a BitSet will result in a NullPointerException." So we don't need to guard against null in the assert.
+
+Now, we must express that **for all i from 0 to this.length()-1**, the above holds.
+
+However, note that `length()` may increase after the XOR if the other BitSet has higher set bits. But the comment says "valid bit index in this BitSet" — but after the operation, the logical size may have changed.
+
+But the comment says "valid bit index in this BitSet" — we interpret this as all indices that are relevant after the operation. Actually, the specification likely means all indices that are in the union of the ranges of both sets.
+
+But the comment says "in this BitSet", and after the operation, `this` has been modified and its length may have increased.
+
+Looking at the implementation: it uses `set.wordsInUse`, and may increase `wordsInUse`. Then `recalculateWordsInUse()` is called.
+
+So the correct range should be from `0` to `max(\old(this.length()), set.length()) - 1`, but we don't have a direct way to express that.
+
+However, note the specification of `length()`: it returns the index of the highest set bit plus one. So after XOR, the length of `this` is at least the max of the two lengths.
+
+But the comment says "every valid bit index in this BitSet" — meaning after the operation. So we should consider `0 <= i < this.length()`.
+
+But is that sufficient? What if a bit beyond the old `this.length()` is set due to XOR with `set`? Then `this.length()` will reflect that, so `i` will go up to the new length.
+
+So the quantifier should be:
+```
+\forall int i; 0 <= i && i < this.length(); this.get(i) == (\old(this.get(i)) != set.get(i))
+```
+
+But wait: for `i >= \old(this.length())`, `\old(this.get(i))` is `false` (since bits are false by default). So it's safe.
+
+Similarly, for `i >= set.length()`, `set.get(i)` returns `false`.
+
+So the expression `\old(this.get(i)) != set.get(i)` is well-defined for all `i >= 0`.
+
+But we only need to check up to `this.length()` after the operation? Actually, no: `this.length()` is the highest set bit + 1. But there might be bits beyond that which are clear, but we don't care about them? Actually, the `length()` method defines the logical size.
+
+But the comment says "every valid bit index in this BitSet" — and the valid indices are from 0 to `length()-1`.
+
+So we assert for all `i` in `[0, this.length())`.
+
+But note: after XOR, some bits may be cleared, so the length may decrease. But we still need to check all bits that are within the new `length()`? Actually, no: the `length()` is the highest set bit + 1. So bits beyond that are not considered "in
+--------------------

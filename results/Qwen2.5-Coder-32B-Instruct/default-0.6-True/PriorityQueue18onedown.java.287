@@ -1,6 +1,48 @@
 <code>assert !this.isEmpty() => this.peek().compareTo(\old(this.peek())) >= 0;</code>
 --------------------
+<code>assert !this.isEmpty() => this.comparator().compare(this.peek(), \old(this.peek())) >= 0;</code>
+
+However, since the comparator might be null, we should handle the case where the natural ordering is used:
+
+<code>assert !this.isEmpty() => (this.comparator() != null ? this.comparator().compare(this.peek(), \old(this.peek())) : ((Comparable&lt;? super E&gt;) this.peek()).compareTo((Comparable&lt;? super E&gt;) \old(this.peek()))) >= 0;</code>
+--------------------
 <code>assert !this.isEmpty() => this.peek().compareTo(\old(this.peek())) >= 0;</code>
+--------------------
+Let's analyze the given comment and derive the appropriate assert statement.
+
+The comment states:
+```
+// @@@ If the queue is still non-empty after removal, then the new head is greater than or equal to the old head according to the queue's ordering.
+```
+
+To translate this into an assert statement, we need to capture the following points:
+1. Check if the queue is non-empty after the removal.
+2. Compare the new head of the queue with the old head according to the queue's ordering.
+
+We can use `\old(this.peek())` to refer to the old head of the queue before the removal and `this.peek()` to refer to the new head of the queue after the removal. Since the queue's ordering is determined by the comparator, we need to use the comparator to compare the elements.
+
+Here is the assert statement that captures these conditions:
+
+```java
+assert !this.isEmpty() => (this.comparator() == null ? ((Comparable<? super E>) \old(this.peek())).compareTo(this.peek()) <= 0 : this.comparator().compare(\old(this.peek()), this.peek()) <= 0);
+```
+
+This assert statement checks:
+- If the queue is non-empty (`!this.isEmpty()`).
+- If the comparator is `null`, it compares the old head and the new head using the natural ordering.
+- If the comparator is not `null`, it uses the comparator to compare the old head and the new head.
+
+However, the above statement can be simplified because the `removeAt` method ensures that the new head is correctly adjusted to maintain the heap property. Therefore, we can simplify the assertion to just check the condition when the queue is non-empty:
+
+```java
+assert !this.isEmpty() => (this.comparator() == null ? ((Comparable<? super E>) this.peek()).compareTo(\old(this.peek())) >= 0 : this.comparator().compare(this.peek(), \old(this.peek())) >= 0);
+```
+
+This simplification assumes that after removal, the new head is indeed greater than or equal to the old head according to the queue's ordering, which is ensured by the `removeAt` method maintaining the heap property.
+
+Thus, the final assert statement is:
+
+<code>assert !this.isEmpty() => (this.comparator() == null ? ((Comparable&lt;? super E&gt;) this.peek()).compareTo(\old(this.peek())) &gt;= 0 : this.comparator().compare(this.peek(), \old(this.peek())) &gt;= 0);</code>
 --------------------
 <code>assert !this.isEmpty() => this.peek().compareTo(\old(this.peek())) >= 0;</code>
 --------------------

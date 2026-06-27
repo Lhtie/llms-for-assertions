@@ -1,0 +1,255 @@
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If the collection is not null, every element from the collection is contained in this priority queue after initialization.
+
+We need to convert this natural language assertion into a formal `assert` statement in Java, using the specified syntax rules.
+
+Step-by-step breakdown:
+
+1. The condition is: "If the collection is not null"
+   - This translates to: `c != null`
+2. The consequence is: "every element from the collection is contained in this priority queue after initialization"
+   - For all elements `e` in the collection `c`, `this.contains(e)` must be true.
+   - We can express "for all elements in the collection" using a universal quantifier over the elements of `c`.
+   - Since `c` is a `Collection<? extends E>`, we can iterate over it or use its elements in a logical expression.
+   - However, in the context of an assert statement, and given the allowed syntax, we can use:  
+     `\forall Object e; c.contains(e); this.contains(e)`
+     But caution: this assumes `c.contains(e)` is meaningful and symmetric, which it is for standard collections.
+
+   However, a safer and more direct interpretation is:  
+   For every element `e` in `c`, after construction, `this.contains(e)` is true.
+
+   But note: we cannot use Java's enhanced for-loop in an assert specification. Instead, we rely on logical quantifiers.
+
+   Since the collection `c` is the input, and we are constructing `this`, we want:
+   If `c != null`, then for every element `e` in `c`, `this.contains(e)` holds.
+
+   But how to quantify over elements in a collection?  
+   We can use:  
+   `\forall Object e; c.contains(e); this.contains(e)`
+
+   However, this may not be precise if `c` has duplicates — but `contains` only checks presence.
+
+   But note: `contains` checks for "at least one" equal element. So if `c` contains duplicates, we only require that `this` contains at least one copy — which is acceptable.
+
+   Also, the constructor ensures all elements are added, so this should hold.
+
+3. Combine with implication:
+   `c != null => \forall Object e; c.contains(e); this.contains(e)`
+
+But wait: is `c.contains(e)` safe in the post-state? Yes, because `c` is not modified.
+
+However, a better way — since we are in the constructor — is to rely on the fact that all elements of `c` are now in `this`. So we can write:
+
+`c != null => \forall Object e; c.contains(e); this.contains(e)`
+
+But there's a nuance: `c.contains(e)` may include `null` — but the class documentation says: "A priority queue does not permit null elements." And the constructor throws `NullPointerException` if any element is null. So we can assume no nulls.
+
+Also, the specification says "if the collection is not null", so we guard with `c != null`.
+
+Therefore, the correct assert statement is:
+
+<code>assert c != null => \forall Object e; c.contains(e); this.contains(e);</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the given code:
+
+```java
+// @@@ If the collection is not null, every element from the collection is contained in this priority queue after initialization.
+```
+
+This comment specifies a condition:
+- **Premise**: The input collection `c` is not null.
+- **Conclusion**: After the constructor finishes, every element from the collection `c` is contained in the priority queue.
+
+We are to write an `assert` statement that captures this specification.
+
+Steps:
+1. The constructor takes a `Collection<? extends E> c`.
+2. The comment says "if the collection is not null", so we need a conditional (implication).
+3. If `c != null`, then for every element `e` in `c`, `this.contains(e)` must be true after construction.
+4. Since this is a constructor, we are asserting a postcondition. We can refer to the state at the beginning using `\old(...)`, but note: the queue is being constructed, so the "old" state of `this` is not meaningful. However, the collection `c` is a parameter and can be referenced.
+5. We cannot use `\result` here because constructors don't return a value.
+6. We need to express: `c != null` implies that for all elements `e` in `c`, `this.contains(e)` holds.
+
+But note: we cannot directly iterate over `c` in a formal assertion. However, in specification languages like JML (which this seems to mimic), we can use `\forall` over objects.
+
+We can write:
+`\forall Object e; c != null && c.contains(e); this.contains(e)`
+
+But caution: this says "for all objects e, if c is not null and c contains e, then this contains e", which is what we want.
+
+However, we must be careful: `c` is a parameter, and we are in the constructor. The collection `c` is not modified, so we don't need `\old(c)`.
+
+But: the collection `c` might be modified by other threads? Not relevant here. We assume it's not modified during construction.
+
+So the correct assertion is:
+
+<code>assert c != null => \forall Object e; c.contains(e); this.contains(e);</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the given code:
+
+```java
+// @@@ If the collection is not null, every element from the collection is contained in this priority queue after initialization.
+```
+
+This comment specifies a condition:
+- **Premise**: The input collection `c` is not null.
+- **Conclusion**: After the constructor finishes, every element from the collection `c` is contained in the priority queue.
+
+We need to express this as an assert statement using the rules provided.
+
+Step-by-step:
+1. The constructor takes a `Collection<? extends E> c`.
+2. The comment says "if the collection is not null", so we have a conditional: `c != null => ...`
+3. The conclusion is that every element in `c` is contained in the priority queue after initialization.
+4. To express "every element", we use `\forall`.
+5. However, since we are in a constructor and cannot iterate over `c` in a standard way in a formal spec, and given the examples, we are to use observable properties.
+6. The `contains(Object o)` method is available.
+7. We want: for all elements `e` in `c`, `this.contains(e)` is true.
+8. But in the syntax allowed, we cannot directly quantify over elements of a collection unless we use Java Modeling Language (JML)-like constructs. However, from the examples, we see that `\forall int i; ...` is used when iterating over indices.
+
+But here, `c` is a `Collection`, not an array, so we can't index into it. However, note that the examples use `this.query(i)` with integer indices because the class has a `get(int index)` method.
+
+But in this case, we don't have a direct way to iterate over `c` in the assertion. However, observe the pattern in the examples: they use `\old(...)` and `\result`, but here we are in a constructor, so `\old` refers to pre-state.
+
+But the comment says "after initialization", so we are in the post-state.
+
+We cannot write `\forall E e; c.contains(e); this.contains(e)` because that’s not valid syntax per the rules — we are restricted to the syntax shown in examples.
+
+But looking at the rules, we are told:
+> If the assert statment needs to express that the `spec` should hold for each int variable `i` where `cond` holds, you may use `\forall int i; cond; spec` syntax.
+
+We don't have an index-based access to `c`. However, note that the examples only use `\forall` over integer indices when the structure supports indexed access.
+
+But here, we are not iterating over the queue using indices, but over the input collection.
+
+But wait — the examples also show using `this.contains(value)`, so we can use `this.contains(...)`.
+
+But how to express "for all elements in `c`"?
+
+Actually, the examples don't show a way to quantify over arbitrary collections. But in the absence of indexed access, and given that the only way to check containment is via `contains`, perhaps the intended way is to rely on the fact that the collection is passed in, and we can only write assertions using available observer methods.
+
+But the rule says: "Use only publicly accessible observer methods provided in the test function."
+
+In this context, the observer methods are:
+- `this.contains(Object o)`
+- `this.size()`
+- `this.peek()`
+- `this.toArray()`, etc.
+
+We can use `this.toArray()` to get all elements, but the comment says "every element from the collection is contained", so we need to check that `c`'s elements are in `this`.
+
+But we cannot write a nested quantifier over `c`'s elements unless we have a way to iterate.
+
+However, note that in the last example, they used a condition on `index` and then a universal quantifier over `i` with bounds.
+
+But here, we don't have an index for `c`.
+
+Alternative idea: perhaps we can use the fact that `c` is a local variable in the constructor, so we can refer to it directly in the assertion.
+
+But the rules don't prohibit that — they just say to use observer methods on `this`.
+
+So, can we write:
+
+`assert c == null || c.stream().allMatch(e -> this.contains(e));`
+
+No — because the syntax must be in JML-like form, and from the examples, they use `\forall` with integer indices.
+
+But wait — in the examples, they only used `\forall int i; ...` because the structure was indexed.
+
+Here, we don't have an index for `c`.
+
+But observe: the comment does **not** require us to use `\forall` — it just requires an assert statement that accurately reflects the natural language.
+
+And the examples show that when the collection has indexed access, they use `\forall int i; ...`.
+
+
+--------------------
+Let's analyze the comment marked with "@@@":
+
+> // @@@ If the collection is not null, every element from the collection is contained in this priority queue after initialization.
+
+This means:
+- Premise: The input collection `c` is not null.
+- Consequence: After the constructor finishes, every element that was in `c` is contained in `this` priority queue.
+
+We need to express this using an assert statement:
+- Use `\forall` to express "every element".
+- Use `=>` to express implication: if `c != null`, then for all elements `x` in `c`, `this.contains(x)` holds.
+- Since we're in a constructor, we cannot use `\old(c)` meaningfully for the state of `c`, but we can refer to the parameter `c` directly.
+- However, in specification languages like JML (which this syntax resembles), `\old` is used for pre-state values. But since `c` is a parameter and not modified, we can refer to it directly.
+- But to be safe and consistent with the idea of "before" the constructor runs, we should use `\old(c)` to refer to the parameter value at method entry.
+
+Also note: We are to check that **every** element `x` in `c` satisfies `this.contains(x)` after construction.
+
+So the correct assertion is:
+
+<code>assert \old(c) != null => (\forall Object x; \old(c).contains(x); this.contains(x));</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If the collection is not null, every element from the collection is contained in this priority queue after initialization.
+
+This means:
+- Premise: The input collection `c` is not null.
+- Consequence: After the constructor runs, every element that was in the collection `c` is now contained in the priority queue (`this`).
+
+We are to write an `assert` statement that captures this condition.
+
+Important points:
+- We are in the constructor `PriorityQueue(Collection<? extends E> c)`.
+- We need to refer to the state of the collection `c` at the beginning (i.e., `\old(c)`), but note that `c` is a parameter and its contents may not change, but we are concerned with its elements.
+- We need to express that **for every element** in the original collection, the priority queue now contains that element.
+- We can use `\forall` to quantify over elements in the collection.
+- However, JML (Java Modeling Language) does not allow quantification over object members like `Collection` elements directly in the way we might want. But in this context, since we are writing a logical assertion, and assuming standard extensions, we can express: for all elements `x` in `c`, `this.contains(x)` holds.
+
+But note: `c` could be any `Collection`, and we cannot iterate over it in a JML expression. However, the intended meaning is clear: after construction, the priority queue contains all elements of `c`, **provided** `c` is not null.
+
+So the correct logical structure is:
+
+`c != null` implies that for every element `x` in `c`, `this.contains(x)` is true.
+
+But JML does not support "for all x in c" directly. However, in OpenJML-style specifications, we sometimes see workarounds using `c.contains(x)` as part of a condition, but that would be circular.
+
+Alternatively, we interpret the intent: the constructor is supposed to copy **all** elements from `c` into the queue. So the specification is:
+
+> If `c != null`, then after construction, for every element `x` that is in `c`, `this.contains(x)` is true.
+
+But since we can't quantify over elements of a collection in standard JML without a loop or helper, and given the examples provided earlier use `this.query(i)` over indices, we must rely on higher-level observer methods.
+
+Wait — the specification comment does **not** require us to use indices or loops. It just says every element from the collection is contained.
+
+But in JML, to express "all elements of a collection", we often assume a specification-only method or use a `forall` over integers if the collection were indexed. However, `Collection` is not indexed.
+
+But note: in the context of this problem, the previous examples used `this.query(i)` because the class had such a method. Here, we have `contains(Object o)` and `toArray()`.
+
+A safe and common way to express "all elements of c are in this" is:
+
+Use the fact that we can't loop over `c`, but we can say: for any object `x`, if `x` was in `c` (i.e., `\old(c.contains(x))`), then `this.contains(x)` now holds.
+
+But caution: `c` might be modified by other threads, but in a constructor, we assume it's not. Also, `\old(c.contains(x))` is valid only if `c` is not null.
+
+So we can write:
+
+`c != null => \forall Object x; \old(c.contains(x)); this.contains(x)`
+
+But this is problematic because:
+- `c.contains(x)` may not be defined if `c` is null — but the premise protects it.
+- However, `\old(c.contains(x))` requires calling a method on `c`, which is allowed in JML as long as we are in a context where it's meaningful.
+
+But note: in JML, `\old` can be applied to method calls, so `\old(c.contains(x))` means the value of `c.contains(x)` at method entry.
+
+But there's a catch: `c` might be modified between entry and now — but in a constructor, and assuming no aliasing, it's safe.
+
+However, a more robust and standard way is to assume that the collection's contents are fixed at method entry.
+
+Given that this is a common idiom, and the examples provided use `\old(this.method())`, we can use `\old(c.contains(x))`.
+
+But we must ensure that `c` is not null — the implication handles that.
+
+So the assert statement becomes:
+
+`assert c != null => \forall Object x; \old(c.contains(x)); this.contains(x);`
+
+But wait — is `x` ranging over all possible objects? That would be inefficient, but logically correct
+--------------------

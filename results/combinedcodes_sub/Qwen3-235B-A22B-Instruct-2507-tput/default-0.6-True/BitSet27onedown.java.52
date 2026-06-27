@@ -1,0 +1,315 @@
+Let's analyze the comment starting with "@@@" in the given code:
+
+```java
+/**
+ * Sets the bits from the specified {@code fromIndex} (inclusive) to the
+ * specified {@code toIndex} (exclusive) to the specified value.
+ *
+ * @param  fromIndex index of the first bit to be set
+ * @param  toIndex index after the last bit to be set
+ * @param  value value to set the selected bits to
+ * @throws IndexOutOfBoundsException if {@code fromIndex} is negative,
+ *         or {@code toIndex} is negative, or {@code fromIndex} is
+ *         larger than {@code toIndex}
+ * @since  1.4
+ */
+public void set(int fromIndex, int toIndex, boolean value) {
+    if (value)
+        set(fromIndex, toIndex);
+    else
+        clear(fromIndex, toIndex);
+    // @@@ If the index range is valid, every bit outside the range [fromIndex, toIndex) remains unchanged after the operation.
+}
+```
+
+### Step-by-step analysis:
+
+1. **Comment meaning**: The comment says that *if the index range is valid*, then *every bit outside the range [fromIndex, toIndex)* should remain unchanged after the operation.
+
+2. **What is the condition for validity?**  
+   From the method's `@throws` clause:  
+   - `fromIndex < 0` → invalid  
+   - `toIndex < 0` → invalid  
+   - `fromIndex > toIndex` → invalid  
+   So the valid range is: `fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex`
+
+3. **What should be preserved?**  
+   For all bit indices `i` such that `i < fromIndex` OR `i >= toIndex` (i.e., outside the interval `[fromIndex, toIndex)`), the value of the bit should remain the same as before the operation.
+
+4. **How to express "remains unchanged"?**  
+   Use `\old(this.get(i))` to refer to the value before the method call, and compare it with `this.get(i)` after.
+
+5. **Quantification**:  
+   We need to say:  
+   If the range is valid, then for all `i` not in `[fromIndex, toIndex)`, the bit value is unchanged.
+
+   So:  
+   `(fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex)` implies  
+   `(\forall int i; (i >= 0 && (i < fromIndex || i >= toIndex)); this.get(i) == \old(this.get(i)))`
+
+6. **Note**: Bit indices are nonnegative, so we only consider `i >= 0`.
+
+7. **Final structure**:
+   ```
+   assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => 
+           \forall int i; i >= 0 && (i < fromIndex || i >= toIndex); 
+           this.get(i) == \old(this.get(i));
+   ```
+
+Now, write it properly with parentheses for grouping.
+
+<code>assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => \forall int i; i >= 0 && (i < fromIndex || i >= toIndex); this.get(i) == \old(this.get(i));</code>
+--------------------
+Let's analyze the comment marked with "@@@":
+
+```
+// @@@ If the index range is valid, every bit outside the range [fromIndex, toIndex) remains unchanged after the operation.
+```
+
+We are to generate an `assert` statement that captures this specification for the method:
+
+```java
+public void set(int fromIndex, int toIndex, boolean value)
+```
+
+### Step-by-step breakdown:
+
+1. **Premise**: The condition under which the assertion holds is that the index range is valid. From the method's documentation and typical behavior, we know that:
+   - `fromIndex >= 0`
+   - `toIndex >= 0`
+   - `fromIndex <= toIndex`
+   These are implied by "if the index range is valid", and the method throws `IndexOutOfBoundsException` otherwise.
+
+2. **Conclusion**: For all bit indices **outside** the range `[fromIndex, toIndex)`, the bit value remains unchanged after the operation.
+
+3. **How to express "unchanged"**:
+   - We can use `\old(...)` to refer to the value before the method call.
+   - For any bit index `i`, we can use `this.get(i)` to get its current value.
+   - So, for indices outside `[fromIndex, toIndex)`, we require:
+     - `this.get(i) == \old(this.get(i))`
+
+4. **Quantification**:
+   - We need to say: for all `i` such that `i < fromIndex` OR `i >= toIndex`, the bit remains unchanged.
+   - However, technically, a `BitSet` supports arbitrarily large indices, but we cannot loop over all integers.
+   - But in practice, only finitely many bits are "in use". However, the specification says "every bit", so we must assume it's for **all non-negative integers**.
+
+   But note: in formal specifications (like JML), we often assume bounded quantification over relevant ranges. However, the comment says "every bit", so we must capture all `i >= 0` such that `i < fromIndex || i >= toIndex`.
+
+   But since we can't quantify over infinite ranges, and given the examples provided earlier use bounded quantification (e.g., up to old size), we must infer a practical bound.
+
+   However, looking at the **examples** in the prompt, they used `\forall` with conditions like `0<=i && i<\old(this.getCount())`. But here, we don't have a count.
+
+   But observe: the `BitSet` grows as needed. However, bits not explicitly set are `false` by default. So changing bits in a range doesn't affect the logical value of bits far away — they remain `false` if they were `false`.
+
+   But the specification is about **all bits** outside the range — including those beyond current allocation.
+
+   However, since unallocated bits are conceptually `false`, and remain so unless touched, and this method only touches bits in `[fromIndex, toIndex)`, bits outside are unchanged.
+
+   But for the purpose of the `assert`, we can only check bits that are in some finite range? Not necessarily — in formal specs, `\forall int i; cond; spec` is allowed even if infinite, as a logical statement.
+
+   So we can write:
+
+   ```
+   \forall int i; (i >= 0 && (i < fromIndex || i >= toIndex)); this.get(i) == \old(this.get(i))
+   ```
+
+5. **Implication**:
+   - The statement only applies **if** the index range is valid.
+   - So we use: `(valid_range) => (\forall ...)`
+
+   Valid range: `fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex`
+
+6. **Final assert**:
+
+   ```java
+   assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => 
+           \forall int i; i >= 0 && (i < fromIndex || i >= toIndex); 
+           this.get(i) == \old(this.get(i));
+   ```
+
+   But note: operator precedence — `=>` has lower precedence than `&&`, so we must parenthesize the antecedent and the consequent if needed.
+
+   However, the `\forall` is a single expression, so:
+
+   ```java
+   assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => 
+           (\forall int i; i >= 0 && (i < fromIndex || i >= toIndex); this.get(i) == \old(this.get(i)));
+   ```
+
+   This ensures correct grouping.
+
+7. **Check against examples**:
+   - Similar to the example with `add_at_front`, which used: `index>=0 && index<=9 => \forall int i; ...`
+   - So this structure
+--------------------
+Let's analyze the comment marked with "@@@":
+
+```
+// @@@ If the index range is valid, every bit outside the range [fromIndex, toIndex) remains unchanged after the operation.
+```
+
+This comment is attached to the method:
+
+```java
+public void set(int fromIndex, int toIndex, boolean value)
+```
+
+The natural language assertion says:
+- **Premise**: The index range is valid (i.e., `fromIndex >= 0`, `toIndex >= 0`, and `fromIndex <= toIndex` — as per the method's throws clause).
+- **Conclusion**: Every bit **outside** the range `[fromIndex, toIndex)` remains **unchanged** after the operation.
+
+We need to express this using an `assert` statement with the following:
+- Use `\old(...)` to refer to the value of bits before the method call.
+- Use `this.get(i)` to query the current bit value.
+- Use `\forall` to quantify over all bit indices **not** in `[fromIndex, toIndex)`.
+- Use implication: if the indices are valid, then all bits outside remain unchanged.
+
+So:
+- For all `i` such that `0 <= i < fromIndex` or `i >= toIndex`, we must have `this.get(i) == \old(this.get(i))`.
+- But note: the BitSet can grow, so bits beyond the old size might be implicitly false. However, the method does not specify behavior for invalid indices, and we assume the precondition (valid indices) is checked.
+
+We are told to **only use publicly accessible observer methods**, so we use `this.get(i)`.
+
+We structure the assertion as:
+```
+(fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) =>
+    (\forall int i; (i >= 0 && i < fromIndex) || i >= toIndex; this.get(i) == \old(this.get(i)))
+```
+
+But note: we cannot iterate over unbounded `i >= toIndex`. However, in practice, for specification purposes, we assume that the quantifier is over all nonnegative integers (as bit indices are nonnegative), and the specification holds logically.
+
+But in practice, for such specifications, we often rely on the fact that `BitSet` is infinite in logical size, but only finite bits are stored. However, the comment says "every bit outside the range", meaning all bits with index not in `[fromIndex, toIndex)`.
+
+So the correct formalization is:
+
+<code>assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => \forall int i; (i >= 0 && i < fromIndex) || i >= toIndex; this.get(i) == \old(this.get(i));</code>
+
+But wait: the condition `i >= 0` is redundant because bit indices are nonnegative, and `get(i)` throws for negative `i`. But the method throws `IndexOutOfBoundsException` if `fromIndex < 0` or `toIndex < 0`, so under the premise, `fromIndex` and `toIndex` are nonnegative.
+
+Also, we must ensure the quantifier only ranges over valid indices (nonnegative). So we include `i >= 0`.
+
+But note: the range `[fromIndex, toIndex)` is half-open. So bits at index `fromIndex`, `fromIndex+1`, ..., `toIndex-1` may change. All others (i < fromIndex or i >= toIndex) must remain the same.
+
+Thus, the final assertion is:
+
+<code>assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => \forall int i; i >= 0 && (i < fromIndex || i >= toIndex); this.get(i) == \old(this.get(i));</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If the index range is valid, every bit outside the range [fromIndex, toIndex) remains unchanged after the operation.
+
+This is a comment for the method `set(int fromIndex, int toIndex, boolean value)`.
+
+We are to generate an assert statement that captures the specification:
+- **Premise**: The index range is valid. Based on the method's documentation, this means:  
+  `fromIndex >= 0`, `toIndex >= 0`, and `fromIndex <= toIndex`.
+- **Conclusion**: Every bit **outside** the range `[fromIndex, toIndex)` remains **unchanged** after the operation.
+
+To express this:
+- We need to say: if the indices are valid, then for all bit indices `i` such that `i < fromIndex` OR `i >= toIndex`, the value of `get(i)` after the operation is the same as `get(i)` before.
+- We can use `\old(...)` to refer to the value before the method call.
+- We use `\forall int i; condition; spec` to quantify over all bits outside the range.
+
+However, note that a BitSet is conceptually infinite (indexed by nonnegative integers), but in practice, we only need to consider bits that were in use before or might be affected. But the specification says "every bit", so we must express it generally.
+
+But in practice, for correctness, we only need to assert that all bits not in `[fromIndex, toIndex)` are unchanged, for all nonnegative `i` not in that interval.
+
+So the assert statement should be:
+
+```java
+assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => 
+    (\forall int i; (i >= 0 && i < fromIndex) || (i >= toIndex); 
+        this.get(i) == \old(this.get(i)));
+```
+
+But note: the range `[fromIndex, toIndex)` is **exclusive** of `toIndex`, so bits at `toIndex` and beyond are unchanged, and bits before `fromIndex` are unchanged.
+
+Also, bit indices are nonnegative, so `i >= 0` is implied by the domain of `get(i)`.
+
+However, calling `get(i)` for very large `i` may not be practical, but in formal specification, we assume it's defined (returns `false` for unset bits beyond current size).
+
+But in the context of the problem, we are to write a logical specification, not worry about performance.
+
+Also, the method throws `IndexOutOfBoundsException` if indices are invalid, so the premise `fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex` ensures no exception is thrown, and the operation proceeds.
+
+Thus, the correct assert is:
+
+<code>assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => (\forall int i; (i >= 0 && i < fromIndex) || i >= toIndex; this.get(i) == \old(this.get(i)));</code>
+--------------------
+Let's analyze the comment marked with "@@@" in the method:
+
+```java
+/**
+ * Sets the bits from the specified {@code fromIndex} (inclusive) to the
+ * specified {@code toIndex} (exclusive) to the specified value.
+ *
+ * @param  fromIndex index of the first bit to be set
+ * @param  toIndex index after the last bit to be set
+ * @param  value value to set the selected bits to
+ * @throws IndexOutOfBoundsException if {@code fromIndex} is negative,
+ *         or {@code toIndex} is negative, or {@code fromIndex} is
+ *         larger than {@code toIndex}
+ * @since  1.4
+ */
+public void set(int fromIndex, int toIndex, boolean value) {
+    if (value)
+        set(fromIndex, toIndex);
+    else
+        clear(fromIndex, toIndex);
+    // @@@ If the index range is valid, every bit outside the range [fromIndex, toIndex) remains unchanged after the operation.
+}
+```
+
+### Step-by-step reasoning:
+
+1. **Goal**: We need to write an `assert` statement that captures the specification in the comment:
+   > "If the index range is valid, every bit outside the range [fromIndex, toIndex) remains unchanged after the operation."
+
+2. **Premise**: The index range is valid. Based on the method's documentation, this means:
+   - `fromIndex >= 0`
+   - `toIndex >= 0`
+   - `fromIndex <= toIndex`
+   These are the conditions under which no exception is thrown.
+
+3. **Conclusion**: For all bit indices `i` that are **not** in the interval `[fromIndex, toIndex)`, the value of the bit at `i` after the operation is the same as before.
+
+   That is:
+   - For all `i` such that `i < fromIndex` OR `i >= toIndex`, we must have:
+     `this.get(i) == \old(this.get(i))`
+
+4. **Quantification**: We must use `\forall int i; cond; spec` to express that for all bits outside the range, the value is unchanged.
+
+   The condition `i` is outside `[fromIndex, toIndex)` is:
+   - `i < fromIndex || i >= toIndex`
+
+   But note: `BitSet` represents nonnegative indices only. So we consider `i >= 0`.
+
+   However, the method does not specify an upper bound on bit indices, but in practice, the `BitSet` grows as needed. But the specification only cares about bits that were meaningful before or after — however, the comment says "every bit outside the range", so we interpret this as: for **all** nonnegative integers `i` not in `[fromIndex, toIndex)`.
+
+   But we cannot quantify over all integers. However, in practice, only finitely many bits are stored, but the specification is logical.
+
+   But in the context of formal specifications (like JML), we can quantify over all `i` satisfying the condition, assuming the `get` method is defined for all nonnegative `i` (which it is — unset bits are `false`).
+
+   So we write:
+   ```
+   \forall int i; (i >= 0) && (i < fromIndex || i >= toIndex); this.get(i) == \old(this.get(i))
+   ```
+
+5. **Implication**: The whole statement only applies **if** the index range is valid. So we use implication:
+   ```
+   (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) =>
+   (\forall int i; i >= 0 && (i < fromIndex || i >= toIndex); this.get(i) == \old(this.get(i)))
+   ```
+
+6. **Parentheses**: Since `=>` has lower precedence than `&&`, we must parenthesize the antecedent and the consequent if they are compound.
+
+   So final form:
+   ```
+   (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => 
+     (\forall int i; i >= 0 && (i < fromIndex || i >= toIndex); this.get(i) == \old(this.get(i)))
+   ```
+
+This accurately reflects the natural language comment.
+
+<code>assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => (\forall int i; i >= 0 && (i < fromIndex || i >= toIndex); this.get(i) == \old(this.get(i)));</code>
+--------------------

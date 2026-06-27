@@ -1,0 +1,365 @@
+Let's analyze the comment starting with "@@@":
+
+> // @@@ The returned BitSet is not null and every word in its long array representation matches the corresponding input word.
+
+We need to convert this natural language assertion into a formal `assert` statement.
+
+### Step-by-step breakdown:
+
+1. **"The returned BitSet is not null"**  
+   → This means `\result != null`
+
+2. **"every word in its long array representation matches the corresponding input word"**  
+   → The method `toLongArray()` gives the long array representation of a BitSet.  
+   But here, we are in the static method `valueOf(long[] longs)`, which takes a `long[]` and returns a `BitSet`.  
+   The comment says that for the returned `BitSet`, when we look at its internal long array (via `toLongArray()`), each element should match the corresponding element in the input `longs` array — **but only up to the effective length**.
+
+   However, note the code:
+   ```java
+   for (n = longs.length; n > 0 && longs[n - 1] == 0; n--)
+       ;
+   return new BitSet(Arrays.copyOf(longs, n));
+   ```
+   This strips trailing zero words. So the resulting BitSet only includes words up to the last non-zero word.
+
+   But the comment says: "every word in its long array representation matches the corresponding input word" — meaning for all indices that are present in both arrays, the values are equal.
+
+   Also, from the specification of `toLongArray()`:
+   > `s.toLongArray()` returns a long array such that:
+   > `s.get(n) == ((longs[n/64] & (1L<<(n%64))) != 0)` for all `n < 64 * longs.length`
+
+   And similarly, `BitSet.valueOf(longs)` should satisfy:
+   > `BitSet.valueOf(longs).get(n) == ((longs[n/64] & (1L<<(n%64))) != 0)`
+
+   But here, the comment is about the internal representation being equal to the input after trimming.
+
+   However, the assertion is about the **returned BitSet's long array representation** matching the input.
+
+   We can get the long array of the result using `\result.toLongArray()`.
+
+   Let:
+   - `input = longs`
+   - `output = \result.toLongArray()`
+
+   The trimmed version only keeps `n` elements (non-zero suffix removed). So the output array should be equal to the trimmed input.
+
+   But the comment says "every word ... matches the corresponding input word". So for all indices `i` from `0` to `output.length - 1`, we must have:
+   `output[i] == longs[i]`
+
+   However, note: the input `longs` might have trailing zeros, which are removed. So we cannot say for all `i` in `longs`, but only for `i` in the result's array.
+
+   But the comment says "corresponding input word", so it implies element-wise equality for the words that are kept.
+
+   Also, the returned BitSet is not null.
+
+   So the assert becomes:
+
+   ```java
+   assert \result != null && \forall int i; 0 <= i && i < \result.toLongArray().length; \result.toLongArray()[i] == longs[i];
+   ```
+
+   But wait: is this safe? The `toLongArray()` method returns a new array with length `(s.length() + 63) / 64`, which is the number of words needed to represent the highest set bit.
+
+   And from the implementation, we know that the internal `words` array is `Arrays.copyOf(longs, n)` where `n` is the index of the last non-zero word.
+
+   So `result.words` has length `n`, and `result.toLongArray()` should return a copy of exactly that (since it's defined to return the internal representation).
+
+   Therefore, `\result.toLongArray()` returns an array of the same length as the trimmed `longs`, and each element should equal the corresponding element in the original `longs`.
+
+   However, we must be cautious: the `toLongArray()` method may not return the internal array directly, but a copy — but the values should still match.
+
+   So the condition is:
+
+   For all valid indices `i` in the result's long array, `result.toLongArray()[i] == longs[i]`
+
+   And `\result != null`
+
+   But note: `longs` could be empty. We don't need to worry — the quantifier handles bounds.
+
+   Also, we must ensure that we don't access `longs[i]` beyond its length. But since the result's `toLongArray()` length is at most
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> // @@@ The returned BitSet is not null and every word in its long array representation matches the corresponding input word.
+
+We are to generate an `assert` statement that captures this specification.
+
+Step-by-step breakdown:
+
+1. **"The returned BitSet is not null"**  
+   → This means `\result != null`
+
+2. **"every word in its long array representation matches the corresponding input word"**  
+   → The method `valueOf(long[] longs)` creates a `BitSet` from the input `longs` array.  
+   → From the code, we see that only the non-zero trailing part of `longs` is copied (`Arrays.copyOf(longs, n)` where `n` is the index of the last non-zero element).  
+   → But the comment says "every word in its long array representation matches the corresponding input word" — this refers to the internal `words` array of the returned `BitSet`.
+
+   We need to assert that for each index `i` in the valid range, the `i`-th element of the internal `words` array of the result equals `longs[i]`.
+
+   However, note that the resulting `BitSet` only copies the first `n` elements where `n` is the index of the last non-zero element. But the specification says "every word [...] matches the corresponding input word", implying that up to the logical length (i.e., up to the last non-zero word), the words are preserved.
+
+   But note: the input `longs` may have trailing zeros, and those are trimmed. So the resulting `BitSet`'s `words` array may be shorter.
+
+   However, the specification says "every word in its long array representation" — meaning the words that are actually present in the result — should match the corresponding input word.
+
+   So for all `i` such that `0 <= i < \result.words.length`, we must have `\result.words[i] == longs[i]`.
+
+   But `words` is a private field. We cannot access it directly in an assert unless it's accessible. However, we are allowed to use observer methods.
+
+   But note: we are generating a specification, not implementation-level code. In the context of formal specifications (like JML), we may assume structural access if needed, but the instructions say: **"Use only publicly accessible observer methods provided in the test function."**
+
+   However, there is no public method to get the internal `words` array. The only related public method is `toLongArray()`, which returns a `long[]` containing all the bits in the bit set in the form of longs.
+
+   From the documentation of `toLongArray()`:
+   > `longs.length == (s.length()+63)/64`  
+   > and `s.get(n) == ((longs[n/64] & (1L<<(n%64))) != 0)`
+
+   So `toLongArray()` returns a representation that includes all the bits up to the `length()`.
+
+   But note: the `valueOf` method is the inverse of `toLongArray()`.
+
+   The comment says: "every word in its long array representation matches the corresponding input word".
+
+   The "long array representation" likely refers to the array used internally or returned by `toLongArray()`.
+
+   But observe: the input `longs` array may be longer than the logical content (with trailing zeros). The `BitSet` trims trailing zero words.
+
+   However, the `toLongArray()` method returns an array of length `(length() + 63)/64`, which excludes trailing zero words.
+
+   So the result's `toLongArray()` should be equal to the input `longs` array with trailing zeros removed.
+
+   But the comment says: "every word in its long array representation matches the corresponding input word" — this suggests element-wise equality for the common prefix.
+
+   But note: the input `longs` may have trailing zeros, which are not included in the result.
+
+   However, the specification says "matches the corresponding input word" — so only for the indices that are present in the result.
+
+   But how do we compare?
+
+   Actually, the code does:
+   ```java
+   for (n = longs.length; n > 0 && longs[n - 1] == 0; n--)
+       ;
+   return new BitSet(Arrays.copyOf(longs, n));
+   ```
+
+   So the result's internal `words` array is exactly `Arrays.copyOf(longs, n)` — i.e., the prefix of `longs` up to the last non-zero word.
+
+   So the result's `words` array matches the input `longs` for all indices `0 <= i < n`, where `n` is the number of words retained.
+
+   But we cannot access `words`. However, we can use `
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> // @@@ The returned BitSet is not null and every word in its long array representation matches the corresponding input word.
+
+We are to generate an assert statement that reflects this natural language assertion.
+
+Step-by-step breakdown:
+
+1. **"The returned BitSet is not null"**  
+   → This means `\result != null`
+
+2. **"every word in its long array representation matches the corresponding input word"**  
+   → We need to compare the internal `words` array of the returned BitSet (`\result`) with the input `longs` array.  
+   → The method `toLongArray()` is a publicly accessible observer method that returns the long array representation of a BitSet.  
+   → So, we can use `\result.toLongArray()` to get the long array of the result.
+
+   However, note that the comment says "every word in its long array representation matches the corresponding input word".  
+   This implies:
+   - For all valid indices `i` in the `toLongArray()` result, `(\result.toLongArray())[i] == longs[i]`
+   - But also, the length should match: `\result.toLongArray().length == longs.length`?  
+     Actually, from the documentation of `toLongArray()`:  
+     > `longs.length == (s.length()+63)/64`  
+     So the length depends on the logical length, and trailing zero words may be omitted.
+
+   Looking at the implementation:
+   ```java
+   for (n = longs.length; n > 0 && longs[n - 1] == 0; n--)
+       ;
+   return new BitSet(Arrays.copyOf(longs, n));
+   ```
+   This means the returned BitSet only includes non-zero trailing words up to the last non-zero one. So the internal `words` array has length `n`, which is the number of non-zero trailing words.
+
+   But the comment says "every word in its long array representation matches the corresponding input word" — meaning for the words that are present (i.e., up to `n`), they should match.
+
+   However, the specification says "every word in its long array representation", and `toLongArray()` returns exactly the internal `words` array (from the `serializable` spec). So we can use `toLongArray()`.
+
+   Also, note that the input `longs` may have trailing zeros, but the result's `toLongArray()` will not include them.
+
+   But the condition is: for all `i` from `0` to `n-1` where `n = \result.toLongArray().length`, we must have:
+   ```
+   \result.toLongArray()[i] == longs[i]
+   ```
+
+   However, caution: the loop removes trailing zeros, so only the first `n` elements (where `n` is after trimming) are copied. So the condition is that for all `i` such that `0 <= i < \result.toLongArray().length`, the values must match.
+
+   But note: the input `longs` could be longer, but only the first `n` (non-trailing-zero part) is used.
+
+   So the correct specification is:
+   - `\result != null`
+   - Let `resultArray = \result.toLongArray()`, then for all `i` in `[0, resultArray.length)`, `resultArray[i] == longs[i]`
+
+   We can write this using `\forall`.
+
+3. We cannot use `\old(longs)` because `longs` is a parameter and not modified, but to be safe and clear, we can refer to the input as `longs`.
+
+4. Final assert:
+   ```
+   assert \result != null && \forall int i; 0 <= i && i < \result.toLongArray().length; \result.toLongArray()[i] == longs[i];
+   ```
+
+But note: calling `\result.toLongArray()` twice might be inefficient, but in specification language, it's acceptable.
+
+Also, we must ensure that `longs` is not null — but the comment doesn't specify null checks, and the method likely assumes non-null (as per class note: "passing a null parameter ... will result in a NullPointerException"). So we don't need to guard for null.
+
+Thus, the final assert statement is:
+
+<code>assert \result != null && \forall int i; 0 <= i && i < \result.toLongArray().length; \result.toLongArray()[i] == longs[i];</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> // @@@ The returned BitSet is not null and every word in its long array representation matches the corresponding input word.
+
+We are to generate an assert statement that reflects this natural language assertion.
+
+Step-by-step breakdown:
+
+1. The method `valueOf(long[] longs)` returns a `BitSet`.
+2. The first part of the assertion: "The returned BitSet is not null" → `\result != null`
+3. The second part: "every word in its long array representation matches the corresponding input word"
+   - The `BitSet`'s internal long array is `words`, but we cannot access it directly.
+   - However, the specification says we should use **publicly accessible observer methods**.
+   - The method `toLongArray()` is a public observer method that returns the long array representation of the `BitSet`.
+   - So, we can use `\result.toLongArray()` to get the long array of the returned `BitSet`.
+   - We must compare this array with the input `longs`, but only up to the meaningful length (note the loop in the code trims trailing zeros).
+   - The loop in the code: `for (n = longs.length; n > 0 && longs[n - 1] == 0; n--)` → this computes the effective length `n` (number of non-trailing-zero words).
+   - The returned BitSet uses `Arrays.copyOf(longs, n)`, so its `words` array has length `n`, and contains the first `n` elements of `longs`.
+
+So, the meaningful length of the result's `toLongArray()` should be `n`, which is the number of non-zero-trailing elements in `longs`.
+
+But we cannot use local variable `n` in the assert (it's not in scope for the specification). However, we can compute the effective length of the input `longs` by counting from the end until we hit a non-zero.
+
+But note: the specification must be written in terms of observable behavior and available methods.
+
+We can say:
+
+- The result is not null.
+- For all indices `i` from `0` to `(\result.toLongArray().length)` (exclusive), the value at `i` in the result's `toLongArray()` equals `longs[i]`.
+- But caution: what if `longs` has trailing zeros? The result's `toLongArray()` will be shorter.
+
+So, the length of `\result.toLongArray()` is the number of leading non-zero words in `longs` (after trimming trailing zeros).
+
+We can express this as:
+
+- Let `resultArray = \result.toLongArray()`
+- Then for all `i` in `[0, resultArray.length)`, `resultArray[i] == longs[i]`
+- Also, `resultArray.length` should be equal to the number of non-trailing-zero words in `longs`.
+
+But we can compute the effective length of `longs` as:
+
+`int len = longs.length; while (len > 0 && longs[len-1] == 0) len--;`
+
+We can express this in the assert using a helper? No, we can't define variables.
+
+But we can use `\result.toLongArray().length` and compare it with the effective length of `longs`.
+
+However, we are allowed to use `\old(...)` and expressions.
+
+But note: we cannot modify the input, so we can compute the effective length of `longs` using a quantified expression.
+
+We can define:
+
+Let `effLen` be the largest index such that `longs[effLen-1] != 0`, or 0 if all are zero.
+
+We can write:
+
+`int effLen = longs.length; while (effLen > 0 && longs[effLen-1] == 0) effLen--;`
+
+So, `\result.toLongArray().length == effLen`, and for all `i` in `[0, effLen)`, `\result.toLongArray()[i] == longs[i]`.
+
+But we cannot define `effLen`. So we can write:
+
+We need to assert:
+
+1. `\result != null`
+2. `\result.toLongArray().length` is equal to the number of non-trailing-zero words in `longs`
+3. For all `i` in `[0, \result.toLongArray().length)`, `\result.toLongArray()[i] == longs[i]`
+
+But condition (2) is actually implied by (3) and the fact that the array is trimmed — but we must ensure the length is correct.
+
+Alternatively, we can express the effective length as:
+
+`(\exists int k; k >= 0 && k < longs.length; longs[k] != 0) ? (max k such that longs[k] != 0) + 1 : 
+--------------------
+Let's analyze the comment marked with "@@@":
+
+> // @@@ The returned BitSet is not null and every word in its long array representation matches the corresponding input word.
+
+We are to generate an `assert` statement that captures this specification.
+
+Step-by-step breakdown:
+
+1. **"The returned BitSet is not null"**  
+   → This means: `\result != null`
+
+2. **"every word in its long array representation matches the corresponding input word"**  
+   → The method `toLongArray()` returns the long array representation of a BitSet.  
+     But here, we are in the `valueOf(long[] longs)` method, which takes a `long[]` and returns a `BitSet`.  
+     The specification says that the resulting BitSet, when converted back via `toLongArray()`, should have the same words as the input `longs` array — **up to the effective length**.
+
+   However, note the loop in the method:
+   ```java
+   for (n = longs.length; n > 0 && longs[n - 1] == 0; n--)
+       ;
+   ```
+   This strips trailing zero words. Then it uses `Arrays.copyOf(longs, n)` — so only the non-trailing-zero part is kept.
+
+   Therefore, the resulting BitSet's `toLongArray()` should be equal to `Arrays.copyOf(longs, n)` where `n` is the index after trimming trailing zeros.
+
+   But we cannot recompute `n` in the assertion. Instead, we note:
+
+   - The `BitSet` created uses `Arrays.copyOf(longs, n)` where `n` is the first index from the end where the value is non-zero (or 0 if all are zero).
+   - The `toLongArray()` method of the resulting `BitSet` returns exactly that non-zero-trimmed array.
+
+   So the condition is:  
+   `\result.toLongArray()` must equal the input `longs` array with trailing zeros removed.
+
+   However, the comment says "every word in its long array representation matches the corresponding input word". It does **not** require the arrays to be the same length — just that for the length of the result, the words match the input.
+
+   But note: the input may have trailing zeros, but the result's `toLongArray()` will not include them. So we must compare only up to the result's array length.
+
+   Let:
+   - `resultWords = \result.toLongArray()`
+   - Then for all `i` in `[0, resultWords.length)`, we must have `resultWords[i] == longs[i]`
+
+   Also, we must ensure that any elements beyond `resultWords.length` in the original `longs` array are zero (because they were stripped). But the comment does **not** say that — it only says that the words in the BitSet's representation match the input.
+
+   However, the specification in the comment is only about the words **in the BitSet's long array representation** — so we only need to assert that those match the corresponding words in the input.
+
+   So:
+   - `\result != null`
+   - `\forall int i; 0 <= i && i < \result.toLongArray().length; \result.toLongArray()[i] == longs[i]`
+
+   But note: we should avoid calling `\result.toLongArray()` twice. However, in specification languages like JML, repeated calls to pure methods are allowed and treated idempotently.
+
+   Also, we must consider the case where `longs` is empty or all zeros.
+
+   Example: if `longs = {0, 0}`, then `n` becomes 0, so `Arrays.copyOf(longs, 0)` is an empty array. Then `result.toLongArray()` should be empty. So the loop condition holds vacuously.
+
+   So the assertion holds.
+
+Final assertion:
+
+<code>assert \result != null && \forall int i; 0 <= i && i < \result.toLongArray().length && i < longs.length; \result.toLongArray()[i] == longs[i];</code>
+
+Wait — we can simplify: since `result.toLongArray().length` is at most `longs.length` (due to trimming), we can just say:
+
+<code>assert \result != null && \forall int i; 0 <= i && i < \result.toLongArray().length; \result.toLongArray()[i] == longs[i];</code>
+
+But is it safe to assume `i < longs.length`? Yes, because the result array length is `n`, which is `<= longs.length`, so `i < \result.toLongArray().length` implies `i < longs.length`.
+
+So we don't need the extra bound.
+
+However, what if `longs` is `null`? But the class comment says: "Unless otherwise
+--------------------

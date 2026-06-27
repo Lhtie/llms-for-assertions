@@ -1,0 +1,221 @@
+Let's analyze the comment starting with "@@@" in the `andNot(BitSet set)` method:
+
+> "@@@ Every bit in this BitSet is cleared if the corresponding bit in the specified BitSet was set, and left unchanged otherwise."
+
+This means:
+- For every bit index `i`:
+  - If `set.get(i)` is `true`, then after the operation, `this.get(i)` must be `false`.
+  - If `set.get(i)` is `false`, then after the operation, `this.get(i)` must be equal to what it was before (i.e., `\old(this.get(i))`).
+
+We can express this using a universal quantifier `\forall int i; ...` over all relevant bit indices.
+
+But what is the range of `i`? Since bit sets can grow, we should consider all bits up to the maximum logical size that could be affected. A safe upper bound is the maximum of:
+- The current length of `this` (`this.length()`)
+- The length of `set` (`set.length()`)
+
+However, in practice, the operation only affects bits up to `Math.min(wordsInUse, set.wordsInUse)` in terms of word-level operations, but bits beyond that may still be logically affected if one set is longer than the other.
+
+But note: if `set` has a bit set at position `i`, and `i` is beyond the current `wordsInUse` of `this`, then `this.get(i)` is currently `false`, and clearing it has no effect. So we can consider all `i >= 0`.
+
+But we cannot iterate over all integers. So we must consider up to the maximum length that might be relevant. However, in formal specifications, it's acceptable to quantify over all `i >= 0`, assuming the implementation handles unbounded bits.
+
+But in practice, for correctness, we can say: for all `i >= 0`, the final value of `this.get(i)` is:
+- `false` if `set.get(i)` is `true`
+- `\old(this.get(i))` if `set.get(i)` is `false`
+
+This can be written as:
+```
+\forall int i; i >= 0; 
+    (set.get(i) => !this.get(i)) && 
+    (!set.get(i) => this.get(i) == \old(this.get(i)))
+```
+
+But note: this quantifies over all non-negative integers, which is infinite. However, in formal specifications like JML, this is acceptable because it's logical.
+
+Alternatively, we can cap it at some large value, but the comment doesn't specify bounds, and the method works for all bits.
+
+Also, note that `set` is a parameter and is accessible as-is.
+
+So the correct assertion is:
+
+<code>assert \forall int i; i >= 0; (set.get(i) => !this.get(i)) && (!set.get(i) => this.get(i) == \old(this.get(i)));</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> Every bit in this BitSet is cleared if the corresponding bit in the specified BitSet was set, and left unchanged otherwise.
+
+This means:
+- For every bit index `i`:
+  - If `set.get(i)` is `true`, then after the operation, `this.get(i)` must be `false`.
+  - If `set.get(i)` is `false`, then after the operation, `this.get(i)` must be equal to what it was before (i.e., `\old(this.get(i))`).
+
+We can express this using a universal quantifier `\forall` over all bit indices `i`. However, note that the actual implementation works on words and the size may change, but logically, we care about all bits that are either in the original `this` or in `set`.
+
+But since `BitSet` is conceptually infinite (indexed by nonnegative integers), we cannot iterate over all integers. However, in practice, only bits up to `max(this.length(), set.length())` are relevant because beyond that, all bits are `false`.
+
+But to keep it precise and safe, we can rely on the fact that `get(i)` returns `false` for all sufficiently large `i`. So we can quantify over all `i >= 0`, but in code, we must avoid infinite loops. However, in specification (like in JML), `\forall int i; cond; spec` is allowed even if infinite, as long as it's logically sound.
+
+But we must be careful: we cannot loop infinitely in a real `assert` statement, but the question is asking for a *specification*, likely in a formal logic style (like JML), so we can use `\forall`.
+
+So the specification is:
+
+For all `i >= 0`:
+- If `set.get(i)` is `true`, then `!this.get(i)` after the operation.
+- If `set.get(i)` is `false`, then `this.get(i) == \old(this.get(i))`.
+
+We can write this as:
+```
+\forall int i; i >= 0;
+    (set.get(i) => !this.get(i)) && (!set.get(i) => this.get(i) == \old(this.get(i)))
+```
+
+But note: the method parameter `set` is not marked as `@NonNull`, but the class comment says: "passing a null parameter to any of the methods in a BitSet will result in a NullPointerException." So we can assume `set != null`, otherwise the behavior is undefined (and assert doesn't need to hold).
+
+Also, we must consider performance and practicality: in real JML, you might bound `i`, but the comment doesn't specify bounds, so we go with logical correctness.
+
+Alternatively, we can note that beyond `max(\old(this.length()), set.length())`, all bits are `false`, and the operation won't set any new bits to `true`, so bits remain `false`. But the comment says "every bit", so we should cover all.
+
+But the cleanest and most accurate formalization is the universal quantifier over all nonnegative integers.
+
+So the final assert statement is:
+
+<code>assert \forall int i; i >= 0; (set.get(i) => !this.get(i)) && (!set.get(i) => this.get(i) == \old(this.get(i)));</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> Every bit in this BitSet is cleared if the corresponding bit in the specified BitSet was set, and left unchanged otherwise.
+
+This means:
+- For every bit index `i`:
+  - If `set.get(i)` is `true`, then after the operation, `this.get(i)` must be `false`.
+  - If `set.get(i)` is `false`, then after the operation, `this.get(i)` must be equal to what it was before (i.e., `\old(this.get(i))`).
+
+We need to express this for all bit indices. Since BitSet can theoretically grow, we should consider all non-negative integers, but in practice, we can rely on the observable behavior through the `get` method.
+
+To capture the full meaning:
+- Use `\forall int i; i >= 0; ...` to quantify over all bit indices.
+- For each `i`, we have:
+  - If `set.get(i)` is true → `!this.get(i)` after the operation.
+  - If `set.get(i)` is false → `this.get(i) == \old(this.get(i))`.
+
+We can write this as:
+```
+\forall int i; i >= 0; (set.get(i) => !this.get(i)) && (!set.get(i) => this.get(i) == \old(this.get(i)))
+```
+
+But note: the method `andNot` modifies `this` based on `set`. The specification must hold for all bits, and we are allowed to use `this.get(i)` and `set.get(i)`.
+
+Also, we must ensure we are not assuming bounds beyond what the BitSet supports — but the `get(i)` method is defined for all non-negative `i` (returns `false` if beyond current size).
+
+So the correct and complete assert statement is:
+
+<code>assert \forall int i; i >= 0; (set.get(i) => !this.get(i)) && (!set.get(i) => this.get(i) == \old(this.get(i)));</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> "Every bit in this BitSet is cleared if the corresponding bit in the specified BitSet was set, and left unchanged otherwise."
+
+This means:
+- For every bit index `i`:
+  - If `set.get(i)` is `true`, then after the operation, `this.get(i)` must be `false`.
+  - If `set.get(i)` is `false`, then after the operation, `this.get(i)` must be equal to what it was before (i.e., `\old(this.get(i))`).
+
+We can express this using a universal quantifier `\forall` over all bit indices. However, note that the actual implementation uses arrays of longs and grows as needed, but the logical bit indices go up to the maximum of the lengths of the two bit sets.
+
+But since we don't know the exact upper bound and the specification should be general, we can consider all non-negative integers `i`, though in practice the BitSet has finite length. However, beyond `length()` the bits are implicitly `false`. But the method `andNot` only affects bits up to the size of the `words` array.
+
+But according to the comment, we need to express the behavior for all bits.
+
+So the correct formalization is:
+
+For all `i >= 0`:
+- If `set.get(i)` is `true`, then `this.get(i)` becomes `false`.
+- If `set.get(i)` is `false`, then `this.get(i)` remains `\old(this.get(i))`.
+
+We can write this as:
+
+```java
+\forall int i; i >= 0; (set.get(i) => !this.get(i)) && (!set.get(i) => this.get(i) == \old(this.get(i)))
+```
+
+But note: this quantifies over **all** integers `i >= 0`, which is infinite, but logically correct because beyond the current size, bits are `false` and the behavior still holds.
+
+Alternatively, we could bound it to some large number, but the specification should be logically accurate.
+
+Also, note that the method may extend the size of `this` if `set` is larger? Actually, no — looking at the implementation, it only loops up to `Math.min(wordsInUse, set.wordsInUse)`, and then calls `recalculateWordsInUse()`. So bits beyond the current `wordsInUse` are not touched, and for indices beyond the current length, the bits are `false` by default.
+
+But the specification in the comment is about "every bit", so we must quantify over all bits.
+
+Therefore, the correct assert statement is:
+
+<code>assert \forall int i; i >= 0; (set.get(i) => !this.get(i)) && (!set.get(i) => this.get(i) == \old(this.get(i)));</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> Every bit in this BitSet is cleared if the corresponding bit in the specified BitSet was set, and left unchanged otherwise.
+
+This means:
+- For every bit index `i`:
+  - If `set.get(i)` is `true`, then after the operation, `this.get(i)` must be `false`.
+  - If `set.get(i)` is `false`, then after the operation, `this.get(i)` must be equal to what it was before (i.e., `\old(this.get(i))`).
+
+We can express this using a universal quantifier `\forall int i; ...` over all valid bit indices. Since bit indices are non-negative and the logical size of the BitSet may change, we should consider up to the maximum of the lengths of the two BitSets (though the method modifies `this`, and the effect is defined for all bits that are in either set).
+
+However, note that `BitSet` operations typically affect all bits that are in use in either set. But the comment says "every bit in this BitSet", so we focus on bits in `this`.
+
+But to be safe and correct, we consider all bits that are in the logical range of `this` BitSet **or** the `set` BitSet, because `andNot` may affect bits beyond the current `length()` if words are shared.
+
+But the specification says: "Every bit in this BitSet" — so we consider all bits that can be meaningfully accessed in `this`.
+
+But note: the `get(i)` method is defined for all non-negative `i`, returning `false` if beyond current length. However, the behavior of `andNot` is defined on the internal words.
+
+But the comment says: "whose corresponding bit is set in the specified BitSet" — so only those bits in `this` that have a corresponding set bit in `set` are cleared.
+
+So the correct interpretation is:
+
+For all bit indices `i >= 0`:
+- If `set.get(i)` is `true`, then `this.get(i)` after the operation is `false`.
+- If `set.get(i)` is `false`, then `this.get(i)` after the operation equals `this.get(i)` before the operation.
+
+But we cannot quantify over all integers from 0 to infinity. However, in practice, only bits up to `max(this.length(), set.length())` need to be considered, because beyond that, both will return `false`.
+
+But to be precise and safe, and since the internal representation uses words, the method affects words up to `Math.min(wordsInUse, set.wordsInUse)`, but bits beyond that are unaffected.
+
+But the comment is about the **logical** behavior, not the implementation.
+
+So we can write:
+
+\forall int i; i >= 0; 
+    (set.get(i) => !this.get(i)) && 
+    (!set.get(i) => this.get(i) == \old(this.get(i)))
+
+But this quantifies over all non-negative integers, which is not practical, but in formal specifications (like JML), it's acceptable because it's logical.
+
+Alternatively, we can bound it to the maximum length that could be affected.
+
+But the comment does not specify bounds, so we go with the logical meaning.
+
+But note: the method does not extend `this` beyond its current logical size unless needed — but `andNot` only clears bits, doesn't set new ones, so the length of `this` can only shrink or stay the same.
+
+But bits beyond `this.length()` are `false`, and if `set` has a bit set there, then `this` should have that bit cleared — but it's already `false`, so no change.
+
+So the specification holds for all `i >= 0`.
+
+But in practice, for performance, we can bound `i` up to `Math.max(this.length(), set.length())`, but since we can't call methods in the assert with side effects, and we want a clean specification, we rely on the logical meaning.
+
+However, in JML-style assertions, unbounded quantifiers over integers are allowed as logical constructs.
+
+But to avoid infinite ranges, we can note that beyond a certain point, all bits are `false`, so the implication holds trivially.
+
+But the cleanest and correct way is to assert the logical condition for all `i >= 0`.
+
+But let's see: if `i` is very large, `set.get(i)` is `false` (since not set), so the second part applies: `this.get(i)` after equals `this.get(i)` before — which is `false` in both cases, so holds.
+
+Similarly, if `set.get(i)` is `true`, then `this.get(i)` must become `false` — but if it was already `false`, it's fine.
+
+So the condition is safe.
+
+But can we write:
+
+<code>assert \forall int i; i >= 0; (set.get(i
+--------------------

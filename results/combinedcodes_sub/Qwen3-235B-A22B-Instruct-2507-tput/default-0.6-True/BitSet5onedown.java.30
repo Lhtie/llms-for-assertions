@@ -1,0 +1,113 @@
+The comment `@@@` states:  
+"If the range is valid, every bit from fromIndex (inclusive) to toIndex (exclusive) is cleared to false after the operation."
+
+This means that for all bit indices `i` such that `fromIndex <= i < toIndex`, the bit at position `i` should be `false` after the `clear` method executes, **provided** the range is valid.
+
+The validity of the range is checked by `checkRange(fromIndex, toIndex)`, which is called at the beginning of the method. Since the comment says "if the range is valid", we use implication (`=>`) to express that **if** the range is valid, then all bits in that range are cleared.
+
+We can express the condition using `\forall` over the bit indices in the range.
+
+Final assert statement:
+
+<code>assert fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex => \forall int i; fromIndex <= i && i < toIndex; !this.get(i);</code>
+--------------------
+The comment `@@@` states:  
+*"If the range is valid, every bit from fromIndex (inclusive) to toIndex (exclusive) is cleared to false after the operation."*
+
+This means that for all bit indices `i` such that `fromIndex <= i < toIndex`, the bit at position `i` must be `false` after the `clear` method executes, **provided** the range is valid.
+
+From the method documentation and code:
+- The method `checkRange(fromIndex, toIndex)` ensures the range is valid (and throws if not), so we can assume the condition `0 <= fromIndex <= toIndex` holds when the method proceeds.
+- The assert should express that **if** the range is valid (i.e., `fromIndex <= toIndex`, and both are non-negative — though the latter is assumed by precondition), then all bits in that range are `false` after execution.
+
+We can use `\forall` to express "for all bits in the range", and use `=>` to express the implication that if the range is valid, then those bits are cleared.
+
+Also, note that the method does nothing if `fromIndex == toIndex`, but that still satisfies the condition (empty range → vacuously true).
+
+Thus, the correct assertion is:
+
+<code>assert fromIndex <= toIndex => \forall int i; fromIndex <= i && i < toIndex; !this.get(i);</code>
+--------------------
+Let's analyze the comment marked with "@@@":
+
+> // @@@ If the range is valid, every bit from fromIndex (inclusive) to toIndex (exclusive) is cleared to false after the operation.
+
+This means:
+- **Premise**: The range is valid (i.e., `fromIndex` and `toIndex` satisfy the preconditions: non-negative, and `fromIndex <= toIndex`).
+- **Conclusion**: For every bit index `i` such that `fromIndex <= i < toIndex`, the bit at position `i` is `false` after the operation.
+
+We are to write an `assert` statement that captures this.
+
+We can use:
+- `\forall int i; condition; spec` to express that for all `i` satisfying `condition`, `spec` holds.
+- The condition is: `fromIndex <= i < toIndex`
+- The specification is: `!this.get(i)` (i.e., the bit is `false`)
+- The premise is that the range is valid, which is already checked by `checkRange(fromIndex, toIndex)`, but the comment says "if the range is valid", so we use implication.
+
+So the structure is:
+```
+assert (range is valid) => (\forall i in [fromIndex, toIndex); !this.get(i))
+```
+
+But note: the method throws an exception if the range is invalid, so the body only executes when the range is valid. However, the comment says "If the range is valid", so we still use implication for clarity and specification purposes.
+
+Also, from the method's `@throws` clause, the range is valid if:
+- `fromIndex >= 0`
+- `toIndex >= 0`
+- `fromIndex <= toIndex`
+
+But we don't need to re-check that — the comment assumes validity.
+
+So the correct assertion is:
+
+<code>assert fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex => \forall int i; fromIndex <= i && i < toIndex; !this.get(i);</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If the range is valid, every bit from fromIndex (inclusive) to toIndex (exclusive) is cleared to false after the operation.
+
+This means:
+- The condition is that the range is valid. From the method signature and the call to `checkRange(fromIndex, toIndex)`, we can infer that a valid range means `fromIndex >= 0`, `toIndex >= 0`, and `fromIndex <= toIndex`. But since the method throws `IndexOutOfBoundsException` if not valid, and `checkRange` enforces that, we can assume the method only proceeds if the range is valid. However, the comment says "if the range is valid", so we should guard the assertion with that condition.
+- The effect: for all bit indices `i` such that `fromIndex <= i < toIndex`, after the operation, `this.get(i)` should be `false`.
+
+We need to express:
+- For all `i` in `[fromIndex, toIndex)`, `this.get(i) == false`.
+- This should be asserted only if the range is valid.
+
+Using the syntax rules:
+- Use `\forall int i; condition; spec` for universal quantification.
+- Use `=>` for implication.
+- Use `this.get(i)` as it's a public observer method.
+
+So:
+`assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => \forall int i; fromIndex <= i && i < toIndex; !this.get(i);`
+
+Note: `!this.get(i)` is equivalent to `this.get(i) == false`.
+
+Also, since the method throws on invalid indices, and `checkRange` is called first, the body only executes if the range is valid. But the comment says "if", so we keep the implication.
+
+Final assert statement:
+
+<code>assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => \forall int i; fromIndex <= i && i < toIndex; !this.get(i);</code>
+--------------------
+The comment `@@@` states:  
+*"If the range is valid, every bit from fromIndex (inclusive) to toIndex (exclusive) is cleared to false after the operation."*
+
+This means that for all bit indices `i` such that `fromIndex <= i < toIndex`, the bit at position `i` must be `false` after the method executes, **provided** the range is valid.
+
+From the method signature and documentation:
+- The method `clear(int fromIndex, int toIndex)` clears a range of bits.
+- It throws `IndexOutOfBoundsException` if the range is invalid (i.e., `fromIndex < 0`, `toIndex < 0`, or `fromIndex > toIndex`).
+- The comment implies a **premise**: the range is valid → then all bits in that range are cleared.
+
+We express this using:
+- Implication: `valid_range => \forall i ...`
+- Valid range condition: `fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex`
+- But note: the method throws on invalid input, so we assume the call is legal, and the assertion is about post-condition.
+- However, the assert should reflect the **specification**: if the inputs are in valid range, then all bits from `fromIndex` to `toIndex-1` are `false`.
+
+We use `\forall int i;` to quantify over the bit indices in the range.
+
+Final assertion:
+<code>assert (fromIndex >= 0 && toIndex >= 0 && fromIndex <= toIndex) => \forall int i; fromIndex <= i && i < toIndex; !this.get(i);</code>
+--------------------

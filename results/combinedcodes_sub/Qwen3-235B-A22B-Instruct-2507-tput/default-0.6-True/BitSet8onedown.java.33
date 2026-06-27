@@ -1,0 +1,210 @@
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If the bit index is non-negative, then every bit in the set other than the one at bitIndex retains its original value after the flip.
+
+This means:
+- The condition is that `bitIndex >= 0` (non-negative).
+- When this condition holds, then **for all bits in the set except the one at `bitIndex`**, their values remain unchanged after the `flip` operation.
+
+We need to express this using an `assert` statement with:
+- A conditional (`=>`) since it's guarded by `bitIndex >= 0`.
+- A universal quantifier (`\forall`) over all bit indices `i`, where `i != bitIndex`.
+- For each such `i`, the value of `this.get(i)` after the operation equals `\old(this.get(i))`.
+
+Note: We cannot iterate over all possible integers, but conceptually the BitSet can grow. However, in practice, we only need to consider bits up to the logical size. But since the specification says "every bit in the set", and BitSet is unbounded, we rely on the abstraction that only relevant bits are considered, and the implementation handles growth.
+
+But in formal specification terms, we can write:
+
+`bitIndex >= 0` implies that for all `i >= 0` where `i != bitIndex`, the value of bit `i` remains unchanged.
+
+So the assert statement is:
+
+<code>assert bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i));</code>
+--------------------
+Let's analyze the comment:
+
+> // @@@ If the bit index is non-negative, then every bit in the set other than the one at bitIndex retains its original value after the flip.
+
+We are to generate an assert statement that captures this condition.
+
+Step-by-step:
+
+1. The method `flip(int bitIndex)` flips the bit at position `bitIndex`. That means the bit at `bitIndex` changes from true to false or vice versa.
+2. The comment asserts that **all other bits** (i.e., bits at positions different from `bitIndex`) remain unchanged.
+3. The condition applies only when `bitIndex` is non-negative (since otherwise an exception is thrown, and we don't care about the state).
+4. So we want: if `bitIndex >= 0`, then for all `i` such that `i >= 0` and `i != bitIndex`, the value of bit `i` after the flip is the same as it was before.
+
+We can express this using:
+- `\old(...)` to refer to the value before the method call.
+- `this.get(i)` to get the current (after flip) value.
+- `\forall int i; condition; spec` to express that for all bits `i`, the value remains the same if `i != bitIndex`.
+
+Note: We must avoid referencing bits beyond the logical size, but since `get(i)` returns `false` for bits not explicitly set (as per the class comment: "By default, all bits in the set initially have the value false"), and the method only modifies one word (and possibly expands), the `get` method is safe for any non-negative `i`.
+
+So the correct assertion is:
+
+If `bitIndex >= 0`, then for all `i >= 0` where `i != bitIndex`, `this.get(i)` equals `\old(this.get(i))`.
+
+However, we cannot quantify over all integers `i` from 0 to infinity. But in practice, the only bits that could differ are those in the current logical range. But note: the specification says "every bit in the set" — but actually, the BitSet is conceptually infinite (indexed by nonnegative integers), but only stores up to the highest set bit.
+
+But the `get(i)` method returns `false` for unset bits, and flipping one bit doesn't affect others. The implementation only modifies one word, so all other bits remain unchanged.
+
+But in formal specification, we can still write a universal quantifier over all nonnegative `i` except `bitIndex`, because even for very large `i`, `get(i)` returns `false` unless previously set, and it will still return the same value unless that bit was the one flipped.
+
+So the assertion should be:
+
+`assert bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i));`
+
+This reads: "If the bit index is non-negative, then for all nonnegative integers i not equal to bitIndex, the value of bit i after the flip is the same as before."
+
+This matches the comment exactly.
+
+<code>assert bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i));</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the `flip(int bitIndex)` method:
+
+> // @@@ If the bit index is non-negative, then every bit in the set other than the one at bitIndex retains its original value after the flip.
+
+We need to convert this into a formal `assert` statement.
+
+### Step-by-step breakdown:
+
+1. **Premise**: The bit index is non-negative → `bitIndex >= 0`
+   - This is a condition under which the specification holds.
+
+2. **Specification**: For every bit at index `i` where `i != bitIndex`, the value of the bit remains unchanged after the operation.
+   - We must express this using `\forall` quantifier over all valid bit indices `i` such that `i != bitIndex`.
+   - The value before: `\old(this.get(i))`
+   - The value after: `this.get(i)`
+   - So we require: `this.get(i) == \old(this.get(i))` for all such `i`.
+
+3. **Universe of indices**: The BitSet has a logical length, and bits beyond that may be considered false, but we are concerned with all bits that are within the logical scope. However, since `get(i)` is defined for all non-negative `i` (returns `false` if beyond current set bits), we can consider all `i >= 0`. But we cannot quantify over infinite range.
+
+   Instead, note that the implementation only stores bits up to `wordsInUse`, and `length()` gives the logical size. But to be safe and finite, we can consider that any bit that could have been affected or was possibly set lies in a finite range. However, the specification says "every bit in the set", which refers to all bits (conceptually infinite), but only finitely many are `true`.
+
+   But the comment says "every bit ... other than the one at bitIndex retains its original value".
+
+   So we must assert that for **all** `i >= 0` where `i != bitIndex`, the value remains the same.
+
+   However, in practice, and in JML-style specifications, we often rely on the fact that `get(i)` is observable and behaves correctly.
+
+   So we can write:
+   ```
+   \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i))
+   ```
+
+4. **Implication**: The whole statement only applies if `bitIndex >= 0`.
+
+   So:
+   ```
+   bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i))
+   ```
+
+5. **Check for correctness**:
+   - We are not modifying any bit except at `bitIndex`.
+   - The method flips only one bit: `words[wordIndex] ^= (1L << bitIndex);`
+   - So all other bits must remain the same.
+
+This matches the comment.
+
+### Final assert statement:
+
+<code>assert bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i));</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the `flip(int bitIndex)` method:
+
+> // @@@ If the bit index is non-negative, then every bit in the set other than the one at bitIndex retains its original value after the flip.
+
+We need to express this as an assert statement.
+
+Step-by-step:
+
+1. The condition starts with "If the bit index is non-negative" → this is a premise, so we use implication (`=>`).
+2. The consequence is: "every bit in the set other than the one at bitIndex retains its original value".
+3. This means: for all bit indices `i` where `i >= 0` and `i != bitIndex`, the value of `get(i)` after the flip is equal to the old value of `get(i)` before the flip.
+4. We must avoid checking bits beyond the logical length, but since `get(i)` is defined for all non-negative `i` (and returns `false` if beyond current set bits), and the specification only cares about bits that were set, we can rely on the observable behavior.
+5. However, to be safe and efficient, note that the `BitSet` has a `length()` method that gives the logical size (index of highest set bit + 1). But the comment says "every bit in the set", which could mean all bits that are addressable? But in practice, we only need to consider bits that are logically present.
+
+But the comment says "every bit in the set other than the one at bitIndex" — here "in the set" likely means all bits that are part of the bitset, i.e., all non-negative indices. But we can't loop over all integers.
+
+However, observe: the behavior of `get(i)` for `i` beyond the current `length()` is `false`, and flipping a bit inside won't affect the infinite tail of zeros unless the flip causes expansion.
+
+But the specification must hold for all bits that could be affected. However, the implementation only stores up to `wordsInUse`, so bits beyond `wordsInUse * 64` are always `false`.
+
+But the comment says "every bit ... other than bitIndex retains its original value".
+
+So for all `i >= 0` and `i != bitIndex`, we must have:
+`this.get(i) == \old(this.get(i))`
+
+But we cannot write `\forall int i; i >= 0 && i != bitIndex; ...` because `i` ranges over unbounded integers.
+
+But note: the `BitSet` only stores bits up to a certain word limit. However, logically, for any `i` not in the affected word, the bit remains unchanged.
+
+But the method only modifies one word: `words[wordIndex]`, so only bits in that word can change. All other words are untouched. So bits not in `wordIndex` are unchanged.
+
+But the comment is about the observable state: the `get(i)` values.
+
+We can express: for all `i` such that `i != bitIndex`, `this.get(i)` after equals `\old(this.get(i))`.
+
+But again, `i` is unbounded.
+
+However, in practice, for JML-style assertions, we often rely on the fact that beyond the `length()`, bits are `false`, and the `length()` might change.
+
+But the comment does not restrict the range. However, observe that if a bit was `false` and not at `bitIndex`, and not in the same word, it remains `false`.
+
+But we can write the assertion using `\forall int i; i >= 0 && i != bitIndex; ...` — but this is infinite and not practical.
+
+But in formal specifications, such quantifications over infinite domains are allowed if the property is logically true.
+
+However, in JML, `\forall int i; cond; spec` is allowed even if the domain is infinite, as long as it's well-defined.
+
+But we must be cautious: the `get(i)` method is defined for all `i >= 0`.
+
+So the correct specification is:
+
+For all `i >= 0` such that `i != bitIndex`, the value of `get(i)` remains unchanged.
+
+So:
+
+`assert bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i));`
+
+But wait: is this efficient or meaningful? Yes, in specification terms.
+
+But note: the method throws exception if `bitIndex < 0`, so the premise `bitIndex >= 0` is always true when the method proceeds. But the comment says "if the bit index is non-negative", so we include it.
+
+Alternatively, since the method throws on negative index, the body only executes when `bitIndex >= 0`, so the implication's premise is always true. But to match the comment exactly, we include the condition.
+
+Also, note
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If the bit index is non-negative, then every bit in the set other than the one at bitIndex retains its original value after the flip.
+
+This means:
+- Premise: `bitIndex >= 0` (non-negative)
+- Consequence: For all bits at positions `i` where `i != bitIndex`, the value of the bit remains unchanged after the `flip` operation.
+
+We need to express:
+- For all `i` such that `i >= 0` and `i != bitIndex`, the value of `this.get(i)` after the method execution is equal to `\old(this.get(i))`.
+
+We cannot iterate over all integers, but we must consider all valid bit indices. However, in practice, `BitSet` has a finite logical length (`length()`), but bits beyond that are implicitly `false`. However, since `flip` may extend the set, we should consider that bits are defined for all non-negative indices, but only finitely many are stored.
+
+But note: the specification only needs to reflect what the comment says — every bit **other than** the one at `bitIndex` retains its original value.
+
+We can use `\forall int i;` with condition `i >= 0 && i != bitIndex`, and assert `this.get(i) == \old(this.get(i))`.
+
+However, in practice, for very large `i`, `get(i)` returns `false` unless previously set. But the method `flip` only affects one word (and possibly expands), so all other bits remain unchanged.
+
+So the correct formalization is:
+
+`bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i))`
+
+This captures:
+- If `bitIndex` is non-negative (which is also checked by the method via exception), then for all non-negative indices `i` not equal to `bitIndex`, the bit value remains the same.
+
+Note: The method throws `IndexOutOfBoundsException` if `bitIndex < 0`, so when the premise `bitIndex >= 0` holds, the operation proceeds.
+
+Thus, the assert statement is:
+
+<code>assert bitIndex >= 0 => \forall int i; i >= 0 && i != bitIndex; this.get(i) == \old(this.get(i));</code>
+--------------------

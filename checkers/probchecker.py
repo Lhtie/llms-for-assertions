@@ -194,15 +194,25 @@ def logprobs_for_text_span(text, tokens, token_logprobs, text_offset, target):
 
 
 def score_api_chat_response(model, prompt, response):
-    messages = list(prompt) + [{"role": "assistant", "content": response}]
-    outputs = model.client.chat.completions.create(
-        model=model.model_name,
-        messages=messages,
-        temperature=0.0,
-        max_tokens=1,
-        logprobs=1,
-        echo=True,
-    )
+    prompt_text = format_api_prompt_text(prompt)
+    full_text = prompt_text + response
+    messages = [{"role": "user", "content": full_text}]
+    try:
+        outputs = model.client.chat.completions.create(
+            model=model.model_name,
+            messages=messages,
+            max_tokens=1,
+            logprobs=1,
+            echo=True,
+        )
+    except Exception:
+        outputs = model.client.chat.completions.create(
+            model=model.model_name,
+            messages=messages,
+            max_tokens=1,
+            logprobs=True,
+            echo=True,
+        )
     payload = get_prompt_logprob_payload(outputs)
     text, tokens, token_logprobs, text_offset = get_payload_text_and_logprobs(payload)
     return summarize_logprobs(
@@ -216,14 +226,22 @@ def score_api_completion_response(model, prompt, response):
     response_start = len(prompt_text)
     response_end = len(full_text)
 
-    outputs = model.client.completions.create(
-        model=model.model_name,
-        prompt=full_text,
-        temperature=0.0,
-        max_tokens=1,
-        logprobs=1,
-        echo=True,
-    )
+    try:
+        outputs = model.client.completions.create(
+            model=model.model_name,
+            prompt=full_text,
+            max_tokens=1,
+            logprobs=1,
+            echo=True,
+        )
+    except Exception:
+        outputs = model.client.completions.create(
+            model=model.model_name,
+            prompt=full_text,
+            max_tokens=1,
+            logprobs=True,
+            echo=True,
+        )
     choice = outputs.choices[0]
     _, token_logprobs, text_offset = get_completion_logprobs(choice)
 
@@ -238,13 +256,20 @@ def score_api_response(mkey, model, prompt, response):
     if not is_api_logprob_model(mkey):
         raise NotImplementedError(f"{mkey} does not expose token logprobs for probchecker")
 
+    chat_error = None
     try:
         result = score_api_chat_response(model, prompt, response)
         if result.get("num_tokens", 0):
             return result
-    except Exception:
-        pass
-    return score_api_completion_response(model, prompt, response)
+    except Exception as e:
+        chat_error = e
+    try:
+        return score_api_completion_response(model, prompt, response)
+    except Exception as e:
+        raise RuntimeError(
+            "API prob scoring failed for both chat and completions "
+            f"(chat_error={chat_error}; completions_error={e})"
+        ) from e
 
 
 def summarize_logprobs(logprobs):

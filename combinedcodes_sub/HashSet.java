@@ -1,4 +1,4 @@
-package buggyasrts;
+package combinedcodes_sub;
 
 import java.util.*;
 import java.io.InvalidObjectException;
@@ -110,8 +110,8 @@ public class HashSet<E>
     public HashSet(Collection<? extends E> c) {
         map = new HashMap<>(Math.max((int) (c.size()/.75f) + 1, 16));
         addAll(c);
-        // @@@ If the source collection is not null, the new collection has one more element than the source collection.
-        // assert c!=null => this.size()==c.size()+1;
+        // @@@ If the collection c is not null, the size of this set equals the size of c after construction.
+        // assert c!=null => this.size()==c.size();
     }
 
     /**
@@ -153,8 +153,8 @@ public class HashSet<E>
      */
     public boolean add(E e) {
         return map.put(e, PRESENT)==null;
-        // @@@ After adding an element to the set, the set size remains unchanged.
-        // assert this.size()==\old(this.size());
+        // @@@ The set contains the added element after the operation.
+        // assert this.contains(e);
     }
 
     /**
@@ -180,10 +180,10 @@ public class HashSet<E>
         } catch (CloneNotSupportedException e) {
             throw new InternalError(e);
         }
-        // @@@ The cloned collection is not equal to the original collection.
-        // assert !\result.equals(this);
-        // @@@ The cloned collection has one more element than the original collection.
-        // assert ((HashSet<E>) \result).size()==this.size()+1;
+        // @@@ The cloned set is equal to the original set.
+        // assert \result.equals(this);
+        // @@@ The cloned set has the same size as the original set.
+        // assert ((HashSet<E>) \result).size()==this.size();
     }
 
     /**
@@ -233,8 +233,8 @@ public class HashSet<E>
      */
     public boolean remove(Object o) {
         return map.remove(o)==PRESENT;
-        // @@@ After removal, the collection still contains the removed element.
-        // assert this.contains(o);
+        // @@@ The set does not contain the specified element after the removal operation.
+        // assert !this.contains(o);
     }
 
     /**

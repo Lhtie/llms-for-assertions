@@ -1,0 +1,149 @@
+Let's analyze the comment starting with "@@@" in the `remove(int index)` method:
+
+> "If the index is valid, every element after the removed position is shifted left by one, preserving the original order."
+
+This means:
+- The condition is that the index is valid. However, since the method already calls `Objects.checkIndex(index, size)`, we can assume the index is valid (within bounds). But to be precise, the specification should reflect the premise: **if the index is valid**, then the behavior holds.
+- After removal, for every position `i` starting from `index` up to the second-to-last element (before removal), the element at position `i` in the new array should be equal to the element at position `i+1` in the old array.
+- This shifting only applies to elements **after** the removed index (i.e., indices greater than `index`), and they are shifted left by one.
+- The order of these elements remains unchanged.
+
+We need to express:
+- For all indices `i` such that `index <= i < this.size()` (after removal), the element at `i` in the new list equals the element at `i+1` in the old list.
+- Note: After removal, `this.size()` is `\old(this.size()) - 1`.
+
+So the range of `i` is: `index <= i < \old(this.size()) - 1 + 1` → `index <= i < \old(this.size())`.
+
+But after removal, the new size is `\old(this.size()) - 1`, so valid indices go up to `\old(this.size()) - 2`. However, we are comparing new positions to old ones.
+
+Actually:
+- After removal, for each `i` in `[index, this.size())` (new size), we have:
+  `this.get(i).equals(\old(this.get(i+1)))`
+
+And the new size is `\old(this.size()) - 1`.
+
+So the condition is:
+`\forall int i; index <= i && i < this.size(); this.get(i).equals(\old(this.get(i+1)))`
+
+But note: this only needs to hold **if the index is valid**. However, the method throws an exception if the index is invalid, so in the normal postcondition, we assume validity. But the comment says "If the index is valid", so to match the natural language, we include the implication.
+
+However, in practice, since the method throws on invalid index, the postcondition only matters when index is valid. But to match the comment exactly, we write:
+
+`index is valid => \forall i in [index, new_size), this.get(i) == old.get(i+1)`
+
+"index is valid" means `0 <= index && index < \old(this.size())`
+
+So final assert:
+
+<code>assert (0 <= index && index < \old(this.size())) => \forall int i; index <= i && i < this.size(); this.get(i).equals(\old(this.get(i+1)));</code>
+--------------------
+Let's analyze the comment:
+
+> // @@@ If the index is valid, every element after the removed position is shifted left by one, preserving the original order.
+
+This means:
+- The condition is that the index is valid (which is already ensured by `Objects.checkIndex(index, size)`).
+- After removal, for every position `i` starting from `index` up to the second-to-last element (before removal), the element at position `i` in the new array should be equal to the element at position `i+1` in the old array.
+- This shifting only applies to elements that were originally at positions `index+1` to `size-1` (inclusive) before removal.
+- After removal, the size decreases by 1.
+
+So, we need to express:
+For all `i` such that `index <= i < this.size()` (after removal), we have:
+`this.get(i)` (after removal) equals `\old(this.get(i + 1))`.
+
+Note: After removal, the new size is `\old(this.size()) - 1`, so the valid range for `i` is `index <= i < \old(this.size()) - 1 + 1` → `index <= i < \old(this.size())`.
+
+But since after removal, `this.size() == \old(this.size()) - 1`, then the upper bound is `this.size()`.
+
+So the correct loop is: for all `i` such that `index <= i < this.size()`, we have `this.get(i).equals(\old(this.get(i+1)))`.
+
+Also, note that the comment says "if the index is valid", so we should guard the assertion with that condition. However, in the code, `Objects.checkIndex(index, size)` will throw if invalid, so the rest of the code only executes when index is valid. But to match the pattern in the examples, we include the implication.
+
+But in prior examples, when the method throws on invalid input, the assert still includes the premise (e.g., `index>=0 && index<=9 => ...`). So we follow that.
+
+Thus:
+
+<code>assert index >= 0 && index < \old(this.size()) => \forall int i; index <= i && i < this.size(); this.get(i).equals(\old(this.get(i + 1)));</code>
+--------------------
+Let's analyze the comment:
+
+> // @@@ If the index is valid, every element after the removed position is shifted left by one, preserving the original order.
+
+This means:
+- The condition is that the `index` is valid (which is already enforced by `Objects.checkIndex(index, size)`).
+- After removal, for every element that was at position `i` where `i > index` **before** the removal, it should now be at position `i - 1` **after** the removal.
+- The relative order of these elements should remain unchanged.
+
+We need to express:
+- For all indices `i` such that `index < i < \old(this.size())`, the element at position `i` before removal is now at position `i - 1` after removal.
+
+Also, note that `this.size()` decreases by 1 after removal.
+
+So the assert statement should be:
+
+<code>assert index >= 0 && index < \old(this.size()) => \forall int i; index < i && i < \old(this.size()); this.get(i - 1).equals(\old(this.get(i)));</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> "If the index is valid, every element after the removed position is shifted left by one, preserving the original order."
+
+This means:
+- The condition is that the index is valid (which is already enforced by `Objects.checkIndex(index, size)`).
+- For all elements that were at positions `index+1` to `size-1` (inclusive) before the removal, after the removal they should be at position `i-1`.
+- The relative order of these elements should remain unchanged.
+
+We need to express:
+- For all `i` such that `index < i < \old(this.size())`, the element at position `i` before removal is now at position `i - 1` after removal.
+
+We can use the `\old` construct to refer to the state before the method execution.
+
+Thus, the correct assert statement is:
+
+<code>assert index >= 0 && index < this.size() => \forall int i; index < i && i < \old(this.size()); this.get(i - 1).equals(\old(this.get(i)));</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> "If the index is valid, every element after the removed position is shifted left by one, preserving the original order."
+
+This means:
+- The condition is that the index is valid (which is ensured by `Objects.checkIndex(index, size)` at the beginning of the method).
+- For all elements that were at positions `index+1` to `size-1` (inclusive) before the removal, after the removal they should be at position `i-1`.
+- The order among these elements should remain unchanged.
+
+We need to express:
+- After removal, for every `i` such that `index <= i < this.size()` (after removal, so old size - 1), the element at position `i` in the new array should be equal to the element at position `i+1` in the old array.
+- But note: the element at `index` is removed, and elements from `index+1` onward are moved left.
+
+So for all valid `i` in the range `index <= i < \old(this.size()) - 1`, we have:
+`this.get(i) == \old(this.get(i+1))`
+
+But note: after removal, the new size is `this.size() == \old(this.size()) - 1`.
+
+So the range of `i` after removal that corresponds to shifted elements is `i >= index` and `i < \old(this.size()) - 1`, but since `\old(this.size()) - 1 == this.size()`, we can write:
+
+`\forall int i; index <= i && i < this.size(); this.get(i).equals(\old(this.get(i+1)))`
+
+We use `.equals()` for object comparison.
+
+Also, this should only be required **if the index was valid**. But the method throws if index is invalid, so we assume validity. However, the comment says "if the index is valid", so to be safe and match the natural language, we include the implication.
+
+But in the context of postconditions, and since the method throws on invalid index, the assert will only be checked when no exception is thrown, i.e., index is valid. Still, to match the comment exactly, we can include the implication.
+
+However, in practice, if the method throws, the postcondition isn't evaluated. So the implication is redundant. But the comment says "if", so we follow the pattern.
+
+Thus:
+
+`assert (index >= 0 && index < \old(this.size())) => \forall int i; index <= i && i < this.size(); this.get(i).equals(\old(this.get(i+1)));`
+
+But note: `Objects.checkIndex(index, size)` checks `0 <= index < size`, so the premise is exactly that.
+
+But we can simplify: since the method only proceeds if index is valid, and the comment says "if the index is valid", we can express the implication.
+
+Also, after removal, the size is decreased by one, so the new size is `\old(this.size()) - 1`, and the loop goes up to `this.size() - 1`, but in the quantifier we use `i < this.size()`.
+
+Yes, that's correct.
+
+So final assert:
+
+<code>assert (index >= 0 && index < \old(this.size())) => \forall int i; index <= i && i < this.size(); this.get(i).equals(\old(this.get(i+1)));</code>
+--------------------

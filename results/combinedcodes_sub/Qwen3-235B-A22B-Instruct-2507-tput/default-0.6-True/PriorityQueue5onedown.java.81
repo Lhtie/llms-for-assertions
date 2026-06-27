@@ -1,0 +1,139 @@
+The comment states:  
+> "If the element being added is not null, every element that was in the queue before the add is still contained in the queue after the add."
+
+This means that for all elements `x` that were in the queue before the `offer` operation (i.e., in the old state), if `x` was contained in the queue, then it should still be contained after the operation.
+
+We can express this using `\forall` over the elements in the queue before the operation. However, since we cannot directly iterate over elements in a specification, we instead use the `contains` method and quantify over all objects `x` such that `\old(this.contains(x))` holds.
+
+But note: we are only concerned with elements that were in the queue before the operation. So the assertion should state:  
+For every object `x`, if `x` was in the queue before (`\old(this.contains(x))`), then it is still in the queue after (`this.contains(x)`).
+
+Also, the premise "if the element being added is not null" is already checked in the code (and required for execution to proceed past the null check), but the comment condition applies *when* the element is not null — which is always the case at the point of the comment, because otherwise an exception is thrown. So we don't need to guard the assertion with `e != null`, because the assertion is only reached when `e != null`.
+
+Hence, the correct assert statement is:
+
+<code>assert \forall Object x; \old(this.contains(x)); this.contains(x);</code>
+--------------------
+Let's analyze the comment marked with "@@@":
+
+> // @@@ If the element being added is not null, every element that was in the queue before the add is still contained in the queue after the add.
+
+This means:
+- Premise: The element being added (`e`) is not `null`.
+- Consequence: All elements that were in the queue before the operation (i.e., in the old state) are still present in the queue after the operation.
+
+We need to express that:
+For every element `x` that was in the queue before (`\old(this.contains(x))`), it should still be in the queue after (`this.contains(x)`), **provided that `e != null`**.
+
+But note: we cannot quantify over arbitrary objects in standard Java assertion syntax. However, in specification languages like JML (which this appears to mimic), we can use `\forall Object x;` with appropriate conditions.
+
+So the correct formalization is:
+If `e != null`, then for all objects `x`, if `x` was in the queue before (`\old(this.contains(x))`), then `x` is still in the queue after (`this.contains(x)`).
+
+Thus, the assert statement should be:
+
+<code>assert e != null => \forall Object x; \old(this.contains(x)); this.contains(x);</code>
+--------------------
+The comment states:  
+> "If the element being added is not null, every element that was in the queue before the add is still contained in the queue after the add."
+
+This means that for all elements `x` that were in the queue before the `offer` operation, if `x` was contained in the queue (`\old(this.contains(x))`), then it should still be contained after the operation (`this.contains(x)`).
+
+We need to express that for every element `x` in the queue before the operation, it remains in the queue after the operation. Since we are dealing with a generic collection and cannot iterate over elements directly, we use the `contains` method and quantify over all possible objects.
+
+However, since we cannot quantify over all Java objects, we instead rely on the fact that the specification applies to all elements that were previously in the queue. The correct way to express this is to say: for all objects `x`, if `x` was in the queue before, then it is still in the queue now.
+
+Thus, the correct assertion is:
+
+<code>assert \forall Object x; \old(this.contains(x)); this.contains(x);</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If the element being added is not null, every element that was in the queue before the add is still contained in the queue after the add.
+
+This means:
+- Premise: The element being added (`e`) is not null.
+- Consequence: All elements that were in the queue before the `offer` operation must still be present in the queue after the operation.
+
+We need to express that:
+For every element `x` that was in the queue before (`\old(this.contains(x))`), if the element `x` was present before, then it should still be present after the operation (`this.contains(x)`), **provided that `e != null`**.
+
+But note: the premise "element being added is not null" is already checked in the code via `if (e == null) throw ...`, and the comment says "if the element being added is not null", so we can use `e != null` as the condition.
+
+However, in the assert specification, we cannot refer to `e` directly unless it's accessible. But since this is a method contract, and `e` is a parameter, we can use it.
+
+So we want:
+If `e != null`, then for all elements `x` in the queue before, `this.contains(x)` still holds after.
+
+We can write this using `\forall` over `Object x`, but we need to be careful: we only care about elements that were in the queue before.
+
+Thus:
+
+`e != null => \forall Object x; \old(this.contains(x)); this.contains(x)`
+
+But note: JML-style assertions typically use bounded quantification over integers or assume a finite domain. However, since `contains` is defined over `Object`, and we are in a specification context, we can quantify over `Object x`.
+
+But in practice, such specifications often assume that the quantification is over relevant elements. Given the prior examples used `int i`, but here we are dealing with `Object`.
+
+However, looking at the previous examples, they used `int i` for indices. Here, we are reasoning about elements.
+
+But the method `contains(Object o)` is available and publicly accessible.
+
+So the correct assertion is:
+
+`assert e != null => \forall Object x; \old(this.contains(x)); this.contains(x);`
+
+But wait: can we quantify over `Object x`? In JML, yes, though it's unbounded. But in this context, and based on the style of the examples, this is acceptable.
+
+Alternatively, we might consider iterating over the old array, but the specification does not require that — the natural language says "every element that was in the queue", so `\old(this.contains(x))` is the correct way to capture that.
+
+Also, note that the method does not remove any elements — it only adds — so this should hold.
+
+Final assertion:
+
+<code>assert e != null => \forall Object x; \old(this.contains(x)); this.contains(x);</code>
+--------------------
+Let's analyze the comment:
+
+> // @@@ If the element being added is not null, every element that was in the queue before the add is still contained in the queue after the add.
+
+This means:
+- Premise: The element being added (`e`) is not null.
+- Consequence: All elements that were in the queue before the operation (`\old(this)`) are still in the queue after the operation.
+
+We need to express that for every element `x` that was in the queue before the `offer`, if `this.contains(x)` was true before, then it remains true after.
+
+We can express this using `\forall` over the elements in the old queue.
+
+But note: We cannot directly quantify over objects in a collection in Java assert syntax unless we use indices or other mechanisms. However, from the specification, we have `toArray()` which gives us access to all elements.
+
+So, we can say: for every element `x` in the old array (i.e., `\old(this.toArray())`), `this.contains(x)` holds after the operation.
+
+Also, the premise is that `e != null`, which is already checked in the method (and causes an exception if violated), but the assertion only applies when `e` is not null — so we guard with `e != null`.
+
+Thus, the correct assertion is:
+
+<code>assert e != null => \forall Object x; \old(this.toArray()).contains(x); this.contains(x);</code>
+
+Wait — but `contains` on an array doesn't work like that. In Java, `Object[]` does not have a `.contains()` method. So we cannot write `\old(this.toArray()).contains(x)`.
+
+Alternative: We can iterate over the indices of the old array.
+
+Let’s denote:
+- The old array: `Object[] oldArray = \old(this.toArray());`
+- Its length: `int oldSize = \old(this.size());`
+
+We can say: for all indices `i` from `0` to `oldSize - 1`, the element `oldArray[i]` is still in the queue after the operation.
+
+So:
+
+`\forall int i; 0 <= i && i < \old(this.size()); this.contains(\old(this.toArray())[i])`
+
+But note: `this.toArray()` returns a new array each time, so we must be cautious. However, in specification languages like JML, `\old(this.toArray())` is treated as the array that `toArray()` returned at method entry.
+
+Also, the condition is only required when `e != null`. So we guard the whole quantifier with that.
+
+Final form:
+
+<code>assert e != null => \forall int i; 0 <= i && i < \old(this.size()); this.contains(\old(this.toArray())[i]);</code>
+--------------------

@@ -1,0 +1,303 @@
+Let's analyze the comment starting with "@@@" step by step:
+
+The comment says:
+> "If the index is between 0 and the initial size of the list inclusive, then for every valid index from the insertion point to the old size of the list, the element at each subsequent index in the updated list is either null and was null in the old list, or is equal to the element at the previous index in the old list."
+
+Breaking this down:
+
+1. **Premise (condition):** `index` is between 0 and the initial size of the list inclusive → `0 <= index && index <= \old(this.size())`
+2. **Conclusion (what must hold if premise is true):**
+   - For every index `i` from `index` to `\old(this.size()) - 1` (since those are the elements being shifted right),
+   - In the new list, the element at position `i + 1` should be:
+     - Either `null` and was `null` in the old list at position `i`, 
+     - Or equal to the old element at position `i`.
+
+But note: since `System.arraycopy` shifts elements from `index` onward to the right, each element originally at position `i` (for `i >= index`) moves to position `i + 1`.
+
+So for all `i` such that `index <= i < \old(this.size())`, we must have:
+```java
+this.get(i + 1).equals(\old(this.get(i)))
+```
+However, we must handle `null` values safely. Since the comment says "either null and was null... or equal", we can express this using equality which in Java semantics (and typically in specs) handles `null` correctly via `Objects.equals`.
+
+But in specification languages like JML (which this resembles), `.equals()` is generally safe, and `null == null` is true.
+
+So we can write:
+```java
+\old(this.get(i)) == null ? this.get(i + 1) == null : this.get(i + 1).equals(\old(this.get(i)))
+```
+But a simpler and equivalent way (assuming proper object equality) is just:
+```java
+Objects.equals(this.get(i + 1), \old(this.get(i)))
+```
+However, since we are restricted to using only the provided observer methods and cannot call `Objects.equals` directly, and since the `equals` method on objects should handle `null`, we can rely on `equals`.
+
+But note: if `this.get(i + 1)` is `null`, calling `.equals(...)` would throw `NullPointerException`. So we cannot use `this.get(i + 1).equals(...)`. Instead, we must use reference equality or assume a safe comparison.
+
+But in formal specifications like this, it's common to assume that equality comparison is safe (i.e., uses `Objects.equals` semantics). However, in this context, since we're writing an assert using Java-like syntax with `\old`, we must stick to safe expressions.
+
+Given that, the safest and most precise way is to use:
+```java
+(this.get(i + 1) == null && \old(this.get(i)) == null) || 
+(this.get(i + 1) != null && this.get(i + 1).equals(\old(this.get(i))))
+```
+
+But this is verbose.
+
+Alternatively, many specification languages allow `==` for object comparison when `null` is involved, and assume `equals` is used for non-null. But here, since the comment says "equal", and the class uses `Objects.equals` in `contains`, we should assume deep equality.
+
+But in the absence of `Objects.equals` in expression context, and given that the previous examples used `.equals()`, we assume it's safe.
+
+But to avoid NPE, we must guard.
+
+However, looking at the examples provided earlier, they used `.equals()` directly without null checks, implying that the objects are non-null or that `.equals()` is used in a safe way.
+
+Moreover, the comment says: "is either null and was null in the old list, or is equal to the element at the previous index in the old list."
+
+So we can write:
+
+For all `i` in `[index, \old(this.size()) - 1]`:
+- `(this.get(i + 1) == null && \old(this.get(i)) == null) || (this.get(i + 1) != null && this.get(i + 1).equals(\old(this.get(i))))`
+
+But we can simplify using logical equivalence.
+
+Alternatively, we can use:
+```java
+Objects.equals(this.get(i + 1), \old(this.get(i)))
+```
+But `Objects.equals` is not accessible in this expression context.
+
+So we must use explicit null-safe comparison.
+
+But in the spirit of the previous examples, and since the problem says to use only publicly accessible observer methods, and `get` returns `E`, which inherits `
+--------------------
+Let's analyze the comment starting with "@@@" step by step:
+
+1. The comment says:  
+   *"If the index is between 0 and the initial size of the list inclusive..."*  
+   → This is a condition: `index >= 0 && index <= \old(this.size())`
+
+2. Then:  
+   *"for every valid index from the insertion point to the old size of the list"*  
+   → This means we are considering indices `i` such that: `index <= i && i < \old(this.size())`
+
+   Note: After insertion, the list size increases by 1, so the old elements from `index` onward are shifted right.
+
+3. *"the element at each subsequent index in the updated list is either null and was null in the old list, or is equal to the element at the previous index in the old list."*  
+   → For each such index `i`, after the operation:
+   - `this.get(i + 1)` (the element at the "subsequent index" in the updated list) should be:
+     - either `null` **and** `\old(this.get(i))` was `null`,  
+     - or equal to `\old(this.get(i))`.
+
+   But note: if `\old(this.get(i))` was `null`, then `this.get(i+1)` should be `null`.  
+   If `\old(this.get(i))` was not `null`, then `this.get(i+1)` should equal it.
+
+   So in both cases: `this.get(i + 1)` should equal `\old(this.get(i))`.
+
+   Actually, the "null and was null" part is redundant — the key behavior is that the old element at position `i` is now at position `i+1`.
+
+   Therefore, the correct specification is:
+   For all `i` in `[index, \old(size))`, we have:
+   `this.get(i + 1).equals(\old(this.get(i)))` — but we must handle `null`.
+
+   However, the `Objects.equals` semantics are used in `contains`, `indexOf`, etc., so we should use `Objects.equals(a, b)`.
+
+   But in JML-style assertions, we can use `.equals()` with care. Since we are comparing possibly null values, we should use:
+   `Objects.equals(this.get(i + 1), \old(this.get(i)))`
+
+   However, the codebase uses `Objects.equals`, but in the assertion, we don't have access to `Objects.equals` unless imported. But in JML, it's common to use `.equals()` with the understanding that it handles nulls via specification.
+
+   Alternatively, we can write:
+   `(this.get(i + 1) == null && \old(this.get(i)) == null) || (this.get(i + 1) != null && this.get(i + 1).equals(\old(this.get(i))))`
+
+   But that's equivalent to `Objects.equals(this.get(i+1), \old(this.get(i)))`.
+
+   However, in JML, it's acceptable to use `.equals()` with `\old`, and assume proper null handling in spec.
+
+   But to be safe and precise, and since the comment says "is either null and was null ... or equal", we can express it as:
+   `this.get(i+1) == null ? \old(this.get(i)) == null : this.get(i+1).equals(\old(this.get(i)))`
+
+   But this is verbose. The standard way in JML is to use `.equals()` and rely on specification-level semantics.
+
+   Given the examples provided earlier use `.equals()` directly, we'll do the same.
+
+4. So the full assertion is:
+   If `index` is in `[0, \old(this.size())]`, then for all `i` in `[index, \old(this.size()))`:
+   `this.get(i + 1).equals(\old(this.get(i)))`
+
+   Note: The comment says "from the insertion point to the old size", so `i` from `index` to `old_size - 1`.
+
+5. Also, the method shifts elements starting at `index` to the right, so `elementData[index]` gets the new element, and `elementData[index+1]` gets the old `elementData[index]`, etc.
+
+   So yes, for `i` from `index` to `old_size - 1`, the new list has at `i+1` what the old list had at `i`.
+
+Therefore, the correct assert statement is:
+
+<code>assert index >= 0 && index <= \old(this.size()) => \forall int i; index <= i && i < \old(this.size()); this.get(i + 1).equals(\old(this.get(i)));</code>
+--------------------
+Let's analyze the comment starting with "@@@" step by step:
+
+The comment says:
+> If the index is between 0 and the initial size of the list inclusive, then for every valid index from the insertion point to the old size of the list, the element at each subsequent index in the updated list is either null and was null in the old list, or is equal to the element at the previous index in the old list.
+
+Breaking this down:
+
+1. **Premise (condition)**: `index` is between 0 and the initial size of the list inclusive → `0 <= index && index <= \old(this.size())`
+2. **Conclusion (specification)**: For every valid index `i` from `index` to `\old(this.size()) - 1` (since we're shifting right), the element at position `i + 1` in the new list is equal to the element at position `i` in the old list.
+   - The shifting operation moves elements from `index` onward one position to the right.
+   - So after insertion, `this.get(i + 1)` should equal `\old(this.get(i))` for all `i` in `[index, \old(this.size()) - 1]`.
+   - Also, the comment mentions "either null and was null, or equal", but since equality via `equals` or reference equality is already handled by `Objects.equals` in the `get` method semantics, and the condition is about shifting, the core idea is preservation of relative values via shift.
+
+Thus, the correct formalization is:
+
+- If `0 <= index && index <= \old(this.size())`, then for all `i` such that `index <= i < \old(this.size())`, we have `this.get(i + 1).equals(\old(this.get(i)))`.
+
+Note: We use `\old(this.get(i))` because we are comparing to the value before the method call.
+
+Also, since `i + 1` must be a valid index after insertion, and the new size is `\old(this.size()) + 1`, `i + 1` ranges from `index + 1` to `\old(this.size())`, which is valid.
+
+So the assert statement is:
+
+<code>assert (0 <= index && index <= \old(this.size())) => \forall int i; index <= i && i < \old(this.size()); this.get(i + 1).equals(\old(this.get(i)));</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> If the index is between 0 and the initial size of the list inclusive, then for every valid index from the insertion point to the old size of the list, the element at each subsequent index in the updated list is either null and was null in the old list, or is equal to the element at the previous index in the old list.
+
+We need to translate this into a formal `assert` statement using the specified syntax rules.
+
+### Step-by-step breakdown:
+
+1. **Premise (condition)**:  
+   "If the index is between 0 and the initial size of the list inclusive"  
+   → This means: `0 <= index && index <= \old(this.size())`  
+   This will be the left side of an implication (`=>`).
+
+2. **Conclusion (specification)**:  
+   "For every valid index from the insertion point to the old size of the list"  
+   → We are iterating over indices `i` such that: `index <= i && i < \old(this.size())`  
+   But note: after insertion, the list is shifted right, so the element at position `i+1` in the new list should equal the element at position `i` in the old list.
+
+   However, the comment says:  
+   "the element at each subsequent index in the updated list"  
+   → So at index `i+1` in the new list (because we shifted right), we expect:
+   - either the new element is null and the old one was null
+   - or the new element equals the old element at the previous index
+
+   But actually, since we're inserting and shifting right, for each `i` from `index` to `old_size - 1`, we have:
+   `this.get(i+1)` (new list) should equal `\old(this.get(i))`.
+
+   However, the comment phrases it carefully:  
+   > "is either null and was null in the old list, or is equal to the element at the previous index in the old list."
+
+   This seems to be a redundant way of saying they are equal, because if both are null, they are equal, and if they are equal, it's fine. But the phrasing might be emphasizing handling of nulls.
+
+   Actually, `Objects.equals` handles nulls, and `get` returns `null` safely. So `this.get(i+1).equals(\old(this.get(i)))` would fail if either is null, but we know the `.equals` method is safe only if the left side is not null.
+
+   But in JML-style assertions, we usually use `equals` with caution. However, in the context of this problem, and given the specification of `indexOf` using `Objects.equals`, we can assume structural equality.
+
+   But the comment says:  
+   "either (new is null and old was null) or (new equals old)"  
+   → This is equivalent to: `Objects.equals(this.get(i+1), \old(this.get(i)))`
+
+   However, we don't have `Objects.equals` in the assertion syntax. But since `this.get(i+1)` and `\old(this.get(i))` are objects, we can use `.equals()` only if we are sure about nulls.
+
+   But the safest way to express "a equals b" in such assertions, especially when nulls are possible, is:
+   `(a == null ? b == null : a.equals(b))`
+
+   But that's verbose. However, in many formal specification languages like JML, `\old(this.get(i))` and `this.get(i+1)` can be compared with `.equals()` if we assume proper handling, but to be precise, we follow the logic.
+
+   But looking at prior examples, they use `.equals()` directly, e.g., `this.query(i).equals(\old(this.query(i)))`.
+
+   So we will use `.equals()`.
+
+   However, the comment says:  
+   "either null and was null, or equal to the previous" — this is logically:
+   `(this.get(i+1) == null && \old(this.get(i)) == null) || this.get(i+1).equals(\old(this.get(i)))`
+
+   But that is **not** equivalent to `Objects.equals(this.get(i+1), \old(this.get(i)))`, which is safer.
+
+   But since we are in a specification context and want to avoid redundancy, and given that the Java `ArrayList` uses `Objects.equals`, we can assume that equality includes null safety.
+
+   However, the comment seems to be trying to express the shift: every element from `index` onward is moved to the next position.
+
+   So the correct and simpler interpretation is:
+   For all `i` in `[index, old_size)`, we have:
+   `this.get(i+1).equals(\old(this.get(i)))` — but this fails if either is null
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> If the index is between 0 and the initial size of the list inclusive, then for every valid index from the insertion point to the old size of the list, the element at each subsequent index in the updated list is either null and was null in the old list, or is equal to the element at the previous index in the old list.
+
+### Step-by-step breakdown:
+
+1. **Premise (condition):**  
+   The condition is: `index` is between `0` and the initial size of the list inclusive.  
+   That is: `0 <= index && index <= \old(this.size())`
+
+2. **Conclusion (what must hold if premise is true):**  
+   For every index `i` from `index` to `\old(this.size()) - 1` (inclusive), the element at position `i + 1` in the new list:
+   - either is `null` and was `null` at position `i` in the old list,
+   - or is equal to the element at position `i` in the old list.
+
+   In other words:  
+   For all `i` such that `index <= i && i < \old(this.size())`,  
+   we must have:  
+   `this.get(i + 1)` is either:
+   - `null` and `\old(this.get(i))` is `null`, or
+   - equal to `\old(this.get(i))`.
+
+   This can be written as:  
+   `this.get(i + 1) == null && \old(this.get(i)) == null || this.get(i + 1).equals(\old(this.get(i)))`
+
+   But to be safe with `null` comparisons, and since the condition already separates the `null` case, we can write it directly.
+
+   However, note: if `\old(this.get(i))` is `null`, then `this.get(i + 1)` must also be `null`.  
+   If `\old(this.get(i))` is not `null`, then `this.get(i + 1)` must be equal to it.
+
+   So we can write:  
+   `Objects.equals(this.get(i + 1), \old(this.get(i)))` — this safely handles `null`.
+
+   But the comment says: "either null and was null ... or equal to the previous", which is equivalent to element shifting.
+
+   Actually, the standard way to express that an element was shifted right is:  
+   `this.get(i + 1).equals(\old(this.get(i)))` when both are non-null, and both null otherwise.
+
+   `Objects.equals(a, b)` is true if both are null or both are equal.
+
+   However, the method `get` returns `E`, and we are not given `Objects.equals` in scope. But in the `indexOf` and `contains` method descriptions, it says they use `Objects.equals(o, e)`. So we can assume that equality comparison should respect that.
+
+   But in the assert, we cannot call `Objects.equals` unless imported. However, in the context of specification, and since `equals` is defined for objects, and null-safe behavior is required, but we are not told to use `Objects.equals`.
+
+   Looking at prior examples, they use `.equals()` directly. But if `\old(this.get(i))` is `null`, then calling `.equals()` would fail.
+
+   So to be safe, we must avoid calling `.equals` on null.
+
+   Therefore, the safest way is to write:
+   ```
+   (\old(this.get(i)) == null && this.get(i + 1) == null) ||
+   (\old(this.get(i)) != null && \old(this.get(i)).equals(this.get(i + 1)))
+   ```
+
+   But the comment says: "is either null and was null in the old list, or is equal to the element at the previous index in the old list".
+
+   That matches exactly.
+
+   Alternatively, we can use:
+   ```
+   (this.get(i + 1) == null && \old(this.get(i)) == null) ||
+   (this.get(i + 1) != null && this.get(i + 1).equals(\old(this.get(i))))
+   ```
+
+   But note: equality is symmetric in this context (for `Objects.equals`), so both are fine.
+
+   However, in Java, `a.equals(b)` is not always symmetric if `a` is null, but here we are guarding against null.
+
+   Let's stick to:
+   ```
+   (\old(this.get(i)) == null && this.get(i + 1) == null) ||
+   (\old(this.get(i)) != null && \old(this.get(i)).equals(this.get(i + 1)))
+   ```
+
+   But wait — the comment says: "the element at each subsequent index in the updated list" — that is `i+1` — "is either null
+--------------------

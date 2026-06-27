@@ -1,0 +1,176 @@
+Let's analyze the comment starting with "@@@":
+
+> After the OR operation, each bit in this BitSet is set if and only if it was already set before the operation or the corresponding bit in the argument set was set.
+
+This is a postcondition for the `or(BitSet set)` method. It describes the final state of each bit in `this` BitSet after the operation.
+
+We need to express that:
+- For every bit index `i`, `this.get(i)` after the operation is `true` **if and only if**:
+  - `this.get(i)` was `true` before the operation (`\old(this.get(i))`), **or**
+  - `set.get(i)` was `true` (note: since `set` is a parameter, we assume its state is unchanged during the method, so we don't need `\old(set.get(i))` unless specified, but to be safe and symmetric, we can assume we're comparing to the old state).
+
+However, note that `set` is a parameter and not modified during the method (assuming no aliasing or side effects), so `set.get(i)` during the method is the same as `\old(set.get(i))`.
+
+But to be consistent with formal specification style and avoid any assumption about parameter mutation, we use `\old` for expressions involving the current object, and since `set` is a parameter and not `this`, we can refer to `set.get(i)` directly — but in JML-style assertions, it's common to treat parameter values as fixed and not changing, so `set.get(i)` refers to its value upon entry.
+
+But in this context, since we are only allowed to use `\old(expression)` for values at the beginning of the function, and `set` is a parameter, we can write `\old(set.get(i))` — however, note that `set` is not `this`, but the method can still observe its state at method entry.
+
+In JML, `\old` can be applied to any expression referring to pre-state, including parameter object states.
+
+So the correct specification is:
+
+For all bit indices `i`, the new value of bit `i` in `this` is:
+```
+this.get(i) == (\old(this.get(i)) || \old(set.get(i)))
+```
+
+But what is the range of `i`? The BitSet is conceptually infinite, but we only care about bits that are "relevant". However, the specification should hold for all bits that could be affected — but since BitSet is unbounded, we must consider all non-negative integers.
+
+But in practice, such assertions are quantified over all `i >= 0`.
+
+So we write:
+
+```
+\forall int i; i >= 0; this.get(i) == (\old(this.get(i)) || \old(set.get(i)))
+```
+
+But note: the method does not necessarily update bits beyond `wordsInUse`, but the logical behavior of BitSet is that all unspecified bits are `false`. The `or` operation should only affect bits up to the length of the larger set, but the specification must hold for all bits.
+
+However, for any bit `i` beyond the current logical length, `this.get(i)` is `false`, and after `or`, it becomes `set.get(i)`, so the formula still holds.
+
+Therefore, the correct and complete assertion is:
+
+<code>assert \forall int i; i >= 0; this.get(i) == (\old(this.get(i)) || \old(set.get(i)));</code>
+--------------------
+Let's analyze the comment marked with "@@@":
+
+> After the OR operation, each bit in this BitSet is set if and only if it was already set before the operation or the corresponding bit in the argument set was set.
+
+This is a post-condition for the `or(BitSet set)` method. It describes the logical behavior of the OR operation:
+
+- For every bit index `i`, the resulting bit in `this` BitSet (`this.get(i)`) should be `true` **if and only if**:
+  - `this.get(i)` was `true` before the operation (`\old(this.get(i))`), **or**
+  - `set.get(i)` was `true` (note: since `set` is a parameter, we assume it's unchanged and can be accessed directly).
+
+We must express this for **all bits** that are relevant. Since bit sets can grow, we should consider all non-negative indices up to the maximum logical length involved. However, in practice, the specification holds for **all** `i >= 0`. But in formal specifications, we often rely on the behavior of the `get(i)` method, which returns `false` for all bits beyond the current set.
+
+Thus, we can quantify over all `i >= 0`, but since that's infinite, we rely on the logical equivalence described in the method's intent.
+
+But note: the method comment says "**each bit** in this BitSet" — meaning all bits in the logical domain (non-negative integers), and the operation defines the new value as the logical OR of the old value in `this` and the value in `set`.
+
+So the correct specification is:
+
+For all `i >= 0`,  
+`this.get(i)` after the operation ⇔ (`\old(this.get(i))` ∨ `set.get(i)`)
+
+We can write this using `\forall int i;` condition; but since `i` ranges over all non-negative integers, and we cannot iterate infinitely, the formal specification still expresses this quantification.
+
+Hence, the assert statement is:
+
+<code>assert \forall int i; i >= 0; this.get(i) == (\old(this.get(i)) || set.get(i));</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the `or(BitSet set)` method:
+
+> // @@@ After the OR operation, each bit in this BitSet is set if and only if it was already set before the operation or the corresponding bit in the argument set was set.
+
+This is a postcondition describing the behavior of the `or` operation. It says that for every bit index `n`, the value of the bit in `this` BitSet after the operation is `true` **if and only if**:
+- it was `true` before the operation, **or**
+- the corresponding bit in `set` was `true`.
+
+We need to express this for **all** bit indices `n`. Since bit indices are non-negative integers, and the behavior of `BitSet` is defined for all such indices (with implicit `false` for out-of-bounds), we should quantify over all `n >= 0`.
+
+However, in practice, we can rely on the `get(n)` method, which returns `false` for indices beyond the current logical size.
+
+We use:
+- `\old(this.get(n))` to refer to the value in `this` before the operation,
+- `set.get(n)` is accessible as-is (since `set` is a parameter and assumed to be unchanged),
+- `this.get(n)` after the operation is just `this.get(n)`.
+
+The condition is:
+```
+this.get(n) == (\old(this.get(n)) || set.get(n))
+```
+
+But since this must hold for **all** `n >= 0`, we use `\forall`.
+
+Also, note that `n` must be a nonnegative integer.
+
+Thus, the correct assertion is:
+
+<code>assert \forall int n; n >= 0; this.get(n) == (\old(this.get(n)) || set.get(n));</code>
+--------------------
+Let's analyze the comment marked with "@@@":
+
+> After the OR operation, each bit in this BitSet is set if and only if it was already set before the operation or the corresponding bit in the argument set was set.
+
+This is a logical specification of the `or` method. It says that for every bit index `n`, the resulting bit in `this` BitSet after the operation is `true` **if and only if**:
+- the bit was `true` in `this` before the operation, **or**
+- the bit was `true` in the argument `set` at the same index.
+
+We need to express this using:
+- `\old(...)` to refer to the state before the method call,
+- `this.get(n)` for the current (post) state,
+- `set.get(n)` for the argument BitSet,
+- and quantify over all valid bit indices.
+
+But what is the range of `n`? Since bit sets can grow, we should consider all bits up to the maximum logical length involved. However, the behavior of `get(n)` for large `n` is well-defined (returns `false` if beyond current set bits), so we can rely on the logical semantics.
+
+But to be precise and safe, we can consider that for all `n >= 0`, the following biconditional holds:
+```
+this.get(n) == (\old(this.get(n)) || set.get(n))
+```
+
+However, note that `set` is a parameter and does not change during the method call (assuming no aliasing or side effects — and since `BitSet` is not thread-safe and we assume standard usage).
+
+Also, the phrase "if and only if" corresponds to logical equivalence (`<=>`), but here it's used in the natural language sense to define the outcome: the resulting bit is set **exactly when** one of the two conditions holds. So we can write:
+
+```
+\forall int n; n >= 0; this.get(n) == (\old(this.get(n)) || set.get(n))
+```
+
+But wait: is this valid for **all** `n`? In theory, yes — because `get(n)` returns `false` for unset bits, and the `or` operation should behave accordingly.
+
+However, in practice, such quantification over all integers `n >= 0` is infinite and not feasible. But in formal specifications (like JML), such expressions are allowed as logical assertions.
+
+Moreover, the comment says "**each bit**", which implies universal quantification over all bit indices.
+
+Thus, the correct assert statement is:
+
+<code>assert \forall int n; n >= 0; this.get(n) == (\old(this.get(n)) || set.get(n));</code>
+--------------------
+Let's analyze the comment marked with "@@@":
+
+> After the OR operation, each bit in this BitSet is set if and only if it was already set before the operation or the corresponding bit in the argument set was set.
+
+This is a logical biconditional (if and only if) statement about every bit in the BitSet after the `or` operation.
+
+We need to express that for every bit index `n`, the value of `this.get(n)` after the operation is `true` **if and only if** either:
+- `this.get(n)` was `true` before the operation (`\old(this.get(n))`), or
+- `set.get(n)` was `true` at the time of the call.
+
+Also, since bit indices are non-negative and the BitSet grows as needed, we must consider all relevant bit positions. However, the behavior of `BitSet` implies that bits beyond the current logical size are `false`. So we can consider all `n >= 0`.
+
+But to be safe and consistent with the specification style, we use a universally quantified assertion over all `n >= 0`.
+
+We express "if and only if" using `<=>`, or equivalently as `(A => B) && (B => A)`, but in this case, since it's a direct specification, we can use logical equivalence.
+
+However, in typical JML-style assertions, `<=>` is acceptable, but sometimes tools prefer using `==` for boolean equivalence. Since the context uses `=>`, and to stay within common JML practices, we can use `==` to mean logical equivalence for boolean expressions.
+
+So:
+
+`this.get(n)` after == (`\old(this.get(n))` || `set.get(n)`)
+
+But note: `set` is a parameter, and we are not modifying it. So `set.get(n)` refers to the state at the time of the call (not old, because `set` is not modified).
+
+Also, we must ensure we don't assume bounds — the BitSet supports arbitrary non-negative indices.
+
+Thus, the correct assertion is:
+
+`\forall int n; n >= 0; this.get(n) == (\old(this.get(n)) || set.get(n))`
+
+This asserts that for all non-negative bit indices `n`, the resulting bit is set iff it was set before in `this` or is set in `set`.
+
+Final answer:
+
+<code>assert \forall int n; n >= 0; this.get(n) == (\old(this.get(n)) || set.get(n));</code>
+--------------------

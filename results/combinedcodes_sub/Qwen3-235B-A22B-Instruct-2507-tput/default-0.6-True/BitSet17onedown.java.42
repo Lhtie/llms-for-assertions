@@ -1,0 +1,159 @@
+Let's analyze the comment:
+
+```
+// @@@ Every bit between the returned index (exclusive) and the starting index (inclusive) is set to true.
+```
+
+This comment refers to the method `previousClearBit(int fromIndex)`, which returns the index of the nearest bit that is `false` on or before `fromIndex`. If such a bit is found at index `r`, then **all bits from `r+1` up to `fromIndex`** must be `true`, because otherwise there would be a closer clear bit.
+
+So, if the result is `r`, then:
+- For all indices `i` such that `r < i <= fromIndex`, the bit at `i` must be `true`.
+
+We express this using `\forall` quantifier, where:
+- The range of `i` is `r + 1 <= i <= fromIndex`.
+- Each such bit satisfies `this.get(i)` is `true`.
+- We must account for the case when `r == -1`, which means no clear bit was found before `fromIndex`. In that case, all bits from `0` to `fromIndex` should be `true`. But note: the specification says "between the returned index (exclusive) and the starting index (inclusive)", so if `r == -1`, then we consider from `0` to `fromIndex`.
+
+But actually, if `r` is `-1`, then the range becomes `0 <= i <= fromIndex`, because `r+1 = 0`.
+
+So in general, the range is: `i` from `r+1` to `fromIndex`, inclusive.
+
+We must also ensure this only applies when a valid index is returned (i.e., when `\result != -1`) or even when it is `-1`, the meaning still holds: all bits from `0` to `fromIndex` are set.
+
+But note: if `\result == -1`, it means no clear bit exists on or before `fromIndex`, so **all bits from 0 to fromIndex are set to true**.
+
+Therefore, the property holds in both cases.
+
+So the correct assertion is:
+
+For all `i` in `(\result + 1)` to `fromIndex`, inclusive, `this.get(i)` is `true`.
+
+We write this using `\forall`.
+
+Final assert statement:
+
+<code>assert \forall int i; \result + 1 <= i && i <= fromIndex; this.get(i);</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the given method:
+
+```java
+// @@@ Every bit between the returned index (exclusive) and the starting index (inclusive) is set to true.
+```
+
+This comment refers to the behavior of the `previousClearBit(int fromIndex)` method. The method returns the index of the nearest bit that is `false` on or before `fromIndex`. The comment asserts that **all bits between the returned index (exclusive) and the starting index `fromIndex` (inclusive) must be `true`**.
+
+Let’s formalize this:
+
+- Let the return value be `\result`.
+- If `\result == -1`, then no clear bit was found, and the condition may not apply (we need to be careful).
+- Otherwise, for every bit index `i` such that `\result < i <= fromIndex`, the bit at `i` must be `true`.
+
+But note: if `\result == -1`, the comment's condition about "between the returned index and starting index" doesn't make sense because `-1` is a sentinel. So we should only apply the condition when a valid index is returned (i.e., `\result != -1`).
+
+So the specification should be:
+
+> If the result is not -1, then for all bit indices `i` in the range `(\result, fromIndex]`, `this.get(i)` is `true`.
+
+Using the syntax rules:
+
+- Use `\result` for return value.
+- Use `\forall int i; condition; spec` for universal quantification.
+- Use implication to guard by `\result != -1`.
+
+Thus:
+
+<code>assert \result != -1 => \forall int i; \result < i && i <= fromIndex; this.get(i);</code>
+--------------------
+Let's analyze the comment starting with "@@@" in the given method:
+
+```java
+// @@@ Every bit between the returned index (exclusive) and the starting index (inclusive) is set to true.
+```
+
+This comment is for the method `previousClearBit(int fromIndex)`, which returns the index of the nearest bit set to `false` on or before `fromIndex`. If no such bit exists, it returns `-1`.
+
+The comment specifies that:
+- For the returned index (say `r = \result`), every bit **between** `r+1` and `fromIndex` (inclusive) must be set to `true`.
+- This only makes sense when a valid index is returned (`\result != -1`).
+- If `\result == -1`, then no such clear bit was found, but the comment doesn't specify behavior in that case — so we only assert the condition when a valid index is returned.
+
+So, if `\result` is not `-1`, then for all bit indices `i` such that `\result < i <= fromIndex`, we must have `this.get(i) == true`.
+
+We can express this using `\forall` quantifier.
+
+Also note: we must ensure bounds — `i` should be a valid bit index (non-negative), but since `fromIndex >= 0` (as checked by method precondition) and `\result < i <= fromIndex`, the indices are valid.
+
+Thus, the assert statement is:
+
+<code>assert \result != -1 => \forall int i; \result < i && i <= fromIndex; this.get(i);</code>
+--------------------
+Let's analyze the comment:
+
+```
+// @@@ Every bit between the returned index (exclusive) and the starting index (inclusive) is set to true.
+```
+
+This comment refers to the behavior of the `previousClearBit(int fromIndex)` method.
+
+- The method returns the index of the nearest bit that is `false` (i.e., cleared) on or before `fromIndex`.
+- The comment specifies that **every bit** in the range **(returned index, fromIndex]** — that is, **from (result + 1) up to and including `fromIndex`** — must be `true`.
+
+We need to express this in an `assert` statement using the JML-like syntax, where:
+- `\result` refers to the return value.
+- We must ensure that for all bit indices `i` in the range `(\result + 1)` to `fromIndex` (inclusive), `this.get(i)` is `true`.
+- This should only be required if the result is not `-1`. If `\result == -1`, then there is no such clear bit, and the condition about the range doesn't apply (but in that case, all bits from `0` to `fromIndex` should be `true`? However, the comment only talks about the range between the returned index and `fromIndex`, so we interpret it conditionally).
+
+But note: if `\result == -1`, then the method found no clear bit before `fromIndex`, which implies all bits from `0` to `fromIndex` are `true`. But the comment says: "every bit between the returned index (exclusive) and the starting index (inclusive)" — if `\result == -1`, then the range is `( -1 + 1 ) = 0` to `fromIndex`, i.e., `0` to `fromIndex`, which is correct.
+
+So in **all cases**, the range is: `i` from `(\result + 1)` to `fromIndex`, inclusive.
+
+But we must guard against invalid ranges. If `\result == -1`, then the range is `0` to `fromIndex`. If `\result >= 0`, then the range is `\result + 1` to `fromIndex`. If `\result > fromIndex`, that would be invalid — but the method contract ensures `\result <= fromIndex`.
+
+Also, if the method returns `-1`, and `fromIndex >= 0`, it means no clear bit was found down to 0, so all bits from 0 to `fromIndex` are set.
+
+So the correct assertion is:
+
+For all `i` such that `\result + 1 <= i <= fromIndex`, the bit at `i` is `true`.
+
+We must also ensure that the range is valid: if `\result + 1 <= fromIndex`, then the quantified statement applies. But even if the range is empty (e.g., `\result == fromIndex`), the statement holds vacuously.
+
+So we can write:
+
+```java
+assert \forall int i; \result + 1 <= i && i <= fromIndex; this.get(i);
+```
+
+This covers:
+- When `\result == -1`: checks `i` from `0` to `fromIndex`.
+- When `\result >= 0`: checks from `\result + 1` to `fromIndex`.
+- If `\result >= fromIndex`, the loop is empty — but the method ensures `\result <= fromIndex`, and if `\result == fromIndex`, then `fromIndex+1` bit is being returned as clear, so bits after that (but before or at `fromIndex`) — none — need to be checked.
+
+Yes, this matches.
+
+Final answer:
+
+<code>assert \forall int i; \result + 1 <= i && i <= fromIndex; this.get(i);</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> Every bit between the returned index (exclusive) and the starting index (inclusive) is set to true.
+
+This means:
+- The method `previousClearBit(int fromIndex)` returns an index (say `r = \result`) of the nearest bit set to `false` on or before `fromIndex`.
+- If such a bit is found (i.e., `r != -1`), then **all bits from `r+1` up to `fromIndex`** (inclusive) must be `true`.
+- If no such bit exists (`r == -1`), then the statement doesn't apply — but note that if `fromIndex == -1`, it returns `-1`, and there are no bits to check.
+
+So the specification should say:
+> If the result is not -1, then for all bit indices `i` such that `result < i <= fromIndex`, the bit at `i` is `true`.
+
+We can express this using:
+- `\result` for the return value,
+- `\forall int i; ...` to quantify over bit indices,
+- `this.get(i)` to check the bit value.
+
+Also, we must ensure the range is valid: only consider `i` where `r < i <= fromIndex`.
+
+Thus, the correct assertion is:
+
+<code>assert \result != -1 => (\forall int i; \result < i && i <= fromIndex; this.get(i));</code>
+--------------------

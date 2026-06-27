@@ -1,4 +1,4 @@
-package combinedcodes;
+package combinedcodes_sub;
 
 import org.jgrapht.graph.*;
 import org.jgrapht.*;

@@ -1,0 +1,167 @@
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If a previous mapping existed for the key, the returned value equals the value that was associated with the key before the put.
+
+This means:
+- We are to write an assert statement that captures the condition: **if** there was already a mapping for the key in the map before the `put` operation, **then** the return value of `put` (i.e., `\result`) must be equal to the value that was previously associated with that key.
+
+We can check whether a previous mapping existed using `this.containsKey(key)` — but note: we need the state **before** the operation. So we use `\old(this.containsKey(key))`.
+
+If that was true, then `\result` should equal the old value associated with `key`, which can be obtained via `\old(this.get(key))`.
+
+So the assertion becomes:
+
+`( \old(this.containsKey(key)) ) => ( \result != null && \result.equals(\old(this.get(key))) || \result == null && \old(this.get(key)) == null )`
+
+But note: `get` returns `null` if the key is not present, or if it is present and mapped to `null`. However, since we are in the case where `containsKey(key)` is true, then `get(key)` returns the mapped value — even if it's `null`.
+
+So `\old(this.get(key))` will correctly return the previous value (possibly `null`) when the key was present.
+
+In Java Modeling Language (JML)-style assertions, object equality should be checked with `.equals()` for non-null objects, but we must be cautious with `null`.
+
+However, `\result` and `\old(this.get(key))` are both of type `V`, and we want to assert they are equal in value.
+
+The safest way is to say: if the old value is null, then result must be null; otherwise, result must equal it via `.equals()`.
+
+But in JML-style (as seen in prior examples), it's common to rely on `.equals()` being safe and properly overridden, and to assume that `null` comparison is handled.
+
+Alternatively, we can use reference equality for `null` and `.equals()` otherwise.
+
+But note: in the previous examples, `.equals()` was used directly even when `null` might be involved — but that would cause issues.
+
+Actually, in specification languages like JML, `\old(this.get(key))` could be `null`, and `\result.equals(...)` would fail if `\result` is `null`.
+
+So we need to do a symmetric null-safe equality.
+
+The standard way in JML is to use `\eq` for object equality including `null`, but that is not standard Java syntax.
+
+Looking back at the **examples provided**, they used `.equals()` directly, assuming non-null or that `.equals()` is safe.
+
+But in this case, values can be `null` — as stated in the class doc: *"permits null values and the null key."*
+
+Therefore, we must handle `null`.
+
+However, in the **given examples**, even with `null`, they used `.equals()` — but that would be incorrect in runtime Java.
+
+But this is a **specification**, not runtime code. In specification languages like JML, `.equals()` is often treated as safe, or `\doteq` is used. But here, based on the prior examples, they used `.equals()` directly.
+
+Wait: in the third example:
+```java
+this.query(i).equals(\old(this.query(i)))
+```
+This implies that `.equals()` is used directly, so we follow suit.
+
+But if both sides can be `null`, then we should write:
+`(\result == null && \old(this.get(key)) == null) || (\result != null && \result.equals(\old(this.get(key))))`
+
+But that's verbose.
+
+Alternatively, we can rely on the fact that in specification logic, we can define equality properly.
+
+But the examples didn't do null checks — they just used `.equals()`.
+
+Moreover, in the second example:
+```java
+this.index_of(value) == \old(this.index_of(value))
+```
+uses `==` for integers.
+
+For objects, `.equals()` is used.
+
+But in this case, the return type `V` could be any object, including `null`.
+
+However, looking at the method contract: *"A null return can also indicate that the map previously associated null with key."* — so `null` is a valid previous value.
+
+Now, can we write:
+`\result == \old(this.get(key))`
+using `==`? No — because object identity is not the same as equality. The contract says "equals", not "same reference".
+
+So we must use `.equals()`.
+
+But `.equals()` is not safe if `\result` is `null`.
+
+However, in **specification logic**, it's common to assume that `.equals()` is defined to handle `null` properly or that the logic
+--------------------
+Let's analyze the comment:
+
+> // @@@ If a previous mapping existed for the key, the returned value equals the value that was associated with the key before the put.
+
+This means:
+- We are to write an assert statement that captures the behavior of the `put` method.
+- Specifically, **if** there was already a mapping for the given key (i.e., `this.containsKey(key)` was true before the operation), **then** the return value (`\result`) should be equal to the value that was previously associated with the key.
+
+We can express this using:
+- `\old(...)` to refer to the state before the method call.
+- `\result` to refer to the return value.
+- The implication operator `=>` to express "if there was a previous mapping, then the result equals the old value".
+- To get the old value associated with the key, we can use `\old(this.get(key))`.
+
+So:
+- Premise: `\old(this.containsKey(key))`
+- Conclusion: `\result` must equal `\old(this.get(key))`
+
+Thus, the correct assertion is:
+
+<code>assert \old(this.containsKey(key)) => \result.equals(\old(this.get(key)));</code>
+--------------------
+Let's analyze the comment starting with "@@@":
+
+> // @@@ If a previous mapping existed for the key, the returned value equals the value that was associated with the key before the put.
+
+This means:
+- We are to write an assert statement that captures the behavior of the `put` method.
+- Specifically, **if** there was already a mapping for the given key (i.e., the key existed in the map before the operation), **then** the return value (`\result`) must be equal to the value that was previously associated with that key.
+
+We can check whether a key was present before using `this.containsKey(key)` in its old state: `\old(this.containsKey(key))`.
+
+If that condition holds, then `\result` should equal the value previously returned by `this.get(key)`, which we can capture as `\old(this.get(key))`.
+
+Note: Since `get` returns the value associated with the key, and we're only in the case where the key existed, `this.get(key)` before the operation is well-defined (i.e., not null due to absence — though note: the value itself could be null, but the specification says a null return doesn't necessarily mean absence).
+
+However, the comment says: "the returned value equals the value that was associated with the key before the put", so we only care about the case when such a mapping existed.
+
+So we use implication:
+```
+\old(this.containsKey(key)) => \result.equals(\old(this.get(key)))
+```
+
+But we must be cautious: `this.get(key)` could return `null`, and calling `.equals` on `null` would cause issues. However, in JML-style assertions or formal specifications, we assume safe navigation or logical equality. In such contexts, `\result.equals(\old(...))` is acceptable only if both sides are non-null. But since the value could be null, we should use identity equality (`==`) for `null` safety, or rely on semantics where `==` suffices for object equality in specification context.
+
+But note: In Java, `null == null` is true, and for non-null values, `.equals()` is preferred. However, in specifications, especially when dealing with `V` (a generic type), we cannot assume `.equals()` is safe if `\result` is null.
+
+But observe: if the previous value was `null`, then `\result` should be `null`. So we can use `==` because:
+- If both are `null`: `null == null` → true.
+- If both are non-null and equal: reference or value equality depends, but in many models, `==` is used in specs for simplicity unless specified otherwise.
+- However, the `Entry` stores `value`, and it's replaced directly. So the returned old value is the exact same reference.
+
+Thus, using `==` is safe here because it's the same object reference being returned.
+
+Hence, the correct assertion is:
+
+<code>assert \old(this.containsKey(key)) => \result == \old(this.get(key));</code>
+--------------------
+The comment `@@@ If a previous mapping existed for the key, the returned value equals the value that was associated with the key before the put.` describes a condition that depends on whether the key was already present in the map before the `put` operation.
+
+To express this:
+- We need to check if the key was already present using `\old(this.containsKey(key))`.
+- If it was present, then the returned value (`\result`) should be equal to the value previously associated with the key, which can be obtained via `\old(this.get(key))`.
+
+Using the implication syntax `=>` and ensuring proper grouping with parentheses, the correct assertion is:
+
+<code>assert \old(this.containsKey(key)) => \result.equals(\old(this.get(key)));</code>
+--------------------
+The comment `@@@` states:  
+*"If a previous mapping existed for the key, the returned value equals the value that was associated with the key before the put."*
+
+This means:
+- We need to check that **if** there was a previous mapping for the key (i.e., `this.containsKey(key)` was true before the operation), **then** the returned value (`\result`) must be equal to the value previously associated with that key (i.e., `\old(this.get(key))`).
+
+We use:
+- `\old(this.containsKey(key))` to check if the key was present before.
+- `\old(this.get(key))` to get the old value.
+- `\result` to refer to the return value of `put`.
+
+Thus, the correct assertion is:
+
+<code>assert \old(this.containsKey(key)) => \result.equals(\old(this.get(key)));</code>
+--------------------
