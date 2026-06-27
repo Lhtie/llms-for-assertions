@@ -50,13 +50,13 @@ public class UnionFind<T>
         parentMap.put(element, element);
         rankMap.put(element, 0);
         count++;
-        // @@@ the total number of elements in the union-find sets should increase by 1 after the operation if the element is not initially contained.
+        // @@@ If the element was not already present then the size goes up by 1
         // assert !this.contains(element) => this.size()==\old(this.size())+1;
-        // @@@ the number of different sets in the data structure should increase by 1 after the operation if the element is not initially contained.
+        // @@@ The additon of any element also adds a new set to the number of sets present
         // assert !this.contains(element) => this.numberOfSets()==\old(this.numberOfSets())+1;
-        // @@@ after the add operation, the representative of the set that the added element is in should be itself if the element is not initially contained.
+        // @@@ If the element was not already present the newly added element is added as a singleton set
         // assert !this.contains(element) => element.equals(this.find(element));
-        // @@@ the element is contained after the operation.
+        // @@@ The structure now contains the added element
         // assert this.contains(element);
     }
 
@@ -151,11 +151,11 @@ public class UnionFind<T>
             rankMap.put(parent1, rank1 + 1);
         }
         count--;
-        // @@@ the size of the data structure should remain the same if two elements are initially contained.
+        // @@@ The total number of elements remains the same
         // assert this.contains(element1)&&this.contains(element2) => this.size()==\old(this.size());
-        // @@@ the number of different sets should decrease by 1 after the operation if two elements are initially contained.
+        // @@@ The number of sets decreases by 1
         // assert this.contains(element1)&&this.contains(element2) => this.numberOfSets()==\old(this.numberOfSets())-1;
-        // @@@ after the union, the two elements should be in the same set if two elements are initially contained.
+        // @@@ The representative elements will now be in the same set after union
         // assert this.contains(element1)&&this.contains(element2) => this.inSameSet(element1, element2);
     }
 
@@ -203,9 +203,9 @@ public class UnionFind<T>
             rankMap.put(element, 0);
         }
         count = parentMap.size();
-        // @@@ the size of the data structure should remain the same.
+        // @@@ The size of the structure does not change
         // assert this.size()==\old(this.size());
-        // @@@ the number of sets should be equal to the total number of elements after reset.
+        // @@@ The size is in fact the number of sets
         // assert this.numberOfSets()==this.size();
     }
 

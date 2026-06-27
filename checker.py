@@ -12,6 +12,7 @@ import checkers.compilechecker as compilechecker
 import checkers.fuzzchecker as fuzzchecker
 import checkers.rdtpchecker as rdtpchecker
 import checkers.equivchecker as equivchecker
+import checkers.probchecker as probchecker
 
 from active import run_active
 from utils.problemreader import langmap, read_problem
@@ -38,6 +39,15 @@ def check_gen(func, failure_result=False, skipped_result=False):
         return arr
     return f
 
+def prob_check_gen(func):
+    def f(langid, code, raw_result_path, gen_asrts, mask, checker_kwargs):
+        scores_all = func(code, langid, raw_result_path, **checker_kwargs)
+        return [
+            scores_all[i] if i < len(scores_all) and mask[i] else None
+            for i in range(len(gen_asrts))
+        ]
+    return f
+
 CHECKERS = {
     "null_check": check_gen(lambda *args, **kwargs: nullchecker.nullcheck(*args)),
     "compile_check": check_gen(lambda *args, **kwargs: compilechecker.cmplecheck(*args)),
@@ -45,6 +55,7 @@ CHECKERS = {
     "rdtp_check": check_gen(lambda *args, check="equality", **kwargs: rdtpchecker.rdtpcheck(*args, check=check, **kwargs),
                             failure_result=None, skipped_result=None),
     "equiv_check": check_gen(lambda *args, **kwargs: equivchecker.equivcheck(*args)),
+    "prob_check": prob_check_gen(lambda *args, **kwargs: probchecker.probcheck_file(*args, **kwargs)),
 }
 
 
@@ -69,6 +80,16 @@ def format_score(score):
     if score is None:
         return "None"
     return f"{score:.6g}"
+
+def format_prob_field(score, field):
+    if score is None:
+        return "None"
+    value = score.get(field)
+    if value is None:
+        return "None"
+    if isinstance(value, int):
+        return str(value)
+    return f"{value:.6g}"
 
 def select_best(gen_asrts, validity_scores, conformance_scores, equivalence_scores,
                 target_validity, candidate_mask=None):
@@ -117,16 +138,17 @@ if __name__ == "__main__":
     parser.add_argument("--outname", type=str, default="")
     parser.add_argument("--mask", nargs='+', default=[])
     parser.add_argument("--checkerkwargs", type=str, default="")
-    parser.add_argument("--checklist", nargs='+', default=["default"], choices=["default", "valid", "conf", "equiv"])
+    parser.add_argument("--checklist", nargs='+', default=["default"], choices=["default", "valid", "conf", "equiv", "prob"])
     
     args = parser.parse_args()
-    checker_groups = {"default", "valid", "conf", "equiv"}
+    checker_groups = {"default", "valid", "conf", "equiv", "prob"}
     unknown_checkers = [checker for checker in args.checklist if checker not in checker_groups]
     assert not unknown_checkers, f"Unknown checker groups in --checklist: {unknown_checkers}"
     run_default = "default" in args.checklist
     run_valid = run_default or "valid" in args.checklist
     run_conf = run_default or "conf" in args.checklist
     run_equiv = run_default or "equiv" in args.checklist
+    run_prob = "prob" in args.checklist
     checker_kwargs_map = parse_checker_kwargs(args.checkerkwargs)
 
     if args.outname: outname = args.outname
@@ -212,6 +234,18 @@ if __name__ == "__main__":
                     toprint += f"equiv_res: {str(equiv_res)} {sum(bool(x) for x in equiv_res)}/{len(args.mask)}\n"
                 else:
                     equiv_res = [0]*len(gen_asrts)
+                    
+                if run_prob:
+                    print("!"*10 + " Running prob_check", file=sys.stderr)
+                    raw_result_path = os.path.join(rdir, f)
+                    prob_scores = CHECKERS["prob_check"](
+                        langid, code, raw_result_path, gen_asrts, currmask,
+                        checker_kwargs_map.get("prob_check", {}),
+                    )
+                    toprint += (
+                        "prob_avg_scores: "
+                        f"{[format_prob_field(x, 'avg_logprob') for x in prob_scores]}\n"
+                    )
 
                 if run_default:
                     compiled_candidate_mask = and_mask(
@@ -240,6 +274,8 @@ if __name__ == "__main__":
                             best_pass["assert"],
                             rounds=2,
                             outdir="./checktmp/active",
+                            left_label="invalid",
+                            right_label="valid",
                         )
                         if active_decision == "invalid":
                             final_candidate = best_fail

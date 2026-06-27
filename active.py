@@ -111,6 +111,21 @@ def formula_parts(code, asrt, prefix):
     }
 
 
+def formula_parts_state(code, asrt, prefix):
+    jh = javahelper(code)
+    jh.fuzz_objname = jh.fuzz_objname + "_new"
+    formula = jh.extract_formula(normalize_assert(asrt))
+    formula, old_addns, forall_addns, split_addns = jh.trans_formula(formula)
+    old_addns = [line.replace("_new", "_old") for line in old_addns]
+
+    return {
+        "old": prefixed(old_addns, prefix),
+        "forall": prefixed(forall_addns, prefix),
+        "split": prefixed(split_addns, prefix),
+        "expr": prefixed([formula], prefix),
+    }
+
+
 def indent(text, level=2):
     if not text:
         return ""
@@ -130,26 +145,45 @@ def method_signature(base_jh, method_name):
     )
 
 
+def state_method_signature(base_jh, method_name):
+    class_generic = base_jh.classname[base_jh.classname.find("<"):] \
+        if base_jh.classname.find("<") != -1 else ""
+    func_generic = base_jh.funcs[-1]["generic"]
+    func_generic = f" {func_generic}" if func_generic is not None else ""
+    rettyp = base_jh.funcs[-1]["rtyp"]
+    funcargs = "".join([f", {typ} {var}" for var, typ in base_jh.funcs[-1]["args"].items()])
+    retarg = f", {rettyp} {base_jh.fuzz_retvar}" if rettyp != "void" else ""
+    return (
+        f"public{func_generic} void {method_name}"
+        f"({base_jh.namespace}{class_generic} {base_jh.fuzz_objname}_old, "
+        f"{base_jh.namespace}{class_generic} {base_jh.fuzz_objname}_new"
+        f"{funcargs}{retarg})"
+    )
+
+
 def func_call_code(base_jh):
     return "\n".join(base_jh.func_call(base_jh.funcs[-1]))
 
 
-def build_witness_method(code, method_name, invalid_asrt, valid_asrt, condition_kind):
-    base_jh = javahelper(code)
-    invalid = formula_parts(code, invalid_asrt, "invalid_")
-    valid = formula_parts(code, valid_asrt, "valid_")
+def condition_expr(condition_kind):
+    if condition_kind == "left_pass_right_fail":
+        return "leftPass && !rightPass"
+    if condition_kind == "left_fail_right_pass":
+        return "!leftPass && rightPass"
+    raise AssertionError(f"Unknown condition kind: {condition_kind}")
 
-    old_code = "\n".join(x for x in [invalid["old"], valid["old"]] if x)
+
+def build_witness_method_dependent(code, method_name, left_asrt, right_asrt, condition_kind):
+    base_jh = javahelper(code)
+    left = formula_parts(code, left_asrt, "left_")
+    right = formula_parts(code, right_asrt, "right_")
+
+    old_code = "\n".join(x for x in [left["old"], right["old"]] if x)
     post_code = "\n".join(x for x in [
-        invalid["forall"], valid["forall"],
-        invalid["split"], valid["split"],
+        left["forall"], right["forall"],
+        left["split"], right["split"],
     ] if x)
-    if condition_kind == "invalid_pass_valid_fail":
-        condition = "invalidPass && !validPass"
-    elif condition_kind == "invalid_fail_valid_pass":
-        condition = "!invalidPass && validPass"
-    else:
-        raise AssertionError(f"Unknown condition kind: {condition_kind}")
+    condition = condition_expr(condition_kind)
 
     return f"""
     {method_signature(base_jh, method_name)} {{
@@ -163,8 +197,8 @@ def build_witness_method(code, method_name, invalid_asrt, valid_asrt, condition_
 
         // compute assertions
 {indent(post_code)}
-        boolean invalidPass = Boolean.TRUE.equals(exec(() -> {invalid["expr"]}));
-        boolean validPass = Boolean.TRUE.equals(exec(() -> {valid["expr"]}));
+        boolean leftPass = Boolean.TRUE.equals(exec(() -> {left["expr"]}));
+        boolean rightPass = Boolean.TRUE.equals(exec(() -> {right["expr"]}));
         if ({condition}) {{
             throw new RuntimeException("ACTIVE_WITNESS_{condition_kind}");
         }}
@@ -172,7 +206,45 @@ def build_witness_method(code, method_name, invalid_asrt, valid_asrt, condition_
 """
 
 
-def build_groundtruth_method(code, method_name, groundtruth):
+def build_witness_method_independent(code, method_name, left_asrt, right_asrt, condition_kind):
+    base_jh = javahelper(code)
+    left = formula_parts_state(code, left_asrt, "left_")
+    right = formula_parts_state(code, right_asrt, "right_")
+
+    old_code = "\n".join(x for x in [left["old"], right["old"]] if x)
+    post_code = "\n".join(x for x in [
+        left["forall"], right["forall"],
+        left["split"], right["split"],
+    ] if x)
+    condition = condition_expr(condition_kind)
+
+    return f"""
+    {state_method_signature(base_jh, method_name)} {{
+        if ({base_jh.fuzz_objname}_old == null || {base_jh.fuzz_objname}_new == null) return;
+
+        // copy old values
+{indent(old_code)}
+
+        // compute assertions
+{indent(post_code)}
+        boolean leftPass = Boolean.TRUE.equals(exec(() -> {left["expr"]}));
+        boolean rightPass = Boolean.TRUE.equals(exec(() -> {right["expr"]}));
+        if ({condition}) {{
+            throw new RuntimeException("ACTIVE_WITNESS_{condition_kind}");
+        }}
+    }}
+"""
+
+
+def build_witness_method(code, method_name, left_asrt, right_asrt, condition_kind, mode):
+    if mode == "dependent":
+        return build_witness_method_dependent(code, method_name, left_asrt, right_asrt, condition_kind)
+    if mode == "independent":
+        return build_witness_method_independent(code, method_name, left_asrt, right_asrt, condition_kind)
+    raise AssertionError(f"Unknown active mode: {mode}")
+
+
+def build_groundtruth_method_dependent(code, method_name, groundtruth):
     base_jh = javahelper(code)
     gt = formula_parts(code, groundtruth, "gt_")
     post_code = "\n".join(x for x in [gt["forall"], gt["split"]] if x)
@@ -194,6 +266,35 @@ def build_groundtruth_method(code, method_name, groundtruth):
         }}
     }}
 """
+
+
+def build_groundtruth_method_independent(code, method_name, groundtruth):
+    base_jh = javahelper(code)
+    gt = formula_parts_state(code, groundtruth, "gt_")
+    post_code = "\n".join(x for x in [gt["forall"], gt["split"]] if x)
+    return f"""
+    {state_method_signature(base_jh, method_name)} {{
+        if ({base_jh.fuzz_objname}_old == null || {base_jh.fuzz_objname}_new == null) return;
+
+        // copy old values
+{indent(gt["old"])}
+
+        // check groundtruth
+{indent(post_code)}
+        boolean groundtruthPass = Boolean.TRUE.equals(exec(() -> {gt["expr"]}));
+        if (!groundtruthPass) {{
+            throw new RuntimeException("GROUNDTRUTH_FAIL");
+        }}
+    }}
+"""
+
+
+def build_groundtruth_method(code, method_name, groundtruth, mode):
+    if mode == "dependent":
+        return build_groundtruth_method_dependent(code, method_name, groundtruth)
+    if mode == "independent":
+        return build_groundtruth_method_independent(code, method_name, groundtruth)
+    raise AssertionError(f"Unknown active mode: {mode}")
 
 
 def build_fuzztest(code, combinedcodes, methods, fuzztest_class):
@@ -305,14 +406,14 @@ def run_junit(workdir, combinedcodes, test_classes):
     return results
 
 
-def active_direction(code, groundtruth, invalid_asrt, valid_asrt, combinedcodes,
+def active_direction(code, groundtruth, left_asrt, right_asrt, combinedcodes,
                      workdir, time_limit, seed, method_name, condition_kind,
-                     gt_pass_choice, gt_fail_choice):
+                     gt_pass_choice, gt_fail_choice, mode):
     base_jh = javahelper(code)
     witness_class = "WitnessFuzzTest"
     groundtruth_class = "GroundTruthFuzzTest"
     witness_code = build_fuzztest(code, combinedcodes, [
-        build_witness_method(code, method_name, invalid_asrt, valid_asrt, condition_kind),
+        build_witness_method(code, method_name, left_asrt, right_asrt, condition_kind, mode),
     ], witness_class)
 
     prepare_workdir(workdir)
@@ -331,7 +432,7 @@ def active_direction(code, groundtruth, invalid_asrt, valid_asrt, combinedcodes,
         return {"decision": None, "reason": "Randoop found no distinguishing test"}
 
     groundtruth_code = build_fuzztest(code, combinedcodes, [
-        build_groundtruth_method(code, method_name, groundtruth),
+        build_groundtruth_method(code, method_name, groundtruth, mode),
     ], groundtruth_class)
     open(groundtruth_path, "w").write(groundtruth_code)
     compile_proc = compile_fuzztest(workdir, combinedcodes, base_jh.namespace, groundtruth_class)
@@ -357,18 +458,20 @@ def active_direction(code, groundtruth, invalid_asrt, valid_asrt, combinedcodes,
     return {"decision": decision, "reason": f"{method_name} chose {decision}"}
 
 
-def active_round(code, groundtruth, invalid_asrt, valid_asrt, combinedcodes, outdir, round_idx, time_limit):
+def active_round(code, groundtruth, left_asrt, right_asrt, combinedcodes, outdir,
+                 round_idx, time_limit, mode, left_label, right_label):
     decisions = []
     for offset, (method_name, condition_kind, gt_pass_choice, gt_fail_choice) in enumerate([
-        ("ActiveInvalidPassValidFail", "invalid_pass_valid_fail", "invalid", "valid"),
-        ("ActiveInvalidFailValidPass", "invalid_fail_valid_pass", "valid", "invalid"),
+        ("ActiveLeftPassRightFail", "left_pass_right_fail", left_label, right_label),
+        ("ActiveLeftFailRightPass", "left_fail_right_pass", right_label, left_label),
     ]):
         workdir = os.path.join(outdir, f"round_{round_idx}_{method_name}")
         result = active_direction(
-            code, groundtruth, invalid_asrt, valid_asrt, combinedcodes,
+            code, groundtruth, left_asrt, right_asrt, combinedcodes,
             workdir, time_limit, seed=round_idx * 2 + offset + 1,
             method_name=method_name, condition_kind=condition_kind,
             gt_pass_choice=gt_pass_choice, gt_fail_choice=gt_fail_choice,
+            mode=mode,
         )
         print(f"round {round_idx} {method_name}: {result['reason']}")
         if result["decision"] is not None:
@@ -381,12 +484,14 @@ def active_round(code, groundtruth, invalid_asrt, valid_asrt, combinedcodes, out
     return {"decision": None, "reason": "distinguishing tests could not be replayed on groundtruth"}
 
 
-def run_active(code, groundtruth, combinedcodesdir, invalid_asrt, valid_asrt, rounds=2,
-               time_limit=30, outdir="./checktmp/active"):
+def run_active(code, groundtruth, combinedcodesdir, left_asrt, right_asrt, rounds=2,
+               time_limit=30, outdir="./checktmp/active", mode="dependent",
+               left_label="left", right_label="right"):
     for round_idx in range(rounds):
         result = active_round(
-            code, groundtruth, invalid_asrt, valid_asrt,
+            code, groundtruth, left_asrt, right_asrt,
             combinedcodesdir, outdir, round_idx, time_limit,
+            mode, left_label, right_label,
         )
         print(f"round {round_idx}: {result['reason']}")
         if result["decision"] is not None:
@@ -401,8 +506,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--codefile", required=True)
     parser.add_argument("--combinedcodesdir", default="./combinedcodes")
-    parser.add_argument("--invalid", required=True, help="best invalid candidate assertion or formula")
-    parser.add_argument("--valid", required=True, help="best valid candidate assertion or formula")
+    parser.add_argument("--left", required=True, help="first candidate assertion or formula")
+    parser.add_argument("--right", required=True, help="second candidate assertion or formula")
+    parser.add_argument("--mode", choices=["dependent", "independent"], default="dependent")
+    parser.add_argument("--left-label", default="left")
+    parser.add_argument("--right-label", default="right")
     parser.add_argument("--rounds", type=int, default=2)
     parser.add_argument("--time-limit", type=int, default=30)
     parser.add_argument("--outdir", default="./checktmp/active")
@@ -415,8 +523,9 @@ def main():
     code = pfx + "\n" + sfx
 
     run_active(
-        code, groundtruth, args.combinedcodesdir, args.invalid, args.valid,
+        code, groundtruth, args.combinedcodesdir, args.left, args.right,
         rounds=args.rounds, time_limit=args.time_limit, outdir=args.outdir,
+        mode=args.mode, left_label=args.left_label, right_label=args.right_label,
     )
 
 

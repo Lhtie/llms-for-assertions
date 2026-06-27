@@ -230,11 +230,11 @@ public class TreeSet<E> extends AbstractSet<E>
      */
     public boolean add(E e) {
         return m.put(e, PRESENT)==null;
-        // @@@ it returns true if the specified element to be added is not null and the set did not initially contain it.
+        // @@@ Result is true if the element was not already in the set
         // assert e!=null && !\old(this.contains(e)) => \result==true;
-        // @@@ it returns false if the specified element to be added is not null and the set already contains it.
+        // @@@ If inserted element is already in the set the method will return false
         // assert e!=null && \old(this.contains(e)) => \result==false;
-        // @@@ if the specified element is not null, it should be present in the set after the operation.
+        // @@@ The set will always contain e after insertion provided it was not null
         // assert e!=null => this.contains(e);
     }
 
@@ -257,11 +257,11 @@ public class TreeSet<E> extends AbstractSet<E>
      */
     public boolean remove(Object o) {
         return m.remove(o)==PRESENT;
-        // @@@ it returns true if the specified element is not null and it is initially present.
+        // @@@ Method returns true if the element to remove was in the set
         // assert o!=null && \old(this.contains(o)) => \result==true;
-        // @@@ it returns false if the specified element is not null and it is not contained in the set.
+        // @@@ Returns false if element was not in the set before calling remove
         // assert o!=null && !\old(this.contains(o)) => \result==false;
-        // @@@ the specified element should not be present after the operation if the operation is successful.
+        // @@@ Set does not contain the element after removal
         // assert \result==true => !this.contains(o);
     }
 
@@ -271,7 +271,7 @@ public class TreeSet<E> extends AbstractSet<E>
      */
     public void clear() {
         m.clear();
-        // @@@ after the operation, the set should be empty.
+        // @@@ set is empty at the end
         // assert this.isEmpty()==true;
     }
 
@@ -416,11 +416,11 @@ public class TreeSet<E> extends AbstractSet<E>
     public E pollFirst() {
         Map.Entry<E,?> e = m.pollFirstEntry();
         return (e == null) ? null : e.getKey();
-        // @@@ the returned value is null if and only if the set is initially empty.
+        // @@@ If the set is empty, the return value is null. Otherwise, the method always returns a valid value
         // assert (\result==null) == \old(this.isEmpty());
-        // @@@ the returned value should be the first element in the set if it is not null.
+        // @@@ Returns the lowest value in the set
         // assert \result!=null => \result.equals(\old(this.first()));
-        // @@@ the polled value should not be present in the set after the operation if the return is not null.
+        // @@@ Returned value is removed from the set
         // assert \result!=null => !this.contains(\result);
     }
 
@@ -430,11 +430,11 @@ public class TreeSet<E> extends AbstractSet<E>
     public E pollLast() {
         Map.Entry<E,?> e = m.pollLastEntry();
         return (e == null) ? null : e.getKey();
-        // @@@ the returned value is null if and only if the set is initially empty.
+        // @@@ The result is null if and only if the set is empty
         // assert (\result==null) == \old(this.isEmpty());
-        // @@@ the returned value should be the last element in the set if it is not null.
+        // @@@ Result is the highest value in the set
         // assert \result!=null => \result.equals(\old(this.last()));
-        // @@@ the polled value should not be present in the set after the operation if the return is not null.
+        // @@@ The returned value no longer belongs to the set
         // assert \result!=null => !this.contains(\result);
     }
 

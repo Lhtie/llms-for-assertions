@@ -24,12 +24,15 @@ configs = {
         "threshold": 0.6,
         "use_nli": True,
         "mode_nli": "score",    # "label" or "score"
+        "prompt_nli": "component_context",  
+            # component_context, simple_equiv, bidirectional_nli, component_no_context
         "mkey_nli": "gpt-oss",
         "model_nli": None,
         "records": {}
     }
 }
-nli_instr = """You are performing a **roundtrip conformance check** between:
+
+component_context_instr = """You are performing a **roundtrip conformance check** between:
 (1) a natural-language post-condition (the "premise"), and
 (2) a second natural-language statement (the "hypothesis") that is a natural-language translation of a generated post-condition formula.
 
@@ -113,6 +116,87 @@ The premise is: {6}
 The hypothesis is: {7}
 """
 
+simple_equiv_instr = """Your task is to compare two natural-language assertions and decide whether they are semantically equivalent.
+
+Output format:
+- Briefly explain your reasoning in 1-2 concise sentences.
+- Then output exactly one score in <ans> </ans>.
+- Use 1.0 if the two assertions are equivalent, 0.0 if they are partially related or uncertain, and -1.0 if they are not equivalent or conflict.
+
+Assertion A: {0}
+Assertion B: {1}
+"""
+
+bidirectional_nli_instr = """Your task is natural-language inference.
+
+Decide whether the premise entails the hypothesis. The hypothesis is entailed only if every behavior allowed by the premise also satisfies the hypothesis.
+
+Output format:
+- Briefly explain your reasoning in 1-2 concise sentences.
+- Then output exactly one score in <ans> </ans>.
+- Use 1.0 if the premise entails the hypothesis, 0.0 if entailment is uncertain or only partial, and -1.0 if the premise does not entail or conflicts with the hypothesis.
+
+Premise: {0}
+Hypothesis: {1}
+"""
+
+component_no_context_instr = """You are performing a **roundtrip conformance check** between:
+(1) a natural-language post-condition (the "premise"), and
+(2) a second natural-language statement (the "hypothesis") that is a natural-language translation of a generated post-condition formula.
+
+Your job is to judge how well the hypothesis conforms to the premise under the following responsibility:
+
+Conformance responsibility
+1) Completeness: The hypothesis must not omit any component that the premise intends.
+   - Every component mentioned or implied as an intended constraint in the premise should be present in, or entailed by, the hypothesis.
+2) Soundness: The hypothesis should not introduce unrelated or unjustified components.
+   - Ideally, every component in the hypothesis should be traceable to the premise's intention.
+   - In practice, *minor reasonable supplementation* is allowed (e.g., explicit bounds/ranges, type conversions, edge-case handling) as long as it does not change the intended structure or meaning.
+
+What counts as a "component" (treat these as the primary comparison units)
+- Entities / terms: the return value or result, method parameters, object fields, collection elements, indices, sizes, old/pre-state values, and new/post-state values
+- Quantification / scope: statements about all items, any item, no item, a particular item, or a restricted subset of items
+- Bounds / ranges: valid index ranges, quantified ranges, numeric limits, and whether endpoints are included or excluded
+- Predicate relations: equality, inequality, ordering/comparison, containment/membership, nullness, type/compatibility requirements, and method-call properties
+- Logical structure: conditions ("if/when/only if"), conjunctions ("and"), alternatives ("or/either"), negation ("not/no"), implications, case splits, and grouping/precedence implied by the sentence
+
+Evaluation principle
+- This is a *structure- and alignment-focused* check: prioritize whether the hypothesis preserves the overall logical skeleton and aligns each segment/component to the premise.
+- Ignore superficial wording differences and synonyms of technical terms.
+- Ignore fine-grained details; focus on whether the same structural components are present and aligned, and whether their logical relationships (quantifiers, bounds, predicates, connectives) match.
+- The hypothesis may be imperfectly phrased or not fully "compilable" as a formula; still score based on whether the intended components/structure match.
+- Do not purely evaluate on literal text similarity; Instead, reason about semantic and structure in the context of target code behavior. (the context information is given below)
+
+Scoring (real value in [-1.0, 1.0])
+Interpret the score as a combined measure of:
+- Completeness (missing components/segments → lower score)
+- Soundness (unjustified extra components/segments → lower score)
+- Logical compatibility (contradictions/incompatible constraints → negative score)
+
+Use these anchor points (you may output intermediate values like 0.8, 0.2, -0.3):
++1.0 Perfect Conformance:
+  - Hypothesis preserves all components and the logical structure of the premise (may rephrase wording).
+  - Hypothesis may add minor, clearly reasonable supplementation (e.g., explicit bounds/ranges, type conversions, edge-case handling) as long as it does not change the intended structure or meaning.
++0.5 Mostly Conformant / Minor Loss:
+  - Hypothesis is consistent with the premise but omits some non-trivial components, weakens constraints, or only covers a subset of cases.
+  - Or adds some unrelated or unjustified content while the core structure still mostly aligns with the premise.
+0.0 Neutral / Not Established:
+  - The hypothesis is largely unrelated to the premise's components/structure, OR
+  - The hypothesis introduces new requirements not supported by the premise, OR
+  - The hypothesis omits essential segments such that conformance cannot be verified from it.
+-0.5 Partially Conflicting:
+  - Some aligned components exist, but at least one important segment contradicts the premise (e.g., flipped inequality, negation, wrong old/pre-state reference, implication reversed, incompatible bound).
+-1.0 Completely Conflicting:
+  - The core structure/meaning contradicts the premise and cannot hold simultaneously.
+
+Output format:
+- Briefly explain your reasoning in 1-2 concise sentences.
+- Then output exactly one score in <ans> </ans>.
+
+The premise is: {6}
+The hypothesis is: {7}
+"""
+
 def extract_ans(res):
     match = re.search(r"(?:.*)<ans>\s*(.*?)\s*</ans>", res, re.DOTALL)
     if match:
@@ -146,23 +230,42 @@ def equiv(x, y, config, helper):
     model_dict = config["model_nli"]
     mode = config["mode_nli"]
     threshold = config["threshold"]
+    prompt_mode = config["prompt_nli"]
     
     assert model_dict is not None, "No model configurations"
     tokenizer = model_dict["tokenizer"]
     model = model_dict["model"]
     devices = model_dict["devices"]
 
+    def prompt_for(premise, hypothesis):
+        if prompt_mode == "component_context":
+            return component_context_instr.format(
+                helper.langid,
+                helper.classname,
+                helper.funcname,
+                ", ".join([f"{typ} {var}" for var, typ in helper.funcs[-1]["args"].items()]),
+                f"The method returns {helper.funcs[-1]['rtyp']} as result."
+                    if helper.funcs[-1]["rtyp"] != "void" else f"The method does not return any value.",
+                helper.funcs[-1]["docs"],
+                premise,
+                hypothesis,
+            )
+        if prompt_mode == "simple_equiv":
+            return simple_equiv_instr.format(premise, hypothesis)
+        if prompt_mode == "bidirectional_nli":
+            return bidirectional_nli_instr.format(premise, hypothesis)
+        if prompt_mode == "component_no_context":
+            return component_no_context_instr.format(premise, hypothesis)
+        raise AssertionError(f"Unknown prompt_nli: {prompt_mode}")
+
+    pairs = [(x, y)]
+    if prompt_mode == "bidirectional_nli":
+        pairs = [(x, y), (y, x)]
+
     rec = []
     scores = []
-    for premise, hypothesis in [(x, y)]:
-        prompt = nli_instr.format(
-            helper.langid, helper.classname, helper.funcname, 
-            ", ".join([f"{typ} {var}" for var, typ in helper.funcs[-1]["args"].items()]),
-            f"The method returns {helper.funcs[-1]['rtyp']} as result."
-                if helper.funcs[-1]["rtyp"] != "void" else f"The method does not return any value.",
-            helper.funcs[-1]["docs"],
-            premise, hypothesis
-        )
+    for premise, hypothesis in pairs:
+        prompt = prompt_for(premise, hypothesis)
         msgdict = [
             {'role': 'system', 'content': f"You are a helpful assistant that excels at natural language inference."},
             {'role': 'user', 'content': prompt}
@@ -174,6 +277,7 @@ def equiv(x, y, config, helper):
         if mode == "label":
             ans = score_to_label(ans, threshold, -threshold)
         rec.append({
+            "prompt_mode": prompt_mode,
             "premise": premise,
             "hypothesis": hypothesis,
             "response": response,
@@ -296,7 +400,7 @@ def rdtpcheck(langid, pfx, sfx, grnd_truth, asrt, cc, check, **config_overrides)
     if(langid == "java"):
         result = java_rdtpcheck(pfx, sfx, asrt)
         os.makedirs("./results/logs", exist_ok=True)
-        with open(f"./results/logs/rdtpcheck_{langid}_{configs[langid]['mkey_backward']}_{configs[langid]['mkey_nli']}_{configs[langid]['mode_nli']}-{cc.split('/')[-1]}.json", "w") as f:
+        with open(f"./results/logs/rdtpcheck_{langid}_{configs[langid]['mkey_backward']}_{configs[langid]['mkey_nli']}_{configs[langid]['mode_nli']}_{configs[langid]['prompt_nli']}-{cc.split('/')[-1]}.json", "w") as f:
             json.dump(configs["java"]["records"], f, indent=4)
 
     else: 

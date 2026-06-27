@@ -15,13 +15,19 @@ modelpaths = {
     "qw32": "Qwen2.5-Coder-32B-Instruct",
     "gpt3": "gpt-3.5-turbo",
     "gpt4": "gpt-4.1",
+    "gpt5": "gpt-5.5",
     "gpt-oss": "gpt-oss-120b",
-    "claude": "claude-sonnet-4-6",
+    "claude-sonnet": "claude-sonnet-4-6",
+    "claude-opus": "claude-opus-4-8",
 }
 
 
 def is_api_model(mkey):
-    return mkey.startswith(("gpt3", "gpt4"))
+    return mkey.startswith(("gpt3", "gpt4", "gpt5"))
+
+
+def is_reasoning_api_model(mkey):
+    return mkey.startswith("gpt5")
 
 
 def is_vllm_model(mkey):
@@ -55,11 +61,14 @@ def load_model(mkey, modelpaths=None, task="causal_lm"):
 
         oai_client = OpenAI(api_key=oai_key)
         tokenizer = None
-        model = lambda msgdict, **k: oai_client.chat.completions.create(
-            messages=msgdict,
-            model=mpath,
-            **k,
-        )
+        def model(msgdict, **k):
+            if is_reasoning_api_model(mkey):
+                k.setdefault("reasoning_effort", "medium")
+            return oai_client.chat.completions.create(
+                messages=msgdict,
+                model=mpath,
+                **k,
+            )
         devices = None
     elif is_vllm_model(mkey):
         try:

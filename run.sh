@@ -20,6 +20,11 @@ if [ ! -d "javacodes_naturalness" ]; then
         python utils/dispatch.py --infile $cls --outdir javacodes_naturalness --write --obsonly
     done
 fi
+if [ ! -d "javacodes_sub" ]; then
+    for cls in $(ls combinedcodes_sub/*.java); do
+        python utils/dispatch.py --infile $cls --outdir javacodes_sub --write --obsonly
+    done
+fi
 
 # python nlasrtgen.py --codedir javacodes --modellist gpt4 --temp 0.3 --nsamples 3 --codelist {1..418} --resultdir results_nl --write
 

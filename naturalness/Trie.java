@@ -64,19 +64,19 @@ public class Trie {
         cur.isWord = true;
         size++;
         return true;
-        // @@@ the trie should contain the added word after add operation if the word is not null.
+        // @@@ the string given for insertion will be present in the trie after addition, unless it's null
         // assert word!=null => this.contains(word);
-        // @@@ when the word is not null, the result is true if and only if the word is not initially contained.
+        // @@@ Returns true if the word is already present
         // assert word!=null => !\old(this.contains(word)) == (\result==true);
-        // @@@ when the word is not null and haven't been added, the resulting trie should have one more in size.
+        // @@@ Trie grows by 1 in size if a new word not already present is added to it
         // assert word!=null&&!\old(this.contains(word)) => this.size()==\old(this.size())+1;
-        // @@@ when the word is not null but already added to the trie, the size of the trie should remain the same.
+        // @@@ If the word is already present, then addition is trivial and the size of the trie remains the same
         // assert word!=null&&\old(this.contains(word)) => this.size()==\old(this.size());
-        // @@@ if the word is not null, the trie contains at least one string that starts with each prefix of the added word after the add operation.
+        // @@@ After addition the trie not only contains the inserted word but all its nontrivial prefixes as well
         // assert word!=null => \forall int i; 1<=i&&i<=word.length(); this.startsWith(word.substring(0,i))==true;
-        // @@@ if the word is not null and haven't been added, all of the number of strings contained in the trie that start with each prefix of the added word should increase by 1.
+        // @@@ If a new word is added, the number of words sharing the prefix goes up by 1 for each prefix of the added word
         // assert word!=null&&!\old(this.contains(word)) => \forall int i; 1<=i&&i<=word.length(); this.countPrefix(word.substring(0,i))==\old(this.countPrefix(word.substring(0,i)))+1;
-        // @@@ if the word is not null, the word should be contained in every list of strings in the trie that start with each prefix of the word.
+        // @@@ After insertion, if we query the set of all words starting with w for any prefix w of the inserted word, then the inserted word must be part of the result
         // assert word!=null => \forall int i; 1<=i&&i<=word.length(); this.keysWithPrefix(word.substring(0,i)).contains(word);
     }
 
@@ -135,17 +135,17 @@ public class Trie {
             }
         }
         return true;
-        // @@@ the trie should not contain the removed word after the operation if the word is not null.
+        // @@@ word is not in the trie after removal
         // assert word!=null => !this.contains(word);
-        // @@@ when the word is not null, the result is true if and only if the word is initially contained.
+        // @@@ if the method returns true, then the word must have been in the trie before the method (unless word itself was null)
         // assert word!=null => (\result==true) == \old(this.contains(word));
-        // @@@ when the word is not null and present in the trie, the resulting trie should have its size decrease by 1.
+        // @@@ removal of any non-null word in the trie decreases its size by 1
         // assert word!=null&&\old(this.contains(word)) => this.size()==\old(this.size())-1;
-        // @@@ when the word is not null but not present the trie, the size of the trie should remain the same.
+        // @@@ If you try to remove a word that's not present in the trie its size remains the same
         // assert word!=null&&!\old(this.contains(word)) => this.size()==\old(this.size());
         // @@@ if the word is not null and present in the trie, all of the number of strings contained in the trie that start with each prefix of the given word should decrease by 1 after the remove operation.
         // assert word!=null&&\old(this.contains(word)) => \forall int i; 1<=i&&i<=word.length(); this.countPrefix(word.substring(0,i))==\old(this.countPrefix(word.substring(0,i)))-1;
-        // @@@ if the word is not null, the word should not be contained in any list of strings in the trie that start with each prefix of the word after the remove operation.
+        // @@@ The removed word can no longer be found as a completion of any of its prefixes
         // assert word!=null => \forall int i; 1<=i&&i<=word.length(); !this.keysWithPrefix(word.substring(0,i)).contains(word);
     }
 
@@ -159,9 +159,9 @@ public class Trie {
         root.isWord = false;
         root.pass = 0;
         size = 0;
-        // @@@ the trie is empty.
+        // @@@ Clear empties the trie
         // assert this.isEmpty();
-        // @@@ the size of the trie should be 0.
+        // @@@ The size of the trie should be 0 after clearing it
         // assert this.size()==0;
     }
 
@@ -208,9 +208,9 @@ public class Trie {
         StringBuilder sb = new StringBuilder(prefix);
         dfs(start, sb, out);
         return Collections.unmodifiableList(out);
-        // @@@ the size of the resulting list should be equal to the number of strings contained in the trie that start with the prefix if the prefix is not null.
+        // @@@ The number of keys with the given prefix is the same as the result of performing countprefix
         // assert prefix!=null => \result.size()==this.countPrefix(prefix);
-        // @@@ if the prefix is not null, each element of the resulting list should be a member of the trie and start with the prefix.
+        // @@@ Every member of the returned list is contained in the trie, and they all start with the given prefix string
         // assert prefix!=null => \forall int i; 0<=i&&i<\result.size(); this.contains(\result.get(i))&&\result.get(i).startsWith(prefix);
     }
 
