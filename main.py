@@ -2,6 +2,7 @@ import os
 import argparse
 from prompting import *
 from llm import modelpaths, load_model, move_inputs_to_model, run_model
+from checkers.probchecker import generate_with_logprobs, write_logprob_file
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -13,6 +14,7 @@ if __name__ == "__main__":
     parser.add_argument("--prompt", type=str, default="default")
     parser.add_argument("--temp", type=float, default=0.0)
     parser.add_argument("--onemsg", type=bool, default=True)
+    parser.add_argument("--logprob", default=False, action="store_true")
     parser.add_argument("--write", default=False, action="store_true")
     args = parser.parse_args()
 
@@ -40,9 +42,16 @@ if __name__ == "__main__":
 
             prompt = transform(mkey, args.prompt, tokenizer, code, langid, args.onemsg)
 
-            allrspnse, allasrts  = "", ""
+            allrspnse, allasrts = "", ""
+            logprob_scores = []
             for _ in range(args.nsamples):
-                response = run_model(mkey, model, tokenizer, devices, prompt, args.temp)
+                if args.logprob:
+                    response, logprob_score = generate_with_logprobs(
+                        mkey, model, tokenizer, devices, prompt, args.temp
+                    )
+                    logprob_scores.append(logprob_score)
+                else:
+                    response = run_model(mkey, model, tokenizer, devices, prompt, args.temp)
                 asrt = extract(args.prompt, response, langid)
                 allrspnse += response + '\n' + "-"*20 + '\n'
                 allasrts += asrt + '\n' + "-"*20 + '\n'
@@ -55,6 +64,8 @@ if __name__ == "__main__":
                 fd = open(os.path.join(dirname, f + ".extract"), "w")
                 fd.write(allasrts)
                 fd.close()
+                if args.logprob:
+                    write_logprob_file(os.path.join(dirname, f + ".logprob"), logprob_scores)
             else:
                 print("#"*10, dirname + "/" + f, "#"*10)
                 print(allrspnse)
@@ -62,6 +73,10 @@ if __name__ == "__main__":
                 print("#"*10, dirname + "/" + f + ".extract", "#"*10)
                 print(allasrts)
                 print("#"*20)
+                if args.logprob:
+                    print("#"*10, dirname + "/" + f + ".logprob", "#"*10)
+                    print(logprob_scores)
+                    print("#"*20)
                 
         del model
         del tokenizer

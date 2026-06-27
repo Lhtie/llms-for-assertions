@@ -1,7 +1,14 @@
 import math
 import os
+import json
 
-from llm import is_api_model, is_claude_code_model, is_vllm_model, load_model
+from llm import (
+    is_api_model,
+    is_claude_code_model,
+    is_vllm_model,
+    load_model,
+    move_inputs_to_model,
+)
 from prompting import transform
 
 
@@ -17,6 +24,21 @@ configs = {
 
 def split_raw_responses(text):
     return [chunk.strip() for chunk in text.split("-" * 20) if chunk.strip()]
+
+
+def logprob_path(raw_result_path):
+    return os.fspath(raw_result_path) + ".logprob"
+
+
+def write_logprob_file(path, scores):
+    with open(path, "w", encoding="utf-8") as fd:
+        json.dump(scores, fd, indent=2)
+        fd.write("\n")
+
+
+def read_logprob_file(path):
+    with open(path, encoding="utf-8") as fd:
+        return json.load(fd)
 
 
 def format_prompt_text(tokenizer, prompt):
@@ -202,8 +224,9 @@ def score_api_chat_response(model, prompt, response):
             model=model.model_name,
             messages=messages,
             max_tokens=1,
-            logprobs=1,
-            echo=True,
+            logprobs=True,
+            top_logprobs=1,
+            extra_body={"echo": True},
         )
     except Exception:
         outputs = model.client.chat.completions.create(
@@ -211,7 +234,7 @@ def score_api_chat_response(model, prompt, response):
             messages=messages,
             max_tokens=1,
             logprobs=True,
-            echo=True,
+            extra_body={"echo": True},
         )
     payload = get_prompt_logprob_payload(outputs)
     text, tokens, token_logprobs, text_offset = get_payload_text_and_logprobs(payload)
@@ -256,19 +279,13 @@ def score_api_response(mkey, model, prompt, response):
     if not is_api_logprob_model(mkey):
         raise NotImplementedError(f"{mkey} does not expose token logprobs for probchecker")
 
-    chat_error = None
     try:
-        result = score_api_chat_response(model, prompt, response)
-        if result.get("num_tokens", 0):
-            return result
-    except Exception as e:
-        chat_error = e
-    try:
-        return score_api_completion_response(model, prompt, response)
+        return score_api_chat_response(model, prompt, response)
     except Exception as e:
         raise RuntimeError(
-            "API prob scoring failed for both chat and completions "
-            f"(chat_error={chat_error}; completions_error={e})"
+            "API prob scoring failed for chat. Together's gpt-oss chat API accepts "
+            "logprobs but may not expose prompt logprobs; the completions endpoint "
+            "does not support openai/gpt-oss-120b."
         ) from e
 
 
@@ -289,6 +306,113 @@ def summarize_logprobs(logprobs):
         "num_tokens": len(logprobs),
         "perplexity": math.exp(-avg),
     }
+
+
+def get_generated_token_logprobs(choice):
+    logprobs = getattr(choice, "logprobs", None)
+    if logprobs is None and isinstance(choice, dict):
+        logprobs = choice.get("logprobs")
+    if logprobs is None:
+        return []
+
+    content = logprobs.get("content") if isinstance(logprobs, dict) else getattr(logprobs, "content", None)
+    if not content:
+        return []
+
+    vals = []
+    for item in content:
+        lp = item.get("logprob") if isinstance(item, dict) else getattr(item, "logprob", None)
+        if lp is not None:
+            vals.append(float(lp))
+    return vals
+
+
+def get_choice_message_content(choice):
+    message = getattr(choice, "message", None)
+    if message is None and isinstance(choice, dict):
+        message = choice.get("message")
+    if message is None:
+        text = getattr(choice, "text", None)
+        if text is None and isinstance(choice, dict):
+            text = choice.get("text")
+        return text or ""
+    if isinstance(message, dict):
+        return message.get("content") or ""
+    return getattr(message, "content", "") or ""
+
+
+def generate_api_with_logprobs(model, prompt, temp=0.0, max_tokens=1024):
+    try:
+        outputs = model(
+            prompt,
+            max_tokens=max_tokens,
+            temperature=temp,
+            logprobs=True,
+            top_logprobs=1,
+        )
+    except Exception:
+        outputs = model(
+            prompt,
+            max_tokens=max_tokens,
+            temperature=temp,
+            logprobs=True,
+        )
+    choice = outputs.choices[0]
+    response = get_choice_message_content(choice)
+    return response, summarize_logprobs(get_generated_token_logprobs(choice))
+
+
+def generate_vllm_with_logprobs(model, tokenizer, prompt, temp=0.0, max_tokens=1024):
+    from vllm import SamplingParams
+
+    prompt_text = format_prompt_text(tokenizer, prompt)
+    outputs = model.generate(
+        prompts=[prompt_text],
+        sampling_params=SamplingParams(
+            temperature=temp,
+            max_tokens=max_tokens,
+            logprobs=1,
+        ),
+    )
+    output = outputs[0].outputs[0]
+    logprobs = []
+    for token_id, entry in zip(output.token_ids, output.logprobs or []):
+        lp = token_logprob_value(entry, token_id)
+        if lp is not None:
+            logprobs.append(lp)
+    return output.text, summarize_logprobs(logprobs)
+
+
+def generate_hf_with_logprobs(mkey, model, tokenizer, devices, prompt, temp=0.0, max_tokens=1024):
+    inputs = tokenizer.apply_chat_template(
+        prompt,
+        return_tensors="pt",
+        add_generation_prompt=True,
+    )
+    inputs = move_inputs_to_model(inputs, model, devices)
+    do_sample = temp is not None and temp > 0
+    kwargs = {
+        "max_new_tokens": max_tokens,
+        "do_sample": do_sample,
+        "pad_token_id": tokenizer.eos_token_id,
+        "eos_token_id": tokenizer.eos_token_id,
+    }
+    if do_sample:
+        kwargs["temperature"] = temp
+    outputs = model.generate(inputs, **kwargs)
+    response = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
+    return response, score_hf_response(model, tokenizer, devices, prompt, response)
+
+
+def generate_with_logprobs(mkey, model, tokenizer, devices, prompt, temp=0.0, max_tokens=1024):
+    if is_api_model(mkey):
+        return generate_api_with_logprobs(model, prompt, temp=temp, max_tokens=max_tokens)
+    if is_vllm_model(mkey):
+        return generate_vllm_with_logprobs(model, tokenizer, prompt, temp=temp, max_tokens=max_tokens)
+    if is_claude_code_model(mkey):
+        response = model.generate(prompt, temp=temp, max_tokens=max_tokens)
+        return response, summarize_logprobs([])
+    return generate_hf_with_logprobs(mkey, model, tokenizer, devices, prompt, temp=temp, max_tokens=max_tokens)
 
 
 def score_response(mkey, model, tokenizer, devices, prompt, response):
@@ -323,6 +447,10 @@ def probcheck_file(code, langid, raw_result_path, mkey=None, mode=None, onemsg=N
     onemsg = config["onemsg"] if onemsg is None else onemsg
 
     raw_result_path = os.fspath(raw_result_path)
+    recorded_path = logprob_path(raw_result_path)
+    if os.path.exists(recorded_path):
+        return read_logprob_file(recorded_path)
+
     responses = split_raw_responses(open(raw_result_path, "r").read())
     model_dict = load_prob_model(langid, mkey)
     tokenizer = model_dict["tokenizer"]
