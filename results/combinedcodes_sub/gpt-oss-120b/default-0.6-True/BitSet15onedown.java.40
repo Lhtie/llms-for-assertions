@@ -1,0 +1,102 @@
+analysisWe need to produce an assert statement reflecting the comment. The method is `or(BitSet set)`. The comment: "After the OR operation, each bit in this BitSet is set if and only if it was already set before the operation or the corresponding bit in the argument set was set."
+
+We need to write an assert that captures that property. Use observer methods: we have `get(int bitIndex)` to query bits. Also we have `size()`? But we need to talk about each bit. Need to quantify over all valid indices. What range? BitSet can be infinite (non-negative). But typical spec uses `length()`? To capture all bits that could be set after operation, we may need to consider up to max of old length and set.length(). However simpler: for all int i >=0, the new value equals old this.get(i) || set.get(i). Use universal quantifier.
+
+We need to refer to old values: \old(this.get(i)) and \old(set.get(i)). But set is a parameter; need old of set's state before operation. Use \old(set.get(i)). That's allowed.
+
+Thus assert: \forall int i; i >= 0 => this.get(i) == (\old(this.get(i)) || \old(set.get(i)));
+
+But need to ensure that we only consider bits up to some bound? Could be all non-negative ints, but quantifier infinite may be okay. Typically they use condition like i>=0 && i<MAX? There is no MAX. Use i>=0.
+
+Thus final assert:
+
+<code>assert \forall int i; i >= 0; this.get(i) == (\old(this.get(i)) || \old(set.get(i)));</code>
+
+Make sure syntax: \forall int i; i>=0; ... ; In earlier examples they used `\forall int i; 0<=i && i<...; ...`. So we can use `\forall int i; i>=0; ...`. That's fine.
+
+Thus output.assistantfinal<code>assert \forall int i; i >= 0; this.get(i) == (\old(this.get(i)) || \old(set.get(i)) );</code>
+--------------------
+analysisWe need to produce assert statement for the comment after OR operation. The comment: "After the OR operation, each bit in this BitSet is set if and only if it was already set before the operation or the corresponding bit in the argument set was set."
+
+We need to reference this BitSet (the object) and the argument set. Use observers: get(int) to check bits. Also need to consider all possible bit indices? Probably for all bits that could be set, maybe up to max logical size? Since we don't have a bound, we can quantify over all int i >=0. Use \forall int i; i>=0 => (this.get(i) == (\old(this.get(i)) || set.get(i))). However need to use old values for both this and set? The argument set is not modified, so its bits remain same. But we can still use \old(set.get(i)) for clarity, but not necessary. Use \old(this.get(i)) for old state of this. Also need to ensure we refer to set as parameter: set. So assert: \forall int i; i>=0 => (this.get(i) == (\old(this.get(i)) || set.get(i)));
+
+But need to use logical OR operator. In Java spec, boolean expression uses ||. Use parentheses.
+
+Thus final answer:
+
+<code>assert \forall int i; i >= 0 => (this.get(i) == (\old(this.get(i)) || set.get(i)));</code>
+
+Check syntax: "=>" low precedence, so parentheses fine.
+
+Potential need to bound i to something like max(this.length(), set.length())? But spec says each bit is set if and only if it was already set before or argument set's corresponding bit was set. For bits beyond any used bits, both are false, so condition holds. But quantifying over all nonnegative ints is okay.
+
+Thus final.assistantfinal<code>assert \forall int i; i >= 0 => (this.get(i) == (\old(this.get(i)) || set.get(i)));</code>
+--------------------
+analysisWe need to generate an assert statement reflecting the comment.
+
+The comment: "After the OR operation, each bit in this BitSet is set if and only if it was already set before the operation or the corresponding bit in the argument set was set."
+
+We need to express this using \old(this.get(i)) and set.get(i) perhaps. Within the method, we have parameter BitSet set. The method modifies this BitSet, not set. So we need to assert that for all bit indices i (non-negative?), the resulting this.get(i) == (\old(this.get(i)) || set.get(i)). Since set is unchanged. Use \old for this.get(i) before operation. Use set.get(i) (no old needed). Also need to bound i: maybe up to max of this.size() and set.size()? But we can use something like: \forall int i; i >= 0 && i < Math.max(this.size(), set.size()); ... However we can't call Math.max in spec? Might be allowed but better to use: i >=0 && (i < this.size() || i < set.size())? Actually after operation, this may have grown due to OR copying remaining words. The spec should consider all bits that could be set after operation: up to max of old size of this and size of set. Use \old(this.size()) and set.size().
+
+Thus: assert \forall int i; i>=0 && (i < \old(this.size()) || i < set.size()); this.get(i) == (\old(this.get(i)) || set.get(i));
+
+Need to use logical OR (||). In JML, boolean expressions use ||. That's fine.
+
+Return type void so no \result.
+
+Thus final answer.
+
+Check syntax: need parentheses: ( \old(this.get(i)) || set.get(i) ). Use =>? Not needed.
+
+Thus final code:
+
+<code>assert \forall int i; i >= 0 && (i < \old(this.size()) || i < set.size()) ==> this.get(i) == (\old(this.get(i)) || set.get(i));</code>
+
+But spec uses => for implication, but we want equivalence for all i in range. Use && condition inside quantifier. Use ; condition ; spec pattern: \forall int i; 0 <= i && i < bound; spec. So we can write:
+
+\forall int i; i >= 0 && (i < \old(this.size()) || i < set.size()); this.get(i) == (\old(this.get(i)) || set.get(i))
+
+Thus final assert.
+
+Let's output that.assistantfinal<code>assert \forall int i; i >= 0 && (i < \old(this.size()) || i < set.size()); this.get(i) == (\old(this.get(i)) || set.get(i));</code>
+--------------------
+analysisWe need to produce assert statement corresponding to comment.
+
+We have method `public void or(BitSet set)` performing logical OR. The comment: "After the OR operation, each bit in this BitSet is set if and only if it was already set before the operation or the corresponding bit in the argument set was set."
+
+We need to express that for all bit indices, the resulting bit value equals (old this.get(i) || set.get(i)). Also need to consider that set may be same object? earlier code checks if (this == set) return; So if same, operation does nothing. The spec should hold even then: if this==set, then after operation each bit is set if and only if it was already set before or set.get(i) set (which is same as old). So condition becomes old this.get(i) || old this.get(i) which is just old this.get(i). So the result equals old this.get(i). That matches the OR with itself.
+
+Thus assert: `assert \forall int i; i >= 0 => this.get(i) == (\old(this.get(i)) || set.get(i));` But we need to refer to set's bits before operation? Since set may be mutated? In this method, set is not modified, only this. So we can use `set.get(i)` (current, unchanged). However if set == this, then set.get(i) after operation equals this.get(i) after operation, which would be circular. But we have early return for same object, so after operation nothing changes. So we could still use `set.get(i)` without old. But to be safe, maybe use `\old(set.get(i))`? But set not changed, so old equals current. Use `\old(this.get(i))` for old this.
+
+Thus spec: for all i >=0, this.get(i) == (\old(this.get(i)) || set.get(i));
+
+Need also bound? BitSet is infinite conceptually; but we can restrict to indices less than something like max(this.length(), set.length()). Could use `i >=0 && i < Math.max(this.length(), set.length())` but we cannot call Math.max in spec? Could use `i >=0 && i < Math.max(\old(this.length()), set.length())` but spec may not require bound; typical spec uses `i >=0 && i < Math.max(\old(this.length()), set.length())`. However simpler: `\forall int i; i >= 0 => ...` might be acceptable as universal quantification over all ints, but property holds for infinite indices where both are false (since get returns false for out of range). So it's fine.
+
+Thus final assert line:
+
+`assert \forall int i; i >= 0 => this.get(i) == (\old(this.get(i)) || set.get(i));`
+
+Make sure syntax: parentheses around implication? Actually `=>` lower precedence than `&&` and `||`, but we have `i >= 0 => ...` That's okay. Use parentheses for RHS maybe: `i >= 0 => this.get(i) == (\old(this.get(i)) || set.get(i))`.
+
+Thus final answer.
+
+assistantfinal<code>assert \forall int i; i >= 0 => this.get(i) == (\old(this.get(i)) || set.get(i));</code>
+--------------------
+analysisWe need to produce an assert statement matching the comment.
+
+Comment: "@@@ After the OR operation, each bit in this BitSet is set if and only if it was already set before the operation or the corresponding bit in the argument set was set."
+
+We need to express that for all bit indices, the resulting get(i) equals (old this.get(i) || set.get(i)). Since we have observer methods: get(int) returns boolean. Also we have set argument: BitSet set, which is passed to method. We can use this.get(i) after operation, and \old(this.get(i)) for before, and set.get(i) after? But set is not modified, so set.get(i) same before/after. Use set.get(i) (no old needed). So assert: \forall int i; i>=0 => this.get(i) == (\old(this.get(i)) || set.get(i));
+
+But need also bound? Since BitSet potentially infinite but we can bound to max of lengths maybe? We can assert for all i less than max of old length and set.length()? However spec says each bit in this BitSet is set iff ... for all bits (including beyond). But we can use universal quantifier over all nonnegative ints: i>=0. That's okay.
+
+Thus assert statement:
+
+assert \forall int i; i>=0 => this.get(i) == (\old(this.get(i)) || set.get(i));
+
+Make sure parentheses correct: ( \old(this.get(i)) || set.get(i) ).
+
+Return as code block.
+
+assistantfinal<code>assert \forall int i; i>=0 => this.get(i) == (\old(this.get(i)) || set.get(i));</code>
+--------------------

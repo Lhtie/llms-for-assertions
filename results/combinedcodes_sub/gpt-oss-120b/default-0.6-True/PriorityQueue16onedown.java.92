@@ -1,0 +1,124 @@
+analysisWe need to produce an assert statement for the comment in retainAll method:
+
+```java
+public boolean retainAll(Collection<?> c) {
+    Objects.requireNonNull(c);
+    return bulkRemove(e -> !c.contains(e));
+    // @@@ After retainAll, every element remaining in the priority queue is contained in c.
+}
+```
+
+We need to express: after retainAll, every element remaining in the priority queue is contained in c.
+
+We have access to observer methods: probably `contains(Object o)`, `size()`, `iterator()`? Not defined in this snippet but as subclass of AbstractQueue, we have methods like `contains`, maybe `iterator`. However we are limited to publicly accessible observer methods provided in the test function. The comment says "every element remaining in the priority queue is contained in c". So we need to assert that for all elements e in the queue, c.contains(e) holds.
+
+We can express using universal quantifier over elements? But spec syntax: `\forall Object e; this.contains(e); c.contains(e)`? Wait we need to assert that for any element e, if it is in the queue after retainAll, then c.contains(e). How to express "e is in the queue"? There is method `contains(Object o)` which returns true if queue contains e. So we can write: `\forall Object e; this.contains(e); c.contains(e)`. That reads: for all e, if this.contains(e) then c.contains(e). That matches.
+
+Thus assert statement: `assert \forall Object e; this.contains(e); c.contains(e);`
+
+Check syntax: `\forall int i; cond; spec` but we can use any type? Typically spec uses int; but we can use `Object e`. Should be okay. Use parentheses for implication? Actually we used universal quantifier with condition: `\forall Object e; this.contains(e); c.contains(e)`. That means for all e, if this.contains(e) then c.contains(e). Good.
+
+Alternatively could use `assert \forall Object e; this.contains(e) => c.contains(e);` but syntax: after quantifier, we have condition and then spec; the condition is the part before semicolon; spec is after semicolon. So we could also write: `\forall Object e; this.contains(e); c.contains(e)`. That's consistent.
+
+Thus final answer:
+
+```java
+assert \forall Object e; this.contains(e); c.contains(e);
+```assistantfinal<code>assert \forall Object e; this.contains(e); c.contains(e);</code>
+--------------------
+analysisWe need to read the code and comment: after retainAll, every element remaining in the priority queue is contained in c.
+
+Method retainAll returns boolean, calls bulkRemove(e -> !c.contains(e));
+
+We need to produce an assert statement that captures the specification: after retainAll, for all elements e in the queue, c.contains(e) holds.
+
+We have access to observer methods: contains(Object o) (queue's own contains), size(), maybe iterator, but only public methods? In this class, contains is public. Also we can use this.iterator()? Not defined in snippet but inherited from AbstractQueue which implements Collection. But we should stick to public methods listed: contains, get, peek, size, toArray, etc. For quantifying over elements, we can use \forall Object e; this.contains(e) => c.contains(e). But we need to refer to c, which is a parameter of retainAll. In assert we can reference c directly because it's in scope of method. So:
+
+assert \forall Object e; this.contains(e) => c.contains(e);
+
+But need to ensure that after operation, the queue's elements are subset of c. That's correct.
+
+Potential need to also consider that c may be null? retainAll checks non-null earlier. So fine.
+
+Thus final answer:
+
+<code>assert \forall Object e; this.contains(e) => c.contains(e);</code>
+
+Check syntax: use => with parentheses? Not needed.
+
+Thus final.assistantfinal<code>assert \forall Object e; this.contains(e) => c.contains(e);</code>
+--------------------
+analysisWe need to output an assert statement corresponding to the comment:
+
+```java
+// @@@ After retainAll, every element remaining in the priority queue is contained in c.
+```
+
+We are inside method retainAll(Collection<?> c). The method returns boolean, but the specification is about the state after the operation: every element remaining in the priority queue is contained in c.
+
+We need to refer to the queue after operation: this (the priority queue). Use this.contains? But we need to assert that for all elements e in this queue, c.contains(e) holds. Since we have only observer methods: contains(Object o) returns boolean for a given element, but we need to quantify over all elements. We don't have a method to iterate over elements, but we can use toArray() to get array of elements, then quantifier over each element? However spec says "every element remaining in the priority queue is contained in c." We can express: \forall Object e; this.contains(e) => c.contains(e). But that quantifies over all objects, not just those in the queue. That's okay: if e is not in queue, premise false, implication true. So we can write: assert \forall Object e; this.contains(e) => c.contains(e); But we need to use correct syntax: \forall Object e; this.contains(e); c.contains(e) ??? Actually spec: \forall int i; 0<=i && i<...; ... . For generic objects, they used \forall int i; cond; spec. Not sure if allowed to quantify over Object. Usually JML allows quantification over reference types: \forall Object e; ... ; . We'll use that.
+
+Thus final assert:
+
+<code>assert \forall Object e; this.contains(e) => c.contains(e);</code>
+
+Check parentheses: need parentheses around implication? Not necessary but okay.
+
+Thus answer.assistantfinal<code>assert \forall Object e; this.contains(e) => c.contains(e);</code>
+--------------------
+analysisWe need to read the Java code and produce an assert statement corresponding to the comment that starts with "@@@". The comment is inside retainAll method:
+
+```java
+public boolean retainAll(Collection<?> c) {
+    Objects.requireNonNull(c);
+    return bulkRemove(e -> !c.contains(e));
+    // @@@ After retainAll, every element remaining in the priority queue is contained in c.
+}
+```
+
+We need to write an assert statement (specification) that expresses: after retainAll, every element remaining in the priority queue is contained in c.
+
+We can use observer methods: there is contains(Object o) method for the queue, but that checks if a particular element is in the queue. There is also size(), maybe iteration not needed. To express "every element remaining in the priority queue is contained in c", we can quantify over elements of the queue. Since we may not have a method to get all elements, but we have to use publicly accessible observer methods. We have get(int index) which returns element at position index (though order unspecified). There's size() method. So we can quantify over indices 0 <= i < this.size() (after operation). For each i, the element this.get(i) should be contained in collection c, i.e., c.contains(this.get(i)). However, c is a parameter, not a field, but we can refer to it directly in the spec: c.contains(this.get(i)). That's allowed? The spec may refer to method parameters. Yes, we can refer to c.
+
+We also need to refer to the state after retainAll. The assert statement placed after the return? Actually after the return statement, but spec should assert something about post-state. Use \result? Not needed. The assert statement should be placed after the method body? In examples they place assert after return line, referencing post-state.
+
+Thus we need: assert \forall int i; 0 <= i && i < this.size(); c.contains(this.get(i));
+
+But need to ensure we refer to post-state size and get. That's fine.
+
+Potential nuance: The method returns boolean indicating whether queue changed. Not needed.
+
+Thus final answer:
+
+```java
+assert \forall int i; 0 <= i && i < this.size(); c.contains(this.get(i));
+```
+
+Make sure syntax: need parentheses? The spec is: assert \forall int i; 0 <= i && i < this.size(); c.contains(this.get(i)); That's fine.
+
+Return final.assistantfinal<code>assert \forall int i; 0 <= i && i < this.size(); c.contains(this.get(i));</code>
+--------------------
+analysisWe need to produce an assert statement for the comment after retainAll method.
+
+The comment: "// @@@ After retainAll, every element remaining in the priority queue is contained in c."
+
+We need to write an assert that expresses: after calling retainAll(c), for all elements e in this priority queue, c.contains(e) holds.
+
+We have access to public methods: contains(Object o) returns boolean; size(); iterator? Not shown but inherits from AbstractQueue, which implements iterator() maybe. But we can only use publicly accessible observer methods provided in the test function. The note: "Use only publicly accessible observer methods provided in the test function. (Use \result instead of calling the observer method that is being tested) All function calls in the test function should be of the format this.func_name(args_list)." So we can use this.contains(e) and maybe this.iterator()? Not defined here but inherited; but better to use this.contains? Wait we need to assert that each element remaining is in c. We can quantify over elements using exists? Use \forall Object e; condition; spec. Need a way to iterate over all elements of the queue. Could use this.toArray() to get array of elements, then quantify over indices.
+
+Public observer methods: contains(Object o), size(), toArray() returns Object[]. Also get(int index) returns element at position. So we can use size and get to iterate over indices. The priority queue internal order not guaranteed but get method returns element at index (maybe not part of public API? In Java PriorityQueue, get(int index) is not public; but in this class it's defined as public E get(int index). So we can use that.
+
+Thus assert: \forall int i; 0 <= i && i < this.size(); c.contains(this.get(i));
+
+But need to refer to c variable? In method retainAll, parameter c is a Collection<?> c. In assert we can refer to c as variable (since it's in scope). Use this.contains? Actually we need to check that each element in queue is contained in c. So for each index i, c.contains(this.get(i)). That's fine.
+
+Thus final assert: assert \forall int i; 0 <= i && i < this.size(); c.contains(this.get(i));
+
+Make sure parentheses: assert \forall int i; 0 <= i && i < this.size(); c.contains(this.get(i));
+
+Return type of retainAll is boolean, but we don't need \result.
+
+Thus output code block.
+
+assistantfinal<code>assert \forall int i; 0 <= i && i < this.size(); c.contains(this.get(i));</code>
+--------------------

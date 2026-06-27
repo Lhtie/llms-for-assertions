@@ -1,0 +1,106 @@
+analysisWe need to produce assert statement for the comment in method andNot. The comment: "Every bit in this BitSet is cleared if the corresponding bit in the specified BitSet was set, and left unchanged otherwise."
+
+We need to express that for all bit indices i >=0, after operation, this.get(i) == (old this.get(i) && !set.get(i)). Because cleared if set's bit was true, else unchanged (i.e., remain same). So result bit = old this.get(i) && !set.get(i). Equivalent: this.get(i) == (\old(this.get(i)) && !set.get(i)). Need to refer to set parameter. Use this.get(i) after operation, set.get(i) unchanged (set is not modified). Use \old for old value of this.get(i). Also maybe also need bound: i < something? Since BitSet can be infinite conceptually, but we can bound by max of old length and set length? The specification: for all i >=0, the condition holds. Could use i >=0 && i < Math.max(\old(this.size()), set.size())? Not sure. In prior examples, they used loops over valid indices like 0 <= i && i < old size. For bits beyond old size, old this.get(i) is false (since default false). The spec still holds because false && anything = false; and after operation, this.get(i) should be false unless set cleared? Actually if old false, it stays false. So we can just assert for all i; i >=0 && i < Math.max(\old(this.size()), set.size())? But size returns number of bits currently in use (implementation dependent). Safer to bound by max of old length and set.length() maybe. However typical spec uses 0 <= i && i < this.size()? Not sure.
+
+Simplify: assert \forall int i; i>=0 => this.get(i) == (\old(this.get(i)) && !set.get(i));
+
+But need to ensure termination; quantifier over all ints may be problematic but allowed. In examples they used explicit bounds. But they didn't have infinite domain. Here BitSet is infinite conceptually but size is finite. Could bound by Math.max(\old(this.size()), set.size()). Use size method returns number of bits in use (implementation dependent). Might be okay.
+
+Thus:
+
+assert \forall int i; i>=0 && i<Math.max(\old(this.size()), set.size()); this.get(i) == (\old(this.get(i)) && !set.get(i));
+
+But we can't call Math.max in spec? Probably allowed as expression. Use ( \old(this.size()) > set.size() ? \old(this.size()) : set.size() ). Simpler: i < \old(this.size()) + set.size()? Not precise.
+
+Maybe use i < Math.max(\old(this.size()), set.size()).
+
+I'll produce that.
+
+Thus final answer code block.
+
+assistantfinal<code>assert \forall int i; i >= 0 && i < Math.max(\old(this.size()), set.size()); this.get(i) == (\old(this.get(i)) && !set.get(i));</code>
+--------------------
+analysisWe need to produce an assert statement reflecting comment.
+
+Comment: "Every bit in this BitSet is cleared if the corresponding bit in the specified BitSet was set, and left unchanged otherwise."
+
+Method: andNot(BitSet set). It iterates over common words, does words[i] &= ~set.words[i]; then recalculateWordsInUse(); checkInvariants();
+
+Thus spec: For all bit indices, after operation, the bit value is false if set.get(bit) was true, else unchanged (i.e., same as old value). Need to express using observer methods: get(int bitIndex) returns boolean. Also maybe size? Use \old(this.get(i)) etc.
+
+So assert: \forall int i; i >= 0 && i < this.size()? Actually bits beyond size may be false anyway. Safer: For all i where i >=0 && i < this.size()? But size may be logical size? Use length? The logical size is length(). Since we care about bits possibly beyond length? The spec says "Every bit in this BitSet is cleared if the corresponding bit in the specified BitSet was set, and left unchanged otherwise." That applies to all bits (including those beyond). We'll quantify over all possible indices (non-negative int). But we need bound to avoid infinite. Typically we quantify up to max of old length and set length maybe. Use \old(this.size())? size() returns number of bits of space actually in use, maybe includes capacity. Simpler: \forall int i; i >= 0 && i < \old(this.size()) && i < set.size()? But spec about bits beyond? Might not matter.
+
+Probably they expect: assert \forall int i; i >= 0 && i < this.size(); (\old(set.get(i)) => !this.get(i)) && (!\old(set.get(i)) => this.get(i) == \old(this.get(i)));
+
+But need to use \old on set.get(i) as well? set is not modified, so we can just use set.get(i) (no need for old). But to be consistent, could use set.get(i) (since set unchanged). Use \old(this.get(i)) for original value.
+
+Thus final assert:
+
+assert \forall int i; i >= 0 && i < this.size(); (set.get(i) => !this.get(i)) && (!set.get(i) => this.get(i) == \old(this.get(i)));
+
+But need parentheses: (\forall int i; 0 <= i && i < this.size(); (set.get(i) => !this.get(i)) && (!set.get(i) => this.get(i) == \old(this.get(i))));
+
+Let's format.
+
+Make sure using logical operators: &&, => . Use !this.get(i) to denote false.
+
+Thus final answer code block.
+
+assistantfinal<code>assert \forall int i; 0 <= i && i < this.size(); (set.get(i) => !this.get(i)) && (!set.get(i) => this.get(i) == \old(this.get(i)) );</code>
+--------------------
+analysisWe need to produce assert statement for comment in andNot method.
+
+Comment: "Every bit in this BitSet is cleared if the corresponding bit in the specified BitSet was set, and left unchanged otherwise."
+
+We need to express that after operation, for each bit index i, the resulting bit value = (old this.get(i) && !set.get(i)). Actually cleared if set has bit set (i.e., set.get(i) true) => result false. If set.get(i) false => unchanged, i.e., result equals old this.get(i). So result = old_this && !set_bit.
+
+Thus assert: for all int i; i>=0 && i< ??? we need bound. BitSet can be infinite conceptually, but we can bound to max of old length and set length? Usually we consider all bits up to max(old length, set.length()). But spec may just say for all int i; i>=0 && i<Math.max(\old(this.length()), set.length()) . However we cannot call Math.max in spec? Could use (i < Math.max(\old(this.length()), set.length())).
+
+But we can also use \old(this.get(i)) etc. Need to ensure get works for any index; it throws if negative, but we restrict i>=0.
+
+Thus assert: \forall int i; i>=0 && i<Math.max(\old(this.length()), set.length()); this.get(i) == (\old(this.get(i)) && !set.get(i))
+
+But need to express unchanged when set bit false: that equation covers both cases because if set.get(i) false, then RHS = old && true = old. If set.get(i) true, RHS = old && false = false, which clears regardless of old (even if old false remains false). That's consistent.
+
+Thus final assert.
+
+Make sure to use this.get(i) and set.get(i). Use \old(this.get(i)). Use set.get(i) (current set unchanged). Use Math.max.
+
+Thus output:
+
+<code>assert \forall int i; i>=0 && i<Math.max(\old(this.length()), set.length()); this.get(i) == (\old(this.get(i)) && !set.get(i));</code>
+
+Check syntax: In JML, Math.max is allowed? Usually you can call static methods. Acceptable. Could also use (\old(this.length()) > set.length() ? \old(this.length()) : set.length()). But fine.
+
+Thus answer.assistantfinal<code>assert \forall int i; i>=0 && i<Math.max(\old(this.length()), set.length()); this.get(i) == (\old(this.get(i)) && !set.get(i));</code>
+--------------------
+analysisWe need to generate assert statement for the comment in method andNot.
+
+Comment: "Every bit in this BitSet is cleared if the corresponding bit in the specified BitSet was set, and left unchanged otherwise."
+
+We need to express that after operation, for each bit index i, the new value is (old value && !set.get(i)) i.e., cleared if set had true at i, else unchanged (i.e., remains old value). So new value = old value && !set.get(i). Equivalent: this.get(i) == (\old(this.get(i)) && !set.get(i)). Need to refer to set parameter: it's a BitSet object. Use this.get(i) after operation; old value via \old(this.get(i)). Also need to refer to set.get(i) after operation? set is unchanged, we assume not modified. So we can use set.get(i) (no old needed). Write forall int i; i>=0 => ... but need bound? BitSet potentially infinite, but we can bound to max of old size and set size? Usually we can assert for all i >=0. Use i>=0. Could also bound by max of old size and set.size()? But spec not required. Use \forall int i; i>=0 => this.get(i) == (\old(this.get(i)) && !set.get(i)). However need to ensure both sides defined; get may throw if i negative; we restrict i>=0. Also maybe need to bound by something like i < Math.max(\old(this.size()), set.size())? But size returns number of bits of space currently in use, not logical length. Safer to bound by something like i < Math.max(\old(this.length()), set.length())? But we don't have length method used. Simpler: \forall int i; i>=0 => this.get(i) == (\old(this.get(i)) && !set.get(i)). This expresses for all non-negative indices.
+
+Thus final assert code:
+
+<code>assert \forall int i; i>=0 => this.get(i) == (\old(this.get(i)) && !set.get(i));</code>
+
+Check syntax: need parentheses around whole expression after => maybe: i>=0 => this.get(i) == (\old(this.get(i)) && !set.get(i)). That's okay.
+
+Return final.assistantfinal<code>assert \forall int i; i>=0 => this.get(i) == (\old(this.get(i)) && !set.get(i));</code>
+--------------------
+analysisWe need to produce an assert statement reflecting the comment. The method is andNot(BitSet set). The comment: "Every bit in this BitSet is cleared if the corresponding bit in the specified BitSet was set, and left unchanged otherwise."
+
+We need to express that after operation, for each bit index i, the new value of this.get(i) is false if set.get(i) was true, else it equals old value of this.get(i). So spec: for all int i; i >=0 && i < ??? maybe up to some bound. Since BitSet is unbounded but we can refer to old size? The natural spec: \forall int i; i>=0 && i < this.size()? But after operation size may shrink due to cleared bits? However size() returns number of bits of space actually in use, maybe unchanged. Safer to use \forall int i; i>=0 && i < \old(this.size())? But after clearing bits, wordsInUse may be reduced. Use \old(this.get(i))? But get(i) may be out of bounds? get(i) defined for any non-negative index; if beyond logical size returns false. So we can just quantify over all non-negative i maybe up to max of old size and set.size(). But we can express using logical OR: (\old(set.get(i))) => !this.get(i) && (!\old(set.get(i))) => this.get(i) == \old(this.get(i)). That's fine.
+
+Thus assert: \forall int i; i>=0 => (\old(set.get(i)) => !this.get(i)) && (!\old(set.get(i)) => this.get(i) == \old(this.get(i)));
+
+Need parentheses for implication grouping: (\old(set.get(i)) => !this.get(i)) && (!\old(set.get(i)) => this.get(i) == \old(this.get(i)))
+
+And the universal quantifier: \forall int i; i>=0; (\old(set.get(i)) => !this.get(i)) && (!\old(set.get(i)) => this.get(i) == \old(this.get(i)));
+
+We need proper syntax: \forall int i; i>=0; (\old(set.get(i)) => !this.get(i)) && (!\old(set.get(i)) => this.get(i) == \old(this.get(i)));
+
+That should be fine.
+
+Return as code block.assistantfinal<code>assert \forall int i; i>=0; (\old(set.get(i)) => !this.get(i)) && (!\old(set.get(i)) => this.get(i) == \old(this.get(i)) );</code>
+--------------------

@@ -17,17 +17,22 @@ modelpaths = {
     "gpt4": "gpt-4.1",
     "gpt5": "gpt-5.5",
     "gpt-oss": "gpt-oss-120b",
+    "qw3-235b": "Qwen/Qwen3-235B-A22B-Instruct-2507-tput",
     "claude-sonnet": "claude-sonnet-4-6",
     "claude-opus": "claude-opus-4-8",
 }
 
 
 def is_api_model(mkey):
-    return mkey.startswith(("gpt3", "gpt4", "gpt5"))
+    return mkey.startswith(("gpt3", "gpt4", "gpt5")) or is_together_api_model(mkey)
 
 
 def is_reasoning_api_model(mkey):
     return mkey.startswith("gpt5")
+
+
+def is_together_api_model(mkey):
+    return mkey == "qw3-235b"
 
 
 def is_vllm_model(mkey):
@@ -57,9 +62,16 @@ def load_model(mkey, modelpaths=None, task="causal_lm"):
 
     if is_api_model(mkey):
         from openai import OpenAI
-        from keysecrets import oai_key
+        from keysecrets import oai_key, together_key
 
-        oai_client = OpenAI(api_key=oai_key)
+        if is_together_api_model(mkey):
+            oai_client = OpenAI(
+                api_key=together_key,
+                base_url="https://api.together.ai/v1",
+            )
+        else:
+            oai_client = OpenAI(api_key=oai_key)
+
         tokenizer = None
         def model(msgdict, **k):
             if is_reasoning_api_model(mkey):
