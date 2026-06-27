@@ -17,6 +17,7 @@ modelpaths = {
     "gpt4": "gpt-4.1",
     "gpt5": "gpt-5.5",
     "gpt-oss": "gpt-oss-120b",
+    "gpt-oss-api": "openai/gpt-oss-120b",
     "qw3-235b": "Qwen/Qwen3-235B-A22B-Instruct-2507-tput",
     "claude-sonnet": "claude-sonnet-4-6",
     "claude-opus": "claude-opus-4-8",
@@ -32,11 +33,11 @@ def is_reasoning_api_model(mkey):
 
 
 def is_together_api_model(mkey):
-    return mkey == "qw3-235b"
+    return mkey in {"gpt-oss-api", "qw3-235b"}
 
 
 def is_vllm_model(mkey):
-    return mkey.startswith(("gpt-oss"))
+    return mkey == "gpt-oss"
 
 
 def is_claude_code_model(mkey):
@@ -81,6 +82,8 @@ def load_model(mkey, modelpaths=None, task="causal_lm"):
                 model=mpath,
                 **k,
             )
+        model.client = oai_client
+        model.model_name = mpath
         devices = None
     elif is_vllm_model(mkey):
         try:
