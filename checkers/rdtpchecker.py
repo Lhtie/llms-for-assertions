@@ -23,6 +23,7 @@ configs = {
         "model_backward": None,
         "threshold": 0.6,
         "use_nli": True,
+        "check_mode": "roundtrip",  # "roundtrip" or "direct_formal"
         "mode_nli": "score",    # "label" or "score"
         "prompt_nli": "component_context",  
             # component_context, simple_equiv, bidirectional_nli, component_no_context
@@ -197,6 +198,42 @@ The premise is: {0}
 The hypothesis is: {1}
 """
 
+direct_formal_instr = """You are checking whether a formal post-condition formula is semantically equivalent to an original natural-language assertion.
+
+The natural-language assertion describes the intended behavior of a method. The formal specification is written in a Java/JML-like assertion syntax and may use:
+- \\result for the return value
+- \\old(expr) for pre-state values
+- \\forall for universal quantification
+- => for implication
+- Java expressions such as this.size(), this.get(i), contains(...), equals(...), ==, !=, &&, ||, and null
+
+Your job is to decide whether the formal specification expresses the same intended condition as the natural-language assertion.
+
+Scoring (real value in [-1.0, 1.0]):
++1.0: The formal specification is equivalent to the natural-language assertion.
++0.5: Mostly equivalent but with a minor omission, weakening, or harmless extra condition.
+0.0: Related but equivalence cannot be established, or important parts are missing.
+-0.5: Partially conflicting, with at least one important semantic error.
+-1.0: The formal specification clearly conflicts with the natural-language assertion.
+
+Context:
+The assertions describe behavior of {0} class {1}, method {2}.
+- The method takes in ({3}) as parameters.
+- {4}
+- The method documentation is:
+{5}
+
+Output format:
+- Briefly explain your reasoning in 1-2 concise sentences.
+- Then output exactly one score wrapped in <ans> </ans>.
+
+Natural-language assertion:
+{6}
+
+Formal specification:
+{7}
+"""
+
 def extract_ans(res):
     match = re.search(r"(?:.*)<ans>\s*(.*?)\s*</ans>", res, re.DOTALL)
     if match:
@@ -296,6 +333,73 @@ def equiv(x, y, config, helper):
     
     return min(scores), rec
 
+def direct_formal_equiv(nl_asrt, formal_asrt, config, helper):
+    mkey = config["mkey_nli"]
+    model_dict = config["model_nli"]
+    mode = config["mode_nli"]
+    threshold = config["threshold"]
+
+    assert model_dict is not None, "No model configurations"
+    tokenizer = model_dict["tokenizer"]
+    model = model_dict["model"]
+    devices = model_dict["devices"]
+
+    prompt = direct_formal_instr.format(
+        helper.langid,
+        helper.classname,
+        helper.funcname,
+        ", ".join([f"{typ} {var}" for var, typ in helper.funcs[-1]["args"].items()]),
+        f"The method returns {helper.funcs[-1]['rtyp']} as result."
+            if helper.funcs[-1]["rtyp"] != "void" else f"The method does not return any value.",
+        helper.funcs[-1]["docs"],
+        nl_asrt,
+        formal_asrt,
+    )
+    msgdict = [
+        {'role': 'system', 'content': f"You are a helpful assistant that excels at formal specification analysis."},
+        {'role': 'user', 'content': prompt}
+    ]
+    response = run_model(mkey, model, tokenizer, devices, msgdict, 0.6)
+    ans = extract_ans(response)
+    if mode == "label":
+        ans = score_to_label(ans, threshold, -threshold)
+        c = ans.find("Contradiction") != -1
+        n = ans.find("Neutral") != -1
+        e = ans.find("Entailment") != -1
+        assert int(e) + int(c) + int(n) == 1, "Answer should be direct and exact"
+        score = int(e)
+    else:
+        score = ans
+
+    rec = [{
+        "check_mode": "direct_formal",
+        "natural_language_assertion": nl_asrt,
+        "formal_spec": formal_asrt,
+        "response": response,
+        "answer": ans,
+    }]
+    return score, rec
+
+def direct_formal_calc(asrt, pfx, sfx, langid, config):
+    if langid == "java":
+        helper = javahelper(pfx + '\n' + sfx)
+    else:
+        raise NotImplementedError("Unsupported language id: " + langid)
+
+    cmnt_line = pfx.split("\n")[-1]
+    nl_asrt = cmnt_line.split("@@@")[-1].strip()
+    args = ", ".join([f"{typ} {var}" for var, typ in helper.funcs[-1]["args"].items()])
+    rec_title = f"{helper.namespace}:{helper.funcname}({args}):{asrt}"
+    score, rec = direct_formal_equiv(nl_asrt, asrt, config, helper)
+    config["records"][rec_title] = {
+        "samples": [{
+            "formal_asrt": asrt,
+            "nli": rec
+        }],
+        "score": score
+    }
+    return score
+
 def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
 
     mkey = config["mkey_backward"]
@@ -364,25 +468,29 @@ def rtc_calc(asrt, pfx, sfx, langid, config, nli=False):
         return rtc, forward_lift
 
 def java_rdtpcheck(pfx, sfx, asrt):
-    if configs["java"]["model_backward"] is None:
+    config = configs["java"]
+    needs_backward = config["check_mode"] == "roundtrip"
+    if needs_backward and config["model_backward"] is None:
         tokenizer, model, devices = load_model(configs["java"]["mkey_backward"])
         configs["java"]["model_backward"] = {
             "tokenizer": tokenizer,
             "model": model,
             "devices": devices,
         }
-    if configs["java"]["model_nli"] is None:
-        if configs["java"]["mkey_nli"] == configs["java"]["mkey_backward"]:
+    if config["model_nli"] is None:
+        if needs_backward and config["mkey_nli"] == config["mkey_backward"]:
             configs["java"]["model_nli"] = configs["java"]["model_backward"]
         else:
-            tokenizer, model, devices = load_model(configs["java"]["mkey_nli"])
+            tokenizer, model, devices = load_model(config["mkey_nli"])
             configs["java"]["model_nli"] = {
                 "tokenizer": tokenizer,
                 "model": model,
                 "devices": devices,
             }
     
-    config = configs["java"]
+    if config["check_mode"] == "direct_formal":
+        return direct_formal_calc(asrt, pfx, sfx, "java", config)
+    assert config["check_mode"] == "roundtrip", f"Unknown rdtp check_mode: {config['check_mode']}"
     if config["use_nli"]:
         return rtc_calc(asrt, pfx, sfx, "java", config, nli=True)
     else:
@@ -400,7 +508,7 @@ def rdtpcheck(langid, pfx, sfx, grnd_truth, asrt, cc, check, **config_overrides)
     if(langid == "java"):
         result = java_rdtpcheck(pfx, sfx, asrt)
         os.makedirs("./results/logs", exist_ok=True)
-        with open(f"./results/logs/rdtpcheck_{langid}_{configs[langid]['mkey_backward']}_{configs[langid]['mkey_nli']}_{configs[langid]['mode_nli']}_{configs[langid]['prompt_nli']}-{cc.split('/')[-1]}.json", "w") as f:
+        with open(f"./results/logs/rdtpcheck_{langid}_{configs[langid]['check_mode']}_{configs[langid]['mkey_backward']}_{configs[langid]['mkey_nli']}_{configs[langid]['mode_nli']}_{configs[langid]['prompt_nli']}-{cc.split('/')[-1]}.json", "w") as f:
             json.dump(configs["java"]["records"], f, indent=4)
 
     else: 
