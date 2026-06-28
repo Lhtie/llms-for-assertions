@@ -193,8 +193,8 @@ Output format:
 - Briefly explain your reasoning in 1-2 concise sentences.
 - Then output exactly one score in <ans> </ans>.
 
-The premise is: {6}
-The hypothesis is: {7}
+The premise is: {0}
+The hypothesis is: {1}
 """
 
 def extract_ans(res):
