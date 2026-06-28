@@ -1,168 +1,196 @@
-analysisWe need to read the code and generate an assert statement for the comment starting with "@@@". The comment is inside remove(Object o) method, after removal logic.
+analysisWe need to produce an assert statement matching the comment.
 
-Comment: "If the queue is still non-empty after removal, then the new head is greater than or equal to the old head according to the queue's ordering."
+The method is remove(Object o). After removal, if queue still non-empty, then the new head is greater than or equal to the old head according to ordering.
 
-We need to express this specification using assert statement syntax. Must use observer methods: we have peek() returns head element (least). Also we have comparator() to get comparator, but we might need to compare elements according to ordering. The natural ordering: elements are Comparable, or comparator may be provided. So to compare old head and new head, we need to use either comparator or compareTo.
+We need to use observer methods: peek() returns head element (or null if empty?). In Java PriorityQueue, peek returns null if empty. Also size() returns number of elements.
 
-But we only have access to public observer methods. There's peek() to get head. There's comparator() to get comparator. There's size() to check non-empty.
+We need to refer to ordering: comparator() may be null, then natural ordering via Comparable. For assertion we can compare using comparator if present else using compareTo.
 
-We need to refer to old values: \old(this.peek()) for old head before removal. After removal, we need to assert something about new head: this.peek(). The condition: queue is still non-empty after removal => size() > 0 after removal.
+But we likely can use the built-in ordering via a helper method? Not provided. In earlier examples they used index_of, getCount, etc. Here we have peek() and size(). To compare elements, we need to express "new head >= old head". We can express using comparator if not null: \old(this.comparator())? But comparator returns Comparator<? super E>. We can use comparator().compare(a,b) >=0. However we cannot call compare directly? We can use this.comparator().compare(...). It's allowed as observer method? It's a public method returning Comparator, then we can call its compare method. That's okay.
 
-Thus spec: (this.size() > 0) => (ordering compare new head >= old head). "greater than or equal to the old head according to the queue's ordering." Since queue's ordering is such that head is least element. So after removal, the new head should be >= old head (i.e., not less than). So we need to assert that old head <= new head according to ordering.
+If comparator is null, we need to use natural ordering: elements must be Comparable, we can cast to Comparable<E>. Use ((Comparable<E>)this.peek()).compareTo(oldHead) >=0 . But we might not need to be that precise; the spec can be expressed with an implication using comparator presence.
 
-How to express ordering? If comparator is null, we rely on natural ordering: elements are Comparable<E>. So we could use ((Comparable) this.peek()).compareTo(oldHead) >= 0. But we cannot call compareTo directly? It's allowed to call methods on elements? Usually specification language may allow method calls; but they said "use only publicly accessible observer methods provided in the test function. (Use \result instead of calling the observer method that is being tested) All function calls in the test function should be of the format this.func_name(args_list)." So we cannot call arbitrary methods on elements like compareTo, unless they are observer methods of this class. So we must use comparator() maybe. comparator() returns Comparator<? super E>. If comparator is non-null, we can use comparator.compare(x,y). That's a method call on comparator object, not on this. Is that allowed? The rule says only calls of the form this.func_name(args). So probably not allowed to call comparator.compare. So maybe we need to write specification using the semantics: "this.peek().equals(...)"? Not correct.
+Simplify: assert (this.size() == 0) || ( (\old(this.comparator()) != null) => this.comparator().compare(this.peek(), \old(this.peek())) >= 0 ) && ( (\old(this.comparator()) == null) => ((Comparable<E>)this.peek()).compareTo(\old(this.peek())) >= 0 );
 
-But maybe they allow using comparator() and then using its compare method? Not sure. The previous examples only used this.contains, this.index_of, this.getCount, this.query, etc. They didn't involve external objects.
+But need to use \old(this.peek()) which is the old head before removal. Also need to ensure that old size >0? Actually condition: "If the queue is still non-empty after removal, then the new head is greater than or equal to the old head". So premise: this.size() > 0 after removal. So assert: this.size() > 0 => newHead >= oldHead.
 
-Thus maybe we can express ordering using the property that head is the least element, so after removal, the new head must be >= old head. This can be expressed as: !\old(this.isEmpty()) && this.size()>0 => !this.comparator()? Actually we need to compare.
+Thus final assert: assert (this.size() == 0) || ( ... ) . Or using implication.
 
-We could express: (this.size()>0) => (!\old(this.comparator())? ((Comparable) this.peek()).compareTo(\old(this.peek())) >=0 : this.comparator().compare(this.peek(), \old(this.peek())) >=0). But that uses comparator().compare.
+Write: assert this.size() == 0 || ( (\old(this.comparator()) != null) => this.comparator().compare(this.peek(), \old(this.peek())) >= 0 ) && ( (\old(this.comparator()) == null) => ((Comparable<E>)this.peek()).compareTo(\old(this.peek())) >= 0 );
 
-Given constraints, maybe they accept such expression.
+Need parentheses: (A && B) after implication? Actually we need implication overall: this.size() > 0 => ( ... ). Equivalent to this.size() <= 0 || ( ... ). Use size() ==0 as earlier.
 
-Let's craft assert:
+So final code:
 
-assert (this.size() > 0) => ( ( \old(this.comparator()) == null ? ((java.lang.Comparable<E>) this.peek()).compareTo(\old(this.peek())) >= 0 : this.comparator().compare(this.peek(), \old(this.peek())) >= 0 ) );
+<code>assert this.size() == 0 || ( (\old(this.comparator()) != null) => this.comparator().compare(this.peek(), \old(this.peek())) >= 0 ) && ( (\old(this.comparator()) == null) => ((Comparable<E>)this.peek()).compareTo(\old(this.peek())) >= 0 );</code>
 
-But need to refer to old size? Not needed.
+Check syntax: need parentheses around whole right side of implication? In the expression after || we have conjunction of two implications. That's fine.
 
-We also need to ensure that removal happened: we are in method remove(Object o). The spec is conditional on queue still non-empty after removal. So we assert that if after removal size()>0, then new head >= old head.
+Make sure to cast properly: ((Comparable<E>)this.peek()).compareTo(\old(this.peek())) >= 0 . Might need to cast old peek too: ((Comparable<E>)\old(this.peek())).
 
-Thus final assert statement.
+Thus:
 
-We need to ensure syntax: in JML-like spec, you can use \old(this.peek()) etc.
+((Comparable<E>)this.peek()).compareTo((Comparable<E>)\old(this.peek())) >= 0
 
-Write:
+But compareTo expects E, not Comparable. Actually if E implements Comparable<E>, then peek returns E, cast to Comparable<E>. So compareTo expects E, which is \old(this.peek()) which is also E. So cast not needed for old.
 
-<code>assert (this.size() > 0) => ( (\old(this.comparator()) == null ? ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek())) >= 0 : this.comparator().compare(this.peek(), \old(this.peek())) >= 0) );</code>
+Thus: ((Comparable<E>)this.peek()).compareTo(\old(this.peek())) >= 0
 
-But need to cast to Comparable<E>. Use raw Comparable.
+Write final.
 
-Potential compile issues but spec not compiled.
-
-Thus final answer.assistantfinal<code>assert (this.size() > 0) => ( (\old(this.comparator()) == null ? ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek())) >= 0 : this.comparator().compare(this.peek(), \old(this.peek())) >= 0) );</code>
+assistantfinal<code>assert this.size() == 0 || ( (\old(this.comparator()) != null) => this.comparator().compare(this.peek(), \old(this.peek())) >= 0 ) && ( (\old(this.comparator()) == null) => ((Comparable<E>)this.peek()).compareTo(\old(this.peek())) >= 0 );</code>
 --------------------
-analysisWe need to produce an assert statement corresponding to the comment starting with "@@@". The comment: "If the queue is still non-empty after removal, then the new head is greater than or equal to the old head according to the queue's ordering."
-
-We need to refer to old head element, new head element after removal, and compare according to ordering. The class has methods: peek() returns head (least element). There's comparator() which may be null; ordering defined by natural ordering (Comparable) or comparator.
-
-We need to express: if after removal size > 0, then new head >= old head according to ordering.
-
-We need to use \old to capture old head before removal. After removal, we can use this.peek() for new head. For old head, \old(this.peek()).
-
-Now need to express "greater than or equal to" according to ordering. If comparator is not null, we can use comparator.compare(a,b) >=0. If comparator null, we can cast to Comparable and compare via compareTo.
-
-But spec language may allow using compareTo directly? Usually we can use ((Comparable) a).compareTo(b) >=0. However need to be careful with generic types.
-
-We can write: (!\old(this.isEmpty()))? Actually after removal we need to check if queue is non-empty after removal: this.size() > 0 or !this.isEmpty(). There's size() method. So condition: this.size() > 0 => ordering condition.
-
-Thus assert: (this.size() > 0) => ( (this.comparator() != null) ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((Comparable<E>) this.peek()).compareTo(\old(this.peek())) >= 0 );
-
-But need to write in JML-like syntax. Usually you can use conditional expression inside assert? Might be okay. Could also split into two implications: comparator != null => comparator.compare(newHead, oldHead) >=0; comparator == null => ((Comparable) newHead).compareTo(oldHead) >=0.
-
-Thus final assert:
-
-assert (this.size() > 0) => ( (this.comparator() != null) ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek())) >= 0 );
-
-Need to ensure syntax: we use this.comparator() returns Comparator<? super E>. comparator().compare takes (E o1, E o2) returns int.
-
-Make sure we refer to old head: \old(this.peek()).
-
-Thus final answer.
-
-Wrap in <code> block.
-
-assistantfinal<code>assert (this.size() > 0) => ( (this.comparator() != null) ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek())) >= 0 );</code>
---------------------
-analysisWe need to produce an assert statement for the comment after remove(Object o) method.
-
-The comment: "@@@ If the queue is still non-empty after removal, then the new head is greater than or equal to the old head according to the queue's ordering."
-
-We need to use observers: methods available: peek() returns head element (least). Also maybe comparator() to compare ordering. The queue ordering is natural ordering or comparator. We need to express: if after removal size>0 then new head >= old head according to ordering.
-
-We need to refer to old head: \old(this.peek()) . New head: this.peek() after removal.
-
-Comparison: If comparator is null, use natural ordering: elements are Comparable<E>. So we might need to use compareTo. But we cannot call methods on elements? We can use ((Comparable) this.peek()).compareTo(...). But spec says only publicly accessible observer methods provided in the test function. We can use this.comparator() which returns Comparator<? super E>. So we can express: Comparator comp = this.comparator(); if comp != null then comp.compare(newHead, oldHead) >=0 else ((Comparable) newHead).compareTo(oldHead) >=0.
-
-But spec language may allow using conditional expression. Provide assert with implication: (this.size()>0) => (ordering condition). Need to refer to size after removal: this.size().
-
-We must use only allowed syntax: we can write something like:
-
-assert this.size() == 0 || ( (\old(this.comparator()) != null) ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((java.lang.Comparable<E>)this.peek()).compareTo(\old(this.peek())) >= 0 );
-
-But we cannot call this.comparator() after removal? It's unchanged. Also we need old comparator: \old(this.comparator()) same as this.comparator() because comparator doesn't change.
-
-Simplify: assert this.size() == 0 || ( (this.comparator() != null) ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((java.lang.Comparable<E>)this.peek()).compareTo(\old(this.peek())) >= 0 );
-
-Need to cast peek to Comparable<E>. Use generic type, maybe raw.
-
-Also need to ensure peek not null when size>0. So fine.
-
-Thus final assert statement.
-
-Wrap in code block.
-
-assistantfinal<code>assert this.size() == 0 || (this.comparator() != null ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((java.lang.Comparable<E>)this.peek()).compareTo(\old(this.peek())) >= 0);</code>
---------------------
-analysisWe need to produce an assert statement for the comment in remove method.
+analysisWe need to generate an assert statement for the comment in remove method.
 
 Comment: 
 "@@@ If the queue is still non-empty after removal, then the new head is greater than or equal to the old head according to the queue's ordering."
 
-We need to express: after removal, if size>0 then new head >= old head according to ordering.
+We need to refer to old head before removal, new head after removal, condition that size after removal > 0.
 
-We have methods: peek() returns head (least element). size() returns size. comparator() returns comparator, possibly null meaning natural ordering.
+We have methods: peek() returns head element (or null if empty?). In PriorityQueue, peek returns null if empty. But we can use this.peek().
 
-We need to compare elements using ordering: if comparator != null, use comparator.compare(a,b) >=0; else use ((Comparable) a).compareTo(b) >=0.
+We need ordering comparison: "greater than or equal to the old head according to the queue's ordering." Means using comparator if present, else natural ordering (Comparable). We need to express in assert using either comparator() method and compare, or rely on compareTo.
 
-In JML-like assert, we can use conditional expression. Typically we can write: (!\old(this.isEmpty()) && this.size()>0) => ( ( \old(this.comparator()) != null ) ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((Comparable) this.peek()).compareTo(\old(this.peek())) >= 0 )
+We can write expression: 
+\old(this.peek()) is old head (could be null if empty before removal, but removal only occurs if element found, queue may become empty). Condition: this.size() > 0 after removal. Then we need: 
+if comparator not null, then comparator.compare(this.peek(), \old(this.peek())) >= 0; else cast to Comparable and compare: ((Comparable) this.peek()).compareTo(\old(this.peek())) >= 0.
 
-But we need to reference old head before removal: \old(this.peek()).
+We need to express with implication: (this.size() > 0) => ( ... ). Use old size? Actually after removal, size() is new size. So condition is this.size() > 0.
 
-Also need to ensure queue non-empty after removal: this.size() > 0.
+Thus assert: 
+assert this.size() > 0 => ( (this.comparator() != null) ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((Comparable<E>) this.peek()).compareTo(\old(this.peek())) >= 0 );
 
-But also need to consider that before removal, queue was non-empty (since removal succeeded). In method, removal returns true only if element existed; but could be size 0 before? If size 0, indexOf returns -1, removal returns false, but we are in branch where removal succeeded, so size before removal >=1. After removal, size may be 0 or >0. The condition says "If the queue is still non-empty after removal". So antecedent: this.size() > 0. Then consequent: new head >= old head.
+But we need to write in JML-like syntax? The examples used logical operators &&, =>, etc. They used method calls like this.index_of(value). So we can use ternary? Not sure if ternary allowed. Probably we can use implication with conjunction of two cases: (this.comparator() != null => this.comparator().compare(this.peek(), \old(this.peek())) >= 0) && (this.comparator() == null => ((Comparable) this.peek()).compareTo(\old(this.peek())) >= 0). Combine with size condition: this.size() > 0 => ((this.comparator() != null => ...) && (this.comparator() == null => ...)). That's okay.
 
-Thus assert: this.size() > 0 => ( ( \old(this.comparator()) != null ) ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((java.lang.Comparable<E>) this.peek()).compareTo(\old(this.peek())) >= 0 );
+Thus final assert:
 
-Need cast for Comparable.
+assert this.size() > 0 => ((this.comparator() != null => this.comparator().compare(this.peek(), \old(this.peek())) >= 0) && (this.comparator() == null => ((Comparable) this.peek()).compareTo(\old(this.peek())) >= 0));
 
-But we must use only publicly accessible observer methods: peek(), size(), comparator(). That's fine. Also we can use this.peek() after removal, and \old(this.peek()) before removal.
-
-Write assert statement:
-
-assert this.size() > 0 => ( (\old(this.comparator()) != null) ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek())) >= 0 );
-
-Make sure parentheses.
+Make sure parentheses correct.
 
 Return final answer in code block.
 
-assistantfinal<code>assert this.size() > 0 => (\old(this.comparator()) != null ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek())) >= 0);</code>
+assistantfinal<code>assert this.size() > 0 => ( (this.comparator() != null => this.comparator().compare(this.peek(), \old(this.peek())) >= 0) && (this.comparator() == null => ((Comparable) this.peek()).compareTo(\old(this.peek())) >= 0) );</code>
 --------------------
-analysisWe need to parse the code and find the comment starting with "@@@". It's inside remove(Object o) method after removal logic. The comment: 
-"// @@@ If the queue is still non-empty after removal, then the new head is greater than or equal to the old head according to the queue's ordering."
+analysisWe need to write an assert statement corresponding to the comment after remove(Object o) method.
 
-We need to produce an assert statement that captures this natural language assertion, using \old, \result, etc. The method returns boolean indicating whether removal happened. But the comment is about state after removal: if queue still non-empty, then new head >= old head according to ordering.
+Comment: 
+```
+// @@@ If the queue is still non-empty after removal, then the new head is greater than or equal to the old head according to the queue's ordering.
+```
 
-We need to refer to the head element: peek() returns the element at head (least). The ordering: "greater than or equal to the old head according to the queue's ordering." For natural ordering or comparator. There's comparator() method to get comparator. So we need to express: if after removal size>0 then compare new head with old head using comparator if not null else using compareTo.
+We need to express: If after removal, size > 0, then new head >= old head according to ordering.
 
-In JML-like spec we can use something like: (this.size > 0) => ( (this.comparator() != null) ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((Comparable<E>) this.peek()).compareTo(\old(this.peek())) >= 0 )
+We have methods: peek() returns head element (lowest). Also size() returns size. Comparator? There's comparator() method returning Comparator<? super E>. There's also natural ordering via Comparable. So we need to compare elements via ordering.
 
-But we have generic E, but we can just write expression using comparator or natural ordering. In spec we can use a conditional expression. Or we could write two implications: if comparator != null then ... else ...
+We need to express "greater than or equal to" according to queue's ordering. That means: if comparator != null, use comparator.compare(newHead, oldHead) >= 0. If comparator == null, elements must be Comparable, so we can cast to Comparable<E> and use compareTo.
 
-Simplify: \old(this.peek()) is old head before removal. After removal, this.peek() is new head. Need to assert that new head >= old head.
+But we only can use publicly accessible observer methods provided in the test function. In this class, we have peek(), size(), comparator(). Also maybe we can use this.comparator()? It's a method defined earlier: public Comparator<? super E> comparator(); So we can call this.comparator().
 
-Thus assert: (this.size > 0) => ( (this.comparator() != null) ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((java.lang.Comparable<E>)this.peek()).compareTo(\old(this.peek())) >= 0 );
+We need to refer to old values: \old(this.peek()) for old head before removal. However after removal, we need new head: this.peek(). But note that after removal, if size > 0, peek() returns new head.
 
-But need to cast properly. Might just write: (this.comparator() != null ? this.comparator().compare(this.peek(), \old(this.peek())) : ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek()))) >= 0
+Thus assertion: (\result?) Actually remove returns boolean, but we don't need that.
 
-Wrap in parentheses.
+We need condition: this.size() > 0 => ( (this.comparator() != null) => this.comparator().compare(this.peek(), \old(this.peek())) >= 0 ) && ( (this.comparator() == null) => ((Comparable<E>) this.peek()).compareTo(\old(this.peek())) >= 0 )
 
-Thus final assert statement: assert (this.size > 0) => ((this.comparator() != null ? this.comparator().compare(this.peek(), \old(this.peek())) : ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek()))) >= 0);
+But we need to write in JML-like syntax: assert (this.size() > 0) => ( (this.comparator() != null) => this.comparator().compare(this.peek(), \old(this.peek())) >= 0 ) && ( (this.comparator() == null) => ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek())) >= 0 );
 
-Make sure semicolon.
+But need to ensure casting is correct. Use ((Comparable) this.peek()).compareTo(\old(this.peek())) >= 0.
 
-Return boolean but not needed.
+We also need to ensure that old peek is defined only if old size >0 before removal? The comment says "If the queue is still non-empty after removal". It doesn't require old queue non-empty; but removal could have been called on empty queue? remove(Object o) would return false and not modify, but then size unchanged. However the condition only triggers if after removal size>0. If after removal size>0, then there was at least one element before removal, so old peek exists. So safe.
 
-Thus final answer code block.assistantfinal<code>assert (this.size > 0) => ((this.comparator() != null ? this.comparator().compare(this.peek(), \old(this.peek())) : ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek()))) >= 0);</code>
+Thus final assert:
+
+assert this.size() > 0 => ( (this.comparator() != null) => this.comparator().compare(this.peek(), \old(this.peek())) >= 0 ) && ( (this.comparator() == null) => ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek())) >= 0 );
+
+But need parentheses for overall implication: size>0 => ( ... ). The inner part is a conjunction of two implications? Actually we need a single statement that captures both cases. Could also write: this.size() > 0 => ( (this.comparator() != null && this.comparator().compare(this.peek(), \old(this.peek())) >= 0) || (this.comparator() == null && ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek())) >= 0) );
+
+That might be simpler: if comparator present, compare via comparator; else via compareTo.
+
+Thus final assert:
+
+assert this.size() > 0 => ( (this.comparator() != null && this.comparator().compare(this.peek(), \old(this.peek())) >= 0) || (this.comparator() == null && ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek())) >= 0) );
+
+Yes.
+
+Return as code block.assistantfinal<code>assert this.size() > 0 => ( (this.comparator() != null && this.comparator().compare(this.peek(), \old(this.peek())) >= 0) || (this.comparator() == null && ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek())) >= 0) );</code>
+--------------------
+analysisWe need to read the code and produce an assert statement matching the comment.
+
+Comment: "// @@@ If the queue is still non-empty after removal, then the new head is greater than or equal to the old head according to the queue's ordering."
+
+We need to express: after calling remove(Object o), if after removal the queue size > 0, then the element at the head (peek()) is >= old head according to ordering.
+
+We have comparator possibly null; ordering is either natural (Comparable) or comparator.
+
+We need to express "greater than or equal to" according to ordering.
+
+We can use comparator if not null: comparator.compare(newHead, oldHead) >= 0. If comparator null, we can cast to Comparable and use compareTo.
+
+But spec language may allow us to use a helper observer method? Not defined. In this class, there is peek() method returns head element. There's size() method returns number of elements. There's comparator() method returns comparator.
+
+Thus we can write assertion using these methods.
+
+We need to refer to old values: \old(this.peek()) and \old(this.size()).
+
+Condition: \old(this.size()) > 0? Wait after removal, we need to check if queue is still non-empty after removal. So condition is this.size() > 0 (post-state). Then assert that this.peek() >= old head.
+
+But we also need to consider that if removal removed the head element, the new head could be greater than or equal to old head. If removal removed a non-head element, the head stays same, which also satisfies >=.
+
+Thus assertion: this.size() > 0 => ( ( \old(this.comparator()) == null ? ((Comparable<E>) this.peek()).compareTo(\old(this.peek())) >= 0 : this.comparator().compare(this.peek(), \old(this.peek())) >= 0 ) ).
+
+But we need to use this.comparator() in post-state; old comparator same as new (unchanged). Could also use \old(this.comparator()).
+
+Simplify: let cmp = this.comparator(); if cmp != null then cmp.compare(this.peek(), \old(this.peek())) >= 0 else ((Comparable) this.peek()).compareTo(\old(this.peek())) >= 0.
+
+We need to write in assert syntax using conditional operator? Not allowed? Could use implication with disjunction: (cmp != null && cmp.compare(... ) >=0) || (cmp == null && ((Comparable) this.peek()).compareTo(\old(this.peek())) >=0). But we need to embed inside the implication.
+
+Thus final assert: assert this.size() > 0 => ( (this.comparator() != null && this.comparator().compare(this.peek(), \old(this.peek())) >= 0) || (this.comparator() == null && ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek())) >= 0) );
+
+Need to ensure cast to Comparable<E> maybe.
+
+Write: ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek())) >= 0
+
+Assume elements are comparable.
+
+Thus final answer code block.
+
+assistantfinal<code>assert this.size() > 0 => ( (this.comparator() != null && this.comparator().compare(this.peek(), \old(this.peek())) >= 0) || (this.comparator() == null && ((java.lang.Comparable) this.peek()).compareTo(\old(this.peek())) >= 0) );</code>
+--------------------
+analysisWe need to produce an assert statement for the comment near the end of remove(Object o) method.
+
+Comment: 
+```
+// @@@ If the queue is still non-empty after removal, then the new head is greater than or equal to the old head according to the queue's ordering.
+```
+
+We need to express: If after removal the queue size > 0, then the element at the head (peek()) is >= old head according to ordering.
+
+We have methods: peek() returns E (head element). size() returns int. Also comparator() returns Comparator<? super E>. For natural ordering, elements are Comparable.
+
+We need to compare according to ordering: either using comparator if not null, else using natural ordering (Comparable). In specifications, we can use something like: (\old(this.size()) > 0 && !this.isEmpty())? Wait after removal we need to check if queue still non-empty after removal. That is: this.size() > 0 after removal. The old head is \old(this.peek()). New head is this.peek().
+
+We need to assert: this.size() > 0 => (ordering comparison) >=.
+
+Define ordering: If comparator != null, then comparator.compare(newHead, oldHead) >= 0. Else assume elements are Comparable, cast to Comparable<E> and compare via compareTo. In JML we may write: (\old(this.comparator()) != null ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((Comparable) this.peek()).compareTo(\old(this.peek())) >= 0). However we need to reference old comparator as well? The comparator does not change during removal; we can just use this.comparator() (same as old). Use \old(this.comparator()) maybe not needed.
+
+Thus assert statement:
+
+assert this.size() > 0 => ( (this.comparator() != null) ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((Comparable<E>) this.peek()).compareTo(\old(this.peek())) >= 0 );
+
+But need to ensure that after removal, size >0 implies peek() is not null. Also need to ensure old size >0? Actually removal could be from empty queue? The method returns false if not found, but remove may be called when element present, so old size >=1. After removal, if still non-empty, size>0.
+
+Thus final assert.
+
+Make sure syntax: Use \old(this.peek()).
+
+Write as:
+
+<code>assert this.size() > 0 => (this.comparator() != null ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((Comparable<E>) this.peek()).compareTo(\old(this.peek())) >= 0);</code>
+
+Check if need parentheses around whole implication: assert (this.size() > 0) => (...);
+
+Yes.
+
+Return final answer.assistantfinal<code>assert (this.size() > 0) => (this.comparator() != null ? this.comparator().compare(this.peek(), \old(this.peek())) >= 0 : ((Comparable<E>) this.peek()).compareTo(\old(this.peek())) >= 0);</code>
 --------------------

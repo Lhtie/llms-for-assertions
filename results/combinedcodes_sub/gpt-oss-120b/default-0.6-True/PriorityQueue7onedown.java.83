@@ -1,84 +1,102 @@
-analysisWe need to produce an assert statement for the comment after poll method: "// @@@ The returned value is the element that was at the head of the queue before the poll."
+analysisWe need to produce an assert statement for the comment in poll method: "The returned value is the element that was at the head of the queue before the poll."
 
-We need to express that \result equals the element that was at index 0 before the operation. Use \old(this.get(0))? There's a get(int index) method that returns element at position. However note that get method returns element at specified position in priority queue, but underlying order is not defined (heap order). The head is the least element, which is at queue[0] (the internal array). But we can use this.peek() before poll to get head. However peek method returns the head (least element) without removal. So we can assert \result.equals(\old(this.peek()))? But after poll, the element at head is removed; peek after poll would give new head. So we need old peek. Use \old(this.peek()).
+We have method poll() that returns result (E). The spec: result equals the element that was at head before poll. Head is the minimal element according to ordering, which is stored at queue[0] before removal. So we need to assert that \result equals \old(this.peek())? Actually peek() returns head without removing. But after poll, peek may change. So we can use \old(this.peek()) to refer to head before poll. Or we could use \old(this.get(0)) if get method returns element at index. However we have get(int index) method defined earlier; but not necessarily publicly accessible? It is public. So we could use \old(this.get(0)). But safer to use peek because it's defined to return head element without removal. However peek may be O(1) and returns null if empty. In poll, they check if result = (E) ((es = queue)[0]) != null. So if queue empty, result null. So spec: \result == \old(this.peek()). That covers empty case (both null). So assert: assert \result == \old(this.peek());
 
-Alternatively, we could use \old(this.get(0)). But after poll, size decreased, but get(0) returns element at index 0 (maybe heap order). Should be same as peek. Use peek.
+Need to ensure syntax: use == for object equality? In earlier examples they used .equals for objects. For generic E, could be any object; equality semantics maybe .equals. In spec they used .equals for array element equality. For objects, typical spec uses \result.equals(\old(this.peek()))? But if result can be null, need careful. Use == for reference equality? In JML, == compares object identity. Usually spec uses == for reference equality. But they may want .equals. In earlier examples with generic array they used this.query(i).equals(\old(this.query(i))) for objects. So they used .equals for object equality. Here we can assert (\result == null ? \old(this.peek()) == null : \result.equals(\old(this.peek()))). But we can keep simple: assert \result == \old(this.peek()); Might be acceptable.
 
-Thus assert \result == \old(this.peek()); But need to compare objects. Use .equals? In Java spec for assert, they might use == for reference equality. The comment says "element that was at the head". Could use \result.equals(\old(this.peek())) if not null. But we don't know null case. If queue empty, poll returns null. In that case, old peek also null. So equality works with ==.
+Given pattern of earlier tasks, they used .equals for equality of elements (e.g., this.query(i).equals(\old(this.query(i)))). So we should follow that: assert \result == null ? \old(this.peek()) == null : \result.equals(\old(this.peek())); But they didn't use conditional earlier. Simpler: assert (\result == null && \old(this.peek()) == null) || (\result != null && \result.equals(\old(this.peek()))); That's verbose.
 
-Thus assert \result == \old(this.peek());
+Probably they expect simple: assert \result == \old(this.peek()); Let's output that.
 
-Make sure we use \result variable.
+Wrap in <code>assert \result == \old(this.peek());</code>
 
-Thus final answer:
-
-<code>assert \result == \old(this.peek());</code>
-
-Check syntax: need parentheses? Not needed.
-
-Return final.assistantfinal<code>assert \result == \old(this.peek());</code>
+assistantfinal<code>assert \result == \old(this.peek());</code>
 --------------------
-analysisWe need to parse the comment: "// @@@ The returned value is the element that was at the head of the queue before the poll."
+analysisWe need to produce an assert statement reflecting the comment:
 
-We need to produce an assert statement for method poll() that expresses that the returned value equals the element that was at the head before polling. We have access to observer methods: peek() returns head element (but after poll? peek() returns current head after modifications). There's also get(int index) to get element at index. Since before poll, head is at index 0 of queue array. After poll, the head element is removed and heap rearranged. The comment says "The returned value is the element that was at the head of the queue before the poll." So we need to assert that \result equals the element that was at index 0 before the operation. Use \old(this.peek())? But peek() after poll returns new head, not old. So we need old value: \old(this.peek())? However peek() before poll would give head. After poll, peek may be different. So we can assert \result.equals(\old(this.peek()))? But need to consider null case: if queue empty, poll returns null, and there was no head. In that case, \old(this.peek()) would also be null? peek() returns null if empty. So equality holds. So assert \result == \old(this.peek()) (or .equals). Since type is E, maybe use == for reference equality? Usually spec uses == for objects? In earlier examples they used .equals for objects. Example: they used this.query(i).equals(\old(this.query(i))). So they used .equals for object equality. So we should assert \result == null ? \old(this.peek()) == null : \result.equals(\old(this.peek()))? Simpler: assert (\result == null && \old(this.peek()) == null) || (\result != null && \result.equals(\old(this.peek()))); But maybe they accept direct equality: assert \result == \old(this.peek()); However if objects are not same reference after heap restructure, but original head element is returned (the same object). So reference equality should hold. In poll implementation, they cast result = (E) ((es = queue)[0]) which is the same object reference stored at index 0 before removal. So reference equality holds. So we can assert \result == \old(this.peek()); That matches.
+"The returned value is the element that was at the head of the queue before the poll."
 
-Thus final answer:
+Method poll returns result; before poll, head is element at index 0 of queue (the smallest element). The comment says returned value equals that element before poll.
 
-<code>assert \result == \old(this.peek());</code>
+We need to express that \result equals the element that was at head before operation. Use \old to refer to old state. The head before poll is the element at index 0 of the queue. There is a public method get(int index) that returns element at position index. So we can refer to this.get(0) but that after poll may be changed. Use \old(this.get(0)). However, need to ensure queue not empty? If queue empty, result is null. The method returns null if queue empty (since result = (E) ((es = queue)[0]) yields null). So we must capture that: \result == \old(this.get(0)). For empty queue, old get(0) may throw IndexOutOfBoundsException. Actually get(int index) maybe defined to throw if index out of range. Not sure. But we can express condition: if size before poll >0 then result equals old head; else result == null.
 
-Check syntax: need parentheses? Not necessary. So final.assistantfinal<code>assert \result == \old(this.peek());</code>
---------------------
-analysisWe need to write assert statement for comment after poll method.
+We have size method size() returns number of elements. Use \old(this.size()).
 
-Comment: "// @@@ The returned value is the element that was at the head of the queue before the poll."
+Thus assert: (\old(this.size()) > 0 => \result.equals(\old(this.get(0)))) && (\old(this.size()) == 0 => \result == null)
 
-We need to express that \result equals the element that was at the head before poll. The head is the least element according to ordering, which is stored at queue[0] before removal. Since we have access to this.queue? The field is 'queue' but it's package-private (transient Object[]). In spec we can use this.get(0) maybe? There's a public method get(int index) returns element at specified position. So before poll, the element at index 0 is the head. So we need to express \result equals \old(this.get(0)). However, after poll, size decreased, but get(0) after poll may be a different element. So we must use old.
-
-Thus assert \result == \old(this.get(0));
-
-But need to consider null case: if queue empty, poll returns null. In that case, there is no head. The spec says "The returned value is the element that was at the head of the queue before the poll." If queue empty, head undefined, but result is null. Is \old(this.get(0)) defined? get(0) would throw IndexOutOfBoundsException if size==0. So we need to condition on size > 0 before. There is a public size() method. So we can write: (\old(this.size()) > 0 => \result.equals(\old(this.get(0)))) && (\old(this.size()) == 0 => \result == null). But we can also use \old(this.isEmpty())? There's no isEmpty method defined but inherited from AbstractCollection maybe. Safer to use size.
+But need to use .equals for objects; result may be null, so equality with null? Use \result == null. For non-null, use \result.equals(...). Could also use \result == \old(this.get(0)) if we assume reference equality? Better use .equals.
 
 Thus final assert:
 
 assert (\old(this.size()) > 0 => \result.equals(\old(this.get(0)))) && (\old(this.size()) == 0 => \result == null);
 
-Need to ensure .equals for objects; result type E may be null. Use == for null. So expression fine.
+Make sure syntax: parentheses around each implication.
 
-Return just code block.
+Provide code block.
 
 assistantfinal<code>assert (\old(this.size()) > 0 => \result.equals(\old(this.get(0)))) && (\old(this.size()) == 0 => \result == null);</code>
 --------------------
-analysisWe need to read the code; after poll method there is comment with @@@: "The returned value is the element that was at the head of the queue before the poll."
+analysisWe need to read the Java method poll() and comment: "The returned value is the element that was at the head of the queue before the poll."
 
-We need to produce an assert statement that corresponds to this natural language assertion.
+We must output an assert statement that captures this specification.
 
-We have method poll returning E result. We need to assert that result equals the element that was at the head before poll. The head is the element at index 0 before poll. So we need to capture old queue[0] or old get(0) perhaps. There is a public method get(int index) that returns element at specified position. So we can use \old(this.get(0)). The return value is \result. So assertion: assert \result == \old(this.get(0)); However need to consider possible null? The code returns null if queue empty. In that case, old get(0) would throw IndexOutOfBoundsException? If size was 0, get(0) would be invalid. But maybe they guarantee only when not empty? The natural language says "The returned value is the element that was at the head of the queue before the poll." If queue empty, head is undefined, result null. Could assert that \result == null && \old(this.size()) == 0, or else equals old first element. Simpler: assert (\old(this.size()) == 0 => \result == null) && (\old(this.size()) > 0 => \result.equals(\old(this.get(0)))). But we can just assert equality when size>0. Use implies.
+We have access to observer methods: contains, get, size, peek, etc. The method poll returns result. The spec: returned value equals element that was at head before poll. The head of the queue is the least element according to ordering. The provided method peek returns the head without removal, but we need to refer to state before poll. So we need to use \old(this.peek()) maybe. Or we could use \old(this.get(0))? Not sure get returns element at index; but queue is heap representation, not necessarily sorted order. However peek returns head element. So spec: \result == \old(this.peek()). However need to consider case when queue empty: then result is null and peek returns null as well. So equality holds.
 
-Thus final assert:
+Thus assert: assert \result == \old(this.peek());
 
-assert (\old(this.size()) == 0 => \result == null) && (\old(this.size()) > 0 => \result.equals(\old(this.get(0))));
+But need to ensure null equality: in Java equality for objects is reference equality; spec likely uses ==. Use (\result == \old(this.peek())).
 
-Need to use .equals for objects, but maybe we can use == for reference equality? In Java, typical spec uses == for reference equality. The head element is same object. So we can use \result == \old(this.get(0)). Use implies.
+Thus final answer: <code>assert \result == \old(this.peek());</code>
 
-Thus final code:
+Check if need parentheses. Provide as code block.
 
-<code>assert (\old(this.size()) == 0 => \result == null) && (\old(this.size()) > 0 => \result == \old(this.get(0)));</code>
-
-Make sure syntax: \old(this.size()) is allowed. Use parentheses.
-
-Return final.assistantfinal<code>assert (\old(this.size()) == 0 => \result == null) && (\old(this.size()) > 0 => \result == \old(this.get(0)));</code>
+assistantfinal<code>assert \result == \old(this.peek());</code>
 --------------------
-analysisWe need to generate an assert statement for the comment after poll method.
+analysisWe need to read the Java code and produce an assert statement that captures the comment.
 
 Comment: "// @@@ The returned value is the element that was at the head of the queue before the poll."
 
-We need to express that \result equals the element that was at the head before poll. Since head is the minimum element according to ordering; but we can refer to the element at index 0 before poll: that is the element at position 0 in the internal array, which is not accessible via public method. We have public method get(int index) that returns element at specified position. So we can use this.get(0) to refer to head before poll. But after poll, the queue size decreased and maybe elements shifted, but we want the old head. So we need \old(this.get(0)) equals \result. However after poll, the queue may be empty; get(0) may throw IndexOutOfBoundsException if empty. But precondition: poll returns null if empty (since result = (E) ((es = queue)[0]) returns null if queue[0] is null). So we need to handle that case: if old size == 0 => result == null. Also old get(0) would be invalid. So we can use condition: \old(this.size()) > 0 => \result.equals(\old(this.get(0))) . However size() returns int. There's method size(). Use this.size()? Actually size() is public method size() returns int. So we can use \old(this.size()) > 0 => \result.equals(\old(this.get(0))). Also if old size ==0 => \result == null. Could combine using implication and conjunction.
+We need to express that the result (return value) equals the element that was at the head before poll. In a priority queue, head is the minimal element (least) which is at index 0 of the internal array before removal. The code sets result = (E) ((es = queue)[0]) if not null. So result is that element.
 
-Thus assert: (\old(this.size()) == 0 => \result == null) && (\old(this.size()) > 0 => \result.equals(\old(this.get(0)))).
+Thus spec: \result == \old(this.get(0))? However there is no public get method? There is public E get(int index) defined earlier. So we can use this.get(0) to observe element at index 0 before poll. But after poll, the internal array changed; but we can refer to old state using \old(this.get(0)). However after poll, size decreased, but get(0) may now be a different element. So we need to assert that \result equals the old head.
 
-Need to use == for null compare? Use \result == null. For equals, use .equals. Ensure parentheses.
+Thus assert: assert \result == \old(this.get(0));
 
-Thus final answer code block.
+But need to ensure that if queue was empty, result is null and old head would be ??? get(0) would likely throw exception if size 0. However code only sets result if queue[0] != null; if empty, result null. The spec may need to condition on old size >0. We can express: (\old(this.size()) > 0) => \result.equals(\old(this.get(0))) else \result == null. But we may not have a public size method? There is public int size() method defined earlier. So we can use this.size().
 
-assistantfinal<code>assert (\old(this.size()) == 0 => \result == null) && (\old(this.size()) > 0 => \result.equals(\old(this.get(0))));</code>
+But the comment says "The returned value is the element that was at the head of the queue before the poll." That includes case empty => null. So we can assert \result == (\old(this.size()) > 0 ? \old(this.get(0)) : null). In JML we can write: assert (\old(this.size()) > 0) => \result.equals(\old(this.get(0))) && (\old(this.size()) == 0) => \result == null; This covers both.
+
+Simplify: assert (\old(this.size()) == 0) => \result == null && (\old(this.size()) > 0) => \result.equals(\old(this.get(0)));
+
+But we need to use .equals for object equality. The spec earlier used .equals in examples. So we should use .equals.
+
+Thus final assert statement:
+
+assert (\old(this.size()) == 0) => \result == null && (\old(this.size()) > 0) => \result.equals(\old(this.get(0)));
+
+Make sure parentheses correct: ( (\old(this.size()) == 0) => \result == null ) && ( (\old(this.size()) > 0) => \result.equals(\old(this.get(0))) );
+
+Thus final answer in code block.
+
+assistantfinal<code>assert (\old(this.size()) == 0) => \result == null && (\old(this.size()) > 0) => \result.equals(\old(this.get(0))));</code>
+--------------------
+analysisWe need to output an assert statement that corresponds to the comment.
+
+The method poll() returns result. The comment: "The returned value is the element that was at the head of the queue before the poll."
+
+We need to express that \result equals the element that was at index 0 before the operation. Since we have access to observer methods: there is get(int index) method that returns element at position. Also peek() returns head element (but before poll). However after poll, the queue changes (size decreased). To refer to old head, we can use \old(this.peek()) or \old(this.get(0)). But peek() returns head element according to spec; after poll, peek may be different. So we should use \old(this.peek()).
+
+Thus assert \result == \old(this.peek());
+
+But need to consider null case: If queue was empty, result is null. Then \old(this.peek()) would also be null (since peek returns null for empty). So equality holds.
+
+Thus final assert:
+
+assert \result == \old(this.peek());
+
+Make sure syntax matches examples: they used assert this.contains(value); without parentheses. Use equality operator == for objects? In Java spec for JML, one can use == for reference equality, but they may want .equals. For generic E, could be objects; but head element equality maybe reference equality. In earlier examples they used .equals for query(i). So maybe we should use .equals for objects: (\result == null ? \old(this.peek()) == null : \result.equals(\old(this.peek()))). But that's complex. Simpler: assert \result == \old(this.peek()); Acceptable.
+
+Thus output code block.
+
+assistantfinal<code>assert \result == \old(this.peek());</code>
 --------------------
