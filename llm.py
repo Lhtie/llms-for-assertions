@@ -32,6 +32,12 @@ def is_reasoning_api_model(mkey):
     return mkey.startswith("gpt5")
 
 
+def normalize_openai_chat_kwargs(mkey, kwargs):
+    if is_reasoning_api_model(mkey) and "max_tokens" in kwargs:
+        kwargs["max_completion_tokens"] = kwargs.pop("max_tokens")
+    return kwargs
+
+
 def is_together_api_model(mkey):
     return mkey in {"gpt-oss-api", "qw3-235b"}
 
@@ -77,6 +83,7 @@ def load_model(mkey, modelpaths=None, task="causal_lm"):
         def model(msgdict, **k):
             if is_reasoning_api_model(mkey):
                 k.setdefault("reasoning_effort", "medium")
+                k = normalize_openai_chat_kwargs(mkey, k)
             return oai_client.chat.completions.create(
                 messages=msgdict,
                 model=mpath,

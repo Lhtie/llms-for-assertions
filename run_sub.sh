@@ -10,7 +10,7 @@ python main.py \
   --codedir javacodes_sub \
   --modellist claude-opus \
   --temp 0.6 --nsamples 5 \
-  --codelist {72..96} \
+  --codelist {27..34} 67 68 \
   --resultdir results/combinedcodes_sub \
   --write
 
