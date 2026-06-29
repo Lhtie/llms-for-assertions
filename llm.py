@@ -33,8 +33,10 @@ def is_reasoning_api_model(mkey):
 
 
 def normalize_openai_chat_kwargs(mkey, kwargs):
-    if is_reasoning_api_model(mkey) and "max_tokens" in kwargs:
-        kwargs["max_completion_tokens"] = kwargs.pop("max_tokens")
+    if is_reasoning_api_model(mkey):
+        if "max_tokens" in kwargs:
+            kwargs["max_completion_tokens"] = kwargs.pop("max_tokens")
+        kwargs.pop("temperature", None)
     return kwargs
 
 
