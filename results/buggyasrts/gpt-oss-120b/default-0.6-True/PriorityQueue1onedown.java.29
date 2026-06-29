@@ -1,0 +1,164 @@
+analysisWe need to produce an assert statement for the comment in the constructor:
+
+```java
+public PriorityQueue(Collection<? extends E> c) {
+    if (c instanceof SortedSet<?>) {
+        SortedSet<? extends E> ss = (SortedSet<? extends E>) c;
+        this.comparator = (Comparator<? super E>) ss.comparator();
+        initElementsFromCollection(ss);
+    }
+    else if (c instanceof PriorityQueue<?>) {
+        PriorityQueue<? extends E> pq = (PriorityQueue<? extends E>) c;
+        this.comparator = (Comparator<? super E>) pq.comparator();
+        initFromPriorityQueue(pq);
+    }
+    else {
+        this.comparator = null;
+        initFromCollection(c);
+    }
+    // @@@ If the source collection is not null, the new collection has one more element than the source collection.
+}
+```
+
+We need to write an assert specification after the constructor. The comment: "If the source collection is not null, the new collection has one more element than the source collection."
+
+We need to express that if c != null then this.size == \old(c.size()) + 1? Actually we need to refer to source collection size. The collection c is a parameter; we can use \old(c.size())? In JML, you can use \old on expressions; but c is a parameter, not a field; we can refer to \old(c.size()) after method execution? However c is not mutated by the constructor. So we can just use c.size() (the size of original collection). Since c is unchanged, we can just use c.size().
+
+We need to assert that if c != null, then this.size == c.size() + 1. But also note that the constructor may be called with null? The comment says "If the source collection is not null". So we need to assert (c != null) => (this.size == c.size() + 1). Also maybe need to handle case where c is null? In JDK, the constructor throws NullPointerException if c is null. But comment says "If the source collection is not null". So we assert condition only when c != null. But there is also the case where c is null: spec may be vacuously true. So we can write:
+
+assert (c != null) => (this.size == c.size() + 1);
+
+But we need to use appropriate syntax: size is a field; we can refer to this.size. Use `this.size` or just `size`? In previous examples they used method calls like this.getCount(). For fields, they may be accessible. But spec may refer to public method size()? There is a public method size() that returns size. So better use `this.size()` to be safe. The class extends AbstractQueue<E>, which implements size() method. Indeed there is a public int size() method defined earlier. So we can use `this.size()`.
+
+Thus assert: `assert (c != null) => (this.size() == c.size() + 1);`
+
+Need to ensure parentheses: `(c != null) => (this.size() == c.size() + 1)`.
+
+Wrap in code block.
+
+Check if need to use `\old`? Not necessary because c not changed. Could also use `\old(c.size())` but not needed. The rule says to use \old when need original value of expression at beginning of function. Here c is unchanged, but it's okay to use \old. Might be clearer: `assert (c != null) => (this.size() == \old(c.size()) + 1);` However \old(c.size()) may be allowed? In JML, \old can be applied to expressions referencing parameters (they are not changed). It's okay. Use \old for consistency.
+
+Thus final answer:
+
+```java
+assert (c != null) => (this.size() == \old(c.size()) + 1);
+```
+
+assistantfinal<code>assert (c != null) => (this.size() == \old(c.size()) + 1);</code>
+--------------------
+analysisWe need to produce an assert statement for the comment at end of constructor:
+
+```java
+// @@@ If the source collection is not null, the new collection has one more element than the source collection.
+```
+
+We are inside constructor `PriorityQueue(Collection<? extends E> c)`. The comment says: If the source collection is not null, the new collection has one more element than the source collection.
+
+So we need to assert that if c != null then this.size == c.size() + 1? Actually "new collection has one more element than the source collection". The new collection is the constructed PriorityQueue instance. Its size field is `size`. There is a method `size()` returning size. Use `this.size()`? The class extends AbstractQueue and implements size() method defined later (public int size()). So we can use `this.size()` after construction. Use `c.size()` as collection size. Since we are inside constructor, after initialization code, we can refer to `c`. The condition: c != null => this.size() == c.size() + 1.
+
+But need to ensure if source collection is null? It says "If the source collection is not null". So premise: c != null. So assert: c != null => this.size() == c.size() + 1.
+
+Potential nuance: The constructor may also copy elements from collection; but if collection is empty, size should be 0? Actually if collection empty, new collection will have zero elements (since it's just copying). But comment says "If the source collection is not null, the new collection has one more element than the source collection." That seems wrong: The actual priority queue should have same number of elements as source collection, not one more. But maybe they assume that they add something else? However we just follow comment.
+
+Thus we produce:
+
+```java
+assert c != null => this.size() == c.size() + 1;
+```
+
+But need parentheses maybe: `assert (c != null) => (this.size() == c.size() + 1);`
+
+We must use `\old`? Not needed because we compare size after construction vs source collection size before (c unchanged). So fine.
+
+We must ensure we use method `size()` not field. Use `this.size()`.
+
+Thus final answer.
+
+assistantfinal<code>assert (c != null) => (this.size() == c.size() + 1);</code>
+--------------------
+analysisWe need to produce an assert statement corresponding to comment:
+
+```
+// @@@ If the source collection is not null, the new collection has one more element than the source collection.
+```
+
+We are inside constructor `public PriorityQueue(Collection<? extends E> c)`. The comment says: If source collection is not null, the new collection has one more element than the source collection.
+
+We need to refer to size before and after. Since constructor creates a new PriorityQueue object (this). We need to assert that if c != null then this.size == \old(c.size()) + 1? Wait, source collection is not null, but we also need to consider that c may be empty? The specification: "has one more element than the source collection". So size of new queue = size of collection + 1. However, need to be careful: If collection is null, constructor would throw NullPointerException earlier (as per Javadoc). But comment only states if source collection is not null.
+
+In spec we can use \old(c.size())? But c is a parameter; its size doesn't change. \old is for expressions referencing pre-state of the method (i.e., before execution). So we can use c.size() directly, but to be consistent with other examples they use \old for expressions that could change. Since c is not mutated, we may just use c.size(). However, using \old is also okay: \old(c.size()).
+
+We need to assert: c != null => this.size == c.size() + 1.
+
+But note that the constructor may also be called with a collection that is empty, then size = 1? Yes.
+
+So final assert: `assert c != null => this.size == c.size() + 1;`
+
+Make sure syntax: use `=>` with parentheses if needed. Not necessary as left side is simple.
+
+Wrap in `<code>`.
+
+Thus final answer.assistantfinal<code>assert c != null => this.size == c.size() + 1;</code>
+--------------------
+analysisWe need to produce assert statement for comment in constructor:
+
+```java
+public PriorityQueue(Collection<? extends E> c) {
+    if (c instanceof SortedSet<?>) {
+        SortedSet<? extends E> ss = (SortedSet<? extends E>) c;
+        this.comparator = (Comparator<? super E>) ss.comparator();
+        initElementsFromCollection(ss);
+    }
+    else if (c instanceof PriorityQueue<?>) {
+        PriorityQueue<? extends E> pq = (PriorityQueue<? extends E>) c;
+        this.comparator = (Comparator<? super E>) pq.comparator();
+        initFromPriorityQueue(pq);
+    }
+    else {
+        this.comparator = null;
+        initFromCollection(c);
+    }
+    // @@@ If the source collection is not null, the new collection has one more element than the source collection.
+}
+```
+
+We need assert spec: If source collection is not null, the new collection has one more element than source collection. So after construction, size of this PriorityQueue is old size of c plus 1? Actually source collection size is c.size(). The new collection's size is this.size (field). So assert: c != null => this.size == c.size() + 1. However need to use \old for old size? The source collection is unchanged; we can refer to c.size() as old (since c is not modified). But we might need \old(c.size())? The collection may be same object; but not modified during constructor. So we can just use c.size(). But spec may use \old(c.size()) to be safe. Use \old(c.size()).
+
+Thus assert: c != null => this.size == \old(c.size()) + 1;
+
+But also need to consider case when c is null? The constructor may throw NullPointerException earlier? Actually JDK's PriorityQueue(Collection<? extends E> c) throws NullPointerException if c is null. In code, they don't check null; but later initFromCollection(c) will probably throw NPE. However spec only says "If the source collection is not null". So we assert implication.
+
+Thus final answer: `<code>assert c != null => this.size == \old(c.size()) + 1;</code>`
+
+Check syntax: Use `=>` lower priority than `&&`. That's fine.
+
+Make sure to reference size via method size()? There's a method size() returning int. But field size is private? It's package-private (int size). In spec we can use this.size directly? Usually we use this.size() method. But spec may refer to size() method as observer. The rules: Use only publicly accessible observer methods provided in the test function. The method `size()` is public. So we should use `this.size()`. Use `c.size()` as observer of collection.
+
+Thus: `assert c != null => this.size() == \old(c.size()) + 1;`
+
+Return that.
+
+assistantfinal<code>assert c != null => this.size() == \old(c.size()) + 1;</code>
+--------------------
+analysisWe need to produce an assert statement matching the comment.
+
+Comment: "// @@@ If the source collection is not null, the new collection has one more element than the source collection."
+
+We are in constructor PriorityQueue(Collection<? extends E> c). The code: if c instanceof SortedSet... else if c instanceof PriorityQueue... else { this.comparator = null; initFromCollection(c); }
+
+So after constructor finishes, the new queue's size should be one more than source collection size, assuming source collection is not null. The source collection is argument c. Need to refer to size of this queue: size() method returns int. There's method size() defined earlier (public int size()). Use this.size() maybe but size field is private? It's package private int size; but we can use size() method.
+
+We need to use \old to refer to old size of collection? The source collection is not part of this object, so its size before constructor is just c.size(). Since c is not modified by constructor (assuming initFromCollection copies elements). So we can assert: c != null => this.size() == c.size() + 1.
+
+But need to ensure we refer to the collection's size before? Since c unchanged, just c.size(). Use \old? Not needed because c is not modified. However spec says "If the source collection is not null, the new collection has one more element than the source collection." So assert: c != null => this.size() == c.size() + 1.
+
+Edge: If c is null, constructor would throw NullPointerException earlier? Actually not; they didn't check null; but initFromCollection likely throws NPE. But spec only conditionally for non-null.
+
+Thus final assert statement:
+
+<code>assert c != null => this.size() == c.size() + 1;</code>
+
+Make sure syntax: use => operator. Use parentheses maybe: assert (c != null) => (this.size() == c.size() + 1);
+
+Thus final answer.assistantfinal<code>assert (c != null) => (this.size() == c.size() + 1);</code>
+--------------------
