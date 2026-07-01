@@ -201,10 +201,10 @@ def prompt_transform(code, langid, mode="natural"):
 
     assert sum([i != -1 for i in cmnt_idx]) == 1, "too few or many assertions to work on"
 
-    msg = f"Your task is to read {lang} code, and write a natural language assertion that describes a specific logical specification in the code.\n"
+    msg = f"Your task is to read {lang} code and write a natural language assertion that describes a specific logical specification in the code.\n"
     if lang == "java":
-        msg += f"Here are descriptions for some of syntactic symbols in JML logic:\n"
-        msg += f"1. If the assertion is composed by \"=>\" or \"==>\", such as \"A => B\", that means \"A\" implies \"B\".\n"
+        msg += f"Here are descriptions for some syntactic symbols in JML logic:\n"
+        msg += f"1. If the assertion uses \"=>\" or \"==>\", such as \"A => B\", that means \"A\" implies \"B\".\n"
         msg += f"2. \\old(expression) means the value of expression before the method is executed.\n"
         msg += f"3. \\result means the return value of the method.\n"
         msg += f"4. \"\\forall var i; cond; spec\" means that the \"spec\" should hold for all the \"i\" such that \"cond\" holds.\n"

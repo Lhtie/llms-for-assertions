@@ -347,7 +347,7 @@ langmap = {
 
 default = """Your task is to read {0} code and output exactly one assert statement (specification) corresponding to the comment that starts with "@@@". 
 Your statement should accurately reflect the natural language assertion. Make sure to include all relevant details (such as premises, bounds, or branch cases), and avoid leaving out information or adding anything extraneous.
-You can think step by step before coming up with the final answer, but please make sure that your final answer(the {0} code of the assert statement) is displayed in a <code></code> block.\n"""
+You can think step by step before coming up with the final answer, but please make sure that your final answer (the {0} code of the assert statement) is displayed in a <code></code> block.\n"""
 
 def apply_chat_template(mkey, tokenizer, inst, langid, onemsg):
     if onemsg:
@@ -355,7 +355,7 @@ def apply_chat_template(mkey, tokenizer, inst, langid, onemsg):
                 f""" For example, if the code is:\n```{langid}\n{inst[1][0]}\n```\nThe output should be:\n{inst[1][1]}\n"""
         for egid in range(2, len(inst)-1):
             msg += f"Another example:\n```{langid}\n{inst[egid][0]}\n```\nThe output should be:\n{inst[egid][1]}\n"
-        msg += f"Now, read the following {langmap[langid][0]} code and output an assert statement corresponding to the comment that start with \"@@@\".\n"
+        msg += f"Now, read the following {langmap[langid][0]} code and output an assert statement corresponding to the comment that starts with \"@@@\".\n"
         msg += f"```{langid}\n{inst[-1]}\n```"
         msgdict = [{ 'role': 'user', 'content': msg }]
     else:
@@ -385,10 +385,10 @@ def transform(mkey, tid, tokenizer, code, langid, onemsg):
         if langid == "java":
             header += f"Here are some rules and tips:\n"
             header += f"1. If the assert statement needs to access the value of an expression at the beginning of the function, you can use the `\\old(expression)` syntax.\n"
-            header += f"2. To refer to the return value of the method in the assert statement, you can use `\\result` variable.\n"
+            header += f"2. To refer to the return value of the method in the assert statement, you can use the `\\result` variable.\n"
             header += f"3. To write A implies B or B happens if A holds, you may use the `A => B` syntax. Keep in mind that `=>` is binary with exactly two operands, and `=>` has lower priority than operator `&&` and `||` so use parentheses to ensure correct grouping.\n"
-            header += f"4. If the assert statment needs to express that the `spec` should hold for each int variable `i` where `cond` holds, you may use `\\forall int i; cond; spec` syntax.\n"
-            header += f"5. Use only publicly accessible observer methods provided in the test function. (Use `\\result` instead of calling the observer method that is being tested) All function calls in the test function should be of the format `this.func_name(args_list)`.\n"
+            header += f"4. If the assert statement needs to express that the `spec` should hold for each int variable `i` where `cond` holds, you may use the `\\forall int i; cond; spec` syntax.\n"
+            header += f"5. Use only publicly accessible observer methods provided in the test function. (Use `\\result` instead of calling the observer method that is being tested.) All function calls in the test function should be of the format `this.func_name(args_list)`.\n"
 
         else: raise NotImplementedError
         

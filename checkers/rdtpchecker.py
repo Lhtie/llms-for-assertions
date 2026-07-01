@@ -58,7 +58,7 @@ Evaluation principle
 - Ignore superficial wording differences and synonyms of technical terms.
 - Ignore fine-grained details; focus on whether the same structural components are present and aligned, and whether their logical relationships (quantifiers, bounds, predicates, connectives) match.
 - The hypothesis may be imperfectly phrased or not fully "compilable" as a formula; still score based on whether the intended components/structure match.
-- Do not purely evaluate on literal text similarity; Instead, reason about semantic and structure in the context of target code behavior. (the context information is given below)
+- Do not purely evaluate on literal text similarity; instead, reason about semantics and structure in the context of target code behavior. (The context information is given below.)
 
 Scoring (real value in [-1.0, 1.0])
 Interpret the score as a combined measure of:
@@ -82,7 +82,7 @@ Use these anchor points (you may output intermediate values like 0.8, 0.2, -0.3)
 -1.0 Completely Conflicting:
   - The core structure/meaning contradicts the premise and cannot hold simultaneously.
 
-For instances,
+For instance,
 The premise is \"the result of the cloned array is not null.\".
 The hypothesis is \"the result of cloning the array can never be null.\".
 The final answer should be 1.0.
@@ -101,14 +101,14 @@ The final answer should be 0.1.
 
 Here is the context information to help understand the sentences:
 The sentences are assertions in natural language form describing the expected behavior or properties of a piece of {0} code, such as a function or method.
-More specifically, You are given the implementation of a class {1}. Inside this class, there is a method {2}. The following two assertions are both written about the behavior of the method. To help you reason about their relationship, here is some context:
+More specifically, you are given the implementation of a class {1}. Inside this class, there is a method {2}. The following two assertions are both written about the behavior of the method. To help you reason about their relationship, here is some context:
 - The method takes in ({3}) as parameters.
 - {4}
 - The functionality of the method is documented below:
 {5}
 
 Output format:
-- First, breifly explain your reasoning process in 1-3 concise sentences.
+- First, briefly explain your reasoning process in 1-3 concise sentences.
 - Then, output only your decision as real-valued score wrapped in <ans> </ans> tags.
 - Place exactly one score inside the tags. Do not include anything else inside the tags.
 
@@ -166,7 +166,7 @@ Evaluation principle
 - Ignore superficial wording differences and synonyms of technical terms.
 - Ignore fine-grained details; focus on whether the same structural components are present and aligned, and whether their logical relationships (quantifiers, bounds, predicates, connectives) match.
 - The hypothesis may be imperfectly phrased or not fully "compilable" as a formula; still score based on whether the intended components/structure match.
-- Do not purely evaluate on literal text similarity; Instead, reason about semantic and structure in the context of target code behavior. (the context information is given below)
+- Do not purely evaluate on literal text similarity; instead, reason about semantics and structure in the context of target code behavior.
 
 Scoring (real value in [-1.0, 1.0])
 Interpret the score as a combined measure of:
