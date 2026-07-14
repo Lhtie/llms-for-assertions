@@ -5,7 +5,7 @@ import argparse
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from utils.onedown import get_funcs, closing_paren
+from onedown import get_funcs, closing_paren
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Sort methods in each class.")

@@ -1,4 +1,4 @@
-# Artifact for Faithful Autoformalization of Natural Language Assertions
+# Faithful Autoformalization of Natural Language Assertions
 
 This repository contains a Java-only pipeline for generating candidate formal
 assertions from natural-language `@@@` comments, then checking and reporting the
@@ -8,6 +8,7 @@ generated candidates.
 
 - `datasets/`:
   - `c2s_aug/`: Main Java classes source files.
+  - `c2s_aug_sub/`: Subset of Main Java classes source files.
   - `buggyasrts/`: Java source files that contains incorrect or missleading assertions.
   - `buggycodes/`: Java source files that contains twisted buggy code implementations.
   - `naturalness/`: Additional Java classes for naturalness experiments.
@@ -63,7 +64,7 @@ The intended pipeline is:
 Example for one dataset file:
 
 ```bash
-python3 -m utils.dispatch \
+python3 utils/dispatch.py \
   --infile datasets/c2s_aug/ArrayList.java \
   --outdir runs/codes \
   --write \
@@ -103,7 +104,13 @@ runs/results/<model-name>/default-0.0-True/<input-file>
 runs/results/<model-name>/default-0.0-True/<input-file>.extract
 ```
 
-Use `--logprob` if you also want `.logprob` files for `probchecker.py`.
+Tip: add `--logprob` to record token log-probability summaries for each model
+output. This writes an additional `.logprob` file next to the raw response and
+can be used later by `probchecker.py` or `checker.py --checklist prob`.
+
+```bash
+python3 main.py ... --write --logprob
+```
 
 ### 3. Check Candidates
 
@@ -111,7 +118,7 @@ Lightweight validity-only check:
 
 ```bash
 python3 checker.py \
-  --c2s_aug_dir datasets/c2s_aug \
+  --combinedcodesdir datasets/c2s_aug \
   --codedir runs/codes \
   --codelist 0 \
   --resultlist 'runs/results/*/*/' \
@@ -125,7 +132,7 @@ Full default check:
 
 ```bash
 python3 checker.py \
-  --c2s_aug_dir datasets/c2s_aug \
+  --combinedcodesdir datasets/c2s_aug \
   --codedir runs/codes \
   --codelist 0 \
   --resultlist 'runs/results/*/*/' \
@@ -142,7 +149,7 @@ through `--checkerkwargs` under `rdtp_check`:
 
 ```bash
 python3 checker.py \
-  --c2s_aug_dir datasets/c2s_aug \
+  --combinedcodesdir datasets/c2s_aug \
   --codedir runs/codes \
   --codelist 0 \
   --resultlist 'runs/results/*/*/' \
@@ -178,5 +185,4 @@ the report is printed to stdout.
 ## Notes
 
 - The artifact currently supports Java inputs only.
-- `datasets/c2s_aug` is both the support directory name and the Java package name.
 - If API models are used, provide them through a private local module or environment-specific mechanism.

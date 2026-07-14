@@ -4,8 +4,8 @@ import argparse
 import json
 import re
 
-import splitter as splitter
-import onedown as onedown
+import splitter
+import onedown
 
 if __name__ == "__main__":
     import argparse
@@ -43,4 +43,3 @@ if __name__ == "__main__":
     for outfile in outfiles:
         args.infile = outfile
         onedown.onedown(args)
-
