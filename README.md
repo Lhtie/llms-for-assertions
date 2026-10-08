@@ -59,7 +59,7 @@ The intended pipeline is:
 2. Use `main.py` to generate candidate assertions for each prepared input.
 3. Use `checker.py` to check generated candidates and write a report.
 
-### 1. Prepare Inputs
+### 1. Dispatch a Source File
 
 Example for one dataset file:
 
@@ -74,8 +74,8 @@ python3 utils/dispatch.py \
 This writes files such as:
 
 ```text
-runs/codes/ArrayList1.java.0
-runs/codes/ArrayList1onedown.java.1
+runs/codes/c2s_aug.ArrayList1.java.0
+runs/codes/c2s_aug.ArrayList1onedown.java.1
 ```
 
 The final numeric suffix is useful with `--codelist`. For example, `--codelist 0`
@@ -186,3 +186,8 @@ the report is printed to stdout.
 
 - The artifact currently supports Java inputs only.
 - If API models are used, provide them through a private local module or environment-specific mechanism.
+
+## Expecto baseline
+
+See [Expecto Docker and batch commands](baseline/EXPECTO_USAGE_ZH.md), including
+GPT-OSS-120B runs on `buggycodes`, `buggyasrts`, `c2s_aug_sub`, and `naturalness`.

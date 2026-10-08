@@ -1,3 +1,4 @@
+from utils.sourcepaths import java_source_info
 import subprocess
 import os
 import shutil
@@ -221,6 +222,11 @@ def cs_equivcheck(pfx, sfx, grnd_truth, asrt):
     
     return passing_tests == total_tests
 
+def java_equivcheck_passed(returncode, stdout):
+    """Shared result rule for this checker and the Expecto batch adapter."""
+    return returncode == 0 and "No error-revealing tests to output" in stdout
+
+
 def java_equivcheck(pfx, sfx, grnd_truth, asrt, combinedcodes):
     jh = javahelper(pfx + '\n' + sfx)
     jh.fuzz_objname = jh.fuzz_objname + "_new"
@@ -233,7 +239,7 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt, combinedcodes):
     split_addns = split_addns_asrt + split_addns_gt
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
-    package = combinedcodes.split("/")[-1]
+    package, source_root, source_file = java_source_info(combinedcodes, jh.namespace)
     class_generic = jh.classname[jh.classname.find("<"):] if jh.classname.find("<") != -1 else ""
     func_generic = jh.funcs[-1]["generic"]
     func_generic = f" {func_generic}" if func_generic is not None else ""
@@ -273,16 +279,18 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt, combinedcodes):
     jar_files = ":".join(glob.glob(os.path.join(tmp_dir, "*.jar")))
     compile = subprocess.run([
             "javac",
-            "-cp", f"{os.path.dirname(fname)}:{combinedcodes}:{jar_files}",
+            "-cp", f"{tmp_dir}:{source_root}:{jar_files}",
+            "-sourcepath", source_root,
+            "-d", tmp_dir,
             fname,
-            f"{combinedcodes}/{jh.namespace}.java"
+            source_file
         ], stderr=subprocess.DEVNULL)
     if compile.returncode != 0:
         print("!"*10 + " equiv check cannot compile", file=sys.stderr)
         return False
 
     randoop_cmd = [
-        "java", "-classpath", f"{randoop_jar}:{tmp_dir}:{os.path.dirname(combinedcodes)}:{jar_files}",
+        "java", "-classpath", f"{randoop_jar}:{tmp_dir}:{source_root}:{jar_files}",
         "randoop.main.Main", "gentests",
         "--testclass=fuzztests.FuzzTest",
         "--unchecked-exception=ERROR",
@@ -300,7 +308,7 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt, combinedcodes):
         print(proc.stdout)
         return False
     else:
-        if "No error-revealing tests to output" in proc.stdout:
+        if java_equivcheck_passed(proc.returncode, proc.stdout):
             return True
         return False
 

@@ -1,0 +1,16 @@
+predicate spec(param: record[set: record[is_null: bool, length: int, cardinality: int, empty: bool, bits: list[bool], words_low: list[int], words_high: list[int], bytes: list[int]]], entry_self: record[length: int, cardinality: int, empty: bool, bits: list[bool], words_low: list[int], words_high: list[int], bytes: list[int]], exit_self: record[length: int, cardinality: int, empty: bool, bits: list[bool], words_low: list[int], words_high: list[int], bytes: list[int]], ret: nonetype) {
+    (∀(i: int) ::
+        (((0 <= i < entry_self.length) ∧
+            (i < exit_self.length)) ==>
+            (exit_self.bits[i] == (entry_self.bits[i] ∧
+                (¬ GetBit(param.set.bits, i))))))
+}
+
+function GetBit(bits: list[bool], i: int) -> (result: bool) {
+    ensure ((((0 <= i) ∧
+    (i < len(bits))) ==>
+    (result == bits[i])) ∧
+    ((¬ ((0 <= i) ∧
+        (i < len(bits)))) ==>
+        (result == false)));
+}

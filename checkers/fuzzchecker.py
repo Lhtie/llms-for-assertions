@@ -1,3 +1,4 @@
+from utils.sourcepaths import java_source_info
 import subprocess
 import os
 import shutil
@@ -332,7 +333,7 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, combinedcodes, check, time_limit=
     asrt, old_addns, forall_addns, split_addns = jh.trans_formula(asrt)
 
     imports = "\n".join([f"import {x};" for x in jh.imports])
-    package = combinedcodes.split("/")[-1]
+    package, source_root, source_file = java_source_info(combinedcodes, jh.namespace)
     class_generic = jh.classname[jh.classname.find("<"):] if jh.classname.find("<") != -1 else ""
     func_generic = jh.funcs[-1]["generic"]
     func_generic = f" {func_generic}" if func_generic is not None else ""
@@ -372,14 +373,18 @@ def java_fuzzcheck(pfx, sfx, grnd_truth, asrt, combinedcodes, check, time_limit=
     randoop_jar = os.path.join(tmp_dir, "randoop/randoop-all-4.3.3.jar")
     randoop_path = os.path.join(tmp_dir, "randoop")
     jar_files = ":".join(glob.glob(os.path.join(tmp_dir, "*.jar")))    
-    _ = subprocess.run([
+    compiled = subprocess.run([
             "javac",
-            "-cp", f"{os.path.dirname(fname)}:{combinedcodes}:{jar_files}",
+            "-cp", f"{tmp_dir}:{source_root}:{jar_files}",
+            "-sourcepath", source_root,
+            "-d", tmp_dir,
             fname,
-            f"{combinedcodes}/{jh.namespace}.java"
+            source_file
         ], stderr=subprocess.DEVNULL)
+    if compiled.returncode != 0:
+        return False
     randoop_cmd = [
-        "java", "-classpath", f"{randoop_jar}:{tmp_dir}:{os.path.dirname(combinedcodes)}:{jar_files}",
+        "java", "-classpath", f"{randoop_jar}:{tmp_dir}:{source_root}:{jar_files}",
         "randoop.main.Main", "gentests",
         "--testclass=fuzztests.FuzzTest",
         "--unchecked-exception=ERROR",

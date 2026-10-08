@@ -190,7 +190,22 @@ class javahelper(codehelper):
                 buff = []
                 
     def handle_implies(self, asrt):
-        return asrt.replace("==>", "=>").replace("->", "=>").replace("-->", "=>")
+        # Finite DSL quantifiers may use standard Java IntStream predicates.
+        # Keep their lambda arrows; normalize only logical implication arrows.
+        lambda_arrows = {
+            match.start("arrow")
+            for match in re.finditer(
+                r"\.(?:allMatch|anyMatch|filter|map)\(\s*"
+                r"(?:[A-Za-z_$][\w$]*|\(\s*[A-Za-z_$][\w$]*\s*\))\s*"
+                r"(?P<arrow>->)",
+                asrt,
+            )
+        }
+        return re.sub(
+            r"==>|-->|->",
+            lambda match: "->" if match.start() in lambda_arrows else "=>",
+            asrt,
+        )
     
     def handle_old(self, asrt):
         tr = parseTree()

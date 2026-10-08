@@ -16,6 +16,7 @@ import checkers.probchecker as probchecker
 
 from active import run_active
 from utils.problemreader import langmap, read_problem
+from utils.sourcepaths import source_directory
 
 def check_gen(func, failure_result=False, skipped_result=False):
     def f(langid, pfx, sfx, grnd_truth, gen_asrts, cc, mask, checker_kwargs):
@@ -129,6 +130,7 @@ def format_candidate_assertion(label, candidate):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--datasets", default="./datasets", help="Dataset root for group-prefixed input filenames")
     parser.add_argument("--combinedcodesdir", type=str, default="./combinedcodes")
     parser.add_argument("--codedir", type=str, default="./codes")
     parser.add_argument("--codelist", nargs='+', default=[])
@@ -186,7 +188,7 @@ if __name__ == "__main__":
                 except:
                     continue # result extract file doesnt exist
 
-                cc = args.combinedcodesdir
+                cc = source_directory(f, args.datasets, args.combinedcodesdir) if langid == "java" else args.combinedcodesdir
 
                 toprint = f"{'#'*10} {rdir}/{f}.check {'#'*10}\n"
 

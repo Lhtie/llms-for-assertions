@@ -1,0 +1,11 @@
+predicate AllTrueInRange(bits: list[bool], low_excl: int, high_incl: int) {
+    (∀(i: int) ::
+        (((low_excl < i) ∧
+            (i <= high_incl)) ==>
+            (bits[i] == true)))
+}
+
+predicate spec(param: record[fromIndex: int], entry_self: record[length: int, cardinality: int, empty: bool, bits: list[bool], words_low: list[int], words_high: list[int], bytes: list[int], bit_at_fromIndex: bool, bit_at_result: bool], exit_self: record[length: int, cardinality: int, empty: bool, bits: list[bool], words_low: list[int], words_high: list[int], bytes: list[int], bit_at_fromIndex: bool, bit_at_result: bool], ret: int) {
+    ((ret >= 0) ==>
+        AllTrueInRange(entry_self.bits, ret, param.fromIndex))
+}
