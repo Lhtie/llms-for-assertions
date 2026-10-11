@@ -1,5 +1,7 @@
 # 每条 assert 独立生成的 Randoop 状态样例
 
+当前扩展后的 197 条 buggy 样本使用 [buggy-expanded/generation-traces.json](buggy-expanded/generation-traces.json)，采集和状态工厂修正见 [运行报告](buggy-expanded/RUN_REPORT.md)。本目录根部的汇总是迁移前的历史数据。
+
 这些样例的标签由 `datasets/buggycodes`、`datasets/buggyasrts` 各文件的原始 assert 决定，包含故意改错的 assert。`corrects` 表示目标 assert 求值为 true，`incorrects` 表示 false；不表示程序行为正确或错误。生成工具不调用 LLM。
 
 ## 生成过程
@@ -45,7 +47,7 @@ python3 -m baseline.expecto_batch.pipeline run \
   --group buggycodes buggyasrts \
   --output baseline/expecto-results/batch-with-tests \
   --model together/openai/gpt-oss-120b --no-memo \
-  --traces baseline/expecto_batch/testcases/generation-traces.json --require-traces
+  --traces baseline/expecto_batch/testcases/buggy-expanded/generation-traces.json --require-traces
 ```
 
 需要配置模型 key；以上第二条会调用付费模型，本次采集没有运行它。

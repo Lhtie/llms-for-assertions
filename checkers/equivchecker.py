@@ -91,10 +91,29 @@ import java.util.Objects;
 
 import {1}.{2};
 
-public class FuzzTest{3}{{
-    public{4} void FuzzTest_{5}({2}{3} {6}, {2}{3} {7}{8}){{
+public class FuzzTest{{
+    @randoop.TestValue public static final String fuzzSeed0 = "seed0";
+    @randoop.TestValue public static final String fuzzSeed1 = "seed1";
+    @randoop.TestValue public static final String fuzzSeed2 = "seed2";
+    @randoop.TestValue public static final String fuzzOldSeed0 = "old0";
+    @randoop.TestValue public static final String fuzzOldSeed1 = "old1";
+    @randoop.TestValue public static final String fuzzOldSeed2 = "old2";
+    @randoop.TestValue public static final int fuzzIntSeed0 = 0;
+    @randoop.TestValue public static final int fuzzIntSeed1 = 1;
+    @randoop.TestValue public static final int fuzzIntSeed2 = 2;
+
+    @SuppressWarnings("unchecked")
+    public static {2}{16} makeFuzzInput() {{
+        return ({2}{16}) constructSeededObject({2}.class, 0);
+    }}
+
+    public{4} void FuzzTest_{5}({2}{16} {6}, {2}{16} {7}{8}){{
         if ({6} == null || {7} == null) return ;   // ignore null test objects
         
+        // Seed both copies with small valid but distinct states. Comparing only
+        // identical states can hide differences between old- and new-state terms.
+{15}
+
         // copy old values
 {9}
 
@@ -130,6 +149,112 @@ public class FuzzTest{3}{{
 			return null;
 		}}
 	}}
+
+    private static void seedStructure(Object target, String seedPrefix) {{
+        if (target == null) return;
+        java.lang.reflect.Method[] methods = target.getClass().getMethods();
+        java.util.Arrays.sort(methods, java.util.Comparator
+            .comparingInt((java.lang.reflect.Method m) -> seedPriority(m.getName()))
+            .thenComparing(java.lang.reflect.Method::toString));
+        for (java.lang.reflect.Method method : methods) {{
+            String name = method.getName();
+            if (method.isBridge() || method.isSynthetic()) continue;
+            // These operations commonly create useful states for collections,
+            // trees, maps, queues, sets, tries, graphs, and union-find structures.
+            if (!(name.equals("add") || name.equals("addAll") || name.equals("put") ||
+                  name.equals("putAll") || name.equals("offer") ||
+                  name.equals("push") || name.equals("addElement") || name.equals("insert") ||
+                  name.equals("addVertex") || name.equals("addEdge") || name.equals("union") ||
+                  name.equals("set"))) continue;
+            Class<?>[] types = method.getParameterTypes();
+            if (types.length == 0 || types.length > 3) continue;
+            for (int attempt = 0; attempt < 3; attempt++) {{
+                Object[] args = new Object[types.length];
+                boolean supported = true;
+                for (int i = 0; i < types.length; i++) {{
+                    Class<?> type = types[i];
+                    int value = attempt + i;
+                    if (type == String.class || type == Object.class) args[i] = seedPrefix + value;
+                    else if (type.isAssignableFrom(java.util.ArrayList.class) ||
+                             type.isAssignableFrom(java.util.LinkedHashSet.class)) {{
+                        java.util.Collection<Object> values = type.isAssignableFrom(java.util.ArrayList.class)
+                            ? new java.util.ArrayList<>() : new java.util.LinkedHashSet<>();
+                        values.add(seedPrefix + value); values.add(seedPrefix + (value + 10));
+                        args[i] = values;
+                    }} else if (type.isAssignableFrom(java.util.LinkedHashMap.class)) {{
+                        java.util.Map<Object, Object> values = new java.util.LinkedHashMap<>();
+                        values.put(seedPrefix + "key" + value, seedPrefix + "value" + value); args[i] = values;
+                    }} else if (type.isInterface()) {{
+                        supported = false; break;
+                    }} else if (type == int.class || type == Integer.class) args[i] = value;
+                    else if (type == long.class || type == Long.class) args[i] = (long) value;
+                    else if (type == short.class || type == Short.class) args[i] = (short) value;
+                    else if (type == byte.class || type == Byte.class) args[i] = (byte) value;
+                    else if (type == double.class || type == Double.class) args[i] = (double) value;
+                    else if (type == float.class || type == Float.class) args[i] = (float) value;
+                    else if (type == boolean.class || type == Boolean.class) args[i] = (value % 2 == 0);
+                    else if (type == char.class || type == Character.class) args[i] = (char) ('a' + value);
+                    else if (type.isArray()) {{
+                        Object array = java.lang.reflect.Array.newInstance(type.getComponentType(), 1);
+                        Class<?> component = type.getComponentType();
+                        if (component == String.class || component == Object.class) java.lang.reflect.Array.set(array, 0, seedPrefix + value);
+                        else if (component == int.class) java.lang.reflect.Array.setInt(array, 0, value);
+                        else {{ supported = false; break; }}
+                        args[i] = array;
+                    }} else {{ supported = false; break; }}
+                }}
+                if (supported) {{
+                    try {{ method.invoke(target, args); }} catch (ReflectiveOperationException | RuntimeException ignored) {{ }}
+                }}
+            }}
+        }}
+    }}
+
+    private static int seedPriority(String name) {{
+        return name.equals("addVertex") ? 0 : name.equals("add") || name.equals("put") || name.equals("push") ? 1 :
+               name.equals("addEdge") ? 2 : 3;
+    }}
+
+    private static Object constructSeededObject(Class<?> type, int depth) {{
+        if (depth > 4) return null;
+        java.lang.reflect.Constructor<?>[] constructors = type.getConstructors();
+        java.util.Arrays.sort(constructors, java.util.Comparator.comparingInt(java.lang.reflect.Constructor::getParameterCount));
+        for (java.lang.reflect.Constructor<?> constructor : constructors) {{
+            Class<?>[] types = constructor.getParameterTypes();
+            Object[] args = new Object[types.length];
+            boolean supported = true;
+            for (int i = 0; i < types.length; i++) {{
+                Class<?> argType = types[i];
+                if (argType == String.class) args[i] = "";
+                else if (argType == Object.class) args[i] = new Object();
+                else if (argType.isAssignableFrom(java.util.ArrayList.class)) args[i] = new java.util.ArrayList<>();
+                else if (argType.isAssignableFrom(java.util.LinkedHashSet.class)) args[i] = new java.util.LinkedHashSet<>();
+                else if (argType.isAssignableFrom(java.util.LinkedHashMap.class)) args[i] = new java.util.LinkedHashMap<>();
+                else if (argType == int.class || argType == Integer.class) args[i] = 0;
+                else if (argType == long.class || argType == Long.class) args[i] = 0L;
+                else if (argType == short.class || argType == Short.class) args[i] = (short) 0;
+                else if (argType == byte.class || argType == Byte.class) args[i] = (byte) 0;
+                else if (argType == double.class || argType == Double.class) args[i] = 0.0;
+                else if (argType == float.class || argType == Float.class) args[i] = 0.0f;
+                else if (argType == boolean.class || argType == Boolean.class) args[i] = false;
+                else if (argType == char.class || argType == Character.class) args[i] = 'a';
+                else if (argType.isArray()) args[i] = java.lang.reflect.Array.newInstance(argType.getComponentType(), 0);
+                else if (argType.getName().equals("org.jgrapht.Graph")) {{
+                    try {{
+                        Class<?> graphImpl = Class.forName("org.jgrapht.graph.DefaultDirectedGraph");
+                        args[i] = graphImpl.getConstructor(Class.class).newInstance(String.class);
+                    }} catch (ReflectiveOperationException ex) {{ supported = false; break; }}
+                }}
+                else if (argType.isEnum() && argType.getEnumConstants().length > 0) args[i] = argType.getEnumConstants()[0];
+                else if (!argType.isInterface() && !java.lang.reflect.Modifier.isAbstract(argType.getModifiers())) args[i] = constructSeededObject(argType, depth + 1);
+                else {{ supported = false; break; }}
+                if (args[i] == null) {{ supported = false; break; }}
+            }}
+            if (!supported) continue;
+            try {{ return constructor.newInstance(args); }} catch (ReflectiveOperationException | RuntimeException ignored) {{ }}
+        }}
+        return null;
+    }}
 }}
 """
 
@@ -241,6 +366,22 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt, combinedcodes):
     imports = "\n".join([f"import {x};" for x in jh.imports])
     package, source_root, source_file = java_source_info(combinedcodes, jh.namespace)
     class_generic = jh.classname[jh.classname.find("<"):] if jh.classname.find("<") != -1 else ""
+    # Randoop cannot generate method calls when the test class exposes unresolved
+    # type variables. Specialize class type parameters to concrete, commonly
+    # constructible types so it can instantiate the harness and its receivers.
+    type_substitutions = {}
+    class_type_args = ""
+    if class_generic:
+        declarations = class_generic[1:-1].split(",")
+        concrete_types = []
+        for declaration in declarations:
+            parts = declaration.strip().split(None, 2)
+            variable = parts[0]
+            bound = " ".join(parts[1:])
+            concrete = "Integer" if re.search(r"\b(Number|Integer|Long|Double|Float)\b", bound) else "String"
+            type_substitutions[variable] = concrete
+            concrete_types.append(concrete)
+        class_type_args = "<" + ", ".join(concrete_types) + ">"
     func_generic = jh.funcs[-1]["generic"]
     func_generic = f" {func_generic}" if func_generic is not None else ""
     objarg_new = jh.fuzz_objname
@@ -256,8 +397,12 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt, combinedcodes):
     code = javacode.format(
         imports, package, jh.namespace, class_generic, func_generic, jh.funcname,
         objarg_old, objarg_new, funcargs, old_addns, forall_addns,
-        split_addns, f"({asrt}) == ({grnd_truth})", "", "true"
+        split_addns, f"({asrt}) == ({grnd_truth})", "", "true",
+        f"seedStructure({objarg_old}, \"old\");\n        if ({objarg_new} != {objarg_old}) seedStructure({objarg_new}, \"seed\");",
+        class_type_args
     )
+    for variable, concrete in type_substitutions.items():
+        code = re.sub(rf"\b{re.escape(variable)}\b", concrete, code)
 
     if os.path.exists(tmp_dir):
         shutil.rmtree(tmp_dir)
@@ -274,19 +419,39 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt, combinedcodes):
     with open(fname, "w") as fd:
         fd.write(code)
 
+    factory_check = os.path.join(tmp_dir, "fuzztests/FactoryCheck.java")
+    with open(factory_check, "w") as fd:
+        fd.write("""package fuzztests;
+public class FactoryCheck {
+    public static void main(String[] args) {
+        Object first = FuzzTest.makeFuzzInput();
+        Object second = FuzzTest.makeFuzzInput();
+        if (first == null || second == null || first == second) System.exit(2);
+    }
+}
+""")
+
     randoop_jar = os.path.join(tmp_dir, "randoop/randoop-all-4.3.3.jar")
     randoop_path = os.path.join(tmp_dir, "randoop")
     jar_files = ":".join(glob.glob(os.path.join(tmp_dir, "*.jar")))
     compile = subprocess.run([
             "javac",
-            "-cp", f"{tmp_dir}:{source_root}:{jar_files}",
+            "-cp", f"{tmp_dir}:{source_root}:{jar_files}:{randoop_jar}",
             "-sourcepath", source_root,
             "-d", tmp_dir,
             fname,
+            factory_check,
             source_file
         ], stderr=subprocess.DEVNULL)
     if compile.returncode != 0:
         print("!"*10 + " equiv check cannot compile", file=sys.stderr)
+        return False
+
+    factory_proc = subprocess.run([
+        "java", "-classpath", f"{tmp_dir}:{source_root}:{jar_files}:{randoop_jar}",
+        "fuzztests.FactoryCheck"
+    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if factory_proc.returncode != 0:
         return False
 
     randoop_cmd = [
@@ -294,6 +459,7 @@ def java_equivcheck(pfx, sfx, grnd_truth, asrt, combinedcodes):
         "randoop.main.Main", "gentests",
         "--testclass=fuzztests.FuzzTest",
         "--unchecked-exception=ERROR",
+        "--forbid-null=true",
         "--time-limit=30",
         "--no-error-revealing-tests=false",
         "--no-regression-tests=true",

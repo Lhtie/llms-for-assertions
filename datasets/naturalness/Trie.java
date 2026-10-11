@@ -73,11 +73,11 @@ public class Trie {
         // @@@ If the word is already present, then addition is trivial and the size of the trie remains the same
         // assert word!=null&&\old(this.contains(word)) => this.size()==\old(this.size());
         // @@@ After addition the trie not only contains the inserted word but all its nontrivial prefixes as well
-        // assert word!=null => \forall int i; 1<=i&&i<=word.length(); this.startsWith(word.substring(0,i))==true;
+        // assert word!=null => \forall int i; 1<=i&&i<=word.codePointCount(0,word.length()); this.startsWith(word.substring(0,word.offsetByCodePoints(0,i)))==true;
         // @@@ If a new word is added, the number of words sharing the prefix goes up by 1 for each prefix of the added word
-        // assert word!=null&&!\old(this.contains(word)) => \forall int i; 1<=i&&i<=word.length(); this.countPrefix(word.substring(0,i))==\old(this.countPrefix(word.substring(0,i)))+1;
+        // assert word!=null&&!\old(this.contains(word)) => \forall int i; 1<=i&&i<=word.codePointCount(0,word.length()); this.countPrefix(word.substring(0,word.offsetByCodePoints(0,i)))==\old(this.countPrefix(word.substring(0,word.offsetByCodePoints(0,i))))+1;
         // @@@ After insertion, if we query the set of all words starting with w for any prefix w of the inserted word, then the inserted word must be part of the result
-        // assert word!=null => \forall int i; 1<=i&&i<=word.length(); this.keysWithPrefix(word.substring(0,i)).contains(word);
+        // assert word!=null => \forall int i; 1<=i&&i<=word.codePointCount(0,word.length()); this.keysWithPrefix(word.substring(0,word.offsetByCodePoints(0,i))).contains(word);
     }
 
     /**
@@ -144,9 +144,9 @@ public class Trie {
         // @@@ If you try to remove a word that's not present in the trie its size remains the same
         // assert word!=null&&!\old(this.contains(word)) => this.size()==\old(this.size());
         // @@@ if the word is not null and present in the trie, all of the number of strings contained in the trie that start with each prefix of the given word should decrease by 1 after the remove operation.
-        // assert word!=null&&\old(this.contains(word)) => \forall int i; 1<=i&&i<=word.length(); this.countPrefix(word.substring(0,i))==\old(this.countPrefix(word.substring(0,i)))-1;
+        // assert word!=null&&\old(this.contains(word)) => \forall int i; 1<=i&&i<=word.codePointCount(0,word.length()); this.countPrefix(word.substring(0,word.offsetByCodePoints(0,i)))==\old(this.countPrefix(word.substring(0,word.offsetByCodePoints(0,i))))-1;
         // @@@ The removed word can no longer be found as a completion of any of its prefixes
-        // assert word!=null => \forall int i; 1<=i&&i<=word.length(); !this.keysWithPrefix(word.substring(0,i)).contains(word);
+        // assert word!=null => \forall int i; 1<=i&&i<=word.codePointCount(0,word.length()); !this.keysWithPrefix(word.substring(0,word.offsetByCodePoints(0,i))).contains(word);
     }
 
     /**

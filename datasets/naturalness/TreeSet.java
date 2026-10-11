@@ -416,12 +416,12 @@ public class TreeSet<E> extends AbstractSet<E>
     public E pollFirst() {
         Map.Entry<E,?> e = m.pollFirstEntry();
         return (e == null) ? null : e.getKey();
-        // @@@ If the set is empty, the return value is null. Otherwise, the method always returns a valid value
-        // assert (\result==null) == \old(this.isEmpty());
+        // @@@ If the set is empty, the return value is null
+        // assert \old(this.isEmpty()) => \result==null;
         // @@@ Returns the lowest value in the set
-        // assert \result!=null => \result.equals(\old(this.first()));
+        // assert !\old(this.isEmpty()) => java.util.Objects.equals(\result,\old(this.first()));
         // @@@ Returned value is removed from the set
-        // assert \result!=null => !this.contains(\result);
+        // assert !\old(this.isEmpty()) => !this.contains(\result);
     }
 
     /**
@@ -430,12 +430,12 @@ public class TreeSet<E> extends AbstractSet<E>
     public E pollLast() {
         Map.Entry<E,?> e = m.pollLastEntry();
         return (e == null) ? null : e.getKey();
-        // @@@ The result is null if and only if the set is empty
-        // assert (\result==null) == \old(this.isEmpty());
+        // @@@ If the set is empty, the result is null
+        // assert \old(this.isEmpty()) => \result==null;
         // @@@ Result is the highest value in the set
-        // assert \result!=null => \result.equals(\old(this.last()));
+        // assert !\old(this.isEmpty()) => java.util.Objects.equals(\result,\old(this.last()));
         // @@@ The returned value no longer belongs to the set
-        // assert \result!=null => !this.contains(\result);
+        // assert !\old(this.isEmpty()) => !this.contains(\result);
     }
 
     /**

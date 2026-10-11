@@ -112,6 +112,25 @@ can be used later by `probchecker.py` or `checker.py --checklist prob`.
 python3 main.py ... --write --logprob
 ```
 
+Together AI's Qwen2.5-Coder-32B-Instruct can be selected with the `qw25-coder-api`
+model key. Set `TOGETHER_API_KEY` in the environment. If your Together account
+uses a dedicated endpoint, set `TOGETHER_QWEN25_CODER_MODEL` to its model/endpoint
+identifier before running:
+
+```bash
+export TOGETHER_API_KEY="..."
+export TOGETHER_QWEN25_CODER_MODEL="Qwen/Qwen2.5-Coder-32B-Instruct"
+python3 main.py \
+  --codedir runs/codes \
+  --resultdir runs/results \
+  --modellist qw25-coder-api \
+  --nsamples 3 \
+  --write
+```
+
+The model id can be overridden because Together currently lists this model under
+dedicated deployment and marks it as launching soon for general availability.
+
 ### 3. Check Candidates
 
 Lightweight validity-only check:
@@ -138,6 +157,22 @@ python3 checker.py \
   --resultlist 'runs/results/*/*/' \
   --checklist default \
   --outdir runs/checks \
+  --write
+```
+
+To rerun only active selection from an existing checker report, pass that report
+with `--active-from-check-file`. The prior validity and conformance fields are
+read from the report and preserved; only active selection is rerun. Set
+`--codedir` to the same directory of per-example source files used for the
+original check:
+
+```bash
+python3 checker.py \
+  --active-from-check-file runs/checks/previous-report.txt \
+  --codedir runs/codes \
+  --datasets datasets \
+  --combinedcodesdir datasets/c2s_aug \
+  --outdir runs/checks/active-rerun \
   --write
 ```
 

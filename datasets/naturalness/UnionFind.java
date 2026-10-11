@@ -51,11 +51,11 @@ public class UnionFind<T>
         rankMap.put(element, 0);
         count++;
         // @@@ If the element was not already present then the size goes up by 1
-        // assert !this.contains(element) => this.size()==\old(this.size())+1;
+        // assert !\old(this.contains(element)) => this.size()==\old(this.size())+1;
         // @@@ The additon of any element also adds a new set to the number of sets present
-        // assert !this.contains(element) => this.numberOfSets()==\old(this.numberOfSets())+1;
+        // assert !\old(this.contains(element)) => this.numberOfSets()==\old(this.numberOfSets())+1;
         // @@@ If the element was not already present the newly added element is added as a singleton set
-        // assert !this.contains(element) => element.equals(this.find(element));
+        // assert !\old(this.contains(element)) => element.equals(this.find(element));
         // @@@ The structure now contains the added element
         // assert this.contains(element);
     }
@@ -152,11 +152,11 @@ public class UnionFind<T>
         }
         count--;
         // @@@ The total number of elements remains the same
-        // assert this.contains(element1)&&this.contains(element2) => this.size()==\old(this.size());
-        // @@@ The number of sets decreases by 1
-        // assert this.contains(element1)&&this.contains(element2) => this.numberOfSets()==\old(this.numberOfSets())-1;
+        // assert \old(this.contains(element1))&&\old(this.contains(element2)) => this.size()==\old(this.size());
+        // @@@ The number of sets decreases by 1 when the elements were in different sets
+        // assert \old(this.contains(element1))&&\old(this.contains(element2))&&!\old(this.inSameSet(element1, element2)) => this.numberOfSets()==\old(this.numberOfSets())-1;
         // @@@ The representative elements will now be in the same set after union
-        // assert this.contains(element1)&&this.contains(element2) => this.inSameSet(element1, element2);
+        // assert \old(this.contains(element1))&&\old(this.contains(element2)) => this.inSameSet(element1, element2);
     }
 
     /**
@@ -172,14 +172,14 @@ public class UnionFind<T>
     }
 
     /**
-     * Returns the number of sets. Initially, all items are in their own set. The smallest number of
-     * sets equals one.
+     * Returns the number of sets. Initially, all items are in their own set. The count is zero for
+     * an empty data structure and at least one otherwise.
      * 
      * @return the number of sets
      */
     public int numberOfSets()
     {
-        assert count >= 1 && count <= parentMap.keySet().size();
+        assert count >= 0 && count <= parentMap.keySet().size();
         return count;
     }
 

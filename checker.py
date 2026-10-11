@@ -6,6 +6,7 @@ import subprocess
 import re
 import traceback
 import json
+import ast
 
 import checkers.nullchecker as nullchecker
 import checkers.compilechecker as compilechecker
@@ -14,7 +15,7 @@ import checkers.rdtpchecker as rdtpchecker
 import checkers.equivchecker as equivchecker
 import checkers.probchecker as probchecker
 
-from active import run_active
+from active import run_active_selection
 from utils.problemreader import langmap, read_problem
 from utils.sourcepaths import source_directory
 
@@ -92,25 +93,6 @@ def format_prob_field(score, field):
         return str(value)
     return f"{value:.6g}"
 
-def select_best(gen_asrts, validity_scores, conformance_scores, equivalence_scores,
-                target_validity, candidate_mask=None):
-    best = None
-    for i, (asrt, validity, conformance, equivalence) in enumerate(
-            zip(gen_asrts, validity_scores, conformance_scores, equivalence_scores)):
-        if candidate_mask is not None and not candidate_mask[i]:
-            continue
-        if validity != target_validity or conformance is None:
-            continue
-        if best is None or conformance > best["conformance"]:
-            best = {
-                "index": i,
-                "validity": validity,
-                "conformance": conformance,
-                "equivalence": equivalence,
-                "assert": asrt,
-            }
-    return best
-
 def format_best_candidate(label, candidate):
     if candidate is None:
         return f"{label}: None\n"
@@ -123,10 +105,156 @@ def format_best_candidate(label, candidate):
         f"  assert: {candidate['assert']}\n"
     )
 
-def format_candidate_assertion(label, candidate):
-    if candidate is None:
-        return f"{label}: None\n"
-    return f"{label}: {candidate['assert']}\n"
+
+def parse_report_value(block, field):
+    match = re.search(rf"(?m)^{re.escape(field)}:\s*(.*?)\s*$", block)
+    if not match:
+        return None
+    value_text = match.group(1)
+    if value_text.startswith("["):
+        array_match = re.match(r"(\[.*?\])", value_text)
+        if array_match:
+            value_text = array_match.group(1)
+    try:
+        return ast.literal_eval(value_text)
+    except (SyntaxError, ValueError):
+        return None
+
+
+def replace_active_report_section(block, active_output):
+    """Keep old checker results while replacing any previously reported active output."""
+    lines = block.splitlines()
+    kept = []
+    skip_final_candidate = False
+    inserted_active = False
+    for line in lines:
+        if line.startswith("final_best_candidate:"):
+            skip_final_candidate = True
+            continue
+        if skip_final_candidate:
+            if line.startswith("####################") or line.startswith("########## "):
+                skip_final_candidate = False
+            else:
+                continue
+        if line.startswith((
+            "active_conformance_threshold:", "active_candidates:",
+            "active_candidate_pool", "active_tournament:", "active_decision:",
+            "validity_fail_best_conf:", "validity_pass_best_conf:", "active_error:",
+        )):
+            continue
+        if line.startswith("####################") and not inserted_active:
+            kept.extend(active_output.splitlines())
+            inserted_active = True
+        kept.append(line)
+    if not inserted_active:
+        kept.extend(active_output.splitlines())
+    while kept and not kept[-1].strip():
+        kept.pop()
+    return "\n".join(kept) + "\n"
+
+
+def format_active_output(candidates, final_candidate, tournament_matches, threshold):
+    output = [f"active_conformance_threshold: {threshold}"]
+    if candidates:
+        pool = ", ".join(
+            f"{candidate['index']}:{format_score(candidate['conformance'])}"
+            for candidate in candidates
+        )
+    else:
+        pool = "None"
+    output.append(f"active_candidates (index:conformance, ascending): {pool}")
+    match_summaries = []
+    for match in tournament_matches:
+        if "bye" in match:
+            match_summaries.append(f"r{match['round']}: {match['bye']} bye")
+        else:
+            match_summaries.append(
+                f"r{match['round']}: {match['left']} vs {match['right']}"
+                f" -> {match['winner']} ({match['reason']})"
+            )
+    output.append("active_tournament: " + ("; ".join(match_summaries) if match_summaries else "no matches"))
+    output.append(
+        f"active_decision: candidate_{final_candidate['index']}"
+        if final_candidate is not None else "active_decision: None"
+    )
+    output.append(format_best_candidate("final_best_candidate", final_candidate).rstrip())
+    return "\n".join(output)
+
+
+def rerun_active_from_check_file(check_file, codedir, datasets, combinedcodesdir,
+                                 checker_kwargs, threshold_override=None):
+    """Rerun only active for entries in a prior checker report."""
+    report = open(check_file, "r").read()
+    lines = report.splitlines(keepends=True)
+    entries = []
+    current = []
+    header_pattern = re.compile(r"^#{10}\s+(.*?)\s+#{10}\s*$")
+    for line in lines:
+        if header_pattern.match(line.rstrip("\n")):
+            if current:
+                entries.append("".join(current))
+            current = [line]
+        elif current:
+            current.append(line)
+    if current:
+        entries.append("".join(current))
+
+    updated_entries = []
+    for block in entries:
+        header = header_pattern.match(block.splitlines()[0])
+        result_path = header.group(1).removesuffix(".check")
+        filename = os.path.basename(result_path)
+        result_dir = os.path.dirname(result_path)
+        source_path = os.path.join(codedir, filename)
+        extract_path = os.path.join(result_dir, filename + ".extract")
+        try:
+            with open(source_path, "r") as source_fd:
+                source = source_fd.read()
+            with open(extract_path, "r") as extract_fd:
+                gen_asrts = [x.strip() for x in extract_fd.read().split("-" * 20)[:-1]]
+        except OSError as exc:
+            updated_entries.append(block.rstrip() + f"\nactive_error: {exc}\n")
+            continue
+
+        langid = filename.split(".")[-2]
+        if langid != "java":
+            updated_entries.append(block.rstrip() + "\nactive_error: active rerun currently supports Java only\n")
+            continue
+        _, _, groundtruth = read_problem(source, langid)
+        null_results = parse_report_value(block, "null_check")
+        compile_results = parse_report_value(block, "compile_check")
+        validity_scores = parse_report_value(block, "validity_scores")
+        conformance_scores = parse_report_value(block, "conformance_scores")
+        equivalence_scores = parse_report_value(block, "equiv_res")
+        expected_size = len(gen_asrts)
+        if (not all(isinstance(values, list) and len(values) >= expected_size for values in
+                    (null_results, compile_results, validity_scores, conformance_scores))):
+            updated_entries.append(
+                block.rstrip() + "\nactive_error: report lacks aligned null/compile/validity/conformance arrays\n"
+            )
+            continue
+        if not isinstance(equivalence_scores, list) or len(equivalence_scores) < expected_size:
+            equivalence_scores = [None] * expected_size
+        candidate_mask = [bool(null_results[i]) and bool(compile_results[i]) for i in range(expected_size)]
+        threshold = threshold_override
+        if threshold is None:
+            threshold = parse_report_value(block, "active_conformance_threshold")
+        if threshold is None:
+            threshold = checker_kwargs.get("rdtp_check", {}).get(
+                "threshold", rdtpchecker.configs.get(langid, {}).get("threshold", 0.6)
+            )
+        combinedcodes = source_directory(filename, datasets, combinedcodesdir)
+        pfx, sfx, _ = read_problem(source, langid)
+        candidates, winner, matches = run_active_selection(
+            pfx + "\n" + sfx, groundtruth, combinedcodes, gen_asrts,
+            conformance_scores, equivalence_scores, validity_scores,
+            candidate_mask, threshold,
+            outdir=os.path.join("./checktmp/active/rerun", filename), rounds=2,
+        )
+        updated_entries.append(replace_active_report_section(
+            block, format_active_output(candidates, winner, matches, threshold)
+        ))
+    return "".join(updated_entries)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -140,6 +268,10 @@ if __name__ == "__main__":
     parser.add_argument("--outname", type=str, default="")
     parser.add_argument("--mask", nargs='+', default=[])
     parser.add_argument("--checkerkwargs", type=str, default="")
+    parser.add_argument("--active-from-check-file", type=str, default="",
+                        help="Rerun active selection from a prior checker report without rerunning checks")
+    parser.add_argument("--active-threshold", type=float, default=None,
+                        help="Override the conformance threshold for active-only reruns")
     parser.add_argument("--checklist", nargs='+', default=["default"], choices=["default", "valid", "conf", "equiv", "prob"])
     
     args = parser.parse_args()
@@ -152,6 +284,24 @@ if __name__ == "__main__":
     run_equiv = run_default or "equiv" in args.checklist
     run_prob = "prob" in args.checklist
     checker_kwargs_map = parse_checker_kwargs(args.checkerkwargs)
+
+    if args.active_from_check_file:
+        active_report = rerun_active_from_check_file(
+            args.active_from_check_file,
+            args.codedir,
+            args.datasets,
+            args.combinedcodesdir,
+            checker_kwargs_map,
+            threshold_override=args.active_threshold,
+        )
+        output_name = args.outname or (os.path.basename(args.active_from_check_file) + ".active.txt")
+        if args.write:
+            os.makedirs(args.outdir, exist_ok=True)
+            with open(os.path.join(args.outdir, output_name), "w") as outfd:
+                outfd.write(active_report)
+        else:
+            print(active_report, end="")
+        sys.exit(0)
 
     if args.outname: outname = args.outname
     else: 
@@ -255,39 +405,50 @@ if __name__ == "__main__":
                         bool_mask(valid_results["null_check"]),
                         bool_mask(valid_results["compile_check"]),
                     )
-                    best_fail = select_best(
-                        gen_asrts, validity_scores, conformance_scores, equiv_res, 0,
-                        compiled_candidate_mask,
+                    threshold = checker_kwargs_map.get("rdtp_check", {}).get(
+                        "threshold", rdtpchecker.configs.get(langid, {}).get("threshold", 0.6)
                     )
-                    best_pass = select_best(
-                        gen_asrts, validity_scores, conformance_scores, equiv_res, 1,
+                    active_candidates, final_candidate, tournament_matches = run_active_selection(
+                        pfx + "\n" + sfx,
+                        grnd_truth,
+                        cc,
+                        gen_asrts,
+                        conformance_scores,
+                        equiv_res,
+                        validity_scores,
                         compiled_candidate_mask,
+                        threshold,
+                        outdir="./checktmp/active/tournament",
+                        rounds=2,
                     )
-                    toprint += format_candidate_assertion("validity_fail_best_conf", best_fail)
-                    toprint += format_candidate_assertion("validity_pass_best_conf", best_pass)
+                    toprint += f"active_conformance_threshold: {threshold}\n"
+                    toprint += "active_candidates (index:conformance, ascending): "
+                    if active_candidates:
+                        toprint += ", ".join(
+                            f"{candidate['index']}:{format_score(candidate['conformance'])}"
+                            for candidate in active_candidates
+                        ) + "\n"
+                    else:
+                        toprint += "None\n"
 
-                    final_candidate = None
-                    if best_fail is not None and best_pass is not None:
-                        active_decision = run_active(
-                            pfx + "\n" + sfx,
-                            grnd_truth,
-                            cc,
-                            best_fail["assert"],
-                            best_pass["assert"],
-                            rounds=2,
-                            outdir="./checktmp/active",
-                            left_label="invalid",
-                            right_label="valid",
-                        )
-                        if active_decision == "invalid":
-                            final_candidate = best_fail
-                        elif active_decision == "valid":
-                            final_candidate = best_pass
-                        toprint += f"active_decision: {active_decision}\n"
-                    elif best_fail is not None:
-                        final_candidate = best_fail
-                    elif best_pass is not None:
-                        final_candidate = best_pass
+                    match_summaries = []
+                    for match in tournament_matches:
+                        if "bye" in match:
+                            match_summaries.append(
+                                f"r{match['round']}: {match['bye']} bye"
+                            )
+                        else:
+                            match_summaries.append(
+                                f"r{match['round']}: {match['left']} vs {match['right']}"
+                                f" -> {match['winner']} ({match['reason']})"
+                            )
+                    toprint += "active_tournament: " + (
+                        "; ".join(match_summaries) if match_summaries else "no matches"
+                    ) + "\n"
+                    toprint += (
+                        f"active_decision: candidate_{final_candidate['index']}\n"
+                        if final_candidate is not None else "active_decision: None\n"
+                    )
 
                     toprint += format_best_candidate("final_best_candidate", final_candidate)
 

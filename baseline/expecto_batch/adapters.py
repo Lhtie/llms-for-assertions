@@ -3,11 +3,15 @@
 This is a restricted input domain, not a claim to cover arbitrary generic E.
 """
 
-SUPPORTED = {"ArrayList", "ArrayDeque", "Vector", "Stack", "HashSet", "PriorityQueue", "TreeSet"}
+SUPPORTED = {"ArrayList", "ArrayDeque", "Vector", "Stack", "HashSet", "PriorityQueue", "TreeSet", "ArrayStack", "CircularFifoQueue", "FixedArrayList", "LinkedList", "ListOrderedSet", "TreeList"}
 
 
 def adapt(row):
     from .extended_adapters import EXTENDED, adapt_extended
+    from .object_adapters import OBJECT_CLASSES, adapt_objects
+
+    if row["class_name"] in OBJECT_CLASSES:
+        return adapt_objects(row)
 
     if row["class_name"] in EXTENDED:
         return adapt_extended(row)
@@ -34,6 +38,12 @@ def adapt(row):
         expression(path + ".empty", f"{owner}.isEmpty()")
         sequence(path + ".elements", owner)
         fields = "size: int, empty: bool, elements: list[option[int]]"
+        if row["group"] == "c2s_aug" and path in {"entry_self", "exit_self"}:
+            for arg in row["parameters"]:
+                if arg["type"].startswith("Collection"):
+                    name = arg["name"]
+                    expression(path + ".equals_" + name, f"{owner}.equals({name})")
+                    fields += f", equals_{name}: bool"
         if nullable:
             expression(path + ".is_null", f"{owner} == null")
             fields = "is_null: bool, " + fields
@@ -54,6 +64,20 @@ def adapt(row):
             dtype = "option[int]"
             jtype = "Integer"
             expression(path, name)
+        elif typ == "float":
+            dtype = "record[positive: bool, is_nan: bool]"
+            jtype = "float"
+            expression(path + ".positive", f"({name}>0)")
+            expression(path + ".is_nan", f"Float.isNaN({name})")
+        elif typ.startswith("Comparator<"):
+            dtype = "record[is_null: bool]"
+            jtype = "java.util.Comparator<Integer>"
+            expression(path + ".is_null", f"{name}==null")
+        elif typ in {"T[]", "E[]", "Object[]"}:
+            dtype = "record[is_null: bool, elements: list[option[int]]]"
+            jtype = "Integer[]"
+            expression(path + ".is_null", f"{name}==null")
+            sequence(path + ".elements", name, array=True)
         elif typ.startswith("Collection"):
             dtype = collection(path, name, nullable=True)
             jtype = "java.util.Collection<Integer>"
@@ -83,7 +107,7 @@ def adapt(row):
         result = "bool"
     elif ret == "int":
         result = "int"
-    elif ret in {"Object[]", "E[]"}:
+    elif ret in {"Object[]", "E[]", "T[]"}:
         result = "record[is_null: bool, elements: list[option[int]]]"
         java_ret = "Integer[]"
         expression("ret.is_null", r"\result == null")

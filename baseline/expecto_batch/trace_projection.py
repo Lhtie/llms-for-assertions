@@ -101,8 +101,8 @@ def instrumented_harness(row, adapter, helpers, collection_probe=None):
     end = code.index(' static Boolean eval(', body)
     check = f'''
   try {{
-   boolean a={expression(row['ground_truth'])};
-   emit(a,{old},{new},{ret},new Object[]{{{','.join(params)}}});
+   boolean __expecto_tc_label={expression(row['ground_truth'])};
+   emit(__expecto_tc_label,{old},{new},{ret},new Object[]{{{','.join(params)}}});
    valid++;
   }} catch(Exception problem) {{ failure(problem); errors++; }}
  }}

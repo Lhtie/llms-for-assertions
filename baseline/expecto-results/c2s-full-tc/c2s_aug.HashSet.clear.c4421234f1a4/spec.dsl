@@ -1,0 +1,1 @@
+predicate spec(param: record[], entry_self: record[size: int, empty: bool, elements: list[option[int]]], exit_self: record[size: int, empty: bool, elements: list[option[int]]], ret: nonetype) : "Translate this description into an equivalent Expecto DSL spec: The set is empty after this method is called.. Express only the stated property; use the method code only as context."

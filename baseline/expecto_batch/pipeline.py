@@ -44,10 +44,14 @@ def prepare(args):
     for group in dict.fromkeys(groups):
         for source in sorted((args.datasets / group).rglob("*.java")):
             found = scan(source, args.datasets)
+            extracted_count = len(found)
+            if group == "c2s_aug":
+                found = [r for r in found if r.get("description")]
             rows.extend(found)
             inventory.append(
                 dict(
-                    source=str(source.relative_to(args.datasets)), assertions=len(found)
+                    source=str(source.relative_to(args.datasets)), assertions=len(found),
+                    ignored_without_description=extracted_count-len(found)
                 )
             )
     if not inventory:
@@ -319,7 +323,7 @@ def main():
     )
     p.add_argument(
         "--group", nargs="+",
-        choices=["buggycodes", "buggyasrts", "c2s_aug_sub", "naturalness"],
+        choices=["buggycodes", "buggyasrts", "c2s_aug_sub", "c2s_aug", "naturalness"],
         help="Explicit dataset groups; required for prepare and run.",
     )
     p.add_argument("--class", dest="class_name")

@@ -1,0 +1,86 @@
+analysisWe need to write an assert statement that matches the comment: "After removing from a non-empty priority queue, the new head is no greater than the old head."
+
+We are in method poll(). It returns the removed element (head). We need to assert that if the queue was non-empty before removal, then after removal the new head (if any) is <= old head according to ordering (natural or comparator). Need to express using this.comparator perhaps. Use observer methods: peek() returns head without removing. Also size() returns size. We can use \old(this.peek()) to get old head. After removal, new head is this.peek(). Need to compare them using ordering.
+
+Comparison: If comparator is null, use natural ordering: i.e., ((Comparable) newHead).compareTo(oldHead) <= 0? Wait condition: new head is no greater than old head. That means newHead <= oldHead (i.e., newHead.compareTo(oldHead) <= 0). If comparator present, use comparator.compare(newHead, oldHead) <= 0.
+
+Also need to handle case where after removal queue becomes empty: then new head is null. In that case the condition maybe vacuously true? The comment says after removing from a non-empty priority queue, the new head is no greater than the old head. If queue becomes empty, there is no new head, maybe condition holds trivially. Could assert that either size after removal ==0 or compare <=0.
+
+Thus assert expression: (\old(this.size()) > 0) => (this.size() == 0 || (\old(this.comparator()) == null ? ((Comparable) this.peek()).compareTo(\old(this.peek())) <= 0 : this.comparator().compare(this.peek(), \old(this.peek())) <= 0))
+
+But need to use observer methods: this.comparator() returns Comparator<? super E>. So we can call this.comparator().compare(...). However need to ensure null check.
+
+Also need to access old peek: \old(this.peek()). Since poll removes head, old peek is same as result maybe, but we can use \old(this.peek()).
+
+Edge: If old size >0, old peek not null. After removal, this.peek() may be null if size==0; we need to avoid calling compare on null. So include condition that this.peek() != null.
+
+Thus final assert:
+
+assert (\old(this.size()) > 0) => (this.peek() == null || (\old(this.comparator()) == null ? ((Comparable) this.peek()).compareTo(\old(this.peek())) <= 0 : this.comparator().compare(this.peek(), \old(this.peek())) <= 0));
+
+Need to ensure casting to Comparable<E>. Use raw cast: ((Comparable) this.peek()).
+
+Return type of comparator compare is int.
+
+Thus final answer.
+
+assistantfinal<code>assert (\old(this.size()) > 0) => (this.peek() == null || (\old(this.comparator()) == null ? ((Comparable) this.peek()).compareTo(\old(this.peek())) <= 0 : this.comparator().compare(this.peek(), \old(this.peek())) <= 0));</code>
+--------------------
+analysisWe need to read the comment after poll method: "// @@@ After removing from a non-empty priority queue, the new head is no greater than the old head."
+
+We need to produce an assert statement reflecting that specification.
+
+Context: poll removes head (minimum element) and returns it. After removal, new head (if queue not empty) should be >= old head? Wait: "no greater than the old head" means new head <= old head? Actually "no greater than the old head" means new head is not greater than old head, i.e., new head <= old head. Since we removed the smallest element, the next smallest should be >= old head? Let's think: In a min-heap, head is least element. After removing the least, the new head is the next least, which is greater than or equal to old head (since old head was smallest). So new head >= old head. But phrase "no greater than the old head" means new head <= old head, which contradicts. Maybe they think "new head is no greater than the old head" meaning not larger, i.e., less than or equal, but that would be wrong. However we must follow comment as given. Could be they meant "no less than". But we must translate comment exactly: "new head is no greater than the old head". So we assert newHead <= oldHead.
+
+But we need to consider non-empty before removal. So precondition: old size > 0. After removal, maybe new size could be zero; then there is no new head. So specification should be conditional: if after removal size > 0 then new head <= old head. Use \old to capture old head value before removal. old head: \old(this.peek()) maybe? Since poll removes head, but before removal, head is the element returned (result). Actually poll returns the old head. So we can use \result as old head. New head after removal: this.peek() (since peek returns head without removal). So spec: if \old(this.size()) > 0 then (this.size() > 0 => this.peek().compareTo(\result) <= 0?) Wait need to compare using natural ordering or comparator. There's comparator field, but not accessible via observer? There is method comparator() returns comparator. So we can use this.comparator() to compare. However we don't have a generic compare method. Could use this.comparator().compare(a,b) if comparator not null, else cast to Comparable. But spec may just use <= assuming natural ordering and Comparable. Many earlier examples used .equals or .index_of etc. Here we may need to express ordering.
+
+Simplify: use the property that new head is not greater than old head: i.e., this.peek() <= \result. Since we cannot use <= on objects, we could express using compareTo if Comparable. But we may assume E implements Comparable<E>. The class is generic but spec may use (this.peek()).compareTo(\result) <= 0. However we need to cast? In JML-like spec, they sometimes just write this.peek().compareTo(\result) <= 0. Let's assume that's acceptable.
+
+Thus assert statement:
+
+assert (\old(this.size()) > 0 && this.size() > 0) => (this.peek().compareTo(\result) <= 0);
+
+But we also need to handle case when after removal queue becomes empty: then no new head, spec vacuously true. So we can just condition on this.size() > 0. Also need precondition that old size > 0 (non-empty). Since method is called on possibly empty queue, but comment says after removing from a non-empty priority queue. So we can assert: \old(this.size()) > 0 => (this.size() == 0 || this.peek().compareTo(\result) <= 0). Or using implication: (\old(this.size()) > 0 && this.size() > 0) => this.peek().compareTo(\result) <= 0.
+
+Better: assert (\old(this.size()) > 0 && this.size() > 0) => (this.peek().compareTo(\result) <= 0);
+
+But also need to ensure comparator case: if comparator not null, use comparator().compare(this.peek(), \result) <= 0. To be thorough, we could write:
+
+assert (\old(this.size()) > 0 && this.size() > 0) => ( (this.comparator() == null) ? ((Comparable<E>)this.peek()).compareTo(\result) <= 0 : this.comparator().compare(this.peek(), \result) <= 0 );
+
+But that is complex. Maybe they accept simple version using compareTo.
+
+Given typical style of earlier examples, they just use methods like this.index_of, this.getCount, etc. Not complex. So I think they expect simple assertion: assert (\old(this.size()) > 0 && this.size() > 0) => this.peek().compareTo
+--------------------
+analysisWe need to read the comment after the method poll. The comment: "// @@@ After removing from a non-empty priority queue, the new head is no greater than the old head."
+
+We need to output an assert statement (specification) reflecting that.
+
+We have method poll that removes and returns the head (least element). The spec: after removing from a non-empty priority queue, the new head is no greater than the old head.
+
+We need to refer to old head: before removal, the head is the element at index 0 (queue[0]) which is also the result returned (since they store result = (E) ((es = queue)[0])). For non-empty queue, result != null. The new head after removal is the element now at index 0 (if size >0 after removal). If the queue becomes empty after removal (size becomes 0), there is no new head; spec maybe vacuously true? The comment says "After removing from a non-empty priority queue, the new head is no greater than the old head." If after removal queue becomes empty, there is no new head, maybe the condition is vacuously true? Could express as: if \old(this.size) > 0 && this.size > 0 then compare new head <= old head. Need to use comparator: we have comparator possibly null. Need to express ordering: if comparator is null, compare using natural ordering (Comparable). Could use this.comparator() method? There's method comparator() returning Comparator<? super E>. But we may need to use it in spec: either comparator != null ? comparator.compare(newHead, oldHead) <=0 : ((Comparable) newHead).compareTo(oldHead) <=0.
+
+But spec language might allow using <= operator? In examples they used index_of etc. Not about ordering. We need to produce an assert statement using Java expression that compiles? In specification language, we can use method calls. We can use this.comparator() to get comparator. But comparing may need to call compare. So assert: (\old(this.size) > 0 && this.size > 0) => ( (this.comparator() != null) ? this.comparator().compare(this.peek(), \old(this.peek())) <= 0 : ((Comparable<E>) this.peek()).compareTo(\old(this.peek())) <= 0)
+
+But need to handle case when this.size ==0 after removal: then no new head, maybe condition should be just \old(this.size) >0 => (this.size ==0 || newHead <= oldHead). So we can write: \old(this.size) > 0 => ( this.size == 0 || ( (this.comparator()!=null) ? this.comparator().compare(this.peek(), \old(this.peek())) <= 0 : ((Comparable<E>)this.peek()).compareTo(\old(this.peek())) <= 0) );
+
+But we also need to ensure that \old(this.peek()) is the old head. However, after removal, peek returns new head (or null if empty). So need to refer to old head using \old(this.peek()).
+
+Thus final assert statement:
+
+assert \old(this.size) > 0 => ( this.size == 0 || ( (this.comparator()!=null) ? this.comparator().compare(this.peek(), \old(this.peek())) <= 0 : ((Comparable<E>)this.peek()).compareTo(\old(this.peek())) <= 0) );
+
+Make sure syntax: need parentheses around conditional expression? In JML style, ternary may be allowed. But spec examples didn't use ternary; they used logical operators. Could instead split into two cases using implication with &&.
+
+We can write:
+
+assert \old(this.size) > 0 => ( this.size == 0 || ( (this.comparator()!=null && this.comparator().compare(this.peek(), \old(this.peek())) <= 0) || (this.comparator()==null && ((Comparable<E>)this.peek()).compareTo(\old(this.peek())) <= 0) ) );
+
+That uses logical OR to capture two cases.
+
+Thus final answer.
+
+Wrap in <code> tags.
+
+assistantfinal<code>assert \old(this.size) > 0 => ( this.size == 0 || ( (this.comparator() != null && this.comparator().compare(this.peek(), \old(this.peek())) <= 0) || (this.comparator() == null && ((Comparable<E>) this.peek()).compareTo(\old(this.peek())) <= 0) ) );</code>
+--------------------

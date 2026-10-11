@@ -90,6 +90,21 @@ class Profile:
             return self.scalar(path, 'int' if ty == 'int' else 'bool', name), ty
         if ty in {'E', 'V', 'K', 'T', 'Object'}:
             return self.scalar(path, 'option[int]', name), 'Integer'
+        if ty == 'float':
+            return self.record({
+                'positive': self.scalar(path + '.positive', 'bool', f'({name}>0)'),
+                'is_nan': self.scalar(path + '.is_nan', 'bool', f'Float.isNaN({name})'),
+            }), 'float'
+        if ty in {'LongBuffer', 'ByteBuffer'}:
+            fields = {'is_null': self.scalar(path + '.is_null', 'bool', f'{name}==null')}
+            for field in ['position', 'limit', 'remaining']:
+                fields[field] = self.scalar(path + '.' + field, 'int', f'{name}.{field}()')
+            if ty == 'LongBuffer':
+                fields['low'] = self.sequence(path+'.low', 'int', f'{name}.limit()', f'((int){name}.get({{index}}))')
+                fields['high'] = self.sequence(path+'.high', 'int', f'{name}.limit()', f'((int)({name}.get({{index}})>>32))')
+            else:
+                fields['elements'] = self.sequence(path+'.elements', 'int', f'{name}.limit()', f'((int){name}.get({{index}}))')
+            return self.record(fields), 'java.nio.'+ty
         if ty == 'String':
             return self.record({
                 'is_null': self.scalar(path + '.is_null', 'bool', f'{name} == null'),

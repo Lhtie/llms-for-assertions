@@ -1,0 +1,9 @@
+predicate spec(param: record[fromIndex: int], entry_self: record[length: int, cardinality: int, empty: bool, bits: list[bool], words_low: list[int], words_high: list[int], bytes: list[int], bit_at_fromIndex: bool, bit_at_result: bool], exit_self: record[length: int, cardinality: int, empty: bool, bits: list[bool], words_low: list[int], words_high: list[int], bytes: list[int], bit_at_fromIndex: bool, bit_at_result: bool], ret: int) {
+    (((ret < 0) ∨
+        (((0 <= ret) ∧
+            (ret < entry_self.length)) ==>
+            (¬ entry_self.bits[ret]))) ∨
+        (((0 <= ret) ∧
+            (ret < exit_self.length)) ==>
+            (¬ exit_self.bits[ret])))
+}

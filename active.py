@@ -1,5 +1,6 @@
 import argparse
 import glob
+import math
 import os
 import re
 import shutil
@@ -8,6 +9,88 @@ import sys
 
 from codehelper.javahelper import javahelper, third_party
 from utils.problemreader import read_problem
+
+
+def select_confident_candidates(gen_asrts, conformance_scores, equivalence_scores,
+                               validity_scores, candidate_mask, threshold):
+    """Return eligible candidates above the conformance threshold, low score first."""
+    candidates = []
+    for i, (asrt, conformance, equivalence, validity) in enumerate(
+            zip(gen_asrts, conformance_scores, equivalence_scores, validity_scores)):
+        if i >= len(candidate_mask) or not candidate_mask[i] or conformance is None:
+            continue
+        score = float(conformance)
+        if not math.isfinite(score) or score <= threshold:
+            continue
+        candidates.append({
+            "index": i,
+            "validity": validity,
+            "conformance": score,
+            "equivalence": equivalence,
+            "assert": asrt,
+        })
+    return sorted(candidates, key=lambda candidate: (candidate["conformance"], candidate["index"]))
+
+
+def run_active_tournament(code, groundtruth, combinedcodes, candidates, outdir,
+                          rounds=2, left_label_prefix="candidate"):
+    """Pair adjacent candidates in score order; each winner advances a round."""
+    survivors = list(candidates)
+    matches = []
+    round_idx = 0
+    while len(survivors) > 1:
+        winners = []
+        for pair_idx in range(0, len(survivors), 2):
+            left = survivors[pair_idx]
+            if pair_idx + 1 == len(survivors):
+                winners.append(left)
+                matches.append({"round": round_idx, "bye": left["index"]})
+                continue
+
+            right = survivors[pair_idx + 1]
+            left_label = f"{left_label_prefix}_{left['index']}"
+            right_label = f"{left_label_prefix}_{right['index']}"
+            match_dir = os.path.join(outdir, f"round_{round_idx}_pair_{pair_idx // 2}")
+            decision = run_active(
+                code, groundtruth, combinedcodes,
+                left["assert"], right["assert"],
+                rounds=rounds, outdir=match_dir,
+                left_label=left_label, right_label=right_label,
+            )
+            if decision == left_label:
+                winner, reason = left, "active"
+            elif decision == right_label:
+                winner, reason = right, "active"
+            else:
+                # An inconclusive active comparison still has to eliminate one
+                # candidate. Keep the higher-conformance member of this pair.
+                winner, reason = right, "higher-conformance fallback"
+            winners.append(winner)
+            matches.append({
+                "round": round_idx,
+                "left": left["index"],
+                "right": right["index"],
+                "decision": decision,
+                "winner": winner["index"],
+                "reason": reason,
+            })
+        survivors = winners
+        round_idx += 1
+    return (survivors[0] if survivors else None), matches
+
+
+def run_active_selection(code, groundtruth, combinedcodes, gen_asrts,
+                         conformance_scores, equivalence_scores, validity_scores,
+                         candidate_mask, threshold, outdir, rounds=2):
+    """Filter candidates and run the active pairwise elimination tournament."""
+    candidates = select_confident_candidates(
+        gen_asrts, conformance_scores, equivalence_scores, validity_scores,
+        candidate_mask, threshold,
+    )
+    final_candidate, matches = run_active_tournament(
+        code, groundtruth, combinedcodes, candidates, outdir, rounds=rounds,
+    )
+    return candidates, final_candidate, matches
 
 
 FUZZTEST_TEMPLATE = """
@@ -22,7 +105,20 @@ import java.util.Objects;
 import {package}.{classname};
 
 public class {fuzztest_class}{class_generic} {{
+    @randoop.TestValue public static final String fuzzSeed0 = "seed0";
+    @randoop.TestValue public static final String fuzzSeed1 = "seed1";
+    @randoop.TestValue public static final String fuzzSeed2 = "seed2";
+    @randoop.TestValue public static final int fuzzIntSeed0 = 0;
+    @randoop.TestValue public static final int fuzzIntSeed1 = 1;
+    @randoop.TestValue public static final int fuzzIntSeed2 = 2;
+
 {methods}
+
+    @SuppressWarnings("unchecked")
+    public static {classname} makeFuzzInput() {{
+        return ({classname}) constructSeededObject({classname}.class, 0);
+    }}
+
 
     private static class Pair<A, B> {{
         private final A first;
@@ -67,6 +163,91 @@ public class {fuzztest_class}{class_generic} {{
         }} catch (Exception fuzzexception) {{
             return fuzzexception.getClass().getSimpleName();
         }}
+    }}
+
+    private static int seedPriority(String name) {{
+        return name.equals("addVertex") ? 0 : name.equals("add") || name.equals("put") || name.equals("push") ? 1 :
+               name.equals("addEdge") ? 2 : 3;
+    }}
+
+    private static void seedStructure(Object target) {{
+        if (target == null) return;
+        java.lang.reflect.Method[] methods = target.getClass().getMethods();
+        java.util.Arrays.sort(methods, java.util.Comparator
+            .comparingInt((java.lang.reflect.Method m) -> seedPriority(m.getName()))
+            .thenComparing(java.lang.reflect.Method::toString));
+        for (java.lang.reflect.Method method : methods) {{
+            String name = method.getName();
+            if (method.isBridge() || method.isSynthetic() || java.lang.reflect.Modifier.isStatic(method.getModifiers())) continue;
+            if (!(name.equals("addVertex") || name.equals("addEdge") || name.equals("add") || name.equals("addAll") || name.equals("put") ||
+                  name.equals("putAll") || name.equals("offer") || name.equals("push") || name.equals("addElement") ||
+                  name.equals("insert") || name.equals("union") || name.equals("set"))) continue;
+            Class<?>[] types = method.getParameterTypes();
+            if (types.length == 0 || types.length > 3) continue;
+            for (int attempt = 0; attempt < 3; attempt++) {{
+                Object[] args = new Object[types.length];
+                boolean supported = true;
+                for (int i = 0; i < types.length; i++) {{
+                    Class<?> type = types[i];
+                    int value = attempt + i;
+                    if (type == String.class || type == Object.class) args[i] = "seed" + value;
+                    else if (type.isAssignableFrom(java.util.ArrayList.class)) {{
+                        java.util.ArrayList<Object> values = new java.util.ArrayList<>();
+                        values.add("seed" + value); values.add("seed" + (value + 10)); args[i] = values;
+                    }} else if (type.isAssignableFrom(java.util.LinkedHashSet.class)) {{
+                        java.util.LinkedHashSet<Object> values = new java.util.LinkedHashSet<>();
+                        values.add("seed" + value); values.add("seed" + (value + 10)); args[i] = values;
+                    }} else if (type.isAssignableFrom(java.util.LinkedHashMap.class)) {{
+                        java.util.LinkedHashMap<Object, Object> values = new java.util.LinkedHashMap<>();
+                        values.put("key" + value, "value" + value); args[i] = values;
+                    }} else if (type == int.class || type == Integer.class) args[i] = value;
+                    else if (type == long.class || type == Long.class) args[i] = (long) value;
+                    else if (type == boolean.class || type == Boolean.class) args[i] = value % 2 == 0;
+                    else if (type == char.class || type == Character.class) args[i] = (char) ('a' + value);
+                    else if (type.isArray() && (type.getComponentType() == String.class || type.getComponentType() == Object.class)) {{
+                        Object array = java.lang.reflect.Array.newInstance(type.getComponentType(), 1);
+                        java.lang.reflect.Array.set(array, 0, "seed" + value); args[i] = array;
+                    }} else {{ supported = false; break; }}
+                }}
+                if (supported) try {{ method.invoke(target, args); }} catch (ReflectiveOperationException | RuntimeException ignored) {{ }}
+            }}
+        }}
+    }}
+
+    private static Object constructSeededObject(Class<?> type, int depth) {{
+        if (depth > 4) return null;
+        java.lang.reflect.Constructor<?>[] constructors = type.getConstructors();
+        java.util.Arrays.sort(constructors, java.util.Comparator.comparingInt(java.lang.reflect.Constructor::getParameterCount));
+        for (java.lang.reflect.Constructor<?> constructor : constructors) {{
+            Class<?>[] types = constructor.getParameterTypes();
+            Object[] args = new Object[types.length];
+            boolean supported = true;
+            for (int i = 0; i < types.length; i++) {{
+                Class<?> argType = types[i];
+                if (argType == String.class) args[i] = "";
+                else if (argType == Object.class) args[i] = new Object();
+                else if (argType.isAssignableFrom(java.util.ArrayList.class)) args[i] = new java.util.ArrayList<>();
+                else if (argType.isAssignableFrom(java.util.LinkedHashSet.class)) args[i] = new java.util.LinkedHashSet<>();
+                else if (argType.isAssignableFrom(java.util.LinkedHashMap.class)) args[i] = new java.util.LinkedHashMap<>();
+                else if (argType == int.class || argType == Integer.class) args[i] = 0;
+                else if (argType == long.class || argType == Long.class) args[i] = 0L;
+                else if (argType == boolean.class || argType == Boolean.class) args[i] = false;
+                else if (argType == char.class || argType == Character.class) args[i] = 'a';
+                else if (argType.isArray()) args[i] = java.lang.reflect.Array.newInstance(argType.getComponentType(), 0);
+                else if (argType.getName().equals("org.jgrapht.Graph")) {{
+                    try {{
+                        Class<?> graphImpl = Class.forName("org.jgrapht.graph.DefaultDirectedGraph");
+                        args[i] = graphImpl.getConstructor(Class.class).newInstance(String.class);
+                    }} catch (ReflectiveOperationException ex) {{ supported = false; break; }}
+                }} else if (argType.isEnum() && argType.getEnumConstants().length > 0) args[i] = argType.getEnumConstants()[0];
+                else if (!argType.isInterface() && !java.lang.reflect.Modifier.isAbstract(argType.getModifiers())) args[i] = constructSeededObject(argType, depth + 1);
+                else {{ supported = false; break; }}
+                if (args[i] == null) {{ supported = false; break; }}
+            }}
+            if (!supported) continue;
+            try {{ return constructor.newInstance(args); }} catch (ReflectiveOperationException | RuntimeException ignored) {{ }}
+        }}
+        return null;
     }}
 }}
 """
@@ -189,6 +370,8 @@ def build_witness_method_dependent(code, method_name, left_asrt, right_asrt, con
     {method_signature(base_jh, method_name)} {{
         if ({base_jh.fuzz_objname} == null) return;
 
+        seedStructure({base_jh.fuzz_objname});
+
         // copy old values
 {indent(old_code)}
 
@@ -222,6 +405,9 @@ def build_witness_method_independent(code, method_name, left_asrt, right_asrt, c
     {state_method_signature(base_jh, method_name)} {{
         if ({base_jh.fuzz_objname}_old == null || {base_jh.fuzz_objname}_new == null) return;
 
+        seedStructure({base_jh.fuzz_objname}_old);
+        if ({base_jh.fuzz_objname}_new != {base_jh.fuzz_objname}_old) seedStructure({base_jh.fuzz_objname}_new);
+
         // copy old values
 {indent(old_code)}
 
@@ -252,6 +438,8 @@ def build_groundtruth_method_dependent(code, method_name, groundtruth):
     {method_signature(base_jh, method_name)} {{
         if ({base_jh.fuzz_objname} == null) return;
 
+        seedStructure({base_jh.fuzz_objname});
+
         // copy old values
 {indent(gt["old"])}
 
@@ -275,6 +463,9 @@ def build_groundtruth_method_independent(code, method_name, groundtruth):
     return f"""
     {state_method_signature(base_jh, method_name)} {{
         if ({base_jh.fuzz_objname}_old == null || {base_jh.fuzz_objname}_new == null) return;
+
+        seedStructure({base_jh.fuzz_objname}_old);
+        if ({base_jh.fuzz_objname}_new != {base_jh.fuzz_objname}_old) seedStructure({base_jh.fuzz_objname}_new);
 
         // copy old values
 {indent(gt["old"])}

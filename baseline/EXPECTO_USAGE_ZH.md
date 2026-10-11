@@ -58,7 +58,7 @@ python3 -m baseline.expecto_batch.pipeline run \
 
 ### buggycodes + buggyasrts：GPT-OSS-120B，加 TC
 
-使用已有的 `generation-traces.json`，生成阶段每条 assert 提供 3 个正例。样例由 Randoop 生成独立的新旧状态，并按原始 assert 标注；不是执行目标方法得到的真实调用记录。
+使用当前扩展 benchmark 的 `buggy-expanded/generation-traces.json`，生成阶段每条 assert 提供最多 3 个正例。样例由 Randoop 生成独立的新旧状态，并按原始 assert 标注；不是执行目标方法得到的真实调用记录。
 
 ```bash
 cd /repo
@@ -70,11 +70,11 @@ python3 -m baseline.expecto_batch.pipeline run \
   --output baseline/expecto-results/buggy-gpt-oss-tc \
   --model together/openai/gpt-oss-120b \
   --no-memo --max-tokens 8192 --reasoning-effort medium \
-  --traces baseline/expecto_batch/testcases/generation-traces.json \
+  --traces baseline/expecto_batch/testcases/buggy-expanded/generation-traces.json \
   --require-traces
 ```
 
-如需重新生成 TC：`python3 -m baseline.expecto_batch.testcases --seconds 3 --seeds 0 1 2 --jobs 2 --force`。
+如需重新生成 TC：`python3 -m baseline.expecto_batch.testcases --group buggycodes buggyasrts --output baseline/expecto_batch/testcases/buggy-expanded --seconds 3 --seeds 0 1 2 --jobs 2 --force`。
 
 两个版本都会在生成后翻译 DSL，并用 Java/Randoop 与 ground truth 比较。结果见各自输出目录的 `results.csv`、`summary.json`；每条的实际 prompt 见 `generation_prompt.txt`。`no_counterexample` 仅表示有限测试未发现差异。
 
@@ -108,6 +108,48 @@ python3 scripts/executor.py \
 ```
 
 不传 `--use_test_cases` 即生成时不加 TC；评价仍使用官方执行记录。省略 `--limit` 跑全部方法，试跑加 `--limit 1`。结果保存在挂载的 `baseline/expecto-results/official-defects4j/` 下；降低并发不消除上游全量加载数据的内存开销。
+
+
+### 完整 c2s_aug：416 条带描述的 assertion
+
+使用 `--group c2s_aug`，不再选择 `c2s_aug_sub`。完整目录有 430 条 assert，其中 14 条没有 `@@@` NL 描述的内部检查不属于 NL→spec 样本，因此此入口只纳入 416 条；旧 c2s_aug_sub 的历史范围不变。19 个类均已提供 adapter。
+
+当前工作区的 `c2s-full-no-tc` 和 `c2s-full-tc` 已 prepare，可直接执行下面的 run。新工作区首次运行时，分别执行 `python3 -m baseline.expecto_batch.pipeline prepare --group c2s_aug --output <对应输出目录>`。
+
+不加 TC：
+
+```bash
+python3 -m baseline.expecto_batch.pipeline run \
+  --group c2s_aug \
+  --output baseline/expecto-results/c2s-full-no-tc \
+  --model together/openai/gpt-oss-120b \
+  --no-memo --max-tokens 8192 --reasoning-effort medium
+```
+
+加 TC：
+
+```bash
+python3 -m baseline.expecto_batch.pipeline run \
+  --group c2s_aug \
+  --output baseline/expecto-results/c2s-full-tc \
+  --model together/openai/gpt-oss-120b \
+  --no-memo --max-tokens 8192 --reasoning-effort medium \
+  --traces baseline/expecto_batch/testcases/c2s-full/generation-traces.json \
+  --require-traces
+```
+
+TC 使用当前目录的完整样本 ID；不能直接传旧 c2s_aug_sub traces。采集统计和无可用正例的条目见 [完整 C2S TC 报告](expecto_batch/testcases/c2s-full/RUN_REPORT.md)。`--require-traces` 会把没有正例的样本记录为 generation_error，不会静默变成 no-TC 实验。
+
+重新采集：
+
+```bash
+python3 -m baseline.expecto_batch.testcases \
+  --group c2s_aug \
+  --output baseline/expecto_batch/testcases/c2s-full \
+  --seconds 3 --seeds 0 1 2 --jobs 4
+```
+
+普通泛型集合使用 Integer 域。AttributeList、RoleList、RoleUnresolvedList、Path 使用实际 Java 对象类型和公开 equality/identity 关系，未用 hashCode 代替相等性。float 参数投影其是否大于 0 和是否 NaN；buffer 保留位置、长度和内容；这些都是有界 observer 表示，不是任意对象和任意浮点数的完整编码。TC 构造独立状态而不执行目标方法，比较仍使用共享 equivchecker metric。
 
 ### c2s_aug_sub + naturalness：GPT-OSS-120B，不加 TC
 

@@ -123,7 +123,16 @@ def probe_source(row, adapter):
         args.append(value)
     constructor = f"return new {cls}<>(values);"
     fixture = ""
-    if cls == "Stack":
+    if cls == "TreeSet" and row["group"] == "buggycodes" and row["method_name"] == "add" and "/mut_000/" not in row["source"]:
+        from .tc_harness import MUTANT_STATE_FIELDS
+        fixture = MUTANT_STATE_FIELDS
+        constructor = """try {
+ TreeSet<Integer> c=new TreeSet<>();
+ java.util.Map<Integer,Object> m=(java.util.Map<Integer,Object>)stateGet(c,"m");
+ java.lang.reflect.Field marker=TreeSet.class.getDeclaredField("PRESENT");marker.setAccessible(true);
+ for(Integer value:values)if(value!=null)m.put(value,marker.get(null));return c;
+ }catch(Exception e){throw new IllegalStateException("TC state initialization failed",e);}"""
+    elif cls == "Stack":
         constructor = "Stack<Integer> c=new Stack<>(); c.addAll(values); return c;"
     elif cls == "HashSet":
         constructor = "return new SetFixture(values);"
@@ -275,12 +284,14 @@ def oracle_expression(assertion):
 
 
 def generate(row, adapter, datasets, directory, seconds, seeds):
-    if row["group"] in {"c2s_aug_sub", "naturalness"} or adapter.get("extended") or row["class_name"] == "TreeSet":
+    from .tc_harness import mutant_state_factory
+
+    if row["group"] in {"c2s_aug_sub", "c2s_aug", "naturalness"} or adapter.get("extended") or row["class_name"] == "TreeSet":
         from .trace_projection import instrumented_harness
 
         code = instrumented_harness(
             row, adapter, JAVA_HELPERS,
-            collection_probe=None if adapter.get("extended") else probe_source(row, adapter),
+            collection_probe=None if adapter.get("extended") or row["group"] == "c2s_aug" else probe_source(row, adapter),
         )
     else:
         args = [
@@ -416,6 +427,9 @@ def generate(row, adapter, datasets, directory, seconds, seeds):
         generation_negative=len(neg),
         runs=runs,
         incomplete_runs=any(r["returncode"] != 0 for r in runs),
+        state_initialization=("mutation-independent bounded state fixture"
+                              if mutant_state_factory(row, adapter.get("java_receiver", ""))
+                              else "existing bounded state factory"),
     )
 
 
@@ -427,7 +441,7 @@ def main():
         "--seconds", type=int, default=3, help="Randoop seconds per seed per assert"
     )
     p.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2])
-    p.add_argument("--group", nargs="+", choices=["buggycodes", "buggyasrts", "c2s_aug_sub", "naturalness"],
+    p.add_argument("--group", nargs="+", choices=["buggycodes", "buggyasrts", "c2s_aug_sub", "c2s_aug", "naturalness"],
                    default=["buggycodes", "buggyasrts"])
     p.add_argument("--sample-id")
     p.add_argument("--force", action="store_true")
@@ -448,6 +462,7 @@ def main():
         for group in args.group
         for source in sorted((args.datasets / group).rglob("*.java"))
         for r in scan(source, args.datasets)
+        if group != "c2s_aug" or r.get("description")
     ]
     if args.sample_id:
         rows = [r for r in rows if r["id"] == args.sample_id]
@@ -461,7 +476,7 @@ def main():
         + (ROOT / "baseline/expecto_batch/compare.py").read_text()
         + (ROOT / "codehelper/javahelper.py").read_text()
         + "".join((Path(__file__).parent / name).read_text() for name in
-                  ["adapters.py", "extended_adapters.py", "tc_harness.py", "trace_projection.py"])
+                  ["adapters.py", "extended_adapters.py", "tc_harness.py", "trace_projection.py", "object_adapters.py", "object_factories.py"])
     )
 
     def process(row):
@@ -498,7 +513,7 @@ def main():
                 fixture=(
                     "HashSet iterator supplied by immutable SetFixture"
                     if row["class_name"] == "HashSet"
-                    else "bounded public-observer state factories" if (row["group"] in {"c2s_aug_sub", "naturalness"} or row["class_name"] in {"BitSet", "Trie", "UnionFind", "TreeSet"})
+                    else "bounded public-observer state factories" if (row["group"] in {"c2s_aug_sub", "c2s_aug", "naturalness"} or row["class_name"] in {"BitSet", "Trie", "UnionFind", "TreeSet"})
                     else "dataset collection constructor"
                 ),
                 fingerprint=fingerprint,

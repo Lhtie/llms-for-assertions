@@ -19,10 +19,11 @@
 
 buggy 合计：无 TC 36/86 correct、45 incorrect、5 error；有 TC 34/86 correct、26 incorrect、26 error。总体 correct 从 116/229 (50.66%) 到 123/229 (53.71%)，数据集之间 TC 效果不一致。
 
-## 与上一轮的可比性
-
-
-当前各生成运行均使用新 root-description，测试预算 30 秒。上一轮对话中的 c2s correct 为 14/30、naturalness 为 5/5；当前为 51/55、29/34。但比较器已改变：当前 compare.py 统一使用 javahelper + equivchecker + Randoop，不再有上一轮 observer_compare 路径。输入工厂、异常处理、错误判定和实际覆盖都可能不同，不能把增长全部归因于 prompt。c2s no-tc 的 tool_digest 为 ee47dcd…，其余当前生成为 2b030a…，还存在工具版本差异。
+| Datasets | Expecto no-tc | Expecto tc | Ours
+| buggyasrts | 25 (37.88%) | 28 (42.42%) | 38 (57.6%)
+| buggycodes | 11 (55.00%) | 6 (30.00%)	| 14 (70.0%)
+| c2s_aug_sub | 51 (49.04%) | 55 (52.88%) | 87 (90.6%)
+| naturalness | 29 (74.36%) | 34 (87.18%) | 33 (84.6%)
 
 ## 配对变化
 

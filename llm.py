@@ -18,6 +18,7 @@ modelpaths = {
     "gpt5": "gpt-5.5",
     "gpt-oss": "gpt-oss-120b",
     "gpt-oss-api": "openai/gpt-oss-120b",
+    "qw25-coder-api": "Qwen/Qwen2.5-Coder-32B-Instruct",
     "qw3-235b": "Qwen/Qwen3-235B-A22B-Instruct-2507-tput",
     "claude-sonnet": "claude-sonnet-4-6",
     "claude-opus": "claude-opus-4-8",
@@ -41,7 +42,7 @@ def normalize_openai_chat_kwargs(mkey, kwargs):
 
 
 def is_together_api_model(mkey):
-    return mkey in {"gpt-oss-api", "qw3-235b"}
+    return mkey in {"gpt-oss-api", "qw3-235b", "qw25-coder-api"}
 
 
 def is_vllm_model(mkey):
@@ -75,7 +76,7 @@ def load_model(mkey, modelpaths=None, task="causal_lm"):
 
         if is_together_api_model(mkey):
             oai_client = OpenAI(
-                api_key=together_key,
+                api_key=os.environ.get("TOGETHER_API_KEY", together_key),
                 base_url="https://api.together.ai/v1",
             )
         else:

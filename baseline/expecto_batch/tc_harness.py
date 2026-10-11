@@ -92,9 +92,62 @@ COMMON = r'''
 '''
 
 
+# Seed valid bounded states without invoking the mutated initializer operation.
+# Only used by TC capture for the affected buggycodes variants, never comparison.
+MUTANT_STATE_FIELDS = r'''
+ static java.lang.reflect.Field stateField(Object x,String name)throws Exception {
+  java.lang.reflect.Field f=x.getClass().getDeclaredField(name);f.setAccessible(true);return f;
+ }
+ static Object stateGet(Object x,String name)throws Exception{return stateField(x,name).get(x);}
+ static void statePut(Object x,String name,Object value)throws Exception{stateField(x,name).set(x,value);}
+'''
+
+
+def mutant_state_factory(row, typ):
+    if row['group'] != 'buggycodes' or '/mut_000/' in row['source']:
+        return None
+    cls, method = row['class_name'], row['method_name']
+    if cls == 'BitSet' and method == 'set' and [p['type'] for p in row['parameters']] == ['int']:
+        return COMMON + '\n static BitSet make(int s){return BitSet.valueOf(new long[]{s & 0xffffL});}\n'
+    if cls == 'TreeSet' and method == 'add':
+        body = '''TreeSet<Integer> x=new TreeSet<>();
+ java.util.Map<Integer,Object> m=(java.util.Map<Integer,Object>)stateGet(x,"m");
+ java.lang.reflect.Field marker=TreeSet.class.getDeclaredField("PRESENT");marker.setAccessible(true);
+ for(Integer v:values(s))if(v!=null)m.put(v,marker.get(null));return x;'''
+    elif cls == 'Trie' and method == 'add':
+        body = '''Trie x=new Trie();Object root=stateGet(x,"root");
+ java.lang.reflect.Constructor<?> ctor=root.getClass().getDeclaredConstructor();ctor.setAccessible(true);
+ java.util.Set<String> unique=new java.util.LinkedHashSet<>(words(s));unique.remove(null);
+ for(String word:unique){Object node=root;statePut(node,"pass",(Integer)stateGet(node,"pass")+1);
+  for(int offset=0;offset<word.length();){int cp=word.codePointAt(offset);
+   java.util.Map<Integer,Object> children=(java.util.Map<Integer,Object>)stateGet(node,"children");
+   Object child=children.get(cp);if(child==null){child=ctor.newInstance();children.put(cp,child);}
+   node=child;statePut(node,"pass",(Integer)stateGet(node,"pass")+1);offset+=Character.charCount(cp);
+  }statePut(node,"isWord",true);
+ }statePut(x,"size",unique.size());return x;'''
+    elif cls == 'UnionFind' and method == 'union':
+        body = '''java.util.Set<Integer> v=new java.util.LinkedHashSet<>(values(s));v.remove(null);
+ UnionFind<Integer> x=new UnionFind<>(v);Integer[] a=v.toArray(new Integer[0]);
+ if(a.length>1 && (s&1)==0){
+  ((java.util.Map<Integer,Integer>)stateGet(x,"parentMap")).put(a[1],a[0]);
+  ((java.util.Map<Integer,Integer>)stateGet(x,"rankMap")).put(a[0],1);
+  statePut(x,"count",v.size()-1);
+ }return x;'''
+    else:
+        return None
+    return COMMON + MUTANT_STATE_FIELDS + f'\n static {typ} make(int s){{try{{{body}}}catch(Exception e){{throw new IllegalStateException("TC state initialization failed",e);}}}}\n'
+
+
 def factory(row, adapter):
     cls = row['class_name']
     typ = adapter['java_receiver']
+    from .object_adapters import OBJECT_CLASSES
+    if cls in OBJECT_CLASSES:
+        from .object_factories import object_factory
+        return COMMON + object_factory(cls)
+    fixture = mutant_state_factory(row, typ)
+    if fixture is not None:
+        return fixture
     if cls == 'Trie':
         body = 'Trie x=new Trie();for(String w:words(s))x.add(w);return x;'
     elif cls == 'UnionFind':
@@ -124,8 +177,10 @@ def factory(row, adapter):
  }
  static HashSet<Integer> make(int s){return new SetFixture(values(s));}
 '''
-    elif cls == 'Stack':
-        body = 'Stack<Integer> x=new Stack<>();x.addAll(values(s));return x;'
+    elif cls in {'Stack', 'ArrayStack'}:
+        body = f'{cls}<Integer> x=new {cls}<>();x.addAll(values(s));return x;'
+    elif cls in {'FixedArrayList', 'ListOrderedSet', 'CircularFifoQueue'}:
+        body = f'{cls}<Integer> x=new {cls}<>();for(Integer v:values(s))'+('if(v!=null)' if cls!='ListOrderedSet' else '')+'x.add(v);return x;'
     else:
         body = f'java.util.ArrayList<Integer> v=values(s);'
         if cls in {'TreeSet', 'PriorityQueue', 'ArrayDeque'}:body += 'v.removeIf(java.util.Objects::isNull);'
@@ -134,6 +189,19 @@ def factory(row, adapter):
 
 
 def generated_value(ty, seed, receiver):
+    if ty == 'float':return f'new float[]{{-1f,0f,0.5f,0.75f,1f,Float.NaN,Float.POSITIVE_INFINITY}}[Math.floorMod({seed},7)]'
+    if ty == 'java.util.Comparator<Integer>':return f'(({seed}&1)==0?null:java.util.Comparator.reverseOrder())'
+    if ty == 'java.nio.LongBuffer':return f'(({seed}&7)==0?null:java.nio.LongBuffer.wrap(longs({seed})))'
+    if ty == 'java.nio.ByteBuffer':return f'(({seed}&7)==0?null:java.nio.ByteBuffer.wrap(bytes({seed})))'
+    if ty == 'javax.naming.directory.Attribute':return f'attribute({seed})'
+    if ty == 'javax.management.relation.Role':return f'role({seed})'
+    if ty == 'javax.management.relation.RoleUnresolved':return f'unresolved({seed})'
+    if ty == 'org.graphstream.graph.Edge':return f'edge({seed})'
+    if ty == 'Object':
+        atom={'AttributeList':'attribute','RoleList':'role','RoleUnresolvedList':'unresolved'}.get(receiver,'atom')
+        return f'(({seed}&3)==0?atom({seed}):{atom}({seed}))'
+    if ty in {'java.util.List<Role>', 'java.util.List<javax.management.relation.Role>'}:return f'(({seed}&7)==0?null:roles({seed}))'
+    if ty in {'java.util.List<RoleUnresolved>', 'java.util.List<javax.management.relation.RoleUnresolved>'}:return f'(({seed}&7)==0?null:unresolveds({seed}))'
     if ty == 'int':return f'(Math.floorMod({seed},20)-2)'
     if ty == 'boolean':return f'(({seed}&1)!=0)'
     if ty == 'Integer':return f'atom({seed})'
@@ -141,8 +209,8 @@ def generated_value(ty, seed, receiver):
     if ty == receiver:return f'make({seed})'
     if ty == 'long[]':return f'longs({seed})'
     if ty == 'byte[]':return f'bytes({seed})'
-    if ty == 'Integer[]':return f'values({seed}).toArray(new Integer[0])'
-    if ty == 'java.util.Collection<Integer>':return f'values({seed})'
+    if ty == 'Integer[]':return f'(({seed}&7)==0?null:values({seed}).toArray(new Integer[0]))'
+    if ty == 'java.util.Collection<Integer>':return f'(({seed}&7)==0?null:({seed}&7)==1?oldState:({seed}&7)==2?newState:values({seed}))'
     if ty == 'java.util.Map<Integer,Integer>':return f'map({seed})'
     if ty == 'java.util.List<String>':return f'words({seed})'
     raise ValueError('No factory for ' + ty)
