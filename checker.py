@@ -259,7 +259,7 @@ def rerun_active_from_check_file(check_file, codedir, datasets, combinedcodesdir
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--datasets", default="./datasets", help="Dataset root for group-prefixed input filenames")
-    parser.add_argument("--combinedcodesdir", type=str, default="./combinedcodes")
+    parser.add_argument("--combinedcodesdir", type=str, default="./datasets/c2s_aug")
     parser.add_argument("--codedir", type=str, default="./codes")
     parser.add_argument("--codelist", nargs='+', default=[])
     parser.add_argument("--resultlist", nargs='+', default=["./results/*/*/"])

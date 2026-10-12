@@ -9,6 +9,7 @@ import sys
 
 from codehelper.javahelper import javahelper, third_party
 from utils.problemreader import read_problem
+from utils.sourcepaths import java_source_info
 
 
 def select_confident_candidates(gen_asrts, conformance_scores, equivalence_scores,
@@ -490,7 +491,7 @@ def build_groundtruth_method(code, method_name, groundtruth, mode):
 
 def build_fuzztest(code, combinedcodes, methods, fuzztest_class):
     base_jh = javahelper(code)
-    package = os.path.basename(os.path.normpath(combinedcodes))
+    package, _, _ = java_source_info(combinedcodes, base_jh.namespace)
     imports = "\n".join([f"import {x};" for x in base_jh.imports])
     class_generic = base_jh.classname[base_jh.classname.find("<"):] \
         if base_jh.classname.find("<") != -1 else ""
@@ -517,12 +518,16 @@ def prepare_workdir(workdir):
 
 def compile_fuzztest(workdir, combinedcodes, classname, fuzztest_class):
     fname = os.path.join(workdir, "fuzztests", f"{fuzztest_class}.java")
+    _, source_root, source_file = java_source_info(combinedcodes, classname)
+    randoop_jar = os.path.join(workdir, "randoop", "randoop-all-4.3.3.jar")
     jar_files = ":".join(glob.glob(os.path.join(workdir, "*.jar")))
     proc = subprocess.run([
         "javac",
-        "-cp", f"{workdir}:{combinedcodes}:{jar_files}",
+        "-cp", f"{workdir}:{source_root}:{jar_files}:{randoop_jar}",
+        "-sourcepath", source_root,
+        "-d", workdir,
         fname,
-        os.path.join(combinedcodes, f"{classname}.java"),
+        source_file,
     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     return proc
 

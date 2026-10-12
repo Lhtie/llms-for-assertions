@@ -137,7 +137,7 @@ Lightweight validity-only check:
 
 ```bash
 python3 checker.py \
-  --combinedcodesdir datasets/c2s_aug \
+  --datasets datasets \
   --codedir runs/codes \
   --codelist 0 \
   --resultlist 'runs/results/*/*/' \
@@ -151,7 +151,7 @@ Full default check:
 
 ```bash
 python3 checker.py \
-  --combinedcodesdir datasets/c2s_aug \
+  --datasets datasets \
   --codedir runs/codes \
   --codelist 0 \
   --resultlist 'runs/results/*/*/' \
@@ -171,7 +171,6 @@ python3 checker.py \
   --active-from-check-file runs/checks/previous-report.txt \
   --codedir runs/codes \
   --datasets datasets \
-  --combinedcodesdir datasets/c2s_aug \
   --outdir runs/checks/active-rerun \
   --write
 ```
@@ -184,7 +183,7 @@ through `--checkerkwargs` under `rdtp_check`:
 
 ```bash
 python3 checker.py \
-  --combinedcodesdir datasets/c2s_aug \
+  --datasets datasets \
   --codedir runs/codes \
   --codelist 0 \
   --resultlist 'runs/results/*/*/' \
