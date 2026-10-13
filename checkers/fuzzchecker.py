@@ -5,10 +5,12 @@ import shutil
 import sys
 import re
 import glob
+import tempfile
 
 from codehelper.csharphelper import *
 from codehelper.javahelper import javahelper
 from codehelper.javahelper import third_party
+from checkers.randoop_config import RANDOOP_SEED
 
 cscode = """
 // AssemblyInfo.cs
@@ -267,7 +269,12 @@ public class FuzzTest{{
 }}
 """
 
-tmp_dir = "./checktmp"
+_checker_tmp = None
+_tmp_root = os.environ.get("CHECKER_TMP_DIR")
+if not _tmp_root:
+    _checker_tmp = tempfile.TemporaryDirectory(prefix="llms-assertions-fuzz-")
+    _tmp_root = _checker_tmp.name
+tmp_dir = os.path.join(_tmp_root, "fuzz")
 
 # handle test bench generations
 def cs_handle_fuzz_testbench(pfx, sfx, grnd_truth, asrt):
@@ -526,6 +533,7 @@ public class FactoryCheck {
         "--no-regression-tests=true",
         "--output-limit=100",
         f"--junit-output-dir={tmp_dir}",
+        f"--randomseed={RANDOOP_SEED}",
     ]
     proc = subprocess.run(randoop_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 

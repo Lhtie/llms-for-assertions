@@ -216,6 +216,37 @@ final_best_candidate:
 When `--write` is passed, reports are written under `--outdir`. Without `--write`,
 the report is printed to stdout.
 
+By default, `--write` overwrites the matching report and reruns every entry. To
+continue an interrupted checker run, add `--resume`; completed entries are
+skipped and remaining entries are appended to the report. The same option
+applies to `--active-from-check-file` output:
+
+```bash
+python3 checker.py \
+  --datasets datasets \
+  --codedir runs/codes \
+  --resultlist 'runs/results/*/*/' \
+  --outdir runs/checks \
+  --write \
+  --resume
+```
+
+To rerun the other checks while reusing per-entry conformance scores from a
+prior report, pass `--reuse-conformance-from-check-file`. The default workflow
+still runs validity, equivalence, probability scoring when selected, and active
+selection; it skips RDTP and carries the prior conformance scores and thresholds
+into the new report:
+
+```bash
+python3 checker.py \
+  --datasets datasets \
+  --codedir runs/codes \
+  --resultlist 'runs/results/*/*/' \
+  --reuse-conformance-from-check-file runs/checks/previous-report.txt \
+  --outdir runs/checks/rechecked \
+  --write
+```
+
 ## Notes
 
 - The artifact currently supports Java inputs only.

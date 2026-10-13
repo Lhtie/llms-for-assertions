@@ -25,6 +25,10 @@ The checker runs the default validity and equivalence checks alongside
 selection so the reports remain comparable; the selection mode controls which
 score chooses the final candidate. To run only one phase, use
 `ablation_generate.sh` followed by the corresponding checker script.
+Each `checker.py` process gets a unique temporary directory on the system's
+local temporary filesystem (normally `/tmp`) and removes it when the process
+exits, so checker scripts can run concurrently without interfering with one
+another's Randoop files. Set `CHECKER_TMP_DIR` to override the scratch root.
 
 The selected files use `package mut_xxx;` to match the unified directory
 layout, allowing `dispatch.py` and the checker to locate and compile the source.

@@ -5,6 +5,7 @@ import sys
 import os
 import shutil
 import glob
+import tempfile
 
 from codehelper.csharphelper import *
 from codehelper.javahelper import javahelper
@@ -163,7 +164,12 @@ public class FuzzTest{3}{{
 }}
 """
 
-tmp_dir = "./checktmp"
+_checker_tmp = None
+_tmp_root = os.environ.get("CHECKER_TMP_DIR")
+if not _tmp_root:
+    _checker_tmp = tempfile.TemporaryDirectory(prefix="llms-assertions-compile-")
+    _tmp_root = _checker_tmp.name
+tmp_dir = os.path.join(_tmp_root, "compile")
 
 # handle test bench generations
 def cs_handle_cmple_testbench(pfx, sfx, grnd_truth, asrt):

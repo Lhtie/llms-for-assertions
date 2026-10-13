@@ -18,7 +18,7 @@ modelpaths = {
     "gpt5": "gpt-5.5",
     "gpt-oss": "gpt-oss-120b",
     "gpt-oss-api": "openai/gpt-oss-120b",
-    "qw25-coder-api": "Qwen/Qwen2.5-Coder-32B-Instruct",
+    "qw25-coder-api": "@cf/qwen/qwen2.5-coder-32b-instruct",
     "qw3-235b": "Qwen/Qwen3-235B-A22B-Instruct-2507-tput",
     "claude-sonnet": "claude-sonnet-4-6",
     "claude-opus": "claude-opus-4-8",
@@ -26,7 +26,11 @@ modelpaths = {
 
 
 def is_api_model(mkey):
-    return mkey.startswith(("gpt3", "gpt4", "gpt5")) or is_together_api_model(mkey)
+    return (
+        mkey.startswith(("gpt3", "gpt4", "gpt5"))
+        or is_together_api_model(mkey)
+        or is_cloudflare_api_model(mkey)
+    )
 
 
 def is_reasoning_api_model(mkey):
@@ -42,7 +46,11 @@ def normalize_openai_chat_kwargs(mkey, kwargs):
 
 
 def is_together_api_model(mkey):
-    return mkey in {"gpt-oss-api", "qw3-235b", "qw25-coder-api"}
+    return mkey in {"gpt-oss-api", "qw3-235b"}
+
+
+def is_cloudflare_api_model(mkey):
+    return mkey == "qw25-coder-api"
 
 
 def is_vllm_model(mkey):
@@ -72,14 +80,40 @@ def load_model(mkey, modelpaths=None, task="causal_lm"):
 
     if is_api_model(mkey):
         from openai import OpenAI
-        from keysecrets import oai_key, together_key
 
-        if is_together_api_model(mkey):
+        if is_cloudflare_api_model(mkey):
+            api_key = os.environ.get("CLOUDFLARE_API_TOKEN")
+            account_id = os.environ.get("CLOUDFLARE_ACCOUNT_ID")
+            try:
+                import keysecrets
+            except ImportError:
+                keysecrets = None
+            if keysecrets is not None:
+                api_key = api_key or getattr(keysecrets, "cloudflare_api_token", None)
+                account_id = account_id or getattr(keysecrets, "cloudflare_account_id", None)
+            if not api_key or not account_id:
+                raise RuntimeError(
+                    "qw25-coder-api uses Cloudflare Workers AI. Set both "
+                    "cloudflare_api_token and cloudflare_account_id in keysecrets.py, "
+                    "or set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID."
+                )
+            oai_client = OpenAI(
+                api_key=api_key,
+                base_url=(
+                    "https://api.cloudflare.com/client/v4/accounts/"
+                    f"{account_id}/ai/v1"
+                ),
+            )
+        elif is_together_api_model(mkey):
+            from keysecrets import together_key
+
             oai_client = OpenAI(
                 api_key=os.environ.get("TOGETHER_API_KEY", together_key),
                 base_url="https://api.together.ai/v1",
             )
         else:
+            from keysecrets import oai_key
+
             oai_client = OpenAI(api_key=oai_key)
 
         tokenizer = None

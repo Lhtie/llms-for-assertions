@@ -6,6 +6,14 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
+import uuid
+
+_active_tmp = None
+_active_tmp_root = os.environ.get("CHECKER_TMP_DIR")
+if not _active_tmp_root:
+    _active_tmp = tempfile.TemporaryDirectory(prefix="llms-assertions-active-")
+    _active_tmp_root = _active_tmp.name
 
 from codehelper.javahelper import javahelper, third_party
 from utils.problemreader import read_problem
@@ -159,8 +167,12 @@ def run_active_selection(code, groundtruth, combinedcodes, gen_asrts,
         return candidates, final_candidate, []
     if selection_mode != "active":
         raise ValueError(f"Unsupported selection mode: {selection_mode}")
+    # A new work tree per tournament prevents repeated checker entries (or
+    # concurrent callers with a shared output root) from deleting each other's
+    # generated Randoop tests.
+    tournament_dir = os.path.join(outdir, f"run-{uuid.uuid4().hex}")
     final_candidate, matches = run_active_tournament(
-        code, groundtruth, combinedcodes, candidates, outdir, rounds=rounds,
+        code, groundtruth, combinedcodes, candidates, tournament_dir, rounds=rounds,
         score_field=score_field,
     )
     return candidates, final_candidate, matches
@@ -695,9 +707,19 @@ def active_direction(code, groundtruth, left_asrt, right_asrt, combinedcodes,
     base_jh = javahelper(code)
     witness_class = "WitnessFuzzTest"
     groundtruth_class = "GroundTruthFuzzTest"
-    witness_code = build_fuzztest(code, combinedcodes, [
-        build_witness_method(code, method_name, left_asrt, right_asrt, condition_kind, mode),
-    ], witness_class)
+    try:
+        witness_method = build_witness_method(
+            code, method_name, left_asrt, right_asrt, condition_kind, mode
+        )
+    except Exception as exc:
+        return {
+            "decision": None,
+            "reason": (
+                "Could not translate candidate assertion into an active witness: "
+                f"{type(exc).__name__}: {exc}"
+            ),
+        }
+    witness_code = build_fuzztest(code, combinedcodes, [witness_method], witness_class)
 
     prepare_workdir(workdir)
     witness_path = os.path.join(workdir, "fuzztests", f"{witness_class}.java")
@@ -714,9 +736,19 @@ def active_direction(code, groundtruth, left_asrt, right_asrt, combinedcodes,
     if "No error-revealing tests to output" in randoop_proc.stdout:
         return {"decision": None, "reason": "Randoop found no distinguishing test"}
 
-    groundtruth_code = build_fuzztest(code, combinedcodes, [
-        build_groundtruth_method(code, method_name, groundtruth, mode),
-    ], groundtruth_class)
+    try:
+        groundtruth_method = build_groundtruth_method(
+            code, method_name, groundtruth, mode
+        )
+    except Exception as exc:
+        return {
+            "decision": None,
+            "reason": (
+                "Could not translate groundtruth assertion for active replay: "
+                f"{type(exc).__name__}: {exc}"
+            ),
+        }
+    groundtruth_code = build_fuzztest(code, combinedcodes, [groundtruth_method], groundtruth_class)
     open(groundtruth_path, "w").write(groundtruth_code)
     compile_proc = compile_fuzztest(workdir, combinedcodes, base_jh.namespace, groundtruth_class)
     if compile_proc.returncode != 0:
@@ -777,7 +809,7 @@ def active_round(code, groundtruth, left_asrt, right_asrt, combinedcodes, outdir
 
 
 def run_active(code, groundtruth, combinedcodesdir, left_asrt, right_asrt, rounds=2,
-               time_limit=30, outdir="./checktmp/active", mode="dependent",
+               time_limit=30, outdir=os.path.join(_active_tmp_root, "active"), mode="dependent",
                left_label="left", right_label="right"):
     for round_idx in range(rounds):
         result = active_round(
@@ -805,7 +837,7 @@ def main():
     parser.add_argument("--right-label", default="right")
     parser.add_argument("--rounds", type=int, default=2)
     parser.add_argument("--time-limit", type=int, default=30)
-    parser.add_argument("--outdir", default="./checktmp/active")
+    parser.add_argument("--outdir", default=os.path.join(_active_tmp_root, "active"))
     args = parser.parse_args()
 
     raw_code = open(args.codefile, "r").read()
