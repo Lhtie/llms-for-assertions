@@ -12,12 +12,19 @@ def source_directory(filename, datasets, fallback):
     if not re.fullmatch(r'[A-Za-z_][\w]*', group):
         raise ValueError(f'Invalid dataset prefix: {group}')
     directory = root / group
-    if group in {'buggycodes', 'buggyasrts'}:
-        if len(parts) < 5 or not re.fullmatch(r'mut_\d+', parts[1]):
-            raise ValueError(f'Missing mutation prefix: {filename}')
-        directory /= parts[1]
     if not directory.is_dir():
         raise FileNotFoundError(f'Source directory for {filename}: {directory}')
+
+    # Dataset variants are encoded as dotted filename components. Follow any
+    # matching directory components after the group, regardless of dataset
+    # name or variant naming convention (for example mut_000 or mut001).
+    for component in parts[1:]:
+        if component.lower() == 'java':
+            break
+        nested = directory / component
+        if not nested.is_dir():
+            break
+        directory = nested
     return str(directory)
 
 

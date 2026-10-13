@@ -20,7 +20,11 @@ def select_confident_candidates(gen_asrts, conformance_scores, equivalence_score
             zip(gen_asrts, conformance_scores, equivalence_scores, validity_scores)):
         if i >= len(candidate_mask) or not candidate_mask[i] or conformance is None:
             continue
-        score = float(conformance)
+        try:
+            score = float(conformance)
+        except (TypeError, ValueError):
+            # Scores reread from a check report are strings; a missing one is "None".
+            continue
         if not math.isfinite(score) or score <= threshold:
             continue
         candidates.append({
@@ -52,10 +56,12 @@ def run_active_tournament(code, groundtruth, combinedcodes, candidates, outdir,
             left_label = f"{left_label_prefix}_{left['index']}"
             right_label = f"{left_label_prefix}_{right['index']}"
             match_dir = os.path.join(outdir, f"round_{round_idx}_pair_{pair_idx // 2}")
+            # Real executions cannot separate two candidates that both hold on
+            # the implementation, so compare on arbitrary old/new state pairs.
             decision = run_active(
                 code, groundtruth, combinedcodes,
                 left["assert"], right["assert"],
-                rounds=rounds, outdir=match_dir,
+                rounds=rounds, outdir=match_dir, mode="independent",
                 left_label=left_label, right_label=right_label,
             )
             if decision == left_label:
@@ -105,19 +111,21 @@ import java.util.Objects;
 
 import {package}.{classname};
 
-public class {fuzztest_class}{class_generic} {{
+public class {fuzztest_class} {{
     @randoop.TestValue public static final String fuzzSeed0 = "seed0";
     @randoop.TestValue public static final String fuzzSeed1 = "seed1";
     @randoop.TestValue public static final String fuzzSeed2 = "seed2";
     @randoop.TestValue public static final int fuzzIntSeed0 = 0;
     @randoop.TestValue public static final int fuzzIntSeed1 = 1;
     @randoop.TestValue public static final int fuzzIntSeed2 = 2;
+    // Groundtruth verdict of the most recent replayed call.
+    public static boolean lastGroundtruthPass = true;
 
 {methods}
 
     @SuppressWarnings("unchecked")
-    public static {classname} makeFuzzInput() {{
-        return ({classname}) constructSeededObject({classname}.class, 0);
+    public static {classname}{class_type_args} makeFuzzInput() {{
+        return ({classname}{class_type_args}) constructSeededObject({classname}.class, 0);
     }}
 
 
@@ -171,7 +179,7 @@ public class {fuzztest_class}{class_generic} {{
                name.equals("addEdge") ? 2 : 3;
     }}
 
-    private static void seedStructure(Object target) {{
+    private static void seedStructure(Object target, String seedPrefix, int attempts) {{
         if (target == null) return;
         java.lang.reflect.Method[] methods = target.getClass().getMethods();
         java.util.Arrays.sort(methods, java.util.Comparator
@@ -185,29 +193,29 @@ public class {fuzztest_class}{class_generic} {{
                   name.equals("insert") || name.equals("union") || name.equals("set"))) continue;
             Class<?>[] types = method.getParameterTypes();
             if (types.length == 0 || types.length > 3) continue;
-            for (int attempt = 0; attempt < 3; attempt++) {{
+            for (int attempt = 0; attempt < attempts; attempt++) {{
                 Object[] args = new Object[types.length];
                 boolean supported = true;
                 for (int i = 0; i < types.length; i++) {{
                     Class<?> type = types[i];
                     int value = attempt + i;
-                    if (type == String.class || type == Object.class) args[i] = "seed" + value;
+                    if (type == String.class || type == Object.class) args[i] = seedPrefix + value;
                     else if (type.isAssignableFrom(java.util.ArrayList.class)) {{
                         java.util.ArrayList<Object> values = new java.util.ArrayList<>();
-                        values.add("seed" + value); values.add("seed" + (value + 10)); args[i] = values;
+                        values.add(seedPrefix + value); values.add(seedPrefix + (value + 10)); args[i] = values;
                     }} else if (type.isAssignableFrom(java.util.LinkedHashSet.class)) {{
                         java.util.LinkedHashSet<Object> values = new java.util.LinkedHashSet<>();
-                        values.add("seed" + value); values.add("seed" + (value + 10)); args[i] = values;
+                        values.add(seedPrefix + value); values.add(seedPrefix + (value + 10)); args[i] = values;
                     }} else if (type.isAssignableFrom(java.util.LinkedHashMap.class)) {{
                         java.util.LinkedHashMap<Object, Object> values = new java.util.LinkedHashMap<>();
-                        values.put("key" + value, "value" + value); args[i] = values;
+                        values.put(seedPrefix + "key" + value, seedPrefix + "value" + value); args[i] = values;
                     }} else if (type == int.class || type == Integer.class) args[i] = value;
                     else if (type == long.class || type == Long.class) args[i] = (long) value;
                     else if (type == boolean.class || type == Boolean.class) args[i] = value % 2 == 0;
                     else if (type == char.class || type == Character.class) args[i] = (char) ('a' + value);
                     else if (type.isArray() && (type.getComponentType() == String.class || type.getComponentType() == Object.class)) {{
                         Object array = java.lang.reflect.Array.newInstance(type.getComponentType(), 1);
-                        java.lang.reflect.Array.set(array, 0, "seed" + value); args[i] = array;
+                        java.lang.reflect.Array.set(array, 0, seedPrefix + value); args[i] = array;
                     }} else {{ supported = false; break; }}
                 }}
                 if (supported) try {{ method.invoke(target, args); }} catch (ReflectiveOperationException | RuntimeException ignored) {{ }}
@@ -339,7 +347,7 @@ def state_method_signature(base_jh, method_name):
         f"public{func_generic} void {method_name}"
         f"({base_jh.namespace}{class_generic} {base_jh.fuzz_objname}_old, "
         f"{base_jh.namespace}{class_generic} {base_jh.fuzz_objname}_new"
-        f"{funcargs}{retarg})"
+        f"{funcargs}{retarg}, int fuzzOldSeeds, int fuzzNewSeeds)"
     )
 
 
@@ -371,7 +379,7 @@ def build_witness_method_dependent(code, method_name, left_asrt, right_asrt, con
     {method_signature(base_jh, method_name)} {{
         if ({base_jh.fuzz_objname} == null) return;
 
-        seedStructure({base_jh.fuzz_objname});
+        seedStructure({base_jh.fuzz_objname}, "seed", 3);
 
         // copy old values
 {indent(old_code)}
@@ -406,8 +414,10 @@ def build_witness_method_independent(code, method_name, left_asrt, right_asrt, c
     {state_method_signature(base_jh, method_name)} {{
         if ({base_jh.fuzz_objname}_old == null || {base_jh.fuzz_objname}_new == null) return;
 
-        seedStructure({base_jh.fuzz_objname}_old);
-        if ({base_jh.fuzz_objname}_new != {base_jh.fuzz_objname}_old) seedStructure({base_jh.fuzz_objname}_new);
+        // Distinct old/new states of fuzzer-chosen sizes; identical ones hide
+        // old- vs new-state differences.
+        seedStructure({base_jh.fuzz_objname}_old, "old", Math.floorMod(fuzzOldSeeds, 4));
+        if ({base_jh.fuzz_objname}_new != {base_jh.fuzz_objname}_old) seedStructure({base_jh.fuzz_objname}_new, "seed", Math.floorMod(fuzzNewSeeds, 4));
 
         // copy old values
 {indent(old_code)}
@@ -439,7 +449,7 @@ def build_groundtruth_method_dependent(code, method_name, groundtruth):
     {method_signature(base_jh, method_name)} {{
         if ({base_jh.fuzz_objname} == null) return;
 
-        seedStructure({base_jh.fuzz_objname});
+        seedStructure({base_jh.fuzz_objname}, "seed", 3);
 
         // copy old values
 {indent(gt["old"])}
@@ -449,10 +459,7 @@ def build_groundtruth_method_dependent(code, method_name, groundtruth):
 
         // check groundtruth
 {indent(post_code)}
-        boolean groundtruthPass = Boolean.TRUE.equals(exec(() -> {gt["expr"]}));
-        if (!groundtruthPass) {{
-            throw new RuntimeException("GROUNDTRUTH_FAIL");
-        }}
+        lastGroundtruthPass = Boolean.TRUE.equals(exec(() -> {gt["expr"]}));
     }}
 """
 
@@ -465,18 +472,17 @@ def build_groundtruth_method_independent(code, method_name, groundtruth):
     {state_method_signature(base_jh, method_name)} {{
         if ({base_jh.fuzz_objname}_old == null || {base_jh.fuzz_objname}_new == null) return;
 
-        seedStructure({base_jh.fuzz_objname}_old);
-        if ({base_jh.fuzz_objname}_new != {base_jh.fuzz_objname}_old) seedStructure({base_jh.fuzz_objname}_new);
+        // Distinct old/new states of fuzzer-chosen sizes; identical ones hide
+        // old- vs new-state differences.
+        seedStructure({base_jh.fuzz_objname}_old, "old", Math.floorMod(fuzzOldSeeds, 4));
+        if ({base_jh.fuzz_objname}_new != {base_jh.fuzz_objname}_old) seedStructure({base_jh.fuzz_objname}_new, "seed", Math.floorMod(fuzzNewSeeds, 4));
 
         // copy old values
 {indent(gt["old"])}
 
         // check groundtruth
 {indent(post_code)}
-        boolean groundtruthPass = Boolean.TRUE.equals(exec(() -> {gt["expr"]}));
-        if (!groundtruthPass) {{
-            throw new RuntimeException("GROUNDTRUTH_FAIL");
-        }}
+        lastGroundtruthPass = Boolean.TRUE.equals(exec(() -> {gt["expr"]}));
     }}
 """
 
@@ -495,13 +501,28 @@ def build_fuzztest(code, combinedcodes, methods, fuzztest_class):
     imports = "\n".join([f"import {x};" for x in base_jh.imports])
     class_generic = base_jh.classname[base_jh.classname.find("<"):] \
         if base_jh.classname.find("<") != -1 else ""
+    # Randoop cannot generate method calls when the test class exposes unresolved
+    # type variables. Specialize class type parameters to concrete types.
+    methods = "\n".join(methods)
+    class_type_args = ""
+    if class_generic:
+        concrete_types = []
+        for declaration in class_generic[1:-1].split(","):
+            parts = declaration.strip().split(None, 2)
+            bound = " ".join(parts[1:])
+            concrete = "Integer" if re.search(r"\b(Number|Integer|Long|Double|Float)\b", bound) else "String"
+            methods = methods.replace(base_jh.namespace + class_generic, base_jh.namespace + "<CLASS_TYPE_ARGS>")
+            methods = re.sub(rf"\b{re.escape(parts[0])}\b", concrete, methods)
+            concrete_types.append(concrete)
+        class_type_args = "<" + ", ".join(concrete_types) + ">"
+        methods = methods.replace("<CLASS_TYPE_ARGS>", class_type_args)
     return FUZZTEST_TEMPLATE.format(
         imports=imports,
         package=package,
         classname=base_jh.namespace,
         fuzztest_class=fuzztest_class,
-        class_generic=class_generic,
-        methods="\n".join(methods),
+        class_type_args=class_type_args,
+        methods=methods,
     )
 
 
@@ -641,6 +662,15 @@ def active_direction(code, groundtruth, left_asrt, right_asrt, combinedcodes,
     for path in glob.glob(os.path.join(workdir, "ErrorTest[0-9]*.java")):
         text = open(path, "r").read()
         text = text.replace(f"fuzztests.{witness_class}", f"fuzztests.{groundtruth_class}")
+        # Earlier calls in a sequence may violate the groundtruth too; only the
+        # distinguishing call (the one that threw) decides.
+        text = re.sub(
+            r"(// during test generation this statement threw[^\n]*\n[^\n]*\."
+            + re.escape(method_name) + r"\([^\n]*\n)",
+            lambda m: m.group(1) + "        org.junit.Assert.assertTrue("
+            f"fuzztests.{groundtruth_class}.lastGroundtruthPass);\n",
+            text,
+        )
         open(path, "w").write(text)
     compile_errors = compile_error_tests(workdir, combinedcodes)
     if compile_errors is None or compile_errors.returncode != 0:

@@ -214,6 +214,36 @@ done
 
 `--require-traces` 防止没有正例的有效样本静默退化成无 TC 运行。缺少 NL description 的 8 条内部 assert 仍标记 unsupported。TC 是独立构造 old/new/参数/返回值后求值的状态样例，不是目标方法的真实调用轨迹；因此是利用 ground truth 标签的生成实验。异常单独计数，不作负例。最终 compare 仍独立执行 Randoop；本次没有增加 heldout 批量评分入口。
 
+### examples：手写小例子，GPT-OSS-120B，不加 TC
+
+`--group examples` 递归扫描 `datasets/examples/`，每条带 `@@@` 描述的 assert 是一个样本；子目录（如 `mut001/`、`mut002/`）中同名类的不同实现各自成为独立样本。当前支持的类是 `IntList` 和 `PairMap`，adapter 见 [example_adapters.py](expecto_batch/example_adapters.py)：
+
+- `IntList`：`size`、`empty`、`elements: list[int]`（下标顺序）。
+- `PairMap`：DSL 没有字符串类型，因此暴露 `size`、`contains_key`、`index_of_key`，以及各 value 与 `key`、与返回值是否相等的布尔序列；返回值投影为 `is_null` 和 `equals_key`。
+
+新增类需要先在 `example_adapters.py` 中加入投影，否则样本记为 `unsupported`。
+
+在同一个 Docker 容器内，项目根目录执行：
+
+```bash
+cd /repo
+python3 -m baseline.expecto_batch.pipeline prepare \
+  --group examples \
+  --output baseline/expecto-results/examples-gpt-oss-no-tc
+python3 -m baseline.expecto_batch.pipeline run \
+  --group examples \
+  --output baseline/expecto-results/examples-gpt-oss-no-tc \
+  --model together/openai/gpt-oss-120b \
+  --no-memo --max-tokens 8192 --reasoning-effort medium
+```
+
+修改 `datasets/examples/` 下的源码后，源码哈希会变化，需要用新的输出目录重新 prepare。
+
+限制：
+
+- 只支持不加 TC；`testcases` 采集入口没有这些类的状态工厂，不能生成 `--traces` 文件。
+- 比较阶段的新旧状态只来自 harness 的 seeding，对 `IntList` 基本是固定的小列表，区分能力有限。例如对 `remove`，把 spec 写成“size 减一”也会得到 `no_counterexample`。这些样本的 `equivalent=true` 只表示有限测试未发现差异，需要结合 `spec.dsl` 人工确认。
+
 ### 只重试 preparation_error
 
 `preparation_error` 表示调用 LLM 前的输入检查失败。TreeSet 曾因 CRLF 换行在 `read_text()` 中被转换，导致源码哈希误报变化；现已统一按原始字节校验，真实源码修改仍会被拒绝。缺少 description 的样本记为 `unsupported`。

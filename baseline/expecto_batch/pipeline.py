@@ -323,7 +323,7 @@ def main():
     )
     p.add_argument(
         "--group", nargs="+",
-        choices=["buggycodes", "buggyasrts", "c2s_aug_sub", "c2s_aug", "naturalness"],
+        choices=["buggycodes", "buggyasrts", "c2s_aug_sub", "c2s_aug", "naturalness", "examples"],
         help="Explicit dataset groups; required for prepare and run.",
     )
     p.add_argument("--class", dest="class_name")

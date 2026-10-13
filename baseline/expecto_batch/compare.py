@@ -44,12 +44,15 @@ def render_harness(row, adapter, candidate, datasets):
     if adapter["java_return"]:
         parameters += f", {adapter['java_return']} {helper.fuzz_retvar}"
     cls = row["class_name"]
+    receiver = adapter.get("java_receiver", f"{cls}<Integer>")
+    # Same state seeding and receiver type arguments as checkers.equivchecker.
     code = javacode.format(
         "\n".join(row["imports"]), row["package"], cls, "", "", row["method_name"],
         "fuzzobj_old", "fuzzobj_new", parameters, old, quantifiers,
         split, f"({left}) == ({right})", "", "true",
+        'seedStructure(fuzzobj_old, "old");\n        if (fuzzobj_new != fuzzobj_old) seedStructure(fuzzobj_new, "seed");',
+        receiver[len(cls):],
     )
-    receiver = adapter.get("java_receiver", f"{cls}<Integer>")
     for name in ("fuzzobj_old", "fuzzobj_new"):
         code = code.replace(f"{cls} {name}", f"{receiver} {name}")
     return code

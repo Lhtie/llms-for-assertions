@@ -15,6 +15,11 @@ def adapt(row):
 
     if row["class_name"] in EXTENDED:
         return adapt_extended(row)
+    if row["group"] == "examples":
+        from .example_adapters import EXAMPLES, adapt_examples
+
+        if row["class_name"] in EXAMPLES:
+            return adapt_examples(row)
     if row["class_name"] not in SUPPORTED:
         raise ValueError("No collection adapter for this class")
     mapping = {}
