@@ -14,8 +14,8 @@ from utils.sourcepaths import java_source_info
 
 def select_confident_candidates(gen_asrts, conformance_scores, equivalence_scores,
                                validity_scores, candidate_mask, threshold):
-    """Return eligible candidates above the conformance threshold, low score first."""
-    candidates = []
+    """Deduplicate eligible assertions, then return confident ones, low score first."""
+    candidates_by_assertion = {}
     for i, (asrt, conformance, equivalence, validity) in enumerate(
             zip(gen_asrts, conformance_scores, equivalence_scores, validity_scores)):
         if i >= len(candidate_mask) or not candidate_mask[i] or conformance is None:
@@ -25,20 +25,56 @@ def select_confident_candidates(gen_asrts, conformance_scores, equivalence_score
         except (TypeError, ValueError):
             # Scores reread from a check report are strings; a missing one is "None".
             continue
-        if not math.isfinite(score) or score <= threshold:
+        if not math.isfinite(score):
             continue
-        candidates.append({
+        candidate = {
             "index": i,
             "validity": validity,
             "conformance": score,
             "equivalence": equivalence,
             "assert": asrt,
-        })
+        }
+        # Assertion text is the candidate identity. Keep the highest-scoring
+        # eligible occurrence so duplicates enter the tournament only once.
+        previous = candidates_by_assertion.get(asrt)
+        if previous is None or score > previous["conformance"]:
+            candidates_by_assertion[asrt] = candidate
+
+    candidates = [candidate for candidate in candidates_by_assertion.values()
+                  if candidate["conformance"] > threshold]
     return sorted(candidates, key=lambda candidate: (candidate["conformance"], candidate["index"]))
 
 
+def select_logprob_candidates(gen_asrts, logprob_scores, equivalence_scores,
+                              validity_scores, candidate_mask):
+    """Deduplicate eligible assertions, retaining the highest average logprob."""
+    candidates_by_assertion = {}
+    for i, (asrt, prob, equivalence, validity) in enumerate(
+            zip(gen_asrts, logprob_scores, equivalence_scores, validity_scores)):
+        if i >= len(candidate_mask) or not candidate_mask[i]:
+            continue
+        raw_score = prob.get("avg_logprob") if isinstance(prob, dict) else prob
+        try:
+            score = float(raw_score)
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(score):
+            continue
+        candidate = {
+            "index": i,
+            "validity": validity,
+            "logprob": score,
+            "equivalence": equivalence,
+            "assert": asrt,
+        }
+        previous = candidates_by_assertion.get(asrt)
+        if previous is None or score > previous["logprob"]:
+            candidates_by_assertion[asrt] = candidate
+    return sorted(candidates_by_assertion.values(), key=lambda c: (c["logprob"], c["index"]))
+
+
 def run_active_tournament(code, groundtruth, combinedcodes, candidates, outdir,
-                          rounds=2, left_label_prefix="candidate"):
+                          rounds=2, left_label_prefix="candidate", score_field="conformance"):
     """Pair adjacent candidates in score order; each winner advances a round."""
     survivors = list(candidates)
     matches = []
@@ -69,9 +105,11 @@ def run_active_tournament(code, groundtruth, combinedcodes, candidates, outdir,
             elif decision == right_label:
                 winner, reason = right, "active"
             else:
-                # An inconclusive active comparison still has to eliminate one
-                # candidate. Keep the higher-conformance member of this pair.
-                winner, reason = right, "higher-conformance fallback"
+                # An inconclusive comparison uses the active score as the fallback.
+                if left.get(score_field, float("-inf")) > right.get(score_field, float("-inf")):
+                    winner, reason = left, f"higher-{score_field} fallback"
+                else:
+                    winner, reason = right, f"higher-{score_field} fallback"
             winners.append(winner)
             matches.append({
                 "round": round_idx,
@@ -88,14 +126,42 @@ def run_active_tournament(code, groundtruth, combinedcodes, candidates, outdir,
 
 def run_active_selection(code, groundtruth, combinedcodes, gen_asrts,
                          conformance_scores, equivalence_scores, validity_scores,
-                         candidate_mask, threshold, outdir, rounds=2):
-    """Filter candidates and run the active pairwise elimination tournament."""
-    candidates = select_confident_candidates(
-        gen_asrts, conformance_scores, equivalence_scores, validity_scores,
-        candidate_mask, threshold,
-    )
+                         candidate_mask, threshold, outdir, rounds=2,
+                         score_mode="conformance", logprob_scores=None,
+                         selection_mode="active"):
+    """Select candidates by score, optionally skipping the pairwise tournament."""
+    if score_mode == "logprob":
+        if logprob_scores is None:
+            raise ValueError("logprob_scores are required when score_mode='logprob'")
+        candidates = select_logprob_candidates(
+            gen_asrts, logprob_scores, equivalence_scores, validity_scores, candidate_mask,
+        )
+        score_field = "logprob"
+    elif score_mode == "conformance":
+        candidates = select_confident_candidates(
+            gen_asrts, conformance_scores, equivalence_scores, validity_scores,
+            candidate_mask, threshold,
+        )
+        score_field = "conformance"
+    else:
+        raise ValueError(f"Unsupported active score mode: {score_mode}")
+    if selection_mode in {"conformance-only", "logprob-only"}:
+        expected_score_mode = "logprob" if selection_mode == "logprob-only" else "conformance"
+        if score_mode != expected_score_mode:
+            raise ValueError(f"{selection_mode} selection requires score_mode={expected_score_mode!r}")
+        score_field = "logprob" if selection_mode == "logprob-only" else "conformance"
+        # Break equal-score ties in favor of the earliest original candidate.
+        final_candidate = max(
+            candidates,
+            key=lambda candidate: (candidate[score_field], -candidate["index"]),
+            default=None,
+        )
+        return candidates, final_candidate, []
+    if selection_mode != "active":
+        raise ValueError(f"Unsupported selection mode: {selection_mode}")
     final_candidate, matches = run_active_tournament(
         code, groundtruth, combinedcodes, candidates, outdir, rounds=rounds,
+        score_field=score_field,
     )
     return candidates, final_candidate, matches
 

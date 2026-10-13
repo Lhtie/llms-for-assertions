@@ -96,11 +96,13 @@ def format_prob_field(score, field):
 def format_best_candidate(label, candidate):
     if candidate is None:
         return f"{label}: None\n"
+    score_name = "avg_logprob" if "logprob" in candidate else "conformance"
+    score_text = format_score(candidate["logprob"]) if score_name == "avg_logprob" else format_score(candidate["conformance"])
     return (
         f"{label}:\n"
         f"  index: {candidate['index']}\n"
         f"  validity: {candidate['validity']}\n"
-        f"  conformance: {format_score(candidate['conformance'])}\n"
+        f"  {score_name}: {score_text}\n"
         f"  equivalence: {candidate['equivalence']}\n"
         f"  assert: {candidate['assert']}\n"
     )
@@ -137,7 +139,9 @@ def replace_active_report_section(block, active_output):
             else:
                 continue
         if line.startswith((
-            "active_conformance_threshold:", "active_candidates:",
+            "active_score_mode:", "active_conformance_threshold:", "active_logprob_threshold:",
+            "active_selection_mode:",
+            "active_candidates", "active_candidates_skipped_no_logprob:",
             "active_candidate_pool", "active_tournament:", "active_decision:",
             "validity_fail_best_conf:", "validity_pass_best_conf:", "active_error:",
         )):
@@ -153,16 +157,24 @@ def replace_active_report_section(block, active_output):
     return "\n".join(kept) + "\n"
 
 
-def format_active_output(candidates, final_candidate, tournament_matches, threshold):
-    output = [f"active_conformance_threshold: {threshold}"]
+def format_active_output(candidates, final_candidate, tournament_matches, threshold,
+                         score_mode="conformance", selection_mode="active"):
+    output = [f"active_selection_mode: {selection_mode}", f"active_score_mode: {score_mode}"]
+    if score_mode == "conformance":
+        output.append(f"active_conformance_threshold: {threshold}")
+        score_field = "conformance"
+        score_label = "conformance, ascending"
+    else:
+        score_field = "logprob"
+        score_label = "avg_logprob, ascending"
     if candidates:
         pool = ", ".join(
-            f"{candidate['index']}:{format_score(candidate['conformance'])}"
+            f"{candidate['index']}:{format_score(candidate[score_field])}"
             for candidate in candidates
         )
     else:
         pool = "None"
-    output.append(f"active_candidates (index:conformance, ascending): {pool}")
+    output.append(f"active_candidates (index:{score_label}): {pool}")
     match_summaries = []
     for match in tournament_matches:
         if "bye" in match:
@@ -172,7 +184,10 @@ def format_active_output(candidates, final_candidate, tournament_matches, thresh
                 f"r{match['round']}: {match['left']} vs {match['right']}"
                 f" -> {match['winner']} ({match['reason']})"
             )
-    output.append("active_tournament: " + ("; ".join(match_summaries) if match_summaries else "no matches"))
+    if selection_mode in {"conformance-only", "logprob-only"}:
+        output.append(f"active_tournament: skipped ({selection_mode} selection)")
+    else:
+        output.append("active_tournament: " + ("; ".join(match_summaries) if match_summaries else "no matches"))
     output.append(
         f"active_decision: candidate_{final_candidate['index']}"
         if final_candidate is not None else "active_decision: None"
@@ -182,7 +197,8 @@ def format_active_output(candidates, final_candidate, tournament_matches, thresh
 
 
 def rerun_active_from_check_file(check_file, codedir, datasets, combinedcodesdir,
-                                 checker_kwargs, threshold_override=None):
+                                 checker_kwargs, threshold_override=None,
+                                 score_mode="conformance", selection_mode="active"):
     """Rerun only active for entries in a prior checker report."""
     report = open(check_file, "r").read()
     lines = report.splitlines(keepends=True)
@@ -225,24 +241,45 @@ def rerun_active_from_check_file(check_file, codedir, datasets, combinedcodesdir
         compile_results = parse_report_value(block, "compile_check")
         validity_scores = parse_report_value(block, "validity_scores")
         conformance_scores = parse_report_value(block, "conformance_scores")
+        prob_scores = parse_report_value(block, "prob_avg_scores")
         equivalence_scores = parse_report_value(block, "equiv_res")
         expected_size = len(gen_asrts)
-        if (not all(isinstance(values, list) and len(values) >= expected_size for values in
-                    (null_results, compile_results, validity_scores, conformance_scores))):
+        required_arrays = (null_results, compile_results, validity_scores)
+        if score_mode == "conformance":
+            required_arrays += (conformance_scores,)
+        if not all(isinstance(values, list) and len(values) >= expected_size for values in required_arrays):
             updated_entries.append(
-                block.rstrip() + "\nactive_error: report lacks aligned null/compile/validity/conformance arrays\n"
+                block.rstrip() + f"\nactive_error: report lacks aligned arrays required for {score_mode} active selection\n"
             )
             continue
+        if score_mode == "logprob" and not (
+                isinstance(prob_scores, list) and len(prob_scores) >= expected_size):
+            raw_result_path = os.path.join(result_dir, filename)
+            try:
+                prob_scores = CHECKERS["prob_check"](
+                    langid, source, raw_result_path, gen_asrts,
+                    [bool(null_results[i]) and bool(compile_results[i]) for i in range(expected_size)],
+                    checker_kwargs.get("prob_check", {}),
+                )
+            except Exception as exc:
+                updated_entries.append(
+                    block.rstrip() + f"\nactive_error: could not obtain logprob scores: {type(exc).__name__}: {exc}\n"
+                )
+                continue
+        if not isinstance(conformance_scores, list) or len(conformance_scores) < expected_size:
+            conformance_scores = [None] * expected_size
         if not isinstance(equivalence_scores, list) or len(equivalence_scores) < expected_size:
             equivalence_scores = [None] * expected_size
         candidate_mask = [bool(null_results[i]) and bool(compile_results[i]) for i in range(expected_size)]
-        threshold = threshold_override
-        if threshold is None:
-            threshold = parse_report_value(block, "active_conformance_threshold")
-        if threshold is None:
-            threshold = checker_kwargs.get("rdtp_check", {}).get(
-                "threshold", rdtpchecker.configs.get(langid, {}).get("threshold", 0.6)
-            )
+        threshold = None
+        if score_mode == "conformance":
+            threshold = threshold_override
+            if threshold is None:
+                threshold = parse_report_value(block, "active_conformance_threshold")
+            if threshold is None:
+                threshold = checker_kwargs.get("rdtp_check", {}).get(
+                    "threshold", rdtpchecker.configs.get(langid, {}).get("threshold", 0.6)
+                )
         combinedcodes = source_directory(filename, datasets, combinedcodesdir)
         pfx, sfx, _ = read_problem(source, langid)
         candidates, winner, matches = run_active_selection(
@@ -250,9 +287,12 @@ def rerun_active_from_check_file(check_file, codedir, datasets, combinedcodesdir
             conformance_scores, equivalence_scores, validity_scores,
             candidate_mask, threshold,
             outdir=os.path.join("./checktmp/active/rerun", filename), rounds=2,
+            score_mode=score_mode, logprob_scores=prob_scores,
+            selection_mode=selection_mode,
         )
         updated_entries.append(replace_active_report_section(
-            block, format_active_output(candidates, winner, matches, threshold)
+            block, format_active_output(candidates, winner, matches, threshold,
+                                        score_mode, selection_mode)
         ))
     return "".join(updated_entries)
 
@@ -272,17 +312,30 @@ if __name__ == "__main__":
                         help="Rerun active selection from a prior checker report without rerunning checks")
     parser.add_argument("--active-threshold", type=float, default=None,
                         help="Override the conformance threshold for active-only reruns")
+    parser.add_argument("--active-score", choices=["conformance", "logprob"], default=None,
+                        help="Candidate score used by active selection; logprob mode skips conformance")
+    parser.add_argument("--selection-mode", choices=["active", "conformance-only", "logprob-only"], default="active",
+                        help="Use tournament selection, highest conformance, or highest logprob directly")
     parser.add_argument("--checklist", nargs='+', default=["default"], choices=["default", "valid", "conf", "equiv", "prob"])
     
     args = parser.parse_args()
+    active_score_mode = args.active_score or (
+        "logprob" if args.selection_mode == "logprob-only" else "conformance"
+    )
+    if args.selection_mode == "conformance-only" and active_score_mode != "conformance":
+        parser.error("--selection-mode conformance-only requires --active-score conformance")
+    if args.selection_mode == "logprob-only" and active_score_mode != "logprob":
+        parser.error("--selection-mode logprob-only requires --active-score logprob")
     checker_groups = {"default", "valid", "conf", "equiv", "prob"}
     unknown_checkers = [checker for checker in args.checklist if checker not in checker_groups]
     assert not unknown_checkers, f"Unknown checker groups in --checklist: {unknown_checkers}"
     run_default = "default" in args.checklist
     run_valid = run_default or "valid" in args.checklist
-    run_conf = run_default or "conf" in args.checklist
+    run_conf = active_score_mode == "conformance" and (
+        "conf" in args.checklist or run_default
+    )
     run_equiv = run_default or "equiv" in args.checklist
-    run_prob = "prob" in args.checklist
+    run_prob = "prob" in args.checklist or (run_default and active_score_mode == "logprob")
     checker_kwargs_map = parse_checker_kwargs(args.checkerkwargs)
 
     if args.active_from_check_file:
@@ -293,6 +346,8 @@ if __name__ == "__main__":
             args.combinedcodesdir,
             checker_kwargs_map,
             threshold_override=args.active_threshold,
+            score_mode=active_score_mode,
+            selection_mode=args.selection_mode,
         )
         output_name = args.outname or (os.path.basename(args.active_from_check_file) + ".active.txt")
         if args.write:
@@ -353,6 +408,9 @@ if __name__ == "__main__":
                 print("!"*10 + f" {rdir}/{f}", file=sys.stderr)
                 
                 valid_results = {}
+                validity_scores = [0] * len(gen_asrts)
+                conformance_scores = [None] * len(gen_asrts)
+                prob_scores = [None] * len(gen_asrts)
                 if run_valid:
                     valid_checks = ["null_check", "compile_check", "fuzz_check"]
                     valid_mask = currmask
@@ -405,9 +463,11 @@ if __name__ == "__main__":
                         bool_mask(valid_results["null_check"]),
                         bool_mask(valid_results["compile_check"]),
                     )
-                    threshold = checker_kwargs_map.get("rdtp_check", {}).get(
-                        "threshold", rdtpchecker.configs.get(langid, {}).get("threshold", 0.6)
-                    )
+                    threshold = None
+                    if active_score_mode == "conformance":
+                        threshold = checker_kwargs_map.get("rdtp_check", {}).get(
+                            "threshold", rdtpchecker.configs.get(langid, {}).get("threshold", 0.6)
+                        )
                     active_candidates, final_candidate, tournament_matches = run_active_selection(
                         pfx + "\n" + sfx,
                         grnd_truth,
@@ -420,12 +480,23 @@ if __name__ == "__main__":
                         threshold,
                         outdir="./checktmp/active/tournament",
                         rounds=2,
+                        score_mode=active_score_mode,
+                        logprob_scores=prob_scores,
+                        selection_mode=args.selection_mode,
                     )
-                    toprint += f"active_conformance_threshold: {threshold}\n"
-                    toprint += "active_candidates (index:conformance, ascending): "
+                    toprint += f"active_selection_mode: {args.selection_mode}\n"
+                    toprint += f"active_score_mode: {active_score_mode}\n"
+                    if active_score_mode == "conformance":
+                        toprint += f"active_conformance_threshold: {threshold}\n"
+                        active_score_field = "conformance"
+                        active_score_label = "conformance, ascending"
+                    else:
+                        active_score_field = "logprob"
+                        active_score_label = "avg_logprob, ascending"
+                    toprint += f"active_candidates (index:{active_score_label}): "
                     if active_candidates:
                         toprint += ", ".join(
-                            f"{candidate['index']}:{format_score(candidate['conformance'])}"
+                            f"{candidate['index']}:{format_score(candidate[active_score_field])}"
                             for candidate in active_candidates
                         ) + "\n"
                     else:

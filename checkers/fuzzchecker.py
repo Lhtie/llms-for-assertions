@@ -146,15 +146,15 @@ public class FuzzTest{{
     }}
     
     @SuppressWarnings("unchecked")
-	private static <T> T get_from_array(Object arr, int index, T ex_val){{
+	private static <FuzzHelperType> FuzzHelperType get_from_array(Object arr, int index, FuzzHelperType ex_val){{
 		try {{
-			return (T) Array.get(arr, index);
+			return (FuzzHelperType) Array.get(arr, index);
 		}} catch (Exception fuzzexception) {{
 			return null;
 		}}
 	}}
     
-    private static <T> T exec(Supplier<T> supplier){{
+    private static <FuzzHelperType> FuzzHelperType exec(Supplier<FuzzHelperType> supplier){{
 		try {{
 			return supplier.get();
 		}} catch (Exception fuzzexception) {{
@@ -162,7 +162,7 @@ public class FuzzTest{{
 		}}
 	}}
  
-    private static <T> Pair<T, String> func_call_supplier(Supplier<T> supplier){{
+    private static <FuzzHelperType> Pair<FuzzHelperType, String> func_call_supplier(Supplier<FuzzHelperType> supplier){{
         try {{
             return new Pair<>(supplier.get(), null);
         }} catch (Exception fuzzexception){{
