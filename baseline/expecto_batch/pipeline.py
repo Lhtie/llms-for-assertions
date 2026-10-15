@@ -56,6 +56,10 @@ def prepare(args):
             )
     if not inventory:
         raise ValueError("No dataset Java files found")
+    if args.sample_id:
+        rows = [row for row in rows if row['id'] == args.sample_id]
+        if not rows:
+            raise ValueError(f'No matching sample: {args.sample_id}')
     args.output.mkdir(parents=True, exist_ok=True)
     for row in rows:
         directory = args.output / row["id"]

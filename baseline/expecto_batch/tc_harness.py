@@ -148,7 +148,22 @@ def factory(row, adapter):
     fixture = mutant_state_factory(row, typ)
     if fixture is not None:
         return fixture
-    if cls == 'Trie':
+    if row['group'] == 'examples' and cls in {'IntList', 'IntSeq'}:
+        body = (f'{cls} x=new {cls}();'
+                'for(int i=0;i<Math.floorMod(s,6);i++)'
+                'x.add((Math.floorMod(Math.floorDiv(s,6),2)==0)?0:Math.floorMod(s+i,7)-3);return x;')
+    elif row['group'] == 'examples' and cls == 'PairMap':
+        body = ('PairMap x=new PairMap();'
+                'if(s>=48){switch(Math.floorMod(s,4)){'
+                'case 0:x.put("a","b");break;'
+                'case 1:x.put("a",new String("a"));break;'
+                'case 2:x.put("b",new String("a"));break;'
+                'default:x.put("a","b");x.put("b",new String("a"));}return x;}'
+                'for(int i=0;i<Math.floorMod(s,6);i++){'
+                'String k=word(s+i),v=word(s+i+1);'
+                'if(v!=null && (s&1)==0)v=new String(v);x.put(k,v);}'
+                'return x;')
+    elif cls == 'Trie':
         body = 'Trie x=new Trie();for(String w:words(s))x.add(w);return x;'
     elif cls == 'UnionFind':
         body = ('java.util.Set<Integer> v=new java.util.LinkedHashSet<>(values(s));v.remove(null);'
@@ -164,6 +179,10 @@ def factory(row, adapter):
                 'return new DefaultListenableGraph<>(g);')
     elif cls == 'BitSet':
         body = 'BitSet x=new BitSet();for(int i=0;i<16;i++)if(((s>>>i)&1)!=0)x.set(i);return x;'
+    elif cls == 'ArrayList':
+        # The benchmark's grow() is a stub in several source versions. Leave
+        # spare backing capacity so real add calls can return normally.
+        body = 'ArrayList<Integer> x=new ArrayList<>(16);for(Integer v:values(s))x.add(v);return x;'
     elif cls == 'HashMap':
         body = 'HashMap<Integer,Integer> x=new HashMap<>();for(java.util.Map.Entry<Integer,Integer> e:map(s).entrySet())x.put(e.getKey(),e.getValue());return x;'
     elif cls == 'HashSet':

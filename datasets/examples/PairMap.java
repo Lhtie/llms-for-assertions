@@ -18,6 +18,10 @@ public class PairMap {
         return keys.contains(key);
     }
 
+    public boolean containsValue(String value) {
+        return values.contains(value);
+    }
+
     public int indexOf(String key) {
         return keys.indexOf(key);
     }

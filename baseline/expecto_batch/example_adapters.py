@@ -28,6 +28,7 @@ def adapt_examples(row):
             if name != 'key':
                 continue
             fields['contains_key'] = p.scalar(path + '.contains_key', 'bool', 'this.containsKey(key)')
+            fields['contains_value'] = p.scalar(path + '.contains_value', 'bool', 'this.containsValue(key)')
             fields['index_of_key'] = p.scalar(path + '.index_of_key', 'int', 'this.indexOf(key)')
             fields['values_equal_key'] = p.sequence(path + '.values_equal_key', 'bool', 'this.size()',
                                                     'java.util.Objects.equals(this.valueAt({index}), key)')

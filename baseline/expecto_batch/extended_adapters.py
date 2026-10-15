@@ -48,7 +48,7 @@ class Profile:
             for name in ['bitIndex', 'fromIndex', 'toIndex']:
                 if name in params:
                     scalar('bit_at_' + name, 'bool', f'({name} >= 0 && {owner}.get({name}))')
-            if self.row['return_type'] == 'int':
+            if self.row['return_type'] == 'int' and path != 'entry_self':
                 scalar('bit_at_result', 'bool', rf'(\result >= 0 && {owner}.get(\result))')
         elif cls == 'DefaultListenableGraph':
             sequence('vertices', 'option[int]', f'{owner}.vertexSet().size()', f'((Integer){owner}.vertexSet().toArray()[{{index}}])')
@@ -63,7 +63,7 @@ class Profile:
                     scalar('value_at_key', 'option[int]', f'((Integer){owner}.get(key))')
                 if 'value' in params:
                     scalar('contains_value', 'bool', f'{owner}.containsValue(value)')
-                if self.row['return_type'] == 'V':
+                if self.row['return_type'] == 'V' and path != 'entry_self':
                     scalar('contains_return_value', 'bool', rf'{owner}.containsValue(\result)')
             elif cls == 'UnionFind':
                 scalar('number_of_sets', 'int', f'{owner}.numberOfSets()')

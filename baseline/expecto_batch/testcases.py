@@ -1,4 +1,4 @@
-"""Generate ground-truth-labelled state cases with Randoop, independently per assert."""
+"""Collect actual method executions; label normal returns with source assertions."""
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import argparse
@@ -6,6 +6,9 @@ import hashlib
 import json
 import os
 import re
+import tempfile
+import threading
+import copy
 from pathlib import Path
 
 from .adapters import adapt
@@ -283,59 +286,51 @@ def oracle_expression(assertion):
     return lower(text)
 
 
-def generate(row, adapter, datasets, directory, seconds, seeds):
+_execution_cache = {}
+_execution_locks = {}
+_execution_lock = threading.Lock()
+
+
+def generate(row, adapter, datasets, directory, seconds, seeds, label_mode='groundtruth', bounded_only=False, max_cases=2000):
+    if label_mode != 'implementation':
+        return _generate(row, adapter, datasets, directory, seconds, seeds, label_mode, bounded_only, max_cases)
+    from .method_execution import harness as execution_harness
+    code = execution_harness(row, adapter, JAVA_HELPERS, datasets, label_mode)
+    key = hashlib.sha256((code + row['source_sha256'] + str(seconds) + str(seeds)
+                          + str(bounded_only) + str(max_cases)).encode()).hexdigest()
+    with _execution_lock:
+        lock = _execution_locks.setdefault(key, threading.Lock())
+    with lock:
+        if key in _execution_cache:
+            result, files = _execution_cache[key]
+            for name, body in files.items():
+                (directory / name).write_bytes(body)
+            return copy.deepcopy(result)
+        result = _generate(row, adapter, datasets, directory, seconds, seeds, label_mode, bounded_only, max_cases)
+        files = {p.name: p.read_bytes() for p in directory.iterdir()
+                 if p.is_file() and p.name not in {'sample.json', 'adapter.json', 'result.json'}}
+        _execution_cache[key] = (copy.deepcopy(result), files)
+        return result
+
+
+def _generate(row, adapter, datasets, directory, seconds, seeds, label_mode='groundtruth', bounded_only=False, max_cases=2000):
     from .tc_harness import mutant_state_factory
 
-    if row["group"] in {"c2s_aug_sub", "c2s_aug", "naturalness"} or adapter.get("extended") or row["class_name"] == "TreeSet":
-        from .trace_projection import instrumented_harness
-
-        code = instrumented_harness(
-            row, adapter, JAVA_HELPERS,
-            collection_probe=None if adapter.get("extended") or row["group"] == "c2s_aug" else probe_source(row, adapter),
-        )
-    else:
-        args = [
-            f"{row['class_name']}<Integer> fuzzobj_old",
-            f"{row['class_name']}<Integer> fuzzobj_new",
-        ]
-        args += [p["type"] + " " + p["name"] for p in adapter["java_parameters"]]
-        if adapter["java_return"]:
-            args.append(adapter["java_return"] + " New_Ret")
-        expression = oracle_expression(row["ground_truth"])
-        code = (
-            "package fuzztests;\nimport java.util.*;\nimport "
-            + row["package"]
-            + "."
-            + row["class_name"]
-            + ";\n"
-            + "public class FuzzTest {\n"
-            + JAVA_HELPERS
-            + probe_source(row, adapter)
-            + r"""
-     static long valid=0,errors=0;
-     static { Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      try { java.nio.file.Files.writeString(java.nio.file.Path.of(System.getProperty("expecto.counts")),
-        "{\"valid\":"+valid+",\"errors\":"+errors+"}"); } catch(Exception e) {}
-     })); }
-    """
-            + " public void check("
-            + ",".join(args)
-            + ") {\n"
-            + " if(fuzzobj_old==null || fuzzobj_new==null) return;\n try {\n"
-            + " boolean a="
-            + expression
-            + ";\n"
-            + instrumentation(row, adapter)
-            + "\n valid++;\n"
-            + " } catch(Exception problem) { failure(problem); errors++; }\n }\n}\n"
-        )
+    from .method_execution import harness as execution_harness
+    helpers = JAVA_HELPERS.replace('>=2000', f'>={max_cases}')
+    code = execution_harness(row, adapter, helpers, datasets, label_mode)
+    if label_mode == 'implementation' and row['class_name'] != 'PairMap':
+        code = code.replace('probe(a,a+1,c,0);', f'{{probe(a,a+1,c,0);if(positives>={max_cases})return;}}')
     harness = directory / "FuzzTest.java"
     harness.write_text(code)
-    classes = directory / "classes"
-    classes.mkdir(exist_ok=True)
-    jars = list((ROOT / "java-testgen").rglob("*.jar")) + list(
-        (ROOT / "java-thirdparty").glob("*.jar")
-    )
+    # Compile scratch classes locally rather than repeatedly writing them to
+    # the Windows mount. The Java source and TC remain in the report directory.
+    local_classes = tempfile.TemporaryDirectory(prefix='expecto-unit-classes-')
+    classes = Path(local_classes.name)
+    jar_dir = os.environ.get('EXPECTO_TC_JAR_DIR')
+    jars = list(Path(jar_dir).glob('*.jar')) if jar_dir else (
+        list((ROOT / "java-testgen").rglob("*.jar")) +
+        list((ROOT / "java-thirdparty").glob("*.jar")))
     cp = os.pathsep.join(map(str, [classes] + jars))
     source = datasets / row["source"]
     source_text = source.read_text()
@@ -371,6 +366,12 @@ def generate(row, adapter, datasets, directory, seconds, seeds):
         path.unlink(missing_ok=True)
         counts = directory / f"counts-seed-{seed}.json"
         counts.unlink(missing_ok=True)
+        rc = command([
+            'java', '-Xmx512m', '-Dexpecto.counts=' + str(counts),
+            '-Dexpecto.cases=' + str(path), '-cp', cp, 'fuzztests.FuzzTest'
+        ], directory, f'bounded-seed-{seed}', 30)
+        if rc != 0:
+            return dict(status='error', error='Bounded method execution failed', returncode=rc)
         cmd = [
             "java",
             "-Xmx512m",
@@ -388,7 +389,8 @@ def generate(row, adapter, datasets, directory, seconds, seeds):
             "--output-limit=100",
             "--unchecked-exception=ERROR",
         ]
-        rc = command(cmd, directory, f"randoop-seed-{seed}", seconds + 60)
+        if not bounded_only:
+            rc = command(cmd, directory, f"randoop-seed-{seed}", seconds + 60)
         runs.append(
             dict(
                 seed=seed,
@@ -411,6 +413,24 @@ def generate(row, adapter, datasets, directory, seconds, seeds):
     positives = [v["trace"] for v in unique.values() if v["label"]]
     negatives = [v["trace"] for v in unique.values() if not v["label"]]
     pos, held_pos = split_cases(positives, 3)
+    if label_mode == 'implementation' and row['class_name'] == 'PairMap':
+        # Cover membership in keys and values separately. Use a content-equal,
+        # reference-distinct return to avoid teaching spurious identity equality.
+        predicates = [
+            lambda s,r: s['contains_key'] and not s['contains_value'] and r['is_null'],
+            lambda s,r: s['contains_key'] and s['contains_value'] and r['equals_key'] and not r['identical_key'],
+            lambda s,r: not s['contains_key'] and s['contains_value'] and r['equals_key'],
+        ]
+        chosen = [next((t for t in positives
+                        if t['entry']['params']['key']['char_codes'] == [97]
+                        and t['entry']['self']['size'] == 1
+                        and p(t['entry']['self'],t['exit']['ret'])),None)
+                  for p in predicates]
+        if any(t is None for t in chosen):
+            raise ValueError('PairMap implementation examples lack membership coverage')
+        pos = chosen
+        used = {json.dumps(t,sort_keys=True) for t in pos}
+        held_pos = [t for t in positives if json.dumps(t,sort_keys=True) not in used]
     neg, held_neg = split_cases(negatives, 3)
     examples = dict(
         corrects={f"p{i}": v for i, v in enumerate(pos)},
@@ -421,6 +441,9 @@ def generate(row, adapter, datasets, directory, seconds, seeds):
     write(directory / "cases.json", list(unique.values()))
     return dict(
         status="generated" if unique else "no_cases",
+        trace_kind="method_execution",
+        label_mode=label_mode,
+        bounded_only=bounded_only,
         positive=len(positives),
         negative=len(negatives),
         generation_positive=len(pos),
@@ -441,9 +464,12 @@ def main():
         "--seconds", type=int, default=3, help="Randoop seconds per seed per assert"
     )
     p.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2])
-    p.add_argument("--group", nargs="+", choices=["buggycodes", "buggyasrts", "c2s_aug_sub", "c2s_aug", "naturalness"],
+    p.add_argument("--group", nargs="+", choices=["buggycodes", "buggyasrts", "c2s_aug_sub", "c2s_aug", "naturalness", "examples"],
                    default=["buggycodes", "buggyasrts"])
     p.add_argument("--sample-id")
+    p.add_argument('--label-mode', choices=['groundtruth','implementation'], default='groundtruth')
+    p.add_argument('--bounded-only', action='store_true', help='Use actual bounded method calls without additional Randoop sampling')
+    p.add_argument('--max-cases', type=int, default=2000, help='Limit captured cases per label; select at most 3 for generation')
     p.add_argument("--force", action="store_true")
     p.add_argument(
         "--jobs",
@@ -476,7 +502,7 @@ def main():
         + (ROOT / "baseline/expecto_batch/compare.py").read_text()
         + (ROOT / "codehelper/javahelper.py").read_text()
         + "".join((Path(__file__).parent / name).read_text() for name in
-                  ["adapters.py", "extended_adapters.py", "tc_harness.py", "trace_projection.py", "object_adapters.py", "object_factories.py"])
+                  ["adapters.py", "extended_adapters.py", "example_adapters.py", "method_execution.py", "tc_harness.py", "trace_projection.py", "object_adapters.py", "object_factories.py"])
     )
 
     def process(row):
@@ -487,6 +513,8 @@ def main():
                 json.dumps(row, sort_keys=True)
                 + str(args.seconds)
                 + str(args.seeds)
+                + args.label_mode
+                + str(args.bounded_only) + str(args.max_cases)
                 + source_fingerprint
             ).encode()
         ).hexdigest()
@@ -505,7 +533,7 @@ def main():
                 adapter = adapt(row)
                 write(directory / "adapter.json", adapter)
                 result = generate(
-                    row, adapter, args.datasets, directory, args.seconds, args.seeds
+                    row, adapter, args.datasets, directory, args.seconds, args.seeds, args.label_mode, args.bounded_only, args.max_cases
                 )
             except Exception as e:
                 result = dict(status="unsupported" if row.get("extraction_error") else "error", error=str(e))

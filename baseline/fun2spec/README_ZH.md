@@ -59,6 +59,19 @@ python3 baseline/fun2spec/run_java.py \
 
 `--modellist` 使用 `llm.py` 中已有的模型别名。输出默认写到 `results/fun2spec/<模型名>/fun2spec-<温度>/`，包含每次生成的原始回答、提取出的 assertion，以及记录各轮验证结果的 `.fun2spec.json`。checker 的 parse/compile/fuzz 失败会触发重试；如果 checker 本身抛出异常，异常类型和消息也会记录为失败阶段并反馈。模型 API 的密钥仍由现有 `keysecrets.py` 或环境变量提供。
 
+运行中断后可在相同参数下加 `--resume` 续跑：已成功、已跳过或已用完重试次数的输入会保留并跳过；其余输入从已保存的下一轮尝试继续。每次尝试结束都会更新原始回答、提取结果和 JSON 检查点。默认不加 `--resume` 时仍从头运行并覆盖对应输出。
+
+```bash
+python3 baseline/fun2spec/run_java.py \
+  --codedir javacodes/fun2spec \
+  --datasets datasets \
+  --modellist gpt-oss-api \
+  --temp 0.6 \
+  --max-retries 5 \
+  --write \
+  --resume
+```
+
 这里的 Randoop 检查验证候选在生成测试上是否通过，不保证它符合 NL 意图或等价于 ground truth。可再用 `checker.py` 的 `equiv_check` 单独测 ground-truth 等价性。
 
 ## 指标解释

@@ -1,0 +1,6 @@
+predicate spec(param: record[obj: option[int], index: int], entry_self: record[size: int, empty: bool, elements: list[option[int]]], exit_self: record[size: int, empty: bool, elements: list[option[int]]], ret: nonetype) {
+    ((0 <= param.index <= entry_self.size) ==>
+        (∀(i: int) ::
+            ((param.index <= i < entry_self.size) ==>
+                (exit_self.elements[(i + 1)] == entry_self.elements[i]))))
+}

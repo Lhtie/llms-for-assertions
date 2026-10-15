@@ -1,7 +1,62 @@
 """Serialize the same public-observer schema used by extended batch generation."""
 import json
 
-from .tc_harness import expression, harness, generated_value
+from .tc_harness import expression, harness, generated_value, factory
+
+
+def executed_examples_harness(row, adapter, helpers):
+    """Capture genuine normal method executions, then label their postconditions."""
+    if row['constructor']:
+        raise ValueError('Examples execution collector currently supports instance methods only')
+    info, mapping = adapter['method_info'], adapter['mapping']
+    receiver = adapter['java_receiver']
+    declarations, names = [], []
+    for i, parameter in enumerate(adapter['java_parameters']):
+        name, typ = parameter['name'], parameter['type']
+        value = (f'tcNumber(c+{i},fuzzobj_new.size())' if typ == 'int'
+                 else generated_value(typ, f'(c+{i})', receiver))
+        declarations.append(f'{typ} {name}={value};')
+        names.append(name)
+    call = f"fuzzobj_new.{row['method_name']}({','.join(names)})"
+    invocation = f"{adapter['java_return']} New_Ret={call};" if adapter['java_return'] else call + ';'
+    old = projection(info['entry_schema']['self'], 'entry_self', mapping).replace('fuzzobj_old', 'fuzzobj_new')
+    new = projection(info['exit_schema']['self'], 'exit_self', mapping)
+    ret = projection(info['exit_schema']['ret'], 'ret', mapping)
+    params = []
+    for name, typ in record_fields(info['entry_schema']['params']):
+        params.extend([json.dumps(name), projection(typ, 'param.' + name, mapping)])
+    return f'''package fuzztests;
+import java.util.*;
+import java.util.function.Supplier;
+import {row['package']}.{row['class_name']};
+public class FuzzTest {{
+{factory(row,adapter)}
+{helpers}
+{JAVA_PROJECTION}
+ static long valid=0,errors=0,mismatches=0;
+ static {{Runtime.getRuntime().addShutdownHook(new Thread(() -> {{try {{
+  java.nio.file.Files.writeString(java.nio.file.Path.of(System.getProperty("expecto.counts")),
+  "{{\\"valid\\":"+valid+",\\"errors\\":"+errors+",\\"mismatches\\":"+mismatches+"}}");
+ }}catch(Exception e){{}}}}));}}
+ public static void probe(int a,int b,int c,int d) {{
+  // The second identically initialized object is solely an immutable pre-state
+  // witness for evaluating \\old. Entry JSON is captured from the actual receiver.
+  {receiver} fuzzobj_new=make(a), fuzzobj_old=make(a);
+  {''.join(declarations)}
+  try {{
+   Object entrySnapshot={old};
+   Object[] parameterSnapshot=new Object[]{{{','.join(params)}}};
+   {invocation}
+   boolean label={expression(row['ground_truth'])};
+   emit(label,entrySnapshot,{new},{ret},parameterSnapshot);
+   valid++; if(!label)mismatches++;
+  }}catch(Exception problem){{failure(problem);errors++;}}
+ }}
+ public static void main(String[] args) {{
+  for(int a=0;a<48;a++)for(int c=0;c<16;c++)probe(a,0,c,0);
+ }}
+}}
+'''
 
 JAVA_PROJECTION = r'''
  static int tcNumber(int selector,int size) {
@@ -69,6 +124,8 @@ def projection(schema, path, mapping, nullable=None):
 
 
 def instrumented_harness(row, adapter, helpers, collection_probe=None):
+    if row['group'] == 'examples':
+        return executed_examples_harness(row, adapter, helpers)
     code = harness(row, adapter, row['ground_truth'])
     if collection_probe is not None:
         # Keep the original buggy benchmark's collection input factories exactly.
