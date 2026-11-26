@@ -1,0 +1,1 @@
+Exact copies of the C2S Sub and Naturalness generation traces from baseline/expecto-results/matrix-chtc-20261020-140827/testcases/. Used to hold examples fixed for the pipeline-fewshot prompt experiment.

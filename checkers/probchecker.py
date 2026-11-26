@@ -31,9 +31,11 @@ def logprob_path(raw_result_path):
 
 
 def write_logprob_file(path, scores):
-    with open(path, "w", encoding="utf-8") as fd:
+    temporary = os.fspath(path) + f'.{os.getpid()}.tmp'
+    with open(temporary, "w", encoding="utf-8") as fd:
         json.dump(scores, fd, indent=2)
         fd.write("\n")
+    os.replace(temporary, path)
 
 
 def read_logprob_file(path):
@@ -430,7 +432,11 @@ def load_prob_model(langid, mkey=None):
     if mkey is None:
         mkey = config["mkey"]
     if config["model"] is None or config.get("loaded_mkey") != mkey:
-        tokenizer, model, devices = load_model(mkey)
+        paths = None
+        if os.environ.get('PROBCHECKER_MODEL_PATH'):
+            from llm import modelpaths
+            paths = dict(modelpaths, **{mkey: os.environ['PROBCHECKER_MODEL_PATH']})
+        tokenizer, model, devices = load_model(mkey, modelpaths=paths)
         config["model"] = {
             "tokenizer": tokenizer,
             "model": model,
@@ -448,17 +454,26 @@ def probcheck_file(code, langid, raw_result_path, mkey=None, mode=None, onemsg=N
 
     raw_result_path = os.fspath(raw_result_path)
     recorded_path = logprob_path(raw_result_path)
-    if os.path.exists(recorded_path):
-        return read_logprob_file(recorded_path)
-
     responses = split_raw_responses(open(raw_result_path, "r").read())
+    if os.path.exists(recorded_path):
+        cached = read_logprob_file(recorded_path)
+        try:
+            usable = isinstance(cached, list) and len(cached) == len(responses) and all(
+                math.isfinite(float(item['avg_logprob'])) for item in cached)
+        except (KeyError, TypeError, ValueError):
+            usable = False
+        if usable:
+            return cached
+
     model_dict = load_prob_model(langid, mkey)
     tokenizer = model_dict["tokenizer"]
     model = model_dict["model"]
     devices = model_dict["devices"]
     prompt = transform(mkey, mode, tokenizer, code, langid, onemsg)
 
-    return [
+    scores = [
         score_response(mkey, model, tokenizer, devices, prompt, response)
         for response in responses
     ]
+    write_logprob_file(recorded_path, scores)
+    return scores

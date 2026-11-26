@@ -1,7 +1,0 @@
-predicate spec(param: record[], entry_self: record[size: int, empty: bool, elements: list[option[int]]], exit_self: record[size: int, empty: bool, elements: list[option[int]]], ret: record[is_null: bool, elements: list[option[int]]]) {
-    var len_ret: int = 
-        len(ret.elements);
-    var qsize: int = 
-        entry_self.size;
-    (len_ret == qsize)
-}

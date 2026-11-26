@@ -291,9 +291,9 @@ _execution_locks = {}
 _execution_lock = threading.Lock()
 
 
-def generate(row, adapter, datasets, directory, seconds, seeds, label_mode='groundtruth', bounded_only=False, max_cases=2000):
-    if label_mode != 'implementation':
-        return _generate(row, adapter, datasets, directory, seconds, seeds, label_mode, bounded_only, max_cases)
+def generate(row, adapter, datasets, directory, seconds, seeds, label_mode='groundtruth', bounded_only=False, max_cases=2000, independent=False, positive_only=False):
+    if label_mode != 'implementation' or independent or positive_only:
+        return _generate(row, adapter, datasets, directory, seconds, seeds, label_mode, bounded_only, max_cases, independent, positive_only)
     from .method_execution import harness as execution_harness
     code = execution_harness(row, adapter, JAVA_HELPERS, datasets, label_mode)
     key = hashlib.sha256((code + row['source_sha256'] + str(seconds) + str(seeds)
@@ -313,12 +313,31 @@ def generate(row, adapter, datasets, directory, seconds, seeds, label_mode='grou
         return result
 
 
-def _generate(row, adapter, datasets, directory, seconds, seeds, label_mode='groundtruth', bounded_only=False, max_cases=2000):
+def _generate(row, adapter, datasets, directory, seconds, seeds, label_mode='groundtruth', bounded_only=False, max_cases=2000, independent=False, positive_only=False):
     from .tc_harness import mutant_state_factory
 
     from .method_execution import harness as execution_harness
     helpers = JAVA_HELPERS.replace('>=2000', f'>={max_cases}')
-    code = execution_harness(row, adapter, helpers, datasets, label_mode)
+    if positive_only:
+        helpers = helpers.replace('String body=json(trace);', 'if(!label) return;\n  String body=json(trace);')
+    if independent:
+        from .trace_projection import instrumented_harness
+        code = instrumented_harness(row, adapter, helpers)
+        start = code.index(' public static void main(')
+        code = code[:start] + ''' public static void main(String[] args) {
+ for(int a=0;a<16;a++)for(int b=0;b<16;b++)for(int c=0;c<16;c++)for(int d=0;d<16;d++){
+ try{probe(a,b,c,d);}catch(Exception e){failure(e);errors++;}
+ if(positives>=MAX_CASES)return;
+ }
+ }
+}
+'''.replace('MAX_CASES', str(max_cases))
+    else:
+        code = execution_harness(row, adapter, helpers, datasets, label_mode)
+    if positive_only:
+        # Skip further probes once three distinct positives have been stored.
+        code = re.sub(r'(public static void probe\([^)]*\)\s*\{)',
+                      lambda m: m[0] + f'if(positives>={max_cases})return;', code)
     if label_mode == 'implementation' and row['class_name'] != 'PairMap':
         code = code.replace('probe(a,a+1,c,0);', f'{{probe(a,a+1,c,0);if(positives>={max_cases})return;}}')
     harness = directory / "FuzzTest.java"
@@ -441,7 +460,7 @@ def _generate(row, adapter, datasets, directory, seconds, seeds, label_mode='gro
     write(directory / "cases.json", list(unique.values()))
     return dict(
         status="generated" if unique else "no_cases",
-        trace_kind="method_execution",
+        trace_kind="independent_state" if independent else "method_execution",
         label_mode=label_mode,
         bounded_only=bounded_only,
         positive=len(positives),
@@ -467,6 +486,8 @@ def main():
     p.add_argument("--group", nargs="+", choices=["buggycodes", "buggyasrts", "c2s_aug_sub", "c2s_aug", "naturalness", "examples"],
                    default=["buggycodes", "buggyasrts"])
     p.add_argument("--sample-id")
+    p.add_argument('--independent', action='store_true', help='Construct independent old/new states instead of executing the method')
+    p.add_argument('--positive-only', action='store_true', help='Store positive cases only; discard negatives and stop at max-cases')
     p.add_argument('--label-mode', choices=['groundtruth','implementation'], default='groundtruth')
     p.add_argument('--bounded-only', action='store_true', help='Use actual bounded method calls without additional Randoop sampling')
     p.add_argument('--max-cases', type=int, default=2000, help='Limit captured cases per label; select at most 3 for generation')
@@ -514,7 +535,7 @@ def main():
                 + str(args.seconds)
                 + str(args.seeds)
                 + args.label_mode
-                + str(args.bounded_only) + str(args.max_cases)
+                + str(args.bounded_only) + str(args.max_cases) + str(args.independent) + str(args.positive_only)
                 + source_fingerprint
             ).encode()
         ).hexdigest()
@@ -533,7 +554,7 @@ def main():
                 adapter = adapt(row)
                 write(directory / "adapter.json", adapter)
                 result = generate(
-                    row, adapter, args.datasets, directory, args.seconds, args.seeds, args.label_mode, args.bounded_only, args.max_cases
+                    row, adapter, args.datasets, directory, args.seconds, args.seeds, args.label_mode, args.bounded_only, args.max_cases, args.independent, args.positive_only
                 )
             except Exception as e:
                 result = dict(status="unsupported" if row.get("extraction_error") else "error", error=str(e))

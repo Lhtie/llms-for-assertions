@@ -161,6 +161,7 @@ def run(args, rows):
         max_tokens=args.max_tokens,
         reasoning_effort=args.reasoning_effort,
         use_memo=args.memo,
+        base_url=args.base_url,
     )
     candidates = json.loads(args.candidates.read_text()) if args.candidates else None
     traces = json.loads(args.traces.read_text()) if args.traces else {}
@@ -211,6 +212,9 @@ def run(args, rows):
             candidate=candidates.get(row["id"]) if candidates is not None else None,
             generation_source="imported" if candidates is not None else "expecto",
             root_description=root_description,
+            prompt_variant=args.prompt_variant,
+            pipeline_prompt_digest=(digest((ROOT / "prompting.py").read_text())
+                                   if args.prompt_variant == "pipeline-fewshot" else None),
             tool_digest=tool_digest,
         )
         fingerprint = digest(
@@ -254,7 +258,8 @@ def run(args, rows):
                 for key in ("corrects", "incorrects"):
                     sample[key] = trace.get(key, {})
                 if args.require_traces and not sample["corrects"]:
-                    raise ValueError("Real correct traces required but absent")
+                    stage = "trace_collection"
+                    raise ValueError("Required generation traces absent; no LLM call made for this task")
                 write(
                     d / "worker_input.json",
                     dict(
@@ -263,6 +268,7 @@ def run(args, rows):
                         max_attempts=args.max_attempts,
                         n_completions=args.n_completions,
                         root_description=root_description,
+                        prompt_variant=args.prompt_variant,
                     ),
                 )
                 (d / "generation.json").unlink(missing_ok=True)
@@ -344,13 +350,16 @@ def main():
         help="Inspect model ID, e.g. together/openai/gpt-oss-120b (alias: gpt-oss-120b).",
     )
     p.add_argument(
+        '--base-url', help='Self-hosted inference endpoint, e.g. http://127.0.0.1:8000/v1 with --model local/gpt-oss-120b.',
+    )
+    p.add_argument(
         "--max-tokens",
         type=int,
         help="Completion budget; Together defaults to 8192, including reasoning.",
     )
     p.add_argument(
         "--reasoning-effort",
-        choices=["low", "medium", "high"],
+        choices=["none", "low", "medium", "high"],
         help="Together GPT-OSS defaults to medium.",
     )
     p.add_argument(
@@ -363,6 +372,10 @@ def main():
     p.add_argument("--n-completions", type=int, default=1)
     p.add_argument("--generation-timeout", type=int, default=1800)
     from .prompts import DEFAULT_ROOT_DESCRIPTION
+    p.add_argument(
+        "--prompt-variant", choices=["default", "pipeline-fewshot"], default="default",
+        help="Use the original batch prompt or our pipeline JML rules/few-shot examples adapted to DSL output.",
+    )
     p.add_argument(
         "--root-description",
         default=DEFAULT_ROOT_DESCRIPTION,

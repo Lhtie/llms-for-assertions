@@ -88,12 +88,13 @@ def main():
         max_tokens=data.get("max_tokens"),
         reasoning_effort=data.get("reasoning_effort"),
         use_memo=data.get("use_memo"),
+        base_url=data.get('base_url'),
     )
     Path(sys.argv[2]).with_name("model_config.json").write_text(
         json.dumps(settings, indent=2)
     )
     sample = Defects4jMethodSample.model_validate(data["sample"])
-    prompt = build_assertion_prompt(sample.method_info)
+    prompt = build_assertion_prompt(sample.method_info, data.get("prompt_variant", "default"))
     Path(sys.argv[2]).with_name("generation_prompt.txt").write_text(prompt)
     root_description = build_root_description(
         sample.method_info, data.get("root_description", DEFAULT_ROOT_DESCRIPTION)

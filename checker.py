@@ -8,6 +8,7 @@ import traceback
 import json
 import ast
 import tempfile
+import math
 
 # Keep concurrent checker scratch files isolated and on the local filesystem.
 # In WSL, the repository may live on /mnt/c, where concurrent copytree calls
@@ -346,12 +347,12 @@ def rerun_active_from_check_file(check_file, codedir, datasets, combinedcodesdir
             completed_entries.add(key)
 
     def error_entry(block, message):
-        lines = block.rstrip().splitlines()
-        if lines and lines[-1] == "####################":
-            lines.insert(-1, f"active_error: {message}")
-        else:
-            lines.append(f"active_error: {message}")
-        return "\n".join(lines) + "\n"
+        # A failed rerun must never retain the original setting's winner.
+        return replace_active_report_section(block,
+            f"active_selection_mode: {selection_mode}\n"
+            f"active_score_mode: {score_mode}\n"
+            f"active_error: {message}\n"
+            "final_best_candidate: None")
 
     for block in entries:
         header = header_pattern.match(block.splitlines()[0])
@@ -393,13 +394,24 @@ def rerun_active_from_check_file(check_file, codedir, datasets, combinedcodesdir
                 error_entry(block, f"report lacks aligned arrays required for {score_mode} active selection"),
             )
             continue
+        candidate_mask = [bool(null_results[i]) and bool(compile_results[i]) for i in range(expected_size)]
+        if score_mode == 'logprob' and not any(candidate_mask):
+            prob_scores = [None] * expected_size
+
+        def finite_prob(value):
+            try:
+                return math.isfinite(float(value.get('avg_logprob') if isinstance(value, dict) else value))
+            except (TypeError, ValueError):
+                return False
+
         if score_mode == "logprob" and not (
-                isinstance(prob_scores, list) and len(prob_scores) >= expected_size):
+                isinstance(prob_scores, list) and len(prob_scores) >= expected_size
+                and all(not candidate_mask[i] or finite_prob(prob_scores[i]) for i in range(expected_size))):
             raw_result_path = os.path.join(result_dir, filename)
             try:
                 prob_scores = CHECKERS["prob_check"](
                     langid, source, raw_result_path, gen_asrts,
-                    [bool(null_results[i]) and bool(compile_results[i]) for i in range(expected_size)],
+                    candidate_mask,
                     checker_kwargs.get("prob_check", {}),
                 )
             except Exception as exc:
@@ -408,6 +420,17 @@ def rerun_active_from_check_file(check_file, codedir, datasets, combinedcodesdir
                     error_entry(block, f"could not obtain logprob scores: {type(exc).__name__}: {exc}"),
                 )
                 continue
+        if score_mode == "logprob":
+            if not isinstance(prob_scores, list) or len(prob_scores) != expected_size or any(
+                    candidate_mask[i] and not finite_prob(prob_scores[i]) for i in range(expected_size)):
+                save_entry(entry_key, error_entry(block, 'missing finite logprob for an eligible candidate'))
+                continue
+            averages = [p.get('avg_logprob') if isinstance(p, dict) else p for p in prob_scores]
+            score_line = 'prob_avg_scores: ' + repr(averages)
+            if re.search(r'^prob_avg_scores:.*$', block, re.M):
+                block = re.sub(r'^prob_avg_scores:.*$', lambda _: score_line, block, flags=re.M)
+            else:
+                block = block.replace('equiv_res:', score_line+'\nequiv_res:', 1)
         if not isinstance(conformance_scores, list) or len(conformance_scores) < expected_size:
             conformance_scores = [None] * expected_size
         if not isinstance(equivalence_scores, list) or len(equivalence_scores) < expected_size:
@@ -424,6 +447,7 @@ def rerun_active_from_check_file(check_file, codedir, datasets, combinedcodesdir
                 )
         combinedcodes = source_directory(filename, datasets, combinedcodesdir)
         pfx, sfx, _ = read_problem(source, langid)
+        print(f"Active rerun: {entry_key}", file=sys.stderr, flush=True)
         candidates, winner, matches = run_active_selection(
             pfx + "\n" + sfx, groundtruth, combinedcodes, gen_asrts,
             conformance_scores, equivalence_scores, validity_scores,
@@ -432,11 +456,15 @@ def rerun_active_from_check_file(check_file, codedir, datasets, combinedcodesdir
             score_mode=score_mode, logprob_scores=prob_scores,
             selection_mode=selection_mode,
         )
+        active_output = format_active_output(candidates, winner, matches, threshold,
+                                             score_mode, selection_mode)
+        for line in active_output.splitlines():
+            if line.startswith('active_tournament:'):
+                print(f"{entry_key}: {line}", file=sys.stderr, flush=True)
         save_entry(
             entry_key,
             replace_active_report_section(
-                block, format_active_output(candidates, winner, matches, threshold,
-                                            score_mode, selection_mode)
+                block, active_output
             ),
         )
     if outfd is not None:
